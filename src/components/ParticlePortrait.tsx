@@ -105,11 +105,11 @@ const fragmentShader = /* glsl */ `
     if (r > 1.0) discard;
 
     vec3 color = texture2D(uTexture, vUv).rgb;
-    vec3 cool = mix(uTintCool * 0.72, color * 1.28, vLum);
-    vec3 edgeGlow = vec3(0.72, 0.9, 1.0) * vEdge;
-    vec3 graded = mix(cool, uTintWarm, smoothstep(0.55, 0.95, vLum) * 0.22) + edgeGlow * 0.42;
+    vec3 cool = mix(uTintCool * 0.8, color * 1.1, vLum);
+    vec3 edgeGlow = vec3(0.85, 0.9, 1.0) * vEdge * 0.6;
+    vec3 graded = mix(cool, uTintWarm, smoothstep(0.4, 0.95, vLum) * 0.3) + edgeGlow;
 
-    float alpha = vAlpha * (1.0 - r) * 0.98;
+    float alpha = vAlpha * (1.0 - r) * 0.9;
     gl_FragColor = vec4(graded, alpha);
   }
 `
@@ -138,13 +138,13 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
       uTexture: { value: texture },
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
-      uMouseStrength: { value: 0.55 },
-      uDepth: { value: 1.18 },
-      uPointSize: { value: 2.85 },
+      uMouseStrength: { value: 0.35 },
+      uDepth: { value: 0.8 },
+      uPointSize: { value: 3.5 },
       uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
       uIntro: { value: 0 },
-      uTintCool: { value: new THREE.Color('#6b8fb5') },
-      uTintWarm: { value: new THREE.Color('#d6c5a8') },
+      uTintCool: { value: new THREE.Color('#7890a8') },
+      uTintWarm: { value: new THREE.Color('#e0d5c1') },
       uAspect: { value: new THREE.Vector2(aspect[0], aspect[1]) },
     }),
     [texture, aspect]

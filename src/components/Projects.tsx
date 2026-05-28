@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { projects } from '../data/projects'
@@ -8,23 +7,17 @@ gsap.registerPlugin(ScrollTrigger)
 
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
-  const [activeId, setActiveId] = useState(projects[0]?.id ?? '')
-  const activeProject = projects.find((p) => p.id === activeId) ?? projects[0]
 
   useEffect(() => {
     if (!root.current) return
-    let observer: IntersectionObserver | null = null
     const ctx = gsap.context(() => {
-      gsap.from('.project-card', {
-        scrollTrigger: {
-          trigger: '.projects__list',
-          start: 'top 75%',
-        },
-        y: 60,
-        opacity: 0,
-        duration: 1.1,
-        stagger: 0.12,
-        ease: 'expo.out',
+      gsap.utils.toArray<HTMLElement>('.project-card').forEach((card) => {
+        ScrollTrigger.create({
+          trigger: card,
+          start: 'top 88%',
+          onEnter: () => card.classList.add('is-visible'),
+          once: true,
+        })
       })
 
       // hover accent color injection
@@ -33,24 +26,9 @@ export default function Projects() {
         card.style.setProperty('--accent', accent)
       })
 
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const id = (entry.target as HTMLElement).dataset.projectId
-              if (id) setActiveId(id)
-            }
-          })
-        },
-        { threshold: 0.42, rootMargin: '-18% 0px -36% 0px' }
-      )
-
-      document.querySelectorAll<HTMLElement>('.project-card').forEach((card) => {
-        observer?.observe(card)
-      })
+      ScrollTrigger.refresh()
     }, root)
     return () => {
-      observer?.disconnect()
       ctx.revert()
     }
   }, [])
@@ -70,18 +48,6 @@ export default function Projects() {
         </p>
       </div>
 
-      {activeProject && (
-        <div className="projects__preview" style={{ '--accent': activeProject.accent } as CSSProperties}>
-          <div className="projects__preview-orbit" aria-hidden="true" />
-          <div className="projects__preview-grid" aria-hidden="true" />
-          <div>
-            <span>{activeProject.index}</span>
-            <strong>{activeProject.name}</strong>
-          </div>
-          <p>{activeProject.tagline}</p>
-        </div>
-      )}
-
       <div className="projects__list">
         {projects.map((p) => (
           <article
@@ -89,8 +55,6 @@ export default function Projects() {
             key={p.id}
             data-accent={p.accent}
             data-project-id={p.id}
-            onMouseEnter={() => setActiveId(p.id)}
-            onFocus={() => setActiveId(p.id)}
           >
             <div className="project-card__index">{p.index}</div>
 

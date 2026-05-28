@@ -1,26 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap');
+
 :root {
   /* ── Color tokens ── */
-  --bg: #0a0a0c;
-  --bg-elev: #111114;
-  --bg-soft: #15161a;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.18);
-  --fg: #ededee;
-  --fg-soft: rgba(237, 237, 238, 0.72);
-  --fg-mute: rgba(237, 237, 238, 0.48);
-  --fg-dim: rgba(237, 237, 238, 0.32);
-  --accent: #6b8fb5;        /* cold blue taken from portrait highlights */
-  --accent-warm: #d6c5a8;   /* warm skin highlight */
-  --noise: 0.03;
+  --bg: #0a0a0a;
+  --bg-elev: #121212;
+  --bg-soft: #181818;
+  --line: rgba(255, 255, 255, 0.04);
+  --line-strong: rgba(255, 255, 255, 0.12);
+  --fg: #f0f0f0;
+  --fg-soft: rgba(240, 240, 240, 0.82);
+  --fg-mute: rgba(240, 240, 240, 0.60);
+  --fg-dim: rgba(240, 240, 240, 0.38);
+  --accent: #7890a8;
+  --accent-warm: #d6c5a8;
+  --noise: 0.015;
 
   /* ── Typography ── */
   --font-sans: 'Inter', system-ui, -apple-system, 'PingFang SC', sans-serif;
-  --font-serif: 'Noto Serif SC', 'Songti SC', serif;
+  --font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
 
   /* ── Motion ── */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-inout: cubic-bezier(0.83, 0, 0.17, 1);
+  --ease-out: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-inout: cubic-bezier(0.87, 0, 0.13, 1);
 
   color-scheme: dark;
 }
@@ -38,7 +40,7 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  font-weight: 400;
+  font-weight: 300;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'ss01', 'cv11';
@@ -47,12 +49,12 @@ body {
 
 body {
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: 1.7;
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--bg);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--fg);
 }
 
 a {
@@ -121,7 +123,7 @@ html.lenis body {
 /* ── Section common ── */
 .section {
   position: relative;
-  padding-block: clamp(80px, 12vw, 160px);
+  padding-block: clamp(100px, 16vw, 240px);
 }
 
 .section__label {
@@ -129,32 +131,33 @@ html.lenis body {
   align-items: center;
   gap: 12px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 400;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
   color: var(--fg-mute);
   text-transform: uppercase;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .section__label::before {
   content: '';
-  width: 24px;
+  width: 16px;
   height: 1px;
-  background: var(--line-strong);
+  background: currentColor;
 }
 
 .section__title {
   font-family: var(--font-serif);
-  font-size: clamp(40px, 6vw, 88px);
-  font-weight: 300;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-size: clamp(48px, 8vw, 120px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
   margin: 0;
 }
 
 .section__title em {
   font-style: italic;
+  font-weight: 400;
   color: var(--fg-mute);
 }
 
@@ -162,6 +165,8 @@ html.lenis body {
 .split-line {
   display: block;
   overflow: hidden;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
 }
 
 .split-line__inner {

@@ -19,9 +19,9 @@ export default function Footer() {
             start: 'top 80%',
           },
           yPercent: 0,
-          duration: 1.2,
+          duration: 2.0,
           ease: 'expo.out',
-          stagger: 0.08,
+          stagger: 0.12,
         }
       )
 
@@ -31,10 +31,10 @@ export default function Footer() {
           start: 'top 90%',
         },
         opacity: 0,
-        y: 12,
-        duration: 0.8,
-        stagger: 0.06,
-        ease: 'power2.out',
+        y: 24,
+        duration: 1.8,
+        stagger: 0.15,
+        ease: 'expo.out',
       })
     }, root)
     return () => ctx.revert()

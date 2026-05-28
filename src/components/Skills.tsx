@@ -25,16 +25,17 @@ export default function Skills() {
   useEffect(() => {
     if (!root.current) return
     const ctx = gsap.context(() => {
-      gsap.from('.skill-row', {
-        scrollTrigger: {
+      gsap.utils.toArray<HTMLElement>('.skill-row').forEach((row, index) => {
+        ScrollTrigger.create({
           trigger: '.skills__list',
-          start: 'top 80%',
-        },
-        y: 32,
-        opacity: 0,
-        duration: 0.9,
-        ease: 'power2.out',
-        stagger: 0.08,
+          start: 'top 85%',
+          onEnter: () => {
+            setTimeout(() => {
+              row.classList.add('is-visible')
+            }, index * 120)
+          },
+          once: true,
+        })
       })
     }, root)
     return () => ctx.revert()

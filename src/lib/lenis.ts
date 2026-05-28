@@ -31,7 +31,13 @@ export function useLenis() {
     gsap.ticker.add(tickerFn)
     gsap.ticker.lagSmoothing(0)
 
+    // Refresh ScrollTrigger after a tick to make sure the DOM heights have settled
+    const refreshTimer = setTimeout(() => {
+      ScrollTrigger.refresh()
+    }, 150)
+
     return () => {
+      clearTimeout(refreshTimer)
       gsap.ticker.remove(tickerFn)
       lenis.destroy()
       lenisInstance = null

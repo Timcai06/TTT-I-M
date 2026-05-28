@@ -17,17 +17,17 @@ export default function Hero() {
       gsap.set('.hero__subline > *', { opacity: 0, y: 8 })
       gsap.set('.hero__kicker', { opacity: 0, y: 10 })
 
-      const tl = gsap.timeline({ delay: 2.0 })
+      const tl = gsap.timeline({ delay: 1.8 })
 
-      tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' })
+      tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' })
         .to('.hero__split .split-line__inner', {
         yPercent: 0,
-        duration: 1.4,
+        duration: 2.2,
         ease: 'expo.out',
-        stagger: 0.08,
-      }, '-=0.35')
-        .to('.hero__meta-block', { opacity: 1, y: 0, duration: 0.9, stagger: 0.1, ease: 'power2.out' }, '-=1.0')
-        .to('.hero__subline > *', { opacity: 1, y: 0, duration: 0.8, stagger: 0.08, ease: 'power2.out' }, '-=0.6')
+        stagger: 0.12,
+      }, '-=1.2')
+        .to('.hero__meta-block', { opacity: 1, y: 0, duration: 1.8, stagger: 0.15, ease: 'expo.out' }, '-=1.6')
+        .to('.hero__subline > *', { opacity: 1, y: 0, duration: 1.8, stagger: 0.12, ease: 'expo.out' }, '-=1.4')
 
       // deconstruct the portrait from recognizable photo into particle signal
       gsap.to('.hero__canvas', {
@@ -55,8 +55,8 @@ export default function Hero() {
       })
 
       gsap.to('.hero__scan', {
-        opacity: 0.65,
-        yPercent: 32,
+        opacity: 0.05,
+        yPercent: 12,
         ease: 'none',
         scrollTrigger: {
           trigger: root.current,

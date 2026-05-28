@@ -25,9 +25,9 @@ export default function About() {
             start: 'top 75%',
           },
           yPercent: 0,
-          duration: 1.1,
+          duration: 1.8,
           ease: 'expo.out',
-          stagger: 0.06,
+          stagger: 0.12,
         }
       )
 
@@ -36,11 +36,11 @@ export default function About() {
           trigger: '.about__body',
           start: 'top 80%',
         },
-        y: 24,
+        y: 32,
         opacity: 0,
-        duration: 0.9,
-        stagger: 0.1,
-        ease: 'power2.out',
+        duration: 1.8,
+        stagger: 0.15,
+        ease: 'expo.out',
       })
 
       gsap.from('.about__fact', {
@@ -48,11 +48,11 @@ export default function About() {
           trigger: '.about__facts',
           start: 'top 85%',
         },
-        y: 24,
+        y: 32,
         opacity: 0,
-        duration: 0.9,
-        stagger: 0.12,
-        ease: 'power2.out',
+        duration: 1.8,
+        stagger: 0.15,
+        ease: 'expo.out',
       })
     }, root)
     return () => ctx.revert()
