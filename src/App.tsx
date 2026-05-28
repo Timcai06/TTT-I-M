@@ -5,6 +5,7 @@ import ScrollIndicator from './components/ScrollIndicator'
 import Nav from './components/Nav'
 import Hero from './components/Hero'
 import About from './components/About'
+import LifeGallery from './components/LifeGallery'
 import Skills from './components/Skills'
 import Projects from './components/Projects'
 import Footer from './components/Footer'
@@ -22,6 +23,7 @@ export default function App() {
       <main>
         <Hero />
         <About />
+        <LifeGallery />
         <Skills />
         <Projects />
         <Footer />

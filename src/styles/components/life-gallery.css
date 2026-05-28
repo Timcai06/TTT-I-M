@@ -1,0 +1,114 @@
+/* ── Life Gallery (Bento + Flip) ── */
+.life {
+  position: relative;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.life .section__label,
+.life .section__title {
+  position: relative;
+  z-index: 2;
+}
+
+.life__header {
+  padding-top: clamp(80px, 12vw, 160px);
+  padding-bottom: clamp(48px, 6vw, 80px);
+}
+
+/* ── Gallery wrap (pinned by Flip ScrollTrigger) ── */
+.gallery-wrap {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.gallery {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: none;
+}
+
+.gallery__item {
+  background-position: 50% 50%;
+  background-size: cover;
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.gallery__item img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  filter: saturate(0.82) contrast(1.05);
+  transition: filter 0.6s var(--ease-out);
+}
+
+.gallery__item:hover img {
+  filter: saturate(1) contrast(1);
+}
+
+.gallery__placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.015) 0%, transparent 70%);
+}
+
+/* ── Bento layout (initial state) ── */
+.gallery--bento {
+  display: grid;
+  gap: 1vh;
+  grid-template-columns: repeat(3, 32.5vw);
+  grid-template-rows: repeat(4, 23vh);
+  justify-content: center;
+  align-content: center;
+}
+
+.gallery--bento .gallery__item:nth-child(1) { grid-area: 1 / 1 / 3 / 2; }
+.gallery--bento .gallery__item:nth-child(2) { grid-area: 1 / 2 / 2 / 3; }
+.gallery--bento .gallery__item:nth-child(3) { grid-area: 2 / 2 / 4 / 3; }
+.gallery--bento .gallery__item:nth-child(4) { grid-area: 1 / 3 / 3 / 3; }
+.gallery--bento .gallery__item:nth-child(5) { grid-area: 3 / 1 / 3 / 2; }
+.gallery--bento .gallery__item:nth-child(6) { grid-area: 3 / 3 / 5 / 4; }
+.gallery--bento .gallery__item:nth-child(7) { grid-area: 4 / 1 / 5 / 2; }
+.gallery--bento .gallery__item:nth-child(8) { grid-area: 4 / 2 / 5 / 3; }
+
+/* ── Final state (full-bleed after Flip) ── */
+.gallery--final.gallery--bento {
+  grid-template-columns: repeat(3, 100vw);
+  grid-template-rows: repeat(4, 49.5vh);
+  gap: 1vh;
+}
+
+/* ── Mobile: simpler 2-column bento ── */
+@media (max-width: 768px) {
+  .gallery--bento {
+    grid-template-columns: repeat(2, 48vw);
+    grid-template-rows: repeat(4, 22vh);
+  }
+
+  .gallery--bento .gallery__item:nth-child(1) { grid-area: 1 / 1 / 3 / 2; }
+  .gallery--bento .gallery__item:nth-child(2) { grid-area: 1 / 2 / 2 / 3; }
+  .gallery--bento .gallery__item:nth-child(3) { grid-area: 2 / 2 / 4 / 3; }
+  .gallery--bento .gallery__item:nth-child(4) { grid-area: 3 / 1 / 4 / 2; }
+  .gallery--bento .gallery__item:nth-child(5) { grid-area: 4 / 1 / 5 / 2; }
+  .gallery--bento .gallery__item:nth-child(6) { grid-area: 4 / 2 / 5 / 3; }
+  .gallery--bento .gallery__item:nth-child(7) { display: none; }
+  .gallery--bento .gallery__item:nth-child(8) { display: none; }
+
+  .gallery--final.gallery--bento {
+    grid-template-columns: repeat(2, 100vw);
+    grid-template-rows: repeat(4, 49.5vh);
+  }
+}

@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-
-gsap.registerPlugin(ScrollTrigger)
+import { ScrollTrigger } from '../lib/gsap'
 
 const sections = [
   { id: 'hero', index: '01', name: 'HOME' },

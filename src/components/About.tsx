@@ -1,8 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-
-gsap.registerPlugin(ScrollTrigger)
+import { gsap, ScrollTrigger } from '../lib/gsap'
 
 const facts = [
   { value: '10+', label: 'Public repos' },
@@ -142,8 +139,8 @@ export default function About() {
             {/* Block 1: Vision / Background (Large Serif, Left-aligned) */}
             <div className="about__block about__block--vision">
               <p>
-                我在浙江工商大学读大一，把课内的 <span className="highlight-text">Linux 实践</span>、
-                数学建模和课外的 <span className="highlight-text">AI 工具链</span>做成一些能真正跑起来的东西。
+                今年大一，把课内的 <span className="highlight-text">Linux 实践</span>、
+                数学建模和课外的 <span className="highlight-text">AI 工具链、深度学习算法、GNN CNN神经网络</span>做成一些能真正跑起来的东西。
                 从自创无人机巡检 YOLOv8-seg 视觉算法到完整美股财报分析 RAG 系统，
                 我喜欢把 <span className="highlight-text font-italic">“算法 → 原型 → 产品”</span> 这一步抠到能复现的程度。
               </p>

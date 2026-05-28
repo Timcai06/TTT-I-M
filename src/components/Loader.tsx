@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { gsap } from 'gsap'
+import { gsap } from '../lib/gsap'
 
 export default function Loader() {
   const ref = useRef<HTMLDivElement>(null)
@@ -13,12 +13,33 @@ export default function Loader() {
     const target = { value: 0 }
     const tl = gsap.timeline({
       onComplete: () => {
-        gsap.to(ref.current, {
-          y: '-100%',
-          duration: 1.1,
-          ease: 'expo.inOut',
+        const exit = gsap.timeline({
           onComplete: () => setDone(true),
         })
+
+        exit
+          .to('.loader__name span', {
+            yPercent: -110,
+            duration: 0.6,
+            stagger: 0.04,
+            ease: 'expo.in',
+          }, 0)
+          .to('.loader__count', {
+            opacity: 0,
+            y: -20,
+            duration: 0.4,
+            ease: 'expo.in',
+          }, 0)
+          .to(ref.current, {
+            clipPath: 'inset(0 0 100% 0)',
+            duration: 1.0,
+            ease: 'expo.inOut',
+          }, 0.3)
+
+        // Fire Hero animations early (overlap with exit)
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('loader:exit'))
+        }, 200)
       },
     })
 
@@ -46,6 +67,11 @@ export default function Loader() {
 
   return (
     <div className="loader" ref={ref}>
+      <div className="loader__name" aria-hidden="true">
+        {'Tim Cai'.split('').map((ch, i) => (
+          <span key={i}>{ch === ' ' ? ' ' : ch}</span>
+        ))}
+      </div>
       <div className="loader__count">
         <span ref={countRef}>000</span>
         <span>/ 100</span>

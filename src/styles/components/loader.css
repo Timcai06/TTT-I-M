@@ -4,9 +4,28 @@
   inset: 0;
   z-index: 1000;
   background: var(--bg);
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
   pointer-events: none;
+  clip-path: inset(0 0 0 0);
+}
+
+.loader__name {
+  display: flex;
+  overflow: hidden;
+}
+
+.loader__name span {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 5vw, 56px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  line-height: 1;
 }
 
 .loader__count {

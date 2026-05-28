@@ -1,9 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { gsap, ScrollTrigger } from '../lib/gsap'
 import { projects } from '../data/projects'
-
-gsap.registerPlugin(ScrollTrigger)
 
 export default function Projects() {
   const root = useRef<HTMLElement>(null)

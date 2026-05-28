@@ -11,6 +11,7 @@ export interface Project {
   github: string
   live?: string
   accent: string
+  cover?: string
 }
 
 export const projects: Project[] = [

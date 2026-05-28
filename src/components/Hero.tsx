@@ -1,9 +1,6 @@
 import { useEffect, useRef, Suspense } from 'react'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { gsap, ScrollTrigger } from '../lib/gsap'
 import ParticlePortrait from './ParticlePortrait'
-
-gsap.registerPlugin(ScrollTrigger)
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
@@ -17,7 +14,12 @@ export default function Hero() {
       gsap.set('.hero__subline > *', { opacity: 0, y: 8 })
       gsap.set('.hero__kicker', { opacity: 0, y: 10 })
 
-      const tl = gsap.timeline({ delay: 1.8 })
+      const tl = gsap.timeline({ paused: true })
+
+      const startHero = () => tl.play()
+      window.addEventListener('loader:exit', startHero, { once: true })
+      // fallback if Loader is already gone
+      setTimeout(() => { if (tl.paused()) tl.play() }, 2200)
 
       tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' })
         .to('.hero__split .split-line__inner', {
