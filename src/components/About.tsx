@@ -25,6 +25,7 @@ export default function About() {
           scrollTrigger: {
             trigger: '.about__lead',
             start: 'top 85%',
+            toggleActions: 'play none none reverse', // 双向回退触发
           },
           yPercent: 0,
           duration: 1.8,
@@ -42,6 +43,7 @@ export default function About() {
             scrollTrigger: {
               trigger: block,
               start: 'top 90%',
+              toggleActions: 'play none none reverse', // 双向回退触发
             },
             y: 0,
             opacity: 1,
@@ -56,6 +58,7 @@ export default function About() {
         scrollTrigger: {
           trigger: '.about__facts',
           start: 'top 92%',
+          toggleActions: 'play none none reverse', // 双向回退触发
         },
         y: 32,
         opacity: 0,
@@ -76,8 +79,8 @@ export default function About() {
           scrollTrigger: {
             trigger: '.about__grid',
             start: 'top 80%',
-            end: 'center center',
-            scrub: 1.5,
+            end: 'top 20%', // 缩短滚动区间，确保在进入自述板块早期即完成变形与清晰度渐变
+            scrub: 0.8,     // 降低 scrub 延迟，使动画更贴合滚动节奏
           },
           borderRadius: '320px 0 0 320px',
           y: 0,
@@ -89,17 +92,15 @@ export default function About() {
       gsap.fromTo(
         '.about__portrait-img',
         {
-          filter: 'blur(20px) brightness(0.92)',
-          scale: 1.25,
+          scale: 1.12,
         },
         {
           scrollTrigger: {
             trigger: '.about__grid',
             start: 'top 80%',
-            end: 'center center',
-            scrub: 1.5,
+            end: 'top 20%', // 与外框同步，缩短滚动区间
+            scrub: 0.8,     // 降低 scrub 延迟
           },
-          filter: 'blur(0px) brightness(1.0)',
           scale: 1.0,
           ease: 'none',
         }
@@ -132,7 +133,7 @@ export default function About() {
           <div className="section__label">About — 自述</div>
           <h2 className="about__lead">
             <span className="split-line"><span className="about__lead-line split-line__inner">在上海读大一，</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner">写代码、做建模、</span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner">写代码、做建模、跑视觉算法</span></span>
             <span className="split-line"><span className="about__lead-line split-line__inner"><em>抓那些会变成产品的</em></span></span>
             <span className="split-line"><span className="about__lead-line split-line__inner"><em>瞬间。</em></span></span>
           </h2>
@@ -143,8 +144,8 @@ export default function About() {
               <p>
                 我在浙江工商大学读大一，把课内的 <span className="highlight-text">Linux 实践</span>、
                 数学建模和课外的 <span className="highlight-text">AI 工具链</span>做成一些能真正跑起来的东西。
-                从无人机巡检的 YOLOv8-seg 到美股财报 RAG，
-                我喜欢把 <span className="highlight-text font-italic">“原型 → 产品”</span> 这一步抠到能复现的程度。
+                从自创无人机巡检 YOLOv8-seg 视觉算法到完整美股财报 RAG 系统，
+                我喜欢把 <span className="highlight-text font-italic">“算法 → 原型 → 产品”</span> 这一步抠到能复现的程度。
               </p>
             </div>
 
@@ -171,8 +172,8 @@ export default function About() {
               <span className="about__block-label">// TECHNICAL STACK</span>
               <p>
                 前端: React / Next.js / Tailwind CSS / GSAP / R3F<br />
-                后端: FastAPI / Django / Celery / Postgres / Supabase<br />
-                AI & 建模: DeepSeek / Cohere / PaddleOCR / Python
+                后端: FastAPI / Django / Celery / PostgreSQL / Redis<br />
+                AI & 建模: Codex / Claude code / Pytorch / Python3 / Tensorflow
               </p>
             </div>
 
@@ -181,7 +182,7 @@ export default function About() {
               <p>
                 我是一个在代码上比较克制的人。
                 宁可多写几句文档，也不喜欢留一堆
-                <span className="highlight-code">as any</span> 让队友在深夜兜底。
+                <span className="highlight-code"> as、any</span> 让队友在深夜兜底。
               </p>
             </div>
           </div>
@@ -209,7 +210,7 @@ export default function About() {
             <div className="about__block about__block--philosophy">
               <p>
                 这个站本身也是一次尝试 — GSAP + R3F + 自定义 GLSL，<br />
-                没有用模板，每一帧 and 每一行着色器代码都是手写的。
+                没有用模板，每一帧 & 每一行着色器代码都是手写的。
               </p>
             </div>
           </div>

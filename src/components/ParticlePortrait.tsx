@@ -73,9 +73,9 @@ const vertexShader = /* glsl */ `
 
     vec2 toMouse = pos.xy - uMouse * uAspect;
     float d = length(toMouse);
-    float falloff = smoothstep(0.55, 0.0, d);
+    float falloff = smoothstep(0.32, 0.0, d); // 缩小扩散半径 (从 0.55 缩减至 0.32)
     pos.xy += normalize(toMouse + 0.0001) * falloff * uMouseStrength;
-    pos.z += falloff * uMouseStrength * 1.4;
+    pos.z += falloff * uMouseStrength * 1.0;  // 略微降低 Z 轴推起的高度使之更平滑细腻
 
     float introOffset = (1.0 - uIntro) * (1.2 + n * 0.4);
     pos.z -= introOffset;
@@ -139,7 +139,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
       uTexture: { value: texture },
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(99, 99) },
-      uMouseStrength: { value: 0.35 },
+      uMouseStrength: { value: 0.25 }, // 降低推开粒子时的物理感官力度 (从 0.35 降至 0.25)
       uDepth: { value: 0.8 },
       uPointSize: { value: 3.5 },
       uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
@@ -153,10 +153,20 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
+      // 1. 获取归一化设备坐标 (NDC) [-1, 1]
       const x = (e.clientX / size.width) * 2 - 1
       const y = -((e.clientY / size.height) * 2 - 1)
-      const targetX = x * 0.8
-      const targetY = y * 0.6
+      
+      // 2. 将 NDC 映射到 z=0 平面的 ThreeJS 世界坐标
+      const worldX = x * (viewport.width / 2)
+      const worldY = y * (viewport.height / 2)
+      
+      // 3. 计算当前的 Mesh 缩放比例
+      const s = Math.min(viewport.width, viewport.height) * 1.08
+      
+      // 4. 减去平移偏置 [0.22, 0.02]，并除去缩放比例和纹理宽高比，将坐标完美对齐到着色器的 uMouse 空间
+      const targetX = (worldX - 0.22) / (s * aspect[0])
+      const targetY = (worldY - 0.02) / (s * aspect[1])
       
       if (!isHoveringRef.current) {
         isHoveringRef.current = true
@@ -179,7 +189,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseleave', onLeave)
     }
-  }, [size.width, size.height])
+  }, [size.width, size.height, viewport.width, viewport.height, aspect])
 
   useFrame((_, delta) => {
     if (!matRef.current) return

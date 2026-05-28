@@ -110,7 +110,7 @@ export default function Skills() {
           scrollTrigger: {
             trigger: root.current,
             start: 'top 75%', // 当 Skills 章节顶部到达视口高度 75% 处时开始延长
-            end: 'bottom center', // 当 Skills 章节底部到达视口中心时延长结束
+            end: 'bottom -30%', // 进一步拉长滚动响应区间，使线条生长速度更慢，笔头始终在可视区域内
             scrub: 1.2,
           },
         }
@@ -133,7 +133,9 @@ export default function Skills() {
               row.classList.add('is-visible')
             }, index * 120)
           },
-          once: true,
+          onLeaveBack: () => {
+            row.classList.remove('is-visible') // 双向回退触发
+          }
         })
       })
     }, root)

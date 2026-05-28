@@ -321,6 +321,12 @@ main {
   width: 100%;
 }
 
+@media (min-width: 901px) {
+  .about__right {
+    margin-top: 90px; /* 相对左侧文本整体下移 */
+  }
+}
+
 .about__portrait-sticky {
   position: sticky;
   top: 120px;

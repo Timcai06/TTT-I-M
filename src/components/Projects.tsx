@@ -16,7 +16,7 @@ export default function Projects() {
           trigger: card,
           start: 'top 88%',
           onEnter: () => card.classList.add('is-visible'),
-          once: true,
+          onLeaveBack: () => card.classList.remove('is-visible'), // 双向回退触发
         })
       })
 
