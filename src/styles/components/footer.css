@@ -58,6 +58,7 @@
 
 .footer__stamp {
   display: block;
+  position: relative;
   font-family: var(--font-serif);
   font-size: clamp(80px, 16vw, 260px);
   font-weight: 400;
@@ -71,9 +72,36 @@
   transition: -webkit-text-stroke-color 0.5s var(--ease-out), transform 0.6s var(--ease-out);
 }
 
+.footer__stamp::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -0.12em;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--accent-warm);
+  opacity: 0;
+  transform: scale(0.4);
+  animation: stamp-pulse 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes stamp-pulse {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  40%       { opacity: 0.6; transform: scale(1); }
+  70%       { opacity: 0; transform: scale(1.6); }
+}
+
 .footer__stamp:hover {
   -webkit-text-stroke-color: transparent;
   transform: translateX(6px);
+}
+
+.footer__stamp:hover::after {
+  animation-play-state: paused;
+  opacity: 0.9;
+  transform: scale(1);
 }
 
 .footer__stamp-that {

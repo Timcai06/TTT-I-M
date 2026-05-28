@@ -11,10 +11,9 @@ const photos: LifePhoto[] = [
   { src: '/life/night-portrait.png', alt: '冬夜 · 街头' },
   { src: '/life/football-portrait.png', alt: '中场 · 沉思' },
   { src: '/life/shanghai-skyline.png', alt: '上海 · 天际线' },
-  // placeholder slots — replace src with real images later
-  { src: '', alt: 'placeholder' },
-  { src: '', alt: 'placeholder' },
-  { src: '', alt: 'placeholder' },
+  { src: '/life/life-scene-1.png', alt: '生活 · 随拍' },
+  { src: '/life/life-scene-2.png', alt: '日常 · 瞬间' },
+  { src: '/life/life-scene-3.jpg', alt: '城市 · 印记' },
   { src: '', alt: 'placeholder' },
 ]
 

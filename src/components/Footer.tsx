@@ -41,9 +41,9 @@ export default function Footer() {
         onUpdate: render,
         scrollTrigger: {
           trigger: '.footer__liquid',
-          start: 'top 90%',
-          end: 'top 30%',
-          scrub: 1.2,
+          start: 'top 100%',
+          end: 'top -10%',
+          scrub: 1.8,
         },
         defaults: { ease: 'power2.inOut', duration: 0.9 },
       })
