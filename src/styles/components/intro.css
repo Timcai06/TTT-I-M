@@ -1,0 +1,157 @@
+/* ── Luke Baffait‑style Intro ── */
+
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.intro-text {
+  font-family: var(--font-serif);
+  font-size: clamp(64px, 14vw, 200px);
+  font-weight: 400;
+  color: #f0f0f0;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: center;
+  will-change: transform, opacity;
+}
+
+.intro-text__char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.intro-text__space {
+  width: 0.35em;
+  display: inline-block;
+}
+
+.intro-text__dot {
+  color: #c0392b;
+  font-style: italic;
+}
+
+/* ── Curtain panels ── */
+
+.intro-curtain {
+  position: fixed;
+  top: 0;
+  z-index: 20001;
+  width: 50vw;
+  height: 100vh;
+  pointer-events: none;
+  will-change: transform;
+  overflow: hidden;
+}
+
+/* Shared curtain fabric */
+.intro-curtain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 10px,
+      rgba(0, 0, 0, 0.12) 10px,
+      rgba(0, 0, 0, 0.18) 12px,
+      rgba(255, 255, 255, 0.02) 12px,
+      rgba(255, 255, 255, 0.04) 14px,
+      transparent 14px,
+      transparent 24px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 40px,
+      rgba(255, 255, 255, 0.015) 40px,
+      rgba(255, 255, 255, 0.025) 41px,
+      transparent 41px,
+      transparent 80px
+    );
+  pointer-events: none;
+}
+
+.intro-curtain--left {
+  left: 0;
+  transform-origin: right center;
+  background:
+    linear-gradient(
+      180deg,
+      #2a0505 0%,
+      #5c0e0e 10%,
+      #7a1515 25%,
+      #8b1a1a 40%,
+      #7a1313 55%,
+      #8b1a1a 70%,
+      #6b0f0f 85%,
+      #1f0303 100%
+    );
+}
+
+/* Valance / top drape for left curtain */
+.intro-curtain--left::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(40px, 6vh, 80px);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.35) 30%,
+      rgba(139, 26, 26, 0.6) 60%,
+      transparent 100%
+    );
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.intro-curtain--right {
+  right: 0;
+  transform-origin: left center;
+  background:
+    linear-gradient(
+      180deg,
+      #2a0505 0%,
+      #5c0e0e 10%,
+      #7a1515 25%,
+      #8b1a1a 40%,
+      #7a1313 55%,
+      #8b1a1a 70%,
+      #6b0f0f 85%,
+      #1f0303 100%
+    );
+}
+
+/* Valance / top drape for right curtain */
+.intro-curtain--right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(40px, 6vh, 80px);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.35) 30%,
+      rgba(139, 26, 26, 0.6) 60%,
+      transparent 100%
+    );
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}

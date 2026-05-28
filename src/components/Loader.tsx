@@ -1,169 +1,128 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 
+const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
+
 export default function Loader() {
-  const ref = useRef<HTMLDivElement>(null)
-  const countRef = useRef<HTMLSpanElement>(null)
-  const barRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const leftCurtainRef = useRef<HTMLDivElement>(null)
+  const rightCurtainRef = useRef<HTMLDivElement>(null)
+  const textRef = useRef<HTMLDivElement>(null)
   const [done, setDone] = useState(false)
 
   useEffect(() => {
-    if (!ref.current) return
+    if (!overlayRef.current) return
 
-    const target = { value: 0 }
+    const ctx = gsap.context(() => {
+      const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro-text__char')
+      const curtainLeft = leftCurtainRef.current
+      const curtainRight = rightCurtainRef.current
+      if (!charEls?.length || !curtainLeft || !curtainRight) return
 
-    const introTl = gsap.timeline()
+      const tl = gsap.timeline()
 
-    // Letters start invisible, staggered entrance with font morphing
-    introTl
-      .set('.loader__char', { opacity: 0, y: 60, scale: 0.6 })
-      .to('.loader__char', {
+      /* ── Phase 0: init ── */
+      gsap.set([curtainLeft, curtainRight], { scaleX: 0 })
+      gsap.set(charEls, { opacity: 0, y: 80, scale: 0.5 })
+
+      /* ── Phase 1: baffle‑style scramble then settle ── */
+      charEls.forEach((el) => {
+        const final = el.getAttribute('data-final') || el.textContent || ''
+        let frame = 0
+        const interval = setInterval(() => {
+          if (frame < 10) {
+            el.textContent = BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)]
+          } else if (frame < 14) {
+            el.textContent = frame % 2 === 0
+              ? BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)]
+              : final
+          } else {
+            el.textContent = final
+            clearInterval(interval)
+          }
+          frame++
+        }, 40)
+      }, 0)
+
+      tl.to(charEls, {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.9,
-        stagger: 0.07,
-        ease: 'expo.out',
-      })
-      // Font weight morph: light → bold → settle at 400
-      .fromTo('.loader__name', { fontWeight: 200 }, {
-        fontWeight: 600,
-        duration: 0.6,
-        ease: 'power2.in',
-      }, 0.3)
-      .to('.loader__name', {
-        fontWeight: 400,
-        duration: 0.5,
-        ease: 'power2.out',
-      }, 0.9)
-      // Scale pulse: name expands then settles
-      .fromTo('.loader__name', { scale: 0.85 }, {
-        scale: 1.12,
-        duration: 0.7,
-        ease: 'power2.out',
-      }, 0.2)
-      .to('.loader__name', {
-        scale: 1,
-        duration: 0.6,
-        ease: 'elastic.out(1, 0.4)',
-      }, 0.9)
-      // Font-size shift on "Tim" vs "Cai" — Tim grows bigger, Cai stays refined
-      .fromTo('.loader__first', { fontSize: '1em' }, {
-        fontSize: '1.25em',
-        duration: 0.6,
-        ease: 'power3.out',
-      }, 0.5)
-      .fromTo('.loader__last', { fontSize: '1em', letterSpacing: '-0.02em' }, {
-        fontSize: '0.85em',
-        letterSpacing: '0.12em',
-        duration: 0.6,
-        ease: 'power3.out',
-      }, 0.5)
-      // Serif → sans crossfade via class swap
-      .add(() => {
-        ref.current?.querySelector('.loader__name')?.classList.add('loader__name--sans')
-      }, 0.7)
-      .to('.loader__name', {
-        letterSpacing: '0.08em',
-        duration: 0.8,
-        ease: 'power2.inOut',
-      }, 0.7)
-      // Dot accent fades in
-      .fromTo('.loader__dot', { opacity: 0, scale: 0 }, {
-        opacity: 1,
-        scale: 1,
-        duration: 0.5,
-        ease: 'back.out(3)',
+        duration: 0.55,
+        stagger: 0.06,
+        ease: 'back.out(1.8)',
+      }, 0)
+
+      /* ── Phase 2: scale‑close ── */
+      tl.to(textRef.current, {
+        scale: 0.35,
+        opacity: 0,
+        duration: 0.65,
+        ease: 'power3.in',
       }, 1.0)
 
-    // Counter starts after intro settles
-    const countTl = gsap.timeline({ delay: 0.6 })
-    countTl
-      .fromTo('.loader__count', { opacity: 0, y: 20 }, {
-        opacity: 1,
-        y: 0,
+      /* ── dispatch loader:exit BEFORE curtain closes ── */
+      tl.call(() => {
+        window.dispatchEvent(new CustomEvent('loader:exit'))
+      }, [], 1.7)
+
+      /* ── Phase 3: red‑black curtain close ── */
+      tl.to(curtainLeft, {
+        scaleX: 1,
+        duration: 0.75,
+        ease: 'power3.inOut',
+      }, 1.8)
+
+      tl.to(curtainRight, {
+        scaleX: 1,
+        duration: 0.75,
+        ease: 'power3.inOut',
+      }, 1.8)
+
+      /* ── Phase 4: blackout hold ── */
+
+      /* ── Phase 5: curtain open ── */
+      tl.to([curtainLeft, curtainRight], {
+        scaleX: 0,
+        duration: 1.0,
+        ease: 'power3.inOut',
+      }, 2.8)
+
+      /* ── Phase 6: overlay fade ── */
+      tl.to(overlayRef.current, {
+        opacity: 0,
         duration: 0.6,
-        ease: 'expo.out',
-      })
-      .to(target, {
-        value: 100,
-        duration: 1.6,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          const v = Math.round(target.value)
-          if (countRef.current) {
-            countRef.current.textContent = String(v).padStart(3, '0')
-          }
-          if (barRef.current) {
-            barRef.current.style.width = `${v}%`
-          }
-        },
-        onComplete: () => {
-          const exit = gsap.timeline({
-            onComplete: () => setDone(true),
-          })
+        ease: 'power2.out',
+      }, 3.5)
 
-          exit
-            .to('.loader__char', {
-              yPercent: -120,
-              rotation: () => gsap.utils.random(-12, 12),
-              duration: 0.5,
-              stagger: 0.03,
-              ease: 'expo.in',
-            }, 0)
-            .to('.loader__dot', {
-              scale: 30,
-              opacity: 0,
-              duration: 0.8,
-              ease: 'expo.in',
-            }, 0)
-            .to('.loader__count', {
-              opacity: 0,
-              y: -30,
-              duration: 0.35,
-              ease: 'expo.in',
-            }, 0)
-            .to(ref.current, {
-              clipPath: 'inset(0 0 100% 0)',
-              duration: 1.0,
-              ease: 'expo.inOut',
-            }, 0.25)
+      tl.call(() => setDone(true), [], 4.1)
+    }, overlayRef)
 
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('loader:exit'))
-          }, 200)
-        },
-      })
-
-    return () => {
-      introTl.kill()
-      countTl.kill()
-    }
+    return () => ctx.revert()
   }, [])
 
   if (done) return null
 
+  const text = 'Tim Cai.'
+  const chars = text.split('').map((ch, i) => {
+    if (ch === ' ') {
+      return <span key={i} className="intro-text__char intro-text__space" data-final=" ">&nbsp;</span>
+    }
+    if (ch === '.') {
+      return <span key={i} className="intro-text__char intro-text__dot" data-final=".">.</span>
+    }
+    return <span key={i} className="intro-text__char" data-final={ch}>{ch}</span>
+  })
+
   return (
-    <div className="loader" ref={ref}>
-      <div className="loader__name" aria-hidden="true">
-        <span className="loader__first">
-          {'Tim'.split('').map((ch, i) => (
-            <span className="loader__char" key={`f${i}`}>{ch}</span>
-          ))}
-        </span>
-        <span className="loader__space loader__char">&nbsp;</span>
-        <span className="loader__last">
-          {'Cai'.split('').map((ch, i) => (
-            <span className="loader__char" key={`l${i}`}>{ch}</span>
-          ))}
-        </span>
-        <span className="loader__dot loader__char">.</span>
+    <>
+      <div className="intro-curtain intro-curtain--left" ref={leftCurtainRef} />
+      <div className="intro-curtain intro-curtain--right" ref={rightCurtainRef} />
+      <div className="intro-overlay" ref={overlayRef}>
+        <div className="intro-text" ref={textRef}>
+          {chars}
+        </div>
       </div>
-      <div className="loader__count" style={{ opacity: 0 }}>
-        <span ref={countRef}>000</span>
-        <span>/ 100</span>
-      </div>
-      <div className="loader__bar" ref={barRef} />
-    </div>
+    </>
   )
 }

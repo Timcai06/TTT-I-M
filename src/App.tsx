@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useLenis } from './lib/lenis'
+import { gsap } from './lib/gsap'
 import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ScrollIndicator from './components/ScrollIndicator'
@@ -13,6 +15,41 @@ import './styles/app.css'
 
 export default function App() {
   useLenis()
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const inner = gsap.utils.toArray<HTMLElement>('.hero__split .split-line__inner')
+      if (inner.length < 2) return
+
+      gsap.to(inner[0], {
+        xPercent: -45,
+        scale: 0.75,
+        opacity: 0.35,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#hero',
+          start: 'bottom bottom',
+          end: 'bottom top',
+          scrub: 1.5,
+        },
+      })
+
+      gsap.to(inner[1], {
+        xPercent: 45,
+        scale: 0.75,
+        opacity: 0.35,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#hero',
+          start: 'bottom bottom',
+          end: 'bottom top',
+          scrub: 1.5,
+        },
+      })
+    })
+
+    return () => ctx.revert()
+  }, [])
 
   return (
     <>
