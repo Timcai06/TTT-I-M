@@ -1,6 +1,7 @@
 /* ── Footer ── */
 .footer {
   position: relative;
+  z-index: 10000;
   overflow: hidden;
   background: linear-gradient(180deg, var(--bg) 0%, #0c0a0a 20%, #120a0a 50%, #1a0c0c 100%);
 }

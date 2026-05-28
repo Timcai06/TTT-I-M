@@ -78,11 +78,10 @@
 .gallery--bento .gallery__item:nth-child(1) { grid-area: 1 / 1 / 3 / 2; }
 .gallery--bento .gallery__item:nth-child(2) { grid-area: 1 / 2 / 2 / 3; }
 .gallery--bento .gallery__item:nth-child(3) { grid-area: 2 / 2 / 4 / 3; }
-.gallery--bento .gallery__item:nth-child(4) { grid-area: 1 / 3 / 3 / 3; }
-.gallery--bento .gallery__item:nth-child(5) { grid-area: 3 / 1 / 3 / 2; }
+.gallery--bento .gallery__item:nth-child(4) { grid-area: 1 / 3 / 3 / 4; }
+.gallery--bento .gallery__item:nth-child(5) { grid-area: 3 / 1 / 5 / 2; }
 .gallery--bento .gallery__item:nth-child(6) { grid-area: 3 / 3 / 5 / 4; }
-.gallery--bento .gallery__item:nth-child(7) { grid-area: 4 / 1 / 5 / 2; }
-.gallery--bento .gallery__item:nth-child(8) { grid-area: 4 / 2 / 5 / 3; }
+.gallery--bento .gallery__item:nth-child(7) { grid-area: 4 / 2 / 5 / 3; }
 
 /* ── Final state (full-bleed after Flip) ── */
 .gallery--final.gallery--bento {
@@ -105,7 +104,6 @@
   .gallery--bento .gallery__item:nth-child(5) { grid-area: 4 / 1 / 5 / 2; }
   .gallery--bento .gallery__item:nth-child(6) { grid-area: 4 / 2 / 5 / 3; }
   .gallery--bento .gallery__item:nth-child(7) { display: none; }
-  .gallery--bento .gallery__item:nth-child(8) { display: none; }
 
   .gallery--final.gallery--bento {
     grid-template-columns: repeat(2, 100vw);

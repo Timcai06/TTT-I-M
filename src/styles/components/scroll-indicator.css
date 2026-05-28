@@ -44,21 +44,41 @@
   margin-top: 4px;
 }
 
-.scroll-indicator__bar {
-  width: 1px;
-  height: 100px;
+/* ── Segmented Track ── */
+.scroll-indicator__track-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 280px;
+}
+
+.scroll-indicator__segment {
+  width: 2px;
   background: rgba(255, 255, 255, 0.12);
   position: relative;
   overflow: hidden;
+  border-radius: 1px;
+  transition: width 0.4s var(--ease-out), background 0.4s var(--ease-out);
 }
 
-.scroll-indicator__fill {
+.scroll-indicator__segment.is-active {
+  width: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.scroll-indicator__segment-fill {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   width: 100%;
   background: var(--fg);
-  transition: height 0.08s linear;
+  border-radius: 1px;
+  transition: height 0.12s linear;
+}
+
+.scroll-indicator__segment.is-active .scroll-indicator__segment-fill {
+  background: var(--accent);
 }
 
 @media (max-width: 900px) {

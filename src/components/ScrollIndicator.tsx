@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { ScrollTrigger } from '../lib/gsap'
 
 const sections = [
@@ -12,9 +12,28 @@ const sections = [
 export default function ScrollIndicator() {
   const [activeSection, setActiveSection] = useState(sections[0])
   const [scrollPercent, setScrollPercent] = useState(0)
+  const [proportions, setProportions] = useState<number[]>(
+    sections.map(() => 1 / sections.length)
+  )
+
+  const measureSections = useCallback(() => {
+    const heights = sections
+      .map((s) => document.getElementById(s.id))
+      .filter(Boolean) as HTMLElement[]
+
+    const total = heights.reduce((sum, el) => sum + el.offsetHeight, 0)
+    if (total <= 0) return
+
+    setProportions(heights.map((el) => el.offsetHeight / total))
+  }, [])
 
   useEffect(() => {
-    // 1. 监听全局滚动进度
+    measureSections()
+    window.addEventListener('resize', measureSections)
+    return () => window.removeEventListener('resize', measureSections)
+  }, [measureSections])
+
+  useEffect(() => {
     const progressTrigger = ScrollTrigger.create({
       start: 0,
       end: 'max',
@@ -23,7 +42,6 @@ export default function ScrollIndicator() {
       },
     })
 
-    // 2. 监听各个章节与视口中线的接触，切换活动章节
     const sectionTriggers = sections.map((sec) => {
       return ScrollTrigger.create({
         trigger: `#${sec.id}`,
@@ -43,21 +61,42 @@ export default function ScrollIndicator() {
     }
   }, [])
 
+  const activeIdx = sections.findIndex((s) => s.id === activeSection.id)
+
   return (
     <div className="scroll-indicator" aria-hidden="true">
-      {/* 活跃章节信息 (微型 Monospace 排版) */}
       <div className="scroll-indicator__label">
         <span className="scroll-indicator__index">{activeSection.index}</span>
         <span className="scroll-indicator__divider">//</span>
         <span className="scroll-indicator__name">{activeSection.name}</span>
       </div>
 
-      {/* 垂直进度条 */}
-      <div className="scroll-indicator__bar">
-        <div
-          className="scroll-indicator__fill"
-          style={{ height: `${scrollPercent * 100}%` }}
-        />
+      <div className="scroll-indicator__track-container">
+        {sections.map((sec, i) => {
+          const prop = proportions[i]
+          const prevSum = proportions
+            .slice(0, i)
+            .reduce((a, b) => a + b, 0)
+
+          const rawFill =
+            prop > 0
+              ? ((scrollPercent - prevSum) / prop) * 100
+              : 0
+          const fill = Math.min(100, Math.max(0, rawFill))
+
+          return (
+            <div
+              key={sec.id}
+              className={`scroll-indicator__segment${i === activeIdx ? ' is-active' : ''}`}
+              style={{ height: `calc(${prop} * 280px)` }}
+            >
+              <div
+                className="scroll-indicator__segment-fill"
+                style={{ height: `${fill}%` }}
+              />
+            </div>
+          )
+        })}
       </div>
     </div>
   )
