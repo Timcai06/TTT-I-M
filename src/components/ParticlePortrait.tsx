@@ -117,8 +117,9 @@ const fragmentShader = /* glsl */ `
 function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   const matRef = useRef<THREE.ShaderMaterial>(null)
   const introRef = useRef(0)
-  const mouseRef = useRef(new THREE.Vector2(0, 0))
-  const targetMouseRef = useRef(new THREE.Vector2(0, 0))
+  const mouseRef = useRef(new THREE.Vector2(99, 99))
+  const targetMouseRef = useRef(new THREE.Vector2(99, 99))
+  const isHoveringRef = useRef(false)
   const { size, viewport } = useThree()
 
   const aspect = useMemo<[number, number]>(() => {
@@ -137,7 +138,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
     () => ({
       uTexture: { value: texture },
       uTime: { value: 0 },
-      uMouse: { value: new THREE.Vector2(0, 0) },
+      uMouse: { value: new THREE.Vector2(99, 99) },
       uMouseStrength: { value: 0.35 },
       uDepth: { value: 0.8 },
       uPointSize: { value: 3.5 },
@@ -154,9 +155,24 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
     const onMove = (e: MouseEvent) => {
       const x = (e.clientX / size.width) * 2 - 1
       const y = -((e.clientY / size.height) * 2 - 1)
-      targetMouseRef.current.set(x * 0.8, y * 0.6)
+      const targetX = x * 0.8
+      const targetY = y * 0.6
+      
+      if (!isHoveringRef.current) {
+        isHoveringRef.current = true
+        mouseRef.current.set(targetX, targetY)
+        targetMouseRef.current.set(targetX, targetY)
+        if (matRef.current) {
+          matRef.current.uniforms.uMouse.value.set(targetX, targetY)
+        }
+      } else {
+        targetMouseRef.current.set(targetX, targetY)
+      }
     }
-    const onLeave = () => targetMouseRef.current.set(0, 0)
+    const onLeave = () => {
+      isHoveringRef.current = false
+      targetMouseRef.current.set(99, 99)
+    }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseleave', onLeave)
     return () => {
@@ -181,7 +197,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   }, [viewport.width, viewport.height])
 
   return (
-    <points geometry={geometry} scale={scale} position={[0.34, 0.02, 0]}>
+    <points geometry={geometry} scale={scale} position={[0.22, 0.02, 0]}>
       <shaderMaterial
         ref={matRef}
         uniforms={uniforms}

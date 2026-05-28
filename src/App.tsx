@@ -1,6 +1,7 @@
 import { useLenis } from './lib/lenis'
 import Loader from './components/Loader'
 import Cursor from './components/Cursor'
+import ScrollIndicator from './components/ScrollIndicator'
 import Nav from './components/Nav'
 import Hero from './components/Hero'
 import About from './components/About'
@@ -16,6 +17,7 @@ export default function App() {
     <>
       <Loader />
       <Cursor />
+      <ScrollIndicator />
       <Nav />
       <main>
         <Hero />

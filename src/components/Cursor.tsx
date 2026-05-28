@@ -10,13 +10,18 @@ export default function Cursor() {
 
     if (window.matchMedia('(hover: none)').matches) return
 
-    gsap.set(el, { xPercent: -50, yPercent: -50 })
+    gsap.set(el, { xPercent: -50, yPercent: -50, opacity: 0 })
 
     const target = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
     const pos = { x: target.x, y: target.y }
     const speed = 0.22
+    let hasMoved = false
 
     const onMove = (e: MouseEvent) => {
+      if (!hasMoved) {
+        hasMoved = true
+        gsap.set(el, { opacity: 1 })
+      }
       target.x = e.clientX
       target.y = e.clientY
     }
