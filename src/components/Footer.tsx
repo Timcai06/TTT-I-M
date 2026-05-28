@@ -18,38 +18,25 @@ function buildPath(points: number[], reveal: boolean) {
 export default function Footer() {
   const root = useRef<HTMLElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
-  const allPointsRef = useRef<number[][]>([])
-  const pathsRef = useRef<SVGPathElement[]>([])
 
   useEffect(() => {
     if (!root.current || !svgRef.current) return
 
     const svgPaths = svgRef.current.querySelectorAll<SVGPathElement>('.shape-overlays__path')
-    pathsRef.current = Array.from(svgPaths)
-
     const allPoints: number[][] = []
     for (let i = 0; i < NUM_PATHS; i++) {
-      const pts: number[] = []
-      for (let j = 0; j < NUM_POINTS; j++) pts.push(100)
-      allPoints.push(pts)
+      allPoints.push(Array.from({ length: NUM_POINTS }, () => 100))
     }
-    allPointsRef.current = allPoints
 
     function render() {
-      for (let i = 0; i < NUM_PATHS; i++) {
-        const path = pathsRef.current[i]
-        if (!path) continue
+      svgPaths.forEach((path, i) => {
         path.setAttribute('d', buildPath(allPoints[i], true))
-      }
+      })
     }
 
     const ctx = gsap.context(() => {
-      // Liquid SVG reveal
-      const pointsDelay: number[] = []
-      for (let i = 0; i < NUM_POINTS; i++) {
-        pointsDelay[i] = Math.random() * 0.3
-      }
-
+      // ── Liquid SVG scrub ──
+      const pointsDelay = Array.from({ length: NUM_POINTS }, () => Math.random() * 0.3)
       const liquidTl = gsap.timeline({
         onUpdate: render,
         scrollTrigger: {
@@ -58,34 +45,45 @@ export default function Footer() {
           end: 'top 30%',
           scrub: 1.2,
         },
-        defaults: {
-          ease: 'power2.inOut',
-          duration: 0.9,
-        },
+        defaults: { ease: 'power2.inOut', duration: 0.9 },
       })
-
       for (let i = 0; i < NUM_PATHS; i++) {
-        const points = allPoints[i]
         const pathDelay = 0.25 * i
         for (let j = 0; j < NUM_POINTS; j++) {
-          liquidTl.to(points, { [j]: 0 }, pointsDelay[j] + pathDelay)
+          liquidTl.to(allPoints[i], { [j]: 0 }, pointsDelay[j] + pathDelay)
         }
       }
 
-      // CTA reveal
-      gsap.fromTo(
-        '.footer__cta-line',
-        { yPercent: 100 },
-        {
-          scrollTrigger: { trigger: '.footer__cta', start: 'top 80%' },
-          yPercent: 0,
-          duration: 2.0,
-          ease: 'expo.out',
-          stagger: 0.12,
-        }
-      )
+      // ── Upper CTA lines ──
+      gsap.fromTo('.footer__upper-line', { yPercent: 110 }, {
+        scrollTrigger: { trigger: '.footer__cta-upper', start: 'top 85%' },
+        yPercent: 0,
+        duration: 1.8,
+        ease: 'expo.out',
+        stagger: 0.1,
+      })
 
-      // Contact items reveal
+      // ── Stamp: outline → fill on scroll ──
+      gsap.fromTo('.footer__stamp', { opacity: 0, y: 40 }, {
+        scrollTrigger: { trigger: '.footer__stamp-wrap', start: 'top 80%' },
+        opacity: 1,
+        y: 0,
+        duration: 1.2,
+        ease: 'expo.out',
+      })
+
+      gsap.fromTo('.footer__stamp', { color: 'transparent' }, {
+        scrollTrigger: {
+          trigger: '.footer__stamp-wrap',
+          start: 'top 65%',
+          end: 'top 20%',
+          scrub: 1,
+        },
+        color: 'rgba(240,240,240,0.92)',
+        ease: 'none',
+      })
+
+      // ── Contact items ──
       gsap.from('.footer__contact-item', {
         scrollTrigger: { trigger: '.footer__contact', start: 'top 88%' },
         opacity: 0,
@@ -95,13 +93,13 @@ export default function Footer() {
         ease: 'expo.out',
       })
 
-      // Meta reveal
+      // ── Meta ──
       gsap.from('.footer__meta > *', {
         scrollTrigger: { trigger: '.footer__meta', start: 'top 90%' },
         opacity: 0,
-        y: 24,
-        duration: 1.8,
-        stagger: 0.15,
+        y: 20,
+        duration: 1.6,
+        stagger: 0.12,
         ease: 'expo.out',
       })
     }, root)
@@ -111,22 +109,18 @@ export default function Footer() {
 
   return (
     <footer className="footer" id="contact" ref={root}>
-      {/* Liquid SVG transition */}
+
+      {/* ── Liquid SVG ── */}
       <div className="footer__liquid">
-        <svg
-          ref={svgRef}
-          className="shape-overlays"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
+        <svg ref={svgRef} className="shape-overlays" viewBox="0 0 100 100" preserveAspectRatio="none">
           <defs>
             <linearGradient id="liquid-g1" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#7890a8" />
-              <stop offset="100%" stopColor="#0a0a0a" />
+              <stop offset="0%" stopColor="#3a1111" />
+              <stop offset="100%" stopColor="#0c0a0a" />
             </linearGradient>
             <linearGradient id="liquid-g2" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#d6c5a8" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#7890a8" />
+              <stop offset="0%" stopColor="#5a1a1a" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#2a0e0e" />
             </linearGradient>
           </defs>
           <path className="shape-overlays__path" fill="url(#liquid-g2)" />
@@ -135,16 +129,28 @@ export default function Footer() {
       </div>
 
       <div className="container">
+
+        {/* ── Kicker ── */}
         <div className="footer__kicker">// GET IN TOUCH · 联系方式</div>
 
-        <h2 className="footer__cta">
-          <span className="split-line"><span className="footer__cta-line split-line__inner">Let&apos;s build</span></span>
-          <span className="split-line"><span className="footer__cta-line split-line__inner"><em>something</em></span></span>
-          <span className="split-line"><span className="footer__cta-line split-line__inner">
-            <a href="mailto:cairentian932@gmail.com">that lasts.</a>
-          </span></span>
-        </h2>
+        {/* ── Upper CTA: subdued intro ── */}
+        <div className="footer__cta-upper">
+          <span className="split-line"><span className="footer__upper-line split-line__inner">Let&apos;s build</span></span>
+          <span className="split-line"><span className="footer__upper-line split-line__inner"><em>something</em></span></span>
+        </div>
 
+        {/* ── Stamp: "that lasts." ── */}
+        <div className="footer__stamp-wrap">
+          <a
+            className="footer__stamp"
+            href="mailto:cairentian932@gmail.com"
+            aria-label="Send email to Tim Cai"
+          >
+            <span className="footer__stamp-that">that </span>lasts<span className="footer__stamp-dot">.</span>
+          </a>
+        </div>
+
+        {/* ── Contact grid ── */}
         <div className="footer__contact">
           <div className="footer__contact-item">
             <div className="footer__contact-label">Email</div>
@@ -164,18 +170,17 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* ── Meta ── */}
         <div className="footer__meta">
           <div>© 2026 · Tim Cai · ShangHai</div>
           <div className="footer__links">
             <a href="https://github.com/Timcai06" target="_blank" rel="noreferrer">GitHub ↗</a>
             <a href="mailto:cairentian932@gmail.com">Email ↗</a>
-            <a href="#hero" onClick={(e) => {
-              e.preventDefault()
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}>↑ top</a>
+            <a href="#hero" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>↑ top</a>
           </div>
           <div>Site · GSAP · R3F · GLSL · hand-coded</div>
         </div>
+
       </div>
     </footer>
   )

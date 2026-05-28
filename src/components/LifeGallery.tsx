@@ -8,10 +8,10 @@ export interface LifePhoto {
 
 const photos: LifePhoto[] = [
   { src: '/life/football-action.png', alt: '球场 · 运球' },
+  { src: '/life/night-portrait.png', alt: '冬夜 · 街头' },
   { src: '/life/football-portrait.png', alt: '中场 · 沉思' },
+  { src: '/life/shanghai-skyline.png', alt: '上海 · 天际线' },
   // placeholder slots — replace src with real images later
-  { src: '', alt: 'placeholder' },
-  { src: '', alt: 'placeholder' },
   { src: '', alt: 'placeholder' },
   { src: '', alt: 'placeholder' },
   { src: '', alt: 'placeholder' },
