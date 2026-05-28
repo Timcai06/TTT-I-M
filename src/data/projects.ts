@@ -21,7 +21,7 @@ export const projects: Project[] = [
     cnTitle: '桥梁巡检 AI 系统',
     tagline: '无人机桥梁病害识别工作站',
     description:
-      '面向无人机桥梁巡检场景的 AI 识别系统原型，把图像输入到病害识别、结果展示、结构化导出、历史回看做成可演进的产品。',
+      '面向无人机桥梁巡检场景的 AI 识别系统原型，把图像输入到病害识别、结果展示、结构化导出、历史回看做成可演进的产品，更是我们项目组的 ““ 国三 ”” 作品。',
     stack: ['Next.js 16', 'FastAPI', 'YOLOv8-seg', 'Tailwind', 'Python 3.12'],
     highlights: [
       '支持裂缝、破损、梳齿、孔洞、钢筋外露、渗水六类病害分割',

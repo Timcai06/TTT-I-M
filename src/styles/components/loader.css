@@ -1,0 +1,37 @@
+/* ── Loader ── */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.loader__count {
+  font-family: var(--font-mono);
+  font-size: clamp(56px, 12vw, 140px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.loader__count span {
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  color: var(--fg-mute);
+  text-transform: uppercase;
+}
+
+.loader__bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 0;
+  background: var(--fg);
+}

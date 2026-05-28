@@ -1,0 +1,68 @@
+/* ── Scroll Indicator ── */
+.scroll-indicator {
+  position: fixed;
+  right: 48px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  color: var(--fg);
+}
+
+.scroll-indicator__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
+.scroll-indicator__index {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.scroll-indicator__divider {
+  color: var(--fg-dim);
+  margin: 4px 0;
+  font-size: 8px;
+  transform: rotate(90deg);
+}
+
+.scroll-indicator__name {
+  color: var(--fg-mute);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  margin-top: 4px;
+}
+
+.scroll-indicator__bar {
+  width: 1px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.scroll-indicator__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: var(--fg);
+  transition: height 0.08s linear;
+}
+
+@media (max-width: 900px) {
+  .scroll-indicator {
+    display: none;
+  }
+}

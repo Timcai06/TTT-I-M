@@ -97,6 +97,11 @@ html.lenis body {
 }
 
 /* ── Layout helpers ── */
+main {
+  position: relative;
+  z-index: 1;
+}
+
 .container {
   width: min(1280px, calc(100% - 64px));
   margin-inline: auto;

@@ -144,7 +144,7 @@ export default function About() {
               <p>
                 我在浙江工商大学读大一，把课内的 <span className="highlight-text">Linux 实践</span>、
                 数学建模和课外的 <span className="highlight-text">AI 工具链</span>做成一些能真正跑起来的东西。
-                从自创无人机巡检 YOLOv8-seg 视觉算法到完整美股财报 RAG 系统，
+                从自创无人机巡检 YOLOv8-seg 视觉算法到完整美股财报分析 RAG 系统，
                 我喜欢把 <span className="highlight-text font-italic">“算法 → 原型 → 产品”</span> 这一步抠到能复现的程度。
               </p>
             </div>

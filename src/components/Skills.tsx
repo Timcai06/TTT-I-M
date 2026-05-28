@@ -16,7 +16,7 @@ const rows: Row[] = [
   { index: '/03', name: 'Backend', tags: ['FastAPI', 'Django', 'Celery', 'Redis', 'PostgreSQL'] },
   { index: '/04', name: 'AI · Data', tags: ['DeepSeek', 'Cohere', 'YOLOv8-seg', 'PaddleOCR', 'pgvector'] },
   { index: '/05', name: 'Infra', tags: ['Docker', 'Vercel', 'Supabase', 'GitHub Actions', 'Linux'] },
-  { index: '/06', name: 'Modeling', tags: ['Python', 'R', 'Ridge', 'ARIMA', 'GARCH', 'LaTeX'] },
+  { index: '/06', name: 'Math · Modeling', tags: ['Python', 'R', 'Ridge', 'ARIMA', 'GARCH', 'LaTeX'] },
 ]
 
 export default function Skills() {
@@ -109,9 +109,9 @@ export default function Skills() {
           strokeDashoffset: 0,
           scrollTrigger: {
             trigger: root.current,
-            start: 'top 75%', // 当 Skills 章节顶部到达视口高度 75% 处时开始延长
-            end: 'bottom -30%', // 进一步拉长滚动响应区间，使线条生长速度更慢，笔头始终在可视区域内
-            scrub: 1.2,
+            start: 'top 65%', // 调整起点，使线条在板块进入视口 35% 时才开始绘制，避免提前生长
+            end: 'bottom 35%', // 调整终点，使线条垂直生长速度与滚动速度达到 1:1 物理同步
+            scrub: 0.9, // 降低延迟，确保在每一刻停留时，线条末端都能立刻精准定位在可视屏幕内
           },
         }
       )
