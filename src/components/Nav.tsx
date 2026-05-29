@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getLenis } from '../lib/lenis'
 import { navChapters } from '../chapters/registry'
+import { onChaptersReady } from '../lib/chaptersReady'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 
@@ -8,7 +9,6 @@ export default function Nav() {
   const [active, setActive] = useState(links[0]?.id ?? '')
 
   useEffect(() => {
-    const sections = links.map((l) => document.getElementById(l.id)).filter(Boolean) as HTMLElement[]
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -17,8 +17,17 @@ export default function Nav() {
       },
       { threshold: 0.35 }
     )
-    sections.forEach((s) => io.observe(s))
-    return () => io.disconnect()
+    // Sections are lazy-loaded; observe them only once they're in the DOM.
+    const cancel = onChaptersReady(() => {
+      links
+        .map((l) => document.getElementById(l.id))
+        .filter(Boolean)
+        .forEach((s) => io.observe(s as HTMLElement))
+    })
+    return () => {
+      cancel()
+      io.disconnect()
+    }
   }, [])
 
   const scrollTo = (id: string) => {
