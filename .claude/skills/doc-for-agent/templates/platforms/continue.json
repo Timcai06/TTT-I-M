@@ -1,0 +1,24 @@
+{
+  "platform": "continue",
+  "display_name": "Continue",
+  "install_type": "skill",
+  "adapter_kind": "skill",
+  "folder_structure": {
+    "root": ".continue",
+    "skill_path": "skills/doc-for-agent",
+    "filename": "SKILL.md"
+  },
+  "frontmatter": {
+    "name": "doc-for-agent",
+    "description": "Repository documentation workflow adapter for compatible coding agents."
+  },
+  "default_title": "doc-for-agent",
+  "default_description": "Repository documentation workflow adapter for a compatible agent surface. Use it to initialize wiring and refresh agent/human docs from the real repository structure.",
+  "quick_reference": false,
+  "script_relpath": ".continue/skills/doc-for-agent/scripts/init_agents_docs.py",
+  "post_install_notes": [
+    "Use `docagent init --ai continue` as the recommended product entry for this platform.",
+    "Reload Continue so the skill bundle is picked up by the next assistant session.",
+    "Keep the install in the repository root when you want the project to carry its own assistant wrapper."
+  ]
+}

@@ -1,3 +1,10 @@
+export type MediaKind = 'cinematic' | 'ui' | 'terminal' | 'data'
+
+export interface ProjectShot {
+  src: string
+  label: string
+}
+
 export interface Project {
   id: string
   index: string
@@ -11,7 +18,10 @@ export interface Project {
   github: string
   live?: string
   accent: string
-  cover?: string
+  media?: {
+    kind: MediaKind
+    shots: ProjectShot[]
+  }
 }
 
 export const projects: Project[] = [
@@ -31,7 +41,15 @@ export const projects: Project[] = [
     ],
     year: '2026',
     github: 'https://github.com/Timcai06/BDI',
-    accent: '#6b8fb5',
+    accent: '#e0623a',
+    media: {
+      kind: 'cinematic',
+      shots: [
+        { src: '/projects/bdi/corrosion.webp', label: '钢筋锈蚀' },
+        { src: '/projects/bdi/seepage.webp', label: '渗水监测' },
+        { src: '/projects/bdi/spalling.webp', label: '混凝土剥落' },
+      ],
+    },
   },
   {
     id: 'doc-for-agent',
@@ -50,6 +68,12 @@ export const projects: Project[] = [
     year: '2026',
     github: 'https://github.com/Timcai06/Doc-For-Agent-skill',
     accent: '#d6c5a8',
+    media: {
+      kind: 'terminal',
+      shots: [
+        { src: '/projects/doc-for-agent/terminal.webp', label: 'docagent init --mode=quad' },
+      ],
+    },
   },
   {
     id: 'earnlytics',
@@ -69,20 +93,38 @@ export const projects: Project[] = [
     github: 'https://github.com/Timcai06/Earnlytics',
     live: 'https://earnlytics-ebon.vercel.app',
     accent: '#9ab5d6',
+    media: {
+      kind: 'ui',
+      shots: [
+        { src: '/projects/earnlytics/landing.webp', label: 'AI 驱动的财报分析' },
+      ],
+    },
   },
   {
-    id: 'spm',
+    id: 'formula-lab',
     index: '04',
-    name: 'SPM',
-    cnTitle: '——',
-    tagline: '正在打磨中',
+    name: 'Formula Lab',
+    cnTitle: '公式识别 Mission Control',
+    tagline: '航天控制中心风 · 异步 OCR 工作站',
     description:
-      '一个还在私下打磨的 Python 项目，等到我觉得它值得展示的时候，再把它的故事写在这里。',
-    stack: ['Python'],
-    highlights: ['Coming soon'],
+      'Linux 系统与编程实践大实验。航天单色调 UI · 异步公式识别工作台，上传图片转 LaTeX，可在论文项目工作区审校并导出 .tex / .md。',
+    stack: ['Django', 'Celery', 'Redis', 'PostgreSQL', 'PaddleOCR', 'KaTeX', 'Docker'],
+    highlights: [
+      'PaddleOCR Formula Recognition 为默认引擎 · pix2tex 为对照',
+      'Mission Progress 任务追踪 · 失败自动重试 · 持久化日志',
+      'Project Workspace：识别 → 审校 → 确认 → 导出闭环',
+    ],
     year: '2026',
-    github: 'https://github.com/Timcai06/SPM',
-    accent: '#5e6470',
+    github: 'https://github.com/Timcai06/LinuxWeek11-Django-FormulaLab',
+    accent: '#a8b5b8',
+    media: {
+      kind: 'ui',
+      shots: [
+        { src: '/projects/formula-lab/console.webp', label: 'LaTeX 控制台' },
+        { src: '/projects/formula-lab/timeline.webp', label: '识别任务时间线' },
+        { src: '/projects/formula-lab/workbench.webp', label: '论文工作区' },
+      ],
+    },
   },
   {
     id: 'a-modeling',
@@ -100,24 +142,33 @@ export const projects: Project[] = [
     ],
     year: '2026',
     github: 'https://github.com/Timcai06/-A-',
-    accent: '#c98f6b',
+    accent: '#1fb6c4',
+    media: {
+      kind: 'data',
+      shots: [
+        { src: '/projects/a-modeling/monte-carlo-tree.webp', label: '蒙特卡洛情景树' },
+        { src: '/projects/a-modeling/path-cloud.webp', label: '价格路径云图' },
+        { src: '/projects/a-modeling/sensitivity-tornado.webp', label: '参数敏感性龙卷风' },
+        { src: '/projects/a-modeling/fitted-vs-actual.webp', label: '精修模型 vs 实际' },
+        { src: '/projects/a-modeling/lagged-gpr.webp', label: 'GPR 滞后散点' },
+        { src: '/projects/a-modeling/ovx-volatility.webp', label: 'OVX 隐含波动率' },
+        { src: '/projects/a-modeling/return-volatility.webp', label: '收益率波动率' },
+        { src: '/projects/a-modeling/residual-correction.webp', label: '短期残差校正' },
+      ],
+    },
   },
   {
-    id: 'formula-lab',
+    id: 'spm',
     index: '06',
-    name: 'Formula Lab',
-    cnTitle: '公式识别 Mission Control',
-    tagline: '航天控制中心风 · 异步 OCR 工作站',
+    name: 'SPM',
+    cnTitle: '——',
+    tagline: '正在打磨中',
     description:
-      'Linux 系统与编程实践大实验。航天单色调 UI · 异步公式识别工作台，上传图片转 LaTeX，可在论文项目工作区审校并导出 .tex / .md。',
-    stack: ['Django', 'Celery', 'Redis', 'PostgreSQL', 'PaddleOCR', 'KaTeX', 'Docker'],
-    highlights: [
-      'PaddleOCR Formula Recognition 为默认引擎 · pix2tex 为对照',
-      'Mission Progress 任务追踪 · 失败自动重试 · 持久化日志',
-      'Project Workspace：识别 → 审校 → 确认 → 导出闭环',
-    ],
+      '一个还在私下打磨的 Python 项目，等到我觉得它值得展示的时候，再把它的故事写在这里。',
+    stack: ['Python'],
+    highlights: ['Coming soon'],
     year: '2026',
-    github: 'https://github.com/Timcai06/LinuxWeek11-Django-FormulaLab',
-    accent: '#a8b5b8',
+    github: 'https://github.com/Timcai06/SPM',
+    accent: '#5e6470',
   },
 ]

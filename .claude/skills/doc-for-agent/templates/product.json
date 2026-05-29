@@ -1,0 +1,11 @@
+{
+  "product_name": "doc-for-agent",
+  "product_slug": "doc-for-agent",
+  "version": "0.4.1",
+  "python_package": "doc-for-agent",
+  "npm_package": "doc-for-agent",
+  "cli_command": "docagent",
+  "npm_bin_command": "doc-for-agent",
+  "installer_command": "docagent",
+  "install_receipt_filename": "INSTALLATION.json"
+}

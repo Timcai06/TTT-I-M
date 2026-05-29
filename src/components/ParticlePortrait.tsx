@@ -122,6 +122,18 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   const isHoveringRef = useRef(false)
   const { size, viewport } = useThree()
 
+  const [started, setStarted] = useState(false)
+
+  useEffect(() => {
+    const handleStart = () => setStarted(true)
+    window.addEventListener('loader:exit', handleStart)
+    const timer = setTimeout(() => setStarted(true), 2200)
+    return () => {
+      window.removeEventListener('loader:exit', handleStart)
+      clearTimeout(timer)
+    }
+  }, [])
+
   const aspect = useMemo<[number, number]>(() => {
     const img = texture.image as { width?: number; height?: number } | null
     const ar = img && img.width && img.height ? img.width / img.height : 0.8
@@ -164,8 +176,8 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
       // 3. 计算当前的 Mesh 缩放比例
       const s = Math.min(viewport.width, viewport.height) * 1.08
       
-      // 4. 减去平移偏置 [0.22, 0.02]，并除去缩放比例和纹理宽高比，将坐标完美对齐到着色器的 uMouse 空间
-      const targetX = (worldX - 0.22) / (s * aspect[0])
+      // 4. 减去平移偏置 [0.08, 0.02]，并除去缩放比例和纹理宽高比，将坐标完美对齐到着色器的 uMouse 空间
+      const targetX = (worldX - 0.08) / (s * aspect[0])
       const targetY = (worldY - 0.02) / (s * aspect[1])
       
       if (!isHoveringRef.current) {
@@ -197,8 +209,12 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
     u.uTime.value += delta
     mouseRef.current.lerp(targetMouseRef.current, 0.08)
     u.uMouse.value.copy(mouseRef.current)
-    introRef.current = Math.min(1, introRef.current + delta / 2.2)
-    u.uIntro.value = 1 - Math.pow(1 - introRef.current, 3)
+    if (started) {
+      introRef.current = Math.min(1, introRef.current + delta / 2.2)
+      u.uIntro.value = 1 - Math.pow(1 - introRef.current, 3)
+    } else {
+      u.uIntro.value = 0
+    }
   })
 
   const scale = useMemo<[number, number, number]>(() => {
@@ -207,7 +223,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   }, [viewport.width, viewport.height])
 
   return (
-    <points geometry={geometry} scale={scale} position={[0.22, 0.02, 0]}>
+    <points geometry={geometry} scale={scale} position={[0.08, 0.02, 0]}>
       <shaderMaterial
         ref={matRef}
         uniforms={uniforms}

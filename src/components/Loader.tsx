@@ -4,35 +4,32 @@ import { gsap } from '../lib/gsap'
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
 
 export default function Loader() {
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const leftCurtainRef = useRef<HTMLDivElement>(null)
-  const rightCurtainRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
+  const countRef = useRef<HTMLSpanElement>(null)
+  const barRef = useRef<HTMLSpanElement>(null)
   const [done, setDone] = useState(false)
 
   useEffect(() => {
-    if (!overlayRef.current) return
+    if (!panelRef.current) return
 
     const ctx = gsap.context(() => {
-      const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro-text__char')
-      const curtainLeft = leftCurtainRef.current
-      const curtainRight = rightCurtainRef.current
-      if (!charEls?.length || !curtainLeft || !curtainRight) return
+      const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro__char')
+      if (!charEls?.length) return
 
       const tl = gsap.timeline()
 
-      /* ── Phase 0: init ── */
-      gsap.set([curtainLeft, curtainRight], { scaleX: 0 })
-      gsap.set(charEls, { opacity: 0, y: 80, scale: 0.5 })
+      /* ── init ── */
+      gsap.set(charEls, { opacity: 0, yPercent: 120 })
 
-      /* ── Phase 1: baffle‑style scramble then settle ── */
+      /* ── baffle scramble (kept) ── */
       charEls.forEach((el) => {
         const final = el.getAttribute('data-final') || el.textContent || ''
         let frame = 0
         const interval = setInterval(() => {
-          if (frame < 10) {
+          if (frame < 11) {
             el.textContent = BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)]
-          } else if (frame < 14) {
+          } else if (frame < 15) {
             el.textContent = frame % 2 === 0
               ? BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)]
               : final
@@ -41,62 +38,61 @@ export default function Loader() {
             clearInterval(interval)
           }
           frame++
-        }, 40)
-      }, 0)
+        }, 42)
+      })
 
+      /* ── chars rise from behind the mask edge, slow expo ── */
       tl.to(charEls, {
         opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.55,
-        stagger: 0.06,
-        ease: 'back.out(1.8)',
-      }, 0)
+        yPercent: 0,
+        duration: 1.25,
+        stagger: 0.075,
+        ease: 'expo.out',
+      }, 0.1)
 
-      /* ── Phase 2: scale‑close ── */
-      tl.to(textRef.current, {
-        scale: 0.35,
+      /* ── corner counter + hairline, in parallel ── */
+      const count = { v: 0 }
+      tl.to(count, {
+        v: 100,
+        duration: 1.6,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          const v = Math.round(count.v)
+          if (countRef.current) countRef.current.textContent = String(v).padStart(2, '0')
+          if (barRef.current) barRef.current.style.transform = `scaleX(${v / 100})`
+        },
+      }, 0.1)
+
+      /* ── hold a beat ── */
+      tl.to({}, { duration: 0.35 })
+
+      /* ── detail (counter + hairline) recede ── */
+      tl.to('.intro__counter, .intro__bar-track', {
         opacity: 0,
-        duration: 0.65,
+        duration: 0.5,
+        ease: 'power2.in',
+      }, '>-0.1')
+
+      /* ── name lifts away behind the mask ── */
+      tl.to(charEls, {
+        yPercent: -120,
+        duration: 0.8,
+        stagger: 0.04,
         ease: 'power3.in',
-      }, 1.0)
+      }, '<')
 
-      /* ── dispatch loader:exit BEFORE curtain closes ── */
-      tl.call(() => {
-        window.dispatchEvent(new CustomEvent('loader:exit'))
-      }, [], 1.7)
+      /* ── hand off to hero just before the panel clears ── */
+      tl.call(() => window.dispatchEvent(new CustomEvent('loader:exit')), [], '>-0.15')
 
-      /* ── Phase 3: red‑black curtain close ── */
-      tl.to(curtainLeft, {
-        scaleX: 1,
-        duration: 0.75,
-        ease: 'power3.inOut',
-      }, 1.8)
+      /* ── single panel wipes up, revealing the hero already composed beneath ── */
+      tl.to(panelRef.current, {
+        yPercent: -100,
+        duration: 1.15,
+        ease: 'expo.inOut',
+      }, '>-0.05')
 
-      tl.to(curtainRight, {
-        scaleX: 1,
-        duration: 0.75,
-        ease: 'power3.inOut',
-      }, 1.8)
-
-      /* ── Phase 4: blackout hold ── */
-
-      /* ── Phase 5: curtain open ── */
-      tl.to([curtainLeft, curtainRight], {
-        scaleX: 0,
-        duration: 1.0,
-        ease: 'power3.inOut',
-      }, 2.8)
-
-      /* ── Phase 6: overlay fade ── */
-      tl.to(overlayRef.current, {
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power2.out',
-      }, 3.5)
-
-      tl.call(() => setDone(true), [], 4.1)
-    }, overlayRef)
+      tl.call(() => setDone(true))
+    }, panelRef)
 
     return () => ctx.revert()
   }, [])
@@ -106,23 +102,30 @@ export default function Loader() {
   const text = 'Tim Cai.'
   const chars = text.split('').map((ch, i) => {
     if (ch === ' ') {
-      return <span key={i} className="intro-text__char intro-text__space" data-final=" ">&nbsp;</span>
+      return <span key={i} className="intro__char intro__space" data-final=" ">&nbsp;</span>
     }
     if (ch === '.') {
-      return <span key={i} className="intro-text__char intro-text__dot" data-final=".">.</span>
+      return <span key={i} className="intro__char intro__dot" data-final=".">.</span>
     }
-    return <span key={i} className="intro-text__char" data-final={ch}>{ch}</span>
+    return <span key={i} className="intro__char" data-final={ch}>{ch}</span>
   })
 
   return (
-    <>
-      <div className="intro-curtain intro-curtain--left" ref={leftCurtainRef} />
-      <div className="intro-curtain intro-curtain--right" ref={rightCurtainRef} />
-      <div className="intro-overlay" ref={overlayRef}>
-        <div className="intro-text" ref={textRef}>
-          {chars}
-        </div>
+    <div className="intro" ref={panelRef}>
+      <div className="intro__meta">// Portfolio · 2026</div>
+
+      <div className="intro__text-wrap">
+        <div className="intro__text" ref={textRef}>{chars}</div>
       </div>
-    </>
+
+      <div className="intro__counter">
+        <span ref={countRef}>00</span>
+        <span className="intro__counter-sep">/ 100</span>
+      </div>
+
+      <div className="intro__bar-track">
+        <span className="intro__bar" ref={barRef} />
+      </div>
+    </div>
   )
 }

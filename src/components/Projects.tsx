@@ -1,6 +1,85 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
-import { projects } from '../data/projects'
+import { projects, type Project } from '../data/projects'
+
+function ProjectMedia({ project }: { project: Project }) {
+  const [active, setActive] = useState(0)
+
+  if (!project.media) {
+    return (
+      <div className="project-card__media project-card__media--soon">
+        <div className="media-frame media-frame--soon">
+          <span className="media-frame__soon-mark">/ / /</span>
+          <span className="media-frame__soon-text">in the lab</span>
+        </div>
+      </div>
+    )
+  }
+
+  const { kind, shots } = project.media
+  const shot = shots[active]
+  const multi = shots.length > 1
+
+  const chromeLabel =
+    kind === 'terminal'
+      ? `zsh — ${project.id}`
+      : kind === 'data'
+        ? 'DATA READOUT'
+        : shot.label
+
+  return (
+    <div className={`project-card__media project-card__media--${kind}`}>
+      <figure className={`media-frame media-frame--${kind}`}>
+        {kind !== 'cinematic' && (
+          <div className="media-frame__chrome">
+            <span className="media-frame__dots">
+              <i /><i /><i />
+            </span>
+            <span className="media-frame__label">{chromeLabel}</span>
+          </div>
+        )}
+
+        <div className="media-frame__stage">
+          {shots.map((s, i) => (
+            <img
+              key={s.src}
+              src={s.src}
+              alt={`${project.name} — ${s.label}`}
+              loading="lazy"
+              className={`media-frame__img${i === active ? ' is-active' : ''}`}
+            />
+          ))}
+          {kind === 'cinematic' && (
+            <>
+              <span className="media-frame__tick media-frame__tick--tl" />
+              <span className="media-frame__tick media-frame__tick--br" />
+              <figcaption className="media-frame__caption">{shot.label}</figcaption>
+            </>
+          )}
+        </div>
+      </figure>
+
+      {multi && (
+        <div className="media-frame__thumbs">
+          {shots.map((s, i) => (
+            <button
+              key={s.src}
+              type="button"
+              className={`media-thumb${i === active ? ' is-active' : ''}`}
+              onMouseEnter={() => setActive(i)}
+              onFocus={() => setActive(i)}
+              onClick={() => setActive(i)}
+              aria-label={s.label}
+            >
+              <img src={s.src} alt="" loading="lazy" />
+              <span className="media-thumb__label">{s.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
@@ -11,13 +90,12 @@ export default function Projects() {
       gsap.utils.toArray<HTMLElement>('.project-card').forEach((card) => {
         ScrollTrigger.create({
           trigger: card,
-          start: 'top 88%',
+          start: 'top 85%',
           onEnter: () => card.classList.add('is-visible'),
-          onLeaveBack: () => card.classList.remove('is-visible'), // 双向回退触发
+          onLeaveBack: () => card.classList.remove('is-visible'),
         })
       })
 
-      // hover accent color injection
       document.querySelectorAll<HTMLElement>('.project-card').forEach((card) => {
         const accent = card.dataset.accent || '#6b8fb5'
         card.style.setProperty('--accent', accent)
@@ -25,9 +103,7 @@ export default function Projects() {
 
       ScrollTrigger.refresh()
     }, root)
-    return () => {
-      ctx.revert()
-    }
+    return () => ctx.revert()
   }, [])
 
   return (
@@ -53,15 +129,16 @@ export default function Projects() {
             data-accent={p.accent}
             data-project-id={p.id}
           >
-            <div className="project-card__index">{p.index}</div>
+            <div className="project-card__text">
+              <div className="project-card__top">
+                <span className="project-card__index">{p.index}</span>
+                <span className="project-card__year">{p.year}</span>
+              </div>
 
-            <div className="project-card__main">
               <h3 className="project-card__title">{p.name}</h3>
               <div className="project-card__cn">{p.cnTitle}</div>
               <div className="project-card__tagline">{p.tagline}</div>
-            </div>
 
-            <div className="project-card__detail">
               <p className="project-card__desc">{p.description}</p>
               <ul className="project-card__highlights">
                 {p.highlights.map((h, i) => (
@@ -73,7 +150,7 @@ export default function Projects() {
                   <span key={s}>{s}</span>
                 ))}
               </div>
-              <div className="project-card__links" style={{ marginTop: 24 }}>
+              <div className="project-card__links">
                 <a className="project-card__link" href={p.github} target="_blank" rel="noreferrer">
                   GitHub
                   <svg viewBox="0 0 12 12" fill="none">
@@ -91,7 +168,7 @@ export default function Projects() {
               </div>
             </div>
 
-            <div className="project-card__year">{p.year}</div>
+            <ProjectMedia project={p} />
           </article>
         ))}
       </div>

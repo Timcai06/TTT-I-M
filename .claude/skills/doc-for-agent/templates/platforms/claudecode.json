@@ -1,0 +1,24 @@
+{
+  "platform": "claudecode",
+  "display_name": "Claude Code",
+  "install_type": "skill",
+  "adapter_kind": "skill",
+  "folder_structure": {
+    "root": ".claude",
+    "skill_path": "skills/doc-for-agent",
+    "filename": "SKILL.md"
+  },
+  "frontmatter": {
+    "name": "doc-for-agent",
+    "description": "Repository documentation skill package for coding agents and maintainers."
+  },
+  "default_title": "doc-for-agent",
+  "default_description": "Multi-agent repository documentation skill package. Use the bundled CLI adapter to initialize repository wiring and refresh agent/human docs from real repository structure.",
+  "quick_reference": false,
+  "script_relpath": ".claude/skills/doc-for-agent/scripts/init_agents_docs.py",
+  "post_install_notes": [
+    "Use `docagent init --ai claudecode` as the recommended product entry for this platform.",
+    "Restart Claude Code so the skill is reloaded in the next session.",
+    "Add `--target <repo-root>` when you want repository-local workflow wiring in the same command."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "product_name": "doc-for-agent",
+  "product_slug": "doc-for-agent",
+  "version": "0.4.1",
+  "installed_at_utc": "2026-05-29T04:06:59+00:00",
+  "platform": "claudecode",
+  "display_name": "Claude Code",
+  "adapter_kind": "skill",
+  "install_type": "skill",
+  "install_root": "/Users/tim/Desktop/TTT I'M/portfolio/.claude/skills/doc-for-agent",
+  "adapter_file": "SKILL.md",
+  "bundled_assets": [
+    "scripts",
+    "references",
+    "agents",
+    "templates",
+    "installer"
+  ],
+  "bundle_strategy": "copy",
+  "installer_command": "docagent"
+}

@@ -1,0 +1,4 @@
+version: 1
+display_name: Doc For Agent
+short_description: Establish or refresh a multi-agent repository documentation system and its long-lived memory layer.
+default_prompt: Inspect this repository, then create, refresh, or audit the doc-for-agent documentation system under dfa-doc based on the real codebase, commands, and workflow.
