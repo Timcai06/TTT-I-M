@@ -1,5 +1,5 @@
 import { useEffect, useRef, Suspense } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { gsap } from '../lib/gsap'
 import ParticlePortrait from './ParticlePortrait'
 
 export default function Hero() {

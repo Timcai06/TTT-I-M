@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { gsap } from '../lib/gsap'
 
 const facts = [
   { value: '10+', label: 'Public repos' },

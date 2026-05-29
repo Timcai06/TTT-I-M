@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { gsap, ScrollTrigger, Flip } from '../lib/gsap'
+import { gsap, Flip } from '../lib/gsap'
 
 export interface LifePhoto {
   src: string
