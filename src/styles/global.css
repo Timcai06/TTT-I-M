@@ -176,3 +176,20 @@ main {
   display: block;
   will-change: transform;
 }
+
+/* ── Hardware Acceleration Layer Promotion ── */
+.about__portrait-frame,
+.about__portrait-img,
+.skills__flow-svg,
+.project-card,
+.contact__blob {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0); /* Force GPU composite layer */
+}
+
+/* ── Scroll Performance Throttler ── */
+.disable-hover,
+.disable-hover * {
+  pointer-events: none !important;
+}

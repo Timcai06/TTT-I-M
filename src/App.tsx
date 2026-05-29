@@ -14,6 +14,24 @@ import Footer from './components/Footer'
 import './styles/app.css'
 
 export default function App() {
+  useEffect(() => {
+    let scrollTimeout: number
+    const onScroll = () => {
+      if (!document.body.classList.contains('disable-hover')) {
+        document.body.classList.add('disable-hover')
+      }
+      clearTimeout(scrollTimeout)
+      scrollTimeout = window.setTimeout(() => {
+        document.body.classList.remove('disable-hover')
+      }, 150)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      clearTimeout(scrollTimeout)
+    }
+  }, [])
+
   useLenis()
 
   useEffect(() => {

@@ -40,6 +40,7 @@ export default function LifeGallery() {
 
         const flip = Flip.to(flipState, {
           simple: true,
+          duration: 1,
           ease: 'expoScale(1, 5)',
         })
 
@@ -47,12 +48,14 @@ export default function LifeGallery() {
           scrollTrigger: {
             trigger: gallery,
             start: 'center center',
-            end: '+=100%',
-            scrub: true,
+            end: '+=185%',
+            scrub: 1.1,
             pin: wrap,
           },
         })
         tl.add(flip)
+        /* ── 阻尼停顿：完全展开到最大状态后停留一拍再释放 pin ── */
+        tl.to({}, { duration: 0.62 })
 
         return () => gsap.set(items, { clearProps: 'all' })
       })

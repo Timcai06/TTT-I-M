@@ -142,7 +142,8 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   }, [texture])
 
   const geometry = useMemo(() => {
-    const segments = 280
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+    const segments = isMobile ? 180 : 280
     return new THREE.PlaneGeometry(1, 1, segments, segments)
   }, [])
 
@@ -154,7 +155,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
       uMouseStrength: { value: 0.25 }, // 降低推开粒子时的物理感官力度 (从 0.35 降至 0.25)
       uDepth: { value: 0.8 },
       uPointSize: { value: 3.5 },
-      uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+      uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.5) },
       uIntro: { value: 0 },
       uTintCool: { value: new THREE.Color('#7890a8') },
       uTintWarm: { value: new THREE.Color('#e0d5c1') },
@@ -231,6 +232,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
         fragmentShader={fragmentShader}
         transparent
         depthWrite={false}
+        depthTest={false}
         blending={THREE.NormalBlending}
       />
     </points>
@@ -290,8 +292,8 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
   return (
     <CanvasErrorBoundary>
       <Canvas
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
         camera={{ position: [0, 0, 2.4], fov: 45 }}
         style={{ background: 'transparent' }}
       >

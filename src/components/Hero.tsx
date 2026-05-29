@@ -1,6 +1,7 @@
-import { useEffect, useRef, Suspense } from 'react'
+import { useEffect, useRef, Suspense, lazy } from 'react'
 import { gsap } from '../lib/gsap'
-import ParticlePortrait from './ParticlePortrait'
+
+const ParticlePortrait = lazy(() => import('./ParticlePortrait'))
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
