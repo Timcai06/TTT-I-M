@@ -27,4 +27,26 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split stable framework libs out of the app chunk so a content edit
+        // doesn't bust their long-term cache. Precise `/pkg/` paths so we DON'T
+        // pull three.js / @react-three / react-reconciler eager — those stay in
+        // the lazy ParticlePortrait chunk where they already live.
+        manualChunks(id) {
+          if (
+            id.includes('/node_modules/react/') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/scheduler/')
+          ) {
+            return 'react-vendor'
+          }
+          if (id.includes('/node_modules/gsap/') || id.includes('/node_modules/@gsap/')) {
+            return 'gsap-vendor'
+          }
+        },
+      },
+    },
+  },
 })
