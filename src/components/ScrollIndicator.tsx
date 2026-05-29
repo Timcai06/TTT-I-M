@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ScrollTrigger } from '../lib/gsap'
 import { progressChapters } from '../chapters/registry'
+import { onChaptersReady } from '../lib/chaptersReady'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -27,12 +28,17 @@ export default function ScrollIndicator() {
   }, [])
 
   useEffect(() => {
-    measureSections()
     window.addEventListener('resize', measureSections)
-    return () => window.removeEventListener('resize', measureSections)
+    // Sections are lazy-loaded; measure only once they exist.
+    const cancel = onChaptersReady(measureSections)
+    return () => {
+      cancel()
+      window.removeEventListener('resize', measureSections)
+    }
   }, [measureSections])
 
   useEffect(() => {
+    // The overall progress trigger has no element dependency.
     const progressTrigger = ScrollTrigger.create({
       start: 0,
       end: 'max',
@@ -41,20 +47,27 @@ export default function ScrollIndicator() {
       },
     })
 
-    const sectionTriggers = sections.map((sec) => {
-      return ScrollTrigger.create({
-        trigger: `#${sec.id}`,
-        start: 'top 50%',
-        end: 'bottom 50%',
-        onToggle: (self) => {
-          if (self.isActive) {
-            setActiveSection(sec)
-          }
-        },
-      })
+    // Per-section triggers must be created after the (lazy) sections mount —
+    // otherwise `#about`…`#contact` resolve to null and collapse to scroll 0,
+    // making the last section spuriously "active" at the top of the page.
+    let sectionTriggers: ScrollTrigger[] = []
+    const cancel = onChaptersReady(() => {
+      sectionTriggers = sections.map((sec) =>
+        ScrollTrigger.create({
+          trigger: `#${sec.id}`,
+          start: 'top 50%',
+          end: 'bottom 50%',
+          onToggle: (self) => {
+            if (self.isActive) {
+              setActiveSection(sec)
+            }
+          },
+        })
+      )
     })
 
     return () => {
+      cancel()
       progressTrigger.kill()
       sectionTriggers.forEach((t) => t.kill())
     }

@@ -1,10 +1,14 @@
-import type { ComponentType } from 'react'
+import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import Hero from '../components/Hero'
-import About from '../components/About'
-import LifeGallery from '../components/LifeGallery'
-import Skills from '../components/Skills'
-import Projects from '../components/Projects'
-import Footer from '../components/Footer'
+
+// Hero is eager: it paints first and hands the intro off to the loader.
+// Everything below the fold is code-split and fetched on mount (in parallel,
+// while the loader intro plays), so the initial app chunk only carries Hero.
+const About = lazy(() => import('../components/About'))
+const LifeGallery = lazy(() => import('../components/LifeGallery'))
+const Skills = lazy(() => import('../components/Skills'))
+const Projects = lazy(() => import('../components/Projects'))
+const Footer = lazy(() => import('../components/Footer'))
 
 /**
  * A Chapter is one section of the narrative, rendered in order inside <main>.
@@ -20,8 +24,8 @@ import Footer from '../components/Footer'
 export interface Chapter {
   /** DOM id of the rendered section. Also used as React key. */
   id: string
-  /** The section component rendered inside <main>. */
-  Component: ComponentType
+  /** The section component rendered inside <main>. May be lazy-loaded. */
+  Component: ComponentType | LazyExoticComponent<ComponentType>
   /** Top-nav entry. Omit to keep the chapter out of the nav. */
   nav?: { label: string }
   /** Scroll-progress rail entry. Omit to keep it off the rail. */
