@@ -69,8 +69,9 @@ export const projects: Project[] = [
     github: 'https://github.com/Timcai06/Doc-For-Agent-skill',
     accent: '#d6c5a8',
     media: {
-      kind: 'terminal',
+      kind: 'ui',
       shots: [
+        { src: '/projects/doc-for-agent/overview.webp', label: 'docagent · 文档总览' },
         { src: '/projects/doc-for-agent/terminal.webp', label: 'docagent init --mode=quad' },
       ],
     },

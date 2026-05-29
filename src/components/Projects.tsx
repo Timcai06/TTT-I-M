@@ -29,7 +29,7 @@ function ProjectMedia({ project }: { project: Project }) {
 
   return (
     <div className={`project-card__media project-card__media--${kind}`}>
-      <figure className={`media-frame media-frame--${kind}`}>
+      <figure className={`media-frame media-frame--${kind}`} data-cursor="hover">
         {kind !== 'cinematic' && (
           <div className="media-frame__chrome">
             <span className="media-frame__dots">

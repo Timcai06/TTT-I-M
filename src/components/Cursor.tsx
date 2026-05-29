@@ -36,27 +36,31 @@ export default function Cursor() {
     window.addEventListener('mousemove', onMove)
     gsap.ticker.add(tick)
 
-    const onEnter = () => el.classList.add('is-hover')
-    const onLeave = () => el.classList.remove('is-hover')
-
-    const updateInteractives = () => {
-      document.querySelectorAll('a, button, [data-cursor="hover"]').forEach((node) => {
-        node.addEventListener('mouseenter', onEnter)
-        node.addEventListener('mouseleave', onLeave)
-      })
+    /* ── Event delegation: covers all interactive + data-cursor="hover" elements
+       regardless of when they mount. ── */
+    const isTarget = (node: EventTarget | null): boolean => {
+      if (!(node instanceof Element)) return false
+      return (
+        node.matches('a, button, [data-cursor="hover"]') ||
+        node.closest('a, button, [data-cursor="hover"]') !== null
+      )
     }
 
-    // wait for next frame so child components are mounted
-    const r = requestAnimationFrame(updateInteractives)
+    const onEnter = (e: MouseEvent) => {
+      if (isTarget(e.target)) el.classList.add('is-hover')
+    }
+    const onLeave = (e: MouseEvent) => {
+      if (isTarget(e.target)) el.classList.remove('is-hover')
+    }
+
+    document.addEventListener('mouseover', onEnter)
+    document.addEventListener('mouseout', onLeave)
 
     return () => {
       window.removeEventListener('mousemove', onMove)
       gsap.ticker.remove(tick)
-      cancelAnimationFrame(r)
-      document.querySelectorAll('a, button, [data-cursor="hover"]').forEach((node) => {
-        node.removeEventListener('mouseenter', onEnter)
-        node.removeEventListener('mouseleave', onLeave)
-      })
+      document.removeEventListener('mouseover', onEnter)
+      document.removeEventListener('mouseout', onLeave)
     }
   }, [])
 
