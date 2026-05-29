@@ -1,0 +1,77 @@
+import type { ComponentType } from 'react'
+import Hero from '../components/Hero'
+import About from '../components/About'
+import LifeGallery from '../components/LifeGallery'
+import Skills from '../components/Skills'
+import Projects from '../components/Projects'
+import Footer from '../components/Footer'
+
+/**
+ * A Chapter is one section of the narrative, rendered in order inside <main>.
+ *
+ * This registry is the single source of truth for page composition: the page
+ * body (App), the top nav (Nav), and the scroll-progress rail (ScrollIndicator)
+ * all derive from it. To add a new narrative section, add one entry here — the
+ * nav link and progress segment appear automatically.
+ *
+ * `id` MUST match the DOM id the component renders on its <section>/<footer>,
+ * because Nav scrolls to `#id` and ScrollIndicator measures `#id`.
+ */
+export interface Chapter {
+  /** DOM id of the rendered section. Also used as React key. */
+  id: string
+  /** The section component rendered inside <main>. */
+  Component: ComponentType
+  /** Top-nav entry. Omit to keep the chapter out of the nav. */
+  nav?: { label: string }
+  /** Scroll-progress rail entry. Omit to keep it off the rail. */
+  progress?: { index: string; name: string }
+}
+
+export const chapters: Chapter[] = [
+  {
+    id: 'hero',
+    Component: Hero,
+    nav: { label: '00 · Index' },
+    progress: { index: '01', name: 'HOME' },
+  },
+  {
+    id: 'about',
+    Component: About,
+    nav: { label: '01 · About' },
+    progress: { index: '02', name: 'ABOUT' },
+  },
+  {
+    // The life gallery is an interstitial — intentionally absent from nav/rail.
+    id: 'life',
+    Component: LifeGallery,
+  },
+  {
+    id: 'skills',
+    Component: Skills,
+    nav: { label: '02 · Stack' },
+    progress: { index: '03', name: 'STACK' },
+  },
+  {
+    id: 'projects',
+    Component: Projects,
+    nav: { label: '03 · Work' },
+    progress: { index: '04', name: 'WORK' },
+  },
+  {
+    id: 'contact',
+    Component: Footer,
+    nav: { label: '04 · Contact' },
+    progress: { index: '05', name: 'CONTACT' },
+  },
+]
+
+/** Chapters that appear in the top nav, in document order. */
+export const navChapters = chapters.filter(
+  (c): c is Chapter & { nav: NonNullable<Chapter['nav']> } => Boolean(c.nav)
+)
+
+/** Chapters that appear on the scroll-progress rail, in document order. */
+export const progressChapters = chapters.filter(
+  (c): c is Chapter & { progress: NonNullable<Chapter['progress']> } => Boolean(c.progress)
+)

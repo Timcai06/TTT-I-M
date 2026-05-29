@@ -1,11 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
-
-const facts = [
-  { value: '10+', label: 'Public repos' },
-  { value: '6', label: 'Stacks shipped' },
-  { value: '2026', label: 'Freshman year' },
-]
+import { facts } from '../data/about'
 
 export default function About() {
   const root = useRef<HTMLElement>(null)
