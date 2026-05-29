@@ -3,7 +3,9 @@
   position: relative;
   border-top: 1px solid var(--line);
   background: var(--bg);
-  overflow: hidden;
+  /* overflow: hidden 已移除 —— .gallery-wrap 自己有 overflow:hidden 足矣。
+     在此层设 overflow:hidden 会裁掉 ScrollTrigger 的 pin spacer，
+     导致文档流缺失 10 屏滚动空间，footer blob 提前出现 + 文案段落永远滚不到。 */
 }
 
 .life .section__label,
@@ -30,6 +32,7 @@
 
 .gallery {
   position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   flex: none;
@@ -85,8 +88,8 @@
 
 /* ── Final state (full-bleed after Flip) ── */
 .gallery--final.gallery--bento {
-  grid-template-columns: repeat(3, 100vw);
-  grid-template-rows: repeat(4, 49.5vh);
+  grid-template-columns: repeat(3, 100%);
+  grid-template-rows: repeat(4, calc(50% - 0.5vh));
   gap: 1vh;
 }
 
@@ -106,7 +109,70 @@
   .gallery--bento .gallery__item:nth-child(7) { display: none; }
 
   .gallery--final.gallery--bento {
-    grid-template-columns: repeat(2, 100vw);
-    grid-template-rows: repeat(4, 49.5vh);
+    grid-template-columns: repeat(2, 100%);
+    grid-template-rows: repeat(4, calc(50% - 0.5vh));
+  }
+}
+
+/* ── Text overlay for narrative storytelling ── */
+.life__intro-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100; /* Ensure overlay renders in front of grid items */
+  pointer-events: none;
+  transform: translateZ(100px); /* Promote to GPU layer & push forward to fix 3D intersection bug */
+  will-change: transform, opacity;
+}
+
+.life__intro-container {
+  width: min(880px, calc(100% - 64px));
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  place-items: center; /* Center horizontally and vertically */
+  height: 240px;
+}
+
+.life__intro-p {
+  grid-area: 1 / 1 / 2 / 2; /* Overlap paragraphs in the exact same center cell */
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 3.8vw, 36px);
+  line-height: 1.6;
+  color: var(--fg);
+  margin: 0;
+  width: 100%;
+  /* opacity: 0; */
+  pointer-events: none;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  text-align: center; /* Centered typography is premium for storytelling */
+}
+
+.life__intro-p em {
+  font-style: italic;
+  color: var(--fg-soft);
+}
+
+.life__intro-p .split-line {
+  display: block;
+  overflow: hidden;
+}
+
+.life__intro-p .split-line__inner {
+  display: inline-block;
+  transform: translateY(110%);
+}
+
+@media (max-width: 768px) {
+  .life__intro-container {
+    width: calc(100% - 32px);
+    height: 320px; /* Accommodate wrapped lines on smaller viewports */
+  }
+  .life__intro-p {
+    font-size: clamp(16px, 4.5vw, 22px);
+    line-height: 1.5;
   }
 }

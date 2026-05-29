@@ -269,6 +269,7 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--fg-mute);
+  text-align: center; /* Horizontally center the facts */
 }
 
 .about__fact-value {
