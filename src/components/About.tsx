@@ -1,11 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
-
-const facts = [
-  { value: '10+', label: 'Public repos' },
-  { value: '6', label: 'Stacks shipped' },
-  { value: '2026', label: 'Freshman year' },
-]
+import { facts } from '../data/about'
 
 export default function About() {
   const root = useRef<HTMLElement>(null)
@@ -64,7 +59,11 @@ export default function About() {
         ease: 'expo.out',
       })
 
-      // Luke-style Red Portrait ScrollTrigger animations
+      // Luke-style red-portrait reveal.
+      // Previously scrub-driven, which repainted `border-radius` on every
+      // scroll tick (border-radius can't be GPU-composited). Now it's a
+      // single eased tween fired on enter: the costly repaint happens once
+      // over ~1.4s instead of continuously, and the morph reads smoother.
       gsap.fromTo(
         '.about__portrait-frame',
         {
@@ -75,31 +74,29 @@ export default function About() {
         {
           scrollTrigger: {
             trigger: '.about__grid',
-            start: 'top 80%',
-            end: 'top 20%', // 缩短滚动区间，确保在进入自述板块早期即完成变形与清晰度渐变
-            scrub: 0.8,     // 降低 scrub 延迟，使动画更贴合滚动节奏
+            start: 'top 75%',
+            toggleActions: 'play none none reverse',
           },
           borderRadius: '320px 0 0 320px',
           y: 0,
           opacity: 1,
-          ease: 'none',
+          duration: 1.4,
+          ease: 'expo.out',
         }
       )
 
       gsap.fromTo(
         '.about__portrait-img',
-        {
-          scale: 1.12,
-        },
+        { scale: 1.12 },
         {
           scrollTrigger: {
             trigger: '.about__grid',
-            start: 'top 80%',
-            end: 'top 20%', // 与外框同步，缩短滚动区间
-            scrub: 0.8,     // 降低 scrub 延迟
+            start: 'top 75%',
+            toggleActions: 'play none none reverse',
           },
           scale: 1.0,
-          ease: 'none',
+          duration: 1.6,
+          ease: 'expo.out',
         }
       )
 

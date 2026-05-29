@@ -5,33 +5,12 @@ import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ScrollIndicator from './components/ScrollIndicator'
 import Nav from './components/Nav'
-import Hero from './components/Hero'
-import About from './components/About'
-import LifeGallery from './components/LifeGallery'
-import Skills from './components/Skills'
-import Projects from './components/Projects'
-import Footer from './components/Footer'
+import { chapters } from './chapters/registry'
 import './styles/app.css'
 
 export default function App() {
-  useEffect(() => {
-    let scrollTimeout: number
-    const onScroll = () => {
-      if (!document.body.classList.contains('disable-hover')) {
-        document.body.classList.add('disable-hover')
-      }
-      clearTimeout(scrollTimeout)
-      scrollTimeout = window.setTimeout(() => {
-        document.body.classList.remove('disable-hover')
-      }, 150)
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      clearTimeout(scrollTimeout)
-    }
-  }, [])
-
+  // Smooth scroll + scroll-driven side effects (incl. the disable-hover
+  // throttle) are owned by useLenis, so there's a single scroll subscription.
   useLenis()
 
   useEffect(() => {
@@ -76,12 +55,9 @@ export default function App() {
       <ScrollIndicator />
       <Nav />
       <main>
-        <Hero />
-        <About />
-        <LifeGallery />
-        <Skills />
-        <Projects />
-        <Footer />
+        {chapters.map(({ id, Component }) => (
+          <Component key={id} />
+        ))}
       </main>
       <div className="grain" aria-hidden="true" />
     </>

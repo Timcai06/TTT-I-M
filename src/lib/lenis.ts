@@ -1,6 +1,7 @@
 import Lenis from 'lenis'
 import { useEffect } from 'react'
 import { gsap, ScrollTrigger } from './gsap'
+import { prefersReducedMotion } from './motion'
 
 let lenisInstance: Lenis | null = null
 
@@ -10,17 +11,36 @@ export function getLenis() {
 
 export function useLenis() {
   useEffect(() => {
+    // Under "reduce motion", hand scrolling back to the browser: no smooth
+    // interpolation (the chief vestibular trigger), and it's lighter on
+    // low-end hardware too.
+    const reduced = prefersReducedMotion()
     const lenis = new Lenis({
       duration: 1.15,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
+      smoothWheel: !reduced,
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
     })
 
     lenisInstance = lenis
 
-    lenis.on('scroll', ScrollTrigger.update)
+    // While scrolling, suspend pointer/hover effects (cheaper repaints, no
+    // hover-state thrash). Driven off Lenis's own scroll event so there's a
+    // single scroll subscription instead of a redundant native listener.
+    let hoverTimeout: number | undefined
+    const onScroll = () => {
+      ScrollTrigger.update()
+      const body = document.body
+      if (!body.classList.contains('disable-hover')) {
+        body.classList.add('disable-hover')
+      }
+      clearTimeout(hoverTimeout)
+      hoverTimeout = window.setTimeout(() => {
+        body.classList.remove('disable-hover')
+      }, 150)
+    }
+    lenis.on('scroll', onScroll)
 
     const tickerFn = (time: number) => {
       lenis.raf(time * 1000)
@@ -35,6 +55,9 @@ export function useLenis() {
 
     return () => {
       clearTimeout(refreshTimer)
+      clearTimeout(hoverTimeout)
+      document.body.classList.remove('disable-hover')
+      lenis.off('scroll', onScroll)
       gsap.ticker.remove(tickerFn)
       lenis.destroy()
       lenisInstance = null

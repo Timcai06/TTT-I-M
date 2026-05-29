@@ -41,7 +41,7 @@
   aspect-ratio: 0.76;
   background: var(--bg-soft); /* Dark card background */
   overflow: hidden;
-  will-change: border-radius, transform, opacity;
+  will-change: transform, opacity;
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
   border-radius: 180px 0 0 180px;
@@ -63,7 +63,7 @@
   object-fit: cover;
   object-position: 70% center; /* Shift face right to avoid being cut off by the larger left curve */
   opacity: 0.92;
-  will-change: filter, transform;
+  will-change: transform;
 }
 
 .about__portrait-vignette {

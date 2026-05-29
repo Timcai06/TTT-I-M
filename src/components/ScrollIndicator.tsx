@@ -1,13 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ScrollTrigger } from '../lib/gsap'
+import { progressChapters } from '../chapters/registry'
 
-const sections = [
-  { id: 'hero', index: '01', name: 'HOME' },
-  { id: 'about', index: '02', name: 'ABOUT' },
-  { id: 'skills', index: '03', name: 'STACK' },
-  { id: 'projects', index: '04', name: 'WORK' },
-  { id: 'contact', index: '05', name: 'CONTACT' },
-]
+const sections = progressChapters.map((c) => ({
+  id: c.id,
+  index: c.progress.index,
+  name: c.progress.name,
+}))
 
 export default function ScrollIndicator() {
   const [activeSection, setActiveSection] = useState(sections[0])

@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getLenis } from '../lib/lenis'
+import { navChapters } from '../chapters/registry'
 
-const links = [
-  { id: 'hero', label: '00 · Index' },
-  { id: 'about', label: '01 · About' },
-  { id: 'skills', label: '02 · Stack' },
-  { id: 'projects', label: '03 · Work' },
-  { id: 'contact', label: '04 · Contact' },
-]
+const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 
 export default function Nav() {
-  const [active, setActive] = useState('hero')
+  const [active, setActive] = useState(links[0]?.id ?? '')
 
   useEffect(() => {
     const sections = links.map((l) => document.getElementById(l.id)).filter(Boolean) as HTMLElement[]

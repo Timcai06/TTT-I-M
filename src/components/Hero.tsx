@@ -44,10 +44,13 @@ export default function Hero() {
         },
       })
 
+      // NOTE: only transform/opacity are scrubbed here. Animating `filter`
+      // (esp. blur) on scrub forced a full-frame repaint every scroll tick;
+      // the static CSS filter now stays put while the ghost recedes via
+      // GPU-composited scale + opacity.
       gsap.to('.hero__ghost', {
         opacity: 0.05,
         scale: 1.08,
-        filter: 'grayscale(1) contrast(1.55) brightness(0.55) blur(6px)',
         ease: 'none',
         scrollTrigger: {
           trigger: root.current,

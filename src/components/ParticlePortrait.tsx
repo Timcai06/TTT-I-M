@@ -2,6 +2,7 @@ import { useMemo, useRef, useEffect, useState, Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useReducedMotion } from '../lib/motion'
 
 const vertexShader = /* glsl */ `
   uniform sampler2D uTexture;
@@ -289,16 +290,42 @@ function PortraitScene({ src }: { src: string }) {
 }
 
 export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(true)
+  const reduced = useReducedMotion()
+
+  // Pause the WebGL render loop whenever the hero is scrolled out of view.
+  // The shader pushes ~78k points every frame; left running off-screen it
+  // steals GPU from the scroll animations below. frameloop="never" stops it
+  // cold and resumes instantly when the hero returns.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { rootMargin: '120px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  // Honour the OS "reduce motion" setting: skip the animated particle field
+  // entirely. The static hero ghost photo behind it carries the composition.
+  if (reduced) return null
+
   return (
     <CanvasErrorBoundary>
-      <Canvas
-        dpr={[1, 1.5]}
-        gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 0, 2.4], fov: 45 }}
-        style={{ background: 'transparent' }}
-      >
-        <PortraitScene src={src} />
-      </Canvas>
+      <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
+        <Canvas
+          frameloop={visible ? 'always' : 'never'}
+          dpr={[1, 1.5]}
+          gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
+          camera={{ position: [0, 0, 2.4], fov: 45 }}
+          style={{ background: 'transparent' }}
+        >
+          <PortraitScene src={src} />
+        </Canvas>
+      </div>
     </CanvasErrorBoundary>
   )
 }
