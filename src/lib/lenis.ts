@@ -1,6 +1,7 @@
 import Lenis from 'lenis'
 import { useEffect } from 'react'
 import { gsap, ScrollTrigger } from './gsap'
+import { prefersReducedMotion } from './motion'
 
 let lenisInstance: Lenis | null = null
 
@@ -10,10 +11,14 @@ export function getLenis() {
 
 export function useLenis() {
   useEffect(() => {
+    // Under "reduce motion", hand scrolling back to the browser: no smooth
+    // interpolation (the chief vestibular trigger), and it's lighter on
+    // low-end hardware too.
+    const reduced = prefersReducedMotion()
     const lenis = new Lenis({
       duration: 1.15,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
+      smoothWheel: !reduced,
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
     })

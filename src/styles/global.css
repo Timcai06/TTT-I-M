@@ -193,3 +193,24 @@ main {
 .disable-hover * {
   pointer-events: none !important;
 }
+
+/* ── Reduced motion ──
+   JS already disables Lenis smoothing and the WebGL particle field; this
+   neutralises the remaining decorative CSS animations/transitions and the
+   blend-heavy grain layer for users who ask for less motion. GSAP-driven
+   reveals still resolve to their final state because each tween's `to`
+   values are written inline. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .grain {
+    display: none;
+  }
+}
