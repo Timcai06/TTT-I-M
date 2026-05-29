@@ -25,7 +25,22 @@ export function useLenis() {
 
     lenisInstance = lenis
 
-    lenis.on('scroll', ScrollTrigger.update)
+    // While scrolling, suspend pointer/hover effects (cheaper repaints, no
+    // hover-state thrash). Driven off Lenis's own scroll event so there's a
+    // single scroll subscription instead of a redundant native listener.
+    let hoverTimeout: number | undefined
+    const onScroll = () => {
+      ScrollTrigger.update()
+      const body = document.body
+      if (!body.classList.contains('disable-hover')) {
+        body.classList.add('disable-hover')
+      }
+      clearTimeout(hoverTimeout)
+      hoverTimeout = window.setTimeout(() => {
+        body.classList.remove('disable-hover')
+      }, 150)
+    }
+    lenis.on('scroll', onScroll)
 
     const tickerFn = (time: number) => {
       lenis.raf(time * 1000)
@@ -40,6 +55,9 @@ export function useLenis() {
 
     return () => {
       clearTimeout(refreshTimer)
+      clearTimeout(hoverTimeout)
+      document.body.classList.remove('disable-hover')
+      lenis.off('scroll', onScroll)
       gsap.ticker.remove(tickerFn)
       lenis.destroy()
       lenisInstance = null

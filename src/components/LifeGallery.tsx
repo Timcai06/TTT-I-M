@@ -91,7 +91,7 @@ export default function LifeGallery() {
           {photos.map((p, i) => (
             <div className="gallery__item" key={i}>
               {p.src ? (
-                <img src={p.src} alt={p.alt} loading="lazy" />
+                <img src={p.src} alt={p.alt} loading="lazy" decoding="async" />
               ) : (
                 <div className="gallery__placeholder" />
               )}

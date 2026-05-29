@@ -9,24 +9,8 @@ import { chapters } from './chapters/registry'
 import './styles/app.css'
 
 export default function App() {
-  useEffect(() => {
-    let scrollTimeout: number
-    const onScroll = () => {
-      if (!document.body.classList.contains('disable-hover')) {
-        document.body.classList.add('disable-hover')
-      }
-      clearTimeout(scrollTimeout)
-      scrollTimeout = window.setTimeout(() => {
-        document.body.classList.remove('disable-hover')
-      }, 150)
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      clearTimeout(scrollTimeout)
-    }
-  }, [])
-
+  // Smooth scroll + scroll-driven side effects (incl. the disable-hover
+  // throttle) are owned by useLenis, so there's a single scroll subscription.
   useLenis()
 
   useEffect(() => {
