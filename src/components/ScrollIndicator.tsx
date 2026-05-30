@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { ScrollTrigger } from '../lib/gsap'
 import { progressChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
+import { getLenis } from '../lib/lenis'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -73,14 +74,30 @@ export default function ScrollIndicator() {
     }
   }, [])
 
+  const handleSegmentClick = (id: string) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    const lenis = getLenis()
+    if (lenis) {
+      // Use standard scroll with 1.4s duration to align with Nav
+      lenis.scrollTo(el, { offset: -40, duration: 1.4 })
+    } else {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   const activeIdx = sections.findIndex((s) => s.id === activeSection.id)
 
   return (
     <div className="scroll-indicator" aria-hidden="true">
       <div className="scroll-indicator__label">
-        <span className="scroll-indicator__index">{activeSection.index}</span>
+        <span key={`idx-${activeSection.id}`} className="scroll-indicator__index animate-slide-up">
+          {activeSection.index}
+        </span>
         <span className="scroll-indicator__divider">//</span>
-        <span className="scroll-indicator__name">{activeSection.name}</span>
+        <span key={`name-${activeSection.id}`} className="scroll-indicator__name animate-slide-up">
+          {activeSection.name}
+        </span>
       </div>
 
       <div className="scroll-indicator__track-container">
@@ -95,21 +112,32 @@ export default function ScrollIndicator() {
               ? ((scrollPercent - prevSum) / prop) * 100
               : 0
           const fill = Math.min(100, Math.max(0, rawFill))
+          const isActive = i === activeIdx
 
           return (
-            <div
+            <button
               key={sec.id}
-              className={`scroll-indicator__segment${i === activeIdx ? ' is-active' : ''}`}
+              className={`scroll-indicator__segment${isActive ? ' is-active' : ''}`}
               style={{ height: `calc(${prop} * 280px)` }}
+              onClick={() => handleSegmentClick(sec.id)}
+              tabIndex={-1}
+              aria-label={`Scroll to ${sec.name}`}
             >
-              <div
-                className="scroll-indicator__segment-fill"
-                style={{ height: `${fill}%` }}
-              />
-            </div>
+              <span className="scroll-indicator__tooltip">
+                <span className="scroll-indicator__tooltip-num">{sec.index}</span>
+                <span className="scroll-indicator__tooltip-name">{sec.name}</span>
+              </span>
+              <span className="scroll-indicator__segment-bar">
+                <span
+                  className="scroll-indicator__segment-fill"
+                  style={{ height: `${fill}%` }}
+                />
+              </span>
+            </button>
           )
         })}
       </div>
     </div>
   )
 }
+

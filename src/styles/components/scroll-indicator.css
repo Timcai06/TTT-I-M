@@ -44,27 +44,68 @@
   margin-top: 4px;
 }
 
+/* ── Slide-up text reveal animation ── */
+@keyframes slide-up {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  display: inline-block;
+  animation: slide-up 0.5s var(--ease-out) forwards;
+  will-change: transform, opacity;
+}
+
 /* ── Segmented Track ── */
 .scroll-indicator__track-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
   height: 280px;
+  pointer-events: auto; /* Enable hover capture */
+  padding: 0 16px; /* Expand interactive hover zone */
+  margin-right: -16px; /* Offset interactive zone to keep visual alignment */
 }
 
 .scroll-indicator__segment {
+  width: 24px; /* Wider hover & click target */
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  position: relative;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  outline: none;
+}
+
+.scroll-indicator__segment-bar {
   width: 2px;
+  height: 100%;
   background: rgba(255, 255, 255, 0.12);
   position: relative;
   overflow: hidden;
   border-radius: 1px;
-  transition: width 0.4s var(--ease-out), background 0.4s var(--ease-out);
+  transition: width 0.3s var(--ease-out), background 0.3s var(--ease-out);
+  will-change: width, background;
 }
 
-.scroll-indicator__segment.is-active {
+.scroll-indicator__segment.is-active .scroll-indicator__segment-bar {
   width: 4px;
   background: rgba(255, 255, 255, 0.2);
+}
+
+.scroll-indicator__segment:hover .scroll-indicator__segment-bar {
+  width: 6px;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .scroll-indicator__segment-fill {
@@ -79,6 +120,52 @@
 
 .scroll-indicator__segment.is-active .scroll-indicator__segment-fill {
   background: var(--accent);
+  box-shadow: 0 0 8px var(--accent); /* Elegant glow */
+}
+
+/* ── Segment Tooltips ── */
+.scroll-indicator__tooltip {
+  position: absolute;
+  right: 16px; /* Positioned left of the bar */
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--fg);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+  will-change: opacity, transform;
+}
+
+.scroll-indicator__tooltip-num {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.scroll-indicator__tooltip-name {
+  color: var(--fg-mute);
+  text-transform: uppercase;
+}
+
+/* Hover behaviors */
+.scroll-indicator__track-container:hover .scroll-indicator__tooltip {
+  opacity: 0.45;
+  transform: translateY(-50%) translateX(0);
+}
+
+.scroll-indicator__segment:hover .scroll-indicator__tooltip {
+  opacity: 1 !important;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.scroll-indicator__segment:hover .scroll-indicator__tooltip-name {
+  color: var(--fg);
 }
 
 @media (max-width: 900px) {
