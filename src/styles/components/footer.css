@@ -28,7 +28,7 @@
   background: #f0f0f0;
   border-radius: 50%;
   animation: liquid-morph 22s infinite ease-in-out;
-  transform-origin: center bottom;
+  transform-origin: center center;
   will-change: border-radius, transform;
 }
 
