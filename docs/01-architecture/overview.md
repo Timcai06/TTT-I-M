@@ -15,12 +15,12 @@ portfolio/
 ├── public/
 │   ├── favicon.svg
 │   ├── icons.svg
-│   ├── profile.jpg
-│   ├── server.glb
-│   ├── img1~9.jpg           # 项目/占位用图片
-│   └── portrait/
-│       ├── tim.jpg          # 粒子肖像源图（setup-assets 复制而来）
-│       └── about_me.jpg     # About 区肖像
+│   ├── robots.txt
+│   ├── portrait/
+│   │   ├── tim.jpg          # 粒子肖像源图（setup-assets 复制而来）
+│   │   └── about_me.jpg     # About 区肖像
+│   ├── life/                # 生活图片区 WebP
+│   └── projects/            # 作品展示图 WebP
 │
 ├── scripts/
 │   └── setup-assets.mjs     # 构建前置脚本
@@ -98,7 +98,6 @@ App.tsx
 ├── Hero
 │   └── ParticlePortrait
 │       ├── @react-three/fiber
-│       ├── @react-three/drei
 │       └── three
 ├── About               # 无子组件
 ├── Skills              # 无子组件
@@ -107,4 +106,4 @@ App.tsx
 └── Footer              # 无子组件
 ```
 
-跨组件共享的唯一模块是 `lenis.ts` — 通过 `getLenis()` 导出 Lenis 实例供 Nav 和任何需要编程滚动的组件使用。
+跨组件共享的滚动模块包括 `lenis.ts` 与 `chapterScroll.ts`：`lenis.ts` 持有 Lenis 实例，`chapterScroll.ts` 统一处理章节滚动与 hash 更新。

@@ -24,7 +24,6 @@ GSAP 负责所有 DOM 动画（文字展开、元素淡入、滚动形变），L
 |------|------|------|
 | Three.js | ^0.184.0 | WebGL 底层 |
 | @react-three/fiber | ^9.6.1 | React 声明式 R3F |
-| @react-three/drei | ^10.7.7 | R3F 工具库 |
 
 Hero 区的粒子肖像使用自定义着色器材质 (`ShaderMaterial`) + `Points`，而非标准 Mesh。顶点着色器和片元着色器手写 GLSL。
 

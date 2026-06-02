@@ -1,73 +1,52 @@
-# React + TypeScript + Vite
+# Tim Cai Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+High-motion personal portfolio for Tim Cai, built as a static React/Vite site with GSAP, Lenis, and a WebGL particle portrait.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Production Build
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+npm run preview
 ```
+
+## Verification
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
+
+## Content Editing
+
+- Chapter order and nav/progress metadata: `src/chapters/registry.ts`
+- Project cards and media: `src/data/projects.ts`
+- Skill rows: `src/data/skills.ts`
+- Life gallery photos: `src/data/life.ts`
+- Intro, hero, about, skills, work, life, and contact sections: `src/components/`
+
+## Architecture Notes
+
+- `src/chapters/registry.ts` is the source of truth for page order, nav entries, and scroll-progress entries.
+- Below-the-fold chapters are lazy-loaded so the hero can paint first.
+- GSAP and Lenis are integrated through `src/lib/gsap.ts` and `src/lib/lenis.ts`.
+- Intro handoff timing is centralized in `src/lib/intro.ts`.
+- Chapter scrolling and hash updates are centralized in `src/lib/chapterScroll.ts`.
+- The WebGL portrait lives in `src/components/ParticlePortrait.tsx`.
+
+## Assets
+
+- `scripts/setup-assets.mjs` prepares generated/public assets before dev and build.
+- Active public assets live under `public/portrait`, `public/life`, and `public/projects`.
+- Large unused source/archive material should stay outside `public`, otherwise Vite will ship it.
+
+## Deployment
+
+The project is configured for Vercel through `vercel.json`. Any static host that serves Vite's `dist/` output also works.
