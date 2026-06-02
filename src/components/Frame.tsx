@@ -1,78 +1,73 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
-import { frameChapters, frameImages, framePanels, type FrameChapter, type FrameImage } from '../data/frames'
+import {
+  archiveClusters,
+  archivePanels,
+  archiveThemes,
+  type ArchiveCluster,
+  type ArchiveClusterSlot,
+  type ArchiveImage,
+  type ArchiveTheme,
+} from '../data/frames'
 
-interface ActiveFrameState {
-  imageIndex: number
-  chapterIndex: number
+interface ActiveArchiveState {
+  themeIndex: number
+  clusterIndex: number
 }
 
-function FrameRail({
-  active,
-  currentImage,
-  currentChapter,
-}: {
-  active: ActiveFrameState
-  currentImage?: FrameImage
-  currentChapter?: FrameChapter
-}) {
+function ArchiveRail({ active, theme, cluster }: { active: ActiveArchiveState; theme?: ArchiveTheme; cluster?: ArchiveCluster }) {
   return (
-    <aside className="frame-horizontal__rail" aria-label="Frame gallery progress">
+    <aside className="frame-horizontal__rail" aria-label="Visual archive progress">
       <span className="frame-horizontal__rail-kicker">Frame</span>
-      <span className="frame-horizontal__rail-title">{currentChapter?.title ?? 'Architecture'}</span>
+      <span className="frame-horizontal__rail-title">{theme?.title ?? 'Visual Archive'}</span>
       <span className="frame-horizontal__rail-count">
-        {String(active.chapterIndex + 1).padStart(2, '0')} / {String(frameChapters.length).padStart(2, '0')}
+        {String(active.themeIndex + 1).padStart(2, '0')} / {String(archiveThemes.length).padStart(2, '0')}
       </span>
       <span className="frame-horizontal__rail-subcount">
-        Image {String(active.imageIndex + 1).padStart(2, '0')} / {String(frameImages.length).padStart(2, '0')}
+        Cluster {String(active.clusterIndex + 1).padStart(2, '0')} / {String(archiveClusters.length).padStart(2, '0')}
       </span>
-      {currentImage && <span className="frame-horizontal__rail-current">{currentImage.title}</span>}
+      {cluster && <span className="frame-horizontal__rail-current">{cluster.id.replace(/-/g, ' ')}</span>}
     </aside>
   )
 }
 
-function FrameChapterPanel({ chapter }: { chapter: FrameChapter }) {
+function ArchiveTextPanel({ layout, eyebrow, title, body }: { layout: 'intro' | 'outro'; eyebrow?: string; title?: string; body?: string }) {
   return (
-    <article className="frame-panel frame-panel--chapter frame-chapter-panel" data-chapter={chapter.id}>
-      <p className="frame-panel__eyebrow">{chapter.eyebrow}</p>
-      <h2 className="frame-chapter-panel__title">{chapter.title}</h2>
-      <p className="frame-panel__body frame-chapter-panel__body">{chapter.body}</p>
-    </article>
-  )
-}
-
-function FrameTextPanel({ layout, eyebrow, title, body }: { layout: 'intro' | 'outro'; eyebrow?: string; title?: string; body?: string }) {
-  return (
-    <article className={`frame-panel frame-panel--${layout} frame-chapter-panel`}>
+    <article className={`frame-panel frame-panel--${layout} archive-theme-marker`}>
       {eyebrow && <p className="frame-panel__eyebrow">{eyebrow}</p>}
-      {title && <h2 className="frame-chapter-panel__title">{title}</h2>}
-      {body && <p className="frame-panel__body frame-chapter-panel__body">{body}</p>}
+      {title && <h2 className="archive-theme-marker__title">{title}</h2>}
+      {body && <p className="frame-panel__body archive-theme-marker__body">{body}</p>}
     </article>
   )
 }
 
-function FrameImagePanel({ image, chapter }: { image: FrameImage; chapter: FrameChapter }) {
+function ArchiveThemeMarker({ theme }: { theme: ArchiveTheme }) {
+  return (
+    <article className="frame-panel frame-panel--theme archive-theme-marker" data-theme={theme.id}>
+      <p className="frame-panel__eyebrow">{theme.eyebrow}</p>
+      <h2 className="archive-theme-marker__title">{theme.title}</h2>
+      <p className="frame-panel__body archive-theme-marker__body">{theme.body}</p>
+    </article>
+  )
+}
+
+function ArchiveImageSlot({ slot }: { slot: ArchiveClusterSlot }) {
+  const image: ArchiveImage = slot.image
   return (
     <figure
       className={[
-        'frame-panel',
-        'frame-panel--image',
-        `frame-panel--${image.orientation}`,
-        `frame-panel--scale-${image.scale}`,
-        `frame-panel--align-${image.align}`,
-        `frame-panel--pace-${image.pace}`,
+        'archive-slot',
+        `archive-slot--${slot.role}`,
+        `archive-slot--${image.orientation}`,
       ].join(' ')}
-      key={image.src}
       data-tone={image.tone}
-      data-frame-id={image.id}
-      data-chapter={chapter.id}
       data-cursor="hover"
     >
-      <div className="frame-panel__media">
+      <div className="archive-slot__media">
         <img src={image.src} alt={image.title} loading="lazy" decoding="async" />
       </div>
-      <figcaption className="frame-panel__caption">
-        <span className="frame-panel__caption-title">{image.title}</span>
+      <figcaption className="archive-slot__caption">
+        <span className="archive-slot__caption-title">{image.title}</span>
         <span>{image.location}</span>
         <span>{image.meta}</span>
       </figcaption>
@@ -80,18 +75,40 @@ function FrameImagePanel({ image, chapter }: { image: FrameImage; chapter: Frame
   )
 }
 
+function ArchiveClusterPanel({ theme, cluster }: { theme: ArchiveTheme; cluster: ArchiveCluster }) {
+  return (
+    <article
+      className={[
+        'frame-panel',
+        'frame-panel--cluster',
+        'archive-cluster',
+        `archive-cluster--${cluster.layout}`,
+        `archive-cluster--theme-${theme.id}`,
+        `archive-cluster--direction-${theme.direction}`,
+      ].join(' ')}
+      data-theme={theme.id}
+      data-cluster={cluster.id}
+      data-direction={theme.direction}
+    >
+      {cluster.slots.map((slot) => (
+        <ArchiveImageSlot key={`${cluster.id}-${slot.image.src}`} slot={slot} />
+      ))}
+    </article>
+  )
+}
+
 export default function Frame() {
   const root = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState<ActiveFrameState>({ imageIndex: 0, chapterIndex: 0 })
+  const [active, setActive] = useState<ActiveArchiveState>({ themeIndex: 0, clusterIndex: 0 })
 
-  const currentImage = frameImages[active.imageIndex]
-  const currentChapter = frameChapters[active.chapterIndex]
+  const currentTheme = archiveThemes[active.themeIndex]
+  const currentCluster = archiveClusters[active.clusterIndex]
 
-  const chapterByImageId = useMemo(() => {
-    const map = new Map<number, number>()
-    frameChapters.forEach((chapter, chapterIndex) => {
-      chapter.images.forEach((image) => map.set(image.id, chapterIndex))
+  const themeByClusterId = useMemo(() => {
+    const map = new Map<string, number>()
+    archiveThemes.forEach((theme, themeIndex) => {
+      theme.clusters.forEach((cluster) => map.set(cluster.id, themeIndex))
     })
     return map
   }, [])
@@ -102,33 +119,33 @@ export default function Frame() {
     if (!rootEl || !trackEl) return
 
     const updateActivePanel = () => {
-      const panels = Array.from(trackEl.querySelectorAll<HTMLElement>('.frame-panel--image'))
+      const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
       const center = window.innerWidth / 2
-      let imageIndex = 0
+      let clusterIndex = 0
       let closest = Number.POSITIVE_INFINITY
 
-      panels.forEach((panel, index) => {
-        const rect = panel.getBoundingClientRect()
+      clusters.forEach((cluster, index) => {
+        const rect = cluster.getBoundingClientRect()
         const distance = Math.abs(rect.left + rect.width / 2 - center)
         if (distance < closest) {
           closest = distance
-          imageIndex = index
+          clusterIndex = index
         }
       })
 
-      const imageId = Number(panels[imageIndex]?.dataset.frameId)
-      const chapterIndex = chapterByImageId.get(imageId) ?? 0
+      const clusterId = clusters[clusterIndex]?.dataset.cluster ?? ''
+      const themeIndex = themeByClusterId.get(clusterId) ?? 0
       setActive((prev) => (
-        prev.imageIndex === imageIndex && prev.chapterIndex === chapterIndex
+        prev.themeIndex === themeIndex && prev.clusterIndex === clusterIndex
           ? prev
-          : { imageIndex, chapterIndex }
+          : { themeIndex, clusterIndex }
       ))
     }
 
     const mm = gsap.matchMedia()
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        '.frame-chapter-panel__title',
+        '.archive-theme-marker__title',
         { y: 28, opacity: 0 },
         {
           y: 0,
@@ -141,15 +158,16 @@ export default function Frame() {
       )
 
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
+        const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)
         const tween = gsap.to(trackEl, {
-          x: () => -(trackEl.scrollWidth - window.innerWidth),
+          x: () => -scrollDistance(),
           ease: 'none',
           scrollTrigger: {
             trigger: rootEl,
             pin: true,
             scrub: 1,
             start: 'top top',
-            end: () => `+=${Math.max(1, trackEl.scrollWidth - window.innerWidth)}`,
+            end: () => `+=${scrollDistance()}`,
             invalidateOnRefresh: true,
             anticipatePin: 1,
             onUpdate: updateActivePanel,
@@ -157,15 +175,33 @@ export default function Frame() {
           },
         })
 
+        const directionTween = gsap.fromTo(
+          '.archive-cluster--direction-left-to-right',
+          { xPercent: -42 },
+          {
+            xPercent: 42,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: rootEl,
+              scrub: 1,
+              start: 'top top',
+              end: () => `+=${scrollDistance()}`,
+              invalidateOnRefresh: true,
+            },
+          }
+        )
+
         updateActivePanel()
 
         return () => {
+          directionTween.scrollTrigger?.kill()
+          directionTween.kill()
           tween.scrollTrigger?.kill()
           tween.kill()
         }
       })
 
-      gsap.utils.toArray<HTMLImageElement>('.frame-panel img').forEach((img) => {
+      gsap.utils.toArray<HTMLImageElement>('.archive-slot img').forEach((img) => {
         if (img.complete) return
         img.addEventListener('load', () => ScrollTrigger.refresh(), { once: true })
       })
@@ -175,18 +211,18 @@ export default function Frame() {
       mm.revert()
       ctx.revert()
     }
-  }, [chapterByImageId])
+  }, [themeByClusterId])
 
   return (
     <section className="frame-horizontal" id="frame" ref={root} data-horizontal-section>
       <div className="frame-horizontal__pin">
-        <FrameRail active={active} currentImage={currentImage} currentChapter={currentChapter} />
+        <ArchiveRail active={active} theme={currentTheme} cluster={currentCluster} />
 
         <div className="frame-horizontal__track" ref={track} data-horizontal-track>
-          {framePanels.map((panel, index) => {
+          {archivePanels.map((panel, index) => {
             if (panel.layout === 'intro' || panel.layout === 'outro') {
               return (
-                <FrameTextPanel
+                <ArchiveTextPanel
                   key={`${panel.layout}-${index}`}
                   layout={panel.layout}
                   eyebrow={panel.eyebrow}
@@ -196,12 +232,12 @@ export default function Frame() {
               )
             }
 
-            if (panel.layout === 'chapter' && panel.chapter) {
-              return <FrameChapterPanel chapter={panel.chapter} key={panel.chapter.id} />
+            if (panel.layout === 'theme' && panel.theme) {
+              return <ArchiveThemeMarker theme={panel.theme} key={panel.theme.id} />
             }
 
-            if (panel.layout === 'image' && panel.image && panel.chapter) {
-              return <FrameImagePanel image={panel.image} chapter={panel.chapter} key={panel.image.src} />
+            if (panel.layout === 'cluster' && panel.theme && panel.cluster) {
+              return <ArchiveClusterPanel theme={panel.theme} cluster={panel.cluster} key={panel.cluster.id} />
             }
 
             return null

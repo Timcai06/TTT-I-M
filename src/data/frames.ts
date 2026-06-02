@@ -1,113 +1,215 @@
-export type FrameOrientation = 'portrait' | 'landscape' | 'tall'
-export type FrameScale = 'hero' | 'large' | 'medium' | 'small'
-export type FrameAlign = 'top' | 'center' | 'bottom'
-export type FramePace = 'tight' | 'normal' | 'wide'
-export type FramePanelLayout = 'intro' | 'chapter' | 'image' | 'outro'
+export type ArchiveThemeId = 'building' | 'cuisine' | 'scenery'
+export type ArchiveDirection = 'left-to-right' | 'right-to-left'
+export type ArchiveClusterLayout = 'feature-left' | 'feature-right' | 'stack-left' | 'stack-right' | 'panorama'
+export type ArchiveSlotRole = 'primary' | 'secondary' | 'detail'
+export type ArchiveOrientation = 'portrait' | 'landscape' | 'square' | 'wide' | 'tall'
+export type ArchivePanelLayout = 'intro' | 'theme' | 'cluster' | 'outro'
 
-export interface FrameImage {
+export interface ArchiveImage {
   id: number
   src: string
   title: string
   location: string
   meta: string
-  orientation: FrameOrientation
+  orientation: ArchiveOrientation
   tone: string
-  scale: FrameScale
-  align: FrameAlign
-  pace: FramePace
 }
 
-export interface FrameChapter {
+export interface ArchiveClusterSlot {
+  role: ArchiveSlotRole
+  image: ArchiveImage
+}
+
+export interface ArchiveCluster {
   id: string
+  layout: ArchiveClusterLayout
+  slots: ArchiveClusterSlot[]
+}
+
+export interface ArchiveTheme {
+  id: ArchiveThemeId
   eyebrow: string
   title: string
   body: string
-  images: FrameImage[]
+  direction: ArchiveDirection
+  clusters: ArchiveCluster[]
 }
 
-export interface FramePanel {
-  layout: FramePanelLayout
-  chapter?: FrameChapter
-  image?: FrameImage
+export interface ArchivePanel {
+  layout: ArchivePanelLayout
+  theme?: ArchiveTheme
+  cluster?: ArchiveCluster
   eyebrow?: string
   title?: string
   body?: string
 }
 
-export const frameIntro: FramePanel = {
+const b = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => ({
+  id,
+  src: `/frame/buildings/${String(id).padStart(2, '0')}.webp`,
+  title,
+  location: 'Shanghai / Architecture',
+  meta: 'Light, structure, and urban texture',
+  orientation,
+  tone,
+})
+
+const c = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => ({
+  id,
+  src: `/frame/cuisine/cuisine-${String(id).padStart(2, '0')}.webp`,
+  title,
+  location: 'Table / Cuisine',
+  meta: 'Food, table light, and daily detail',
+  orientation,
+  tone,
+})
+
+const s = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => ({
+  id,
+  src: `/frame/scenery/scenery-${String(id).padStart(2, '0')}.webp`,
+  title,
+  location: 'Travel / Scenery',
+  meta: 'Open air, distance, and atmosphere',
+  orientation,
+  tone,
+})
+
+export const archiveIntro: ArchivePanel = {
   layout: 'intro',
-  eyebrow: 'Frame / Architecture',
-  title: 'Frames of structure.',
-  body: 'Light, stairs, facades, and the quiet geometry of the city.',
+  eyebrow: 'Frame / Visual Archive',
+  title: 'Frames of living systems.',
+  body: 'Architecture, table scenes, and open landscapes collected as one visual archive.',
 }
 
-export const frameChapters: FrameChapter[] = [
+export const archiveThemes: ArchiveTheme[] = [
   {
-    id: 'surface-memory',
-    eyebrow: '01 / Surface Memory',
-    title: 'Walls remember where the light has been.',
-    body: 'Old facades, doors, lanterns, and worn surfaces become the first scale of the city.',
-    images: [
-      { id: 1, src: '/frame/buildings/01.webp', title: 'Shadow Wall', location: 'Shanghai / Old Facade', meta: 'Warm side light / tree silhouette', orientation: 'portrait', tone: 'old-wall', scale: 'large', align: 'bottom', pace: 'normal' },
-      { id: 3, src: '/frame/buildings/03.webp', title: 'Green Doorway', location: 'Shanghai / Historic Entrance', meta: 'Wood facade / afternoon green', orientation: 'portrait', tone: 'heritage', scale: 'medium', align: 'top', pace: 'tight' },
-      { id: 4, src: '/frame/buildings/04.webp', title: 'Raking Stone', location: 'Shanghai / Wall Detail', meta: 'Texture study / warm shadow', orientation: 'portrait', tone: 'detail', scale: 'small', align: 'center', pace: 'tight' },
-      { id: 8, src: '/frame/buildings/08.webp', title: 'Lantern Facade', location: 'Shanghai / Old Wall', meta: 'Vertical detail / warm lantern', orientation: 'tall', tone: 'detail', scale: 'medium', align: 'bottom', pace: 'normal' },
-      { id: 11, src: '/frame/buildings/11.webp', title: 'Weathered Geometry', location: 'Shanghai / Wall Study', meta: 'Aged plaster / pipe lines', orientation: 'landscape', tone: 'detail', scale: 'large', align: 'center', pace: 'wide' },
+    id: 'building',
+    eyebrow: '01 / Building',
+    title: 'Structure holds the first rhythm.',
+    body: 'Facades, stairs, skylines, and night edges become composed observations of the city.',
+    direction: 'right-to-left',
+    clusters: [
+      { id: 'building-facade', layout: 'feature-left', slots: [
+        { role: 'primary', image: b(1, 'Shadow Wall', 'portrait', 'old-wall') },
+        { role: 'secondary', image: b(3, 'Green Doorway', 'portrait', 'heritage') },
+        { role: 'detail', image: b(4, 'Raking Stone', 'portrait', 'detail') },
+      ] },
+      { id: 'building-skyline', layout: 'panorama', slots: [
+        { role: 'primary', image: b(2, 'Night Blocks', 'wide', 'night-city') },
+        { role: 'secondary', image: b(9, 'Framed Skyline', 'landscape', 'skyline') },
+        { role: 'detail', image: b(10, 'Afterglow Blocks', 'landscape', 'sunset') },
+      ] },
+      { id: 'building-route', layout: 'stack-right', slots: [
+        { role: 'primary', image: b(13, 'Arches At Night', 'landscape', 'night-city') },
+        { role: 'secondary', image: b(5, 'Brick Stair', 'landscape', 'interior') },
+        { role: 'detail', image: b(12, 'Lit Descent', 'landscape', 'stair') },
+      ] },
+      { id: 'building-night', layout: 'feature-right', slots: [
+        { role: 'primary', image: b(7, 'Gold Riverfront', 'wide', 'skyline') },
+        { role: 'secondary', image: b(14, 'Rooftop Neon', 'landscape', 'night-city') },
+        { role: 'detail', image: b(18, 'Night Crossing', 'portrait', 'street') },
+      ] },
+      { id: 'building-detail', layout: 'stack-left', slots: [
+        { role: 'primary', image: b(8, 'Lantern Facade', 'tall', 'detail') },
+        { role: 'secondary', image: b(11, 'Weathered Geometry', 'landscape', 'detail') },
+        { role: 'detail', image: b(6, 'Narrow Alley', 'landscape', 'alley') },
+      ] },
+      { id: 'building-quiet', layout: 'feature-left', slots: [
+        { role: 'primary', image: b(16, 'Concrete Quiet', 'landscape', 'minimal') },
+        { role: 'secondary', image: b(15, 'Table Light', 'portrait', 'interior') },
+        { role: 'detail', image: b(17, 'Urban Machinery', 'landscape', 'industrial') },
+      ] },
     ],
   },
   {
-    id: 'skyline-weather',
-    eyebrow: '02 / Skyline Weather',
-    title: 'The city opens when distance enters the frame.',
-    body: 'Windows, dusk, and skyline weather pull the sequence from wall scale into urban scale.',
-    images: [
-      { id: 2, src: '/frame/buildings/02.webp', title: 'Night Blocks', location: 'Shanghai / Residential Skyline', meta: 'Blue hour / rail light', orientation: 'landscape', tone: 'night-city', scale: 'hero', align: 'center', pace: 'wide' },
-      { id: 9, src: '/frame/buildings/09.webp', title: 'Framed Skyline', location: 'Shanghai / Window View', meta: 'Dusk storm light / city grid', orientation: 'landscape', tone: 'skyline', scale: 'medium', align: 'top', pace: 'normal' },
-      { id: 10, src: '/frame/buildings/10.webp', title: 'Afterglow Blocks', location: 'Shanghai / Sunset', meta: 'Orange horizon / high-rise silhouettes', orientation: 'landscape', tone: 'sunset', scale: 'large', align: 'bottom', pace: 'wide' },
+    id: 'cuisine',
+    eyebrow: '02 / Cuisine',
+    title: 'The table enters from the left.',
+    body: 'Food, plates, cups, and warm fragments form a closer daily register.',
+    direction: 'left-to-right',
+    clusters: [
+      { id: 'cuisine-table', layout: 'feature-left', slots: [
+        { role: 'primary', image: c(1, 'Table Opening', 'landscape', 'table') },
+        { role: 'secondary', image: c(2, 'Small Plate', 'square', 'plate') },
+        { role: 'detail', image: c(3, 'Glass Detail', 'portrait', 'glass') },
+      ] },
+      { id: 'cuisine-stack', layout: 'stack-left', slots: [
+        { role: 'primary', image: c(6, 'Warm Dish', 'portrait', 'dish') },
+        { role: 'secondary', image: c(4, 'Shared Bite', 'square', 'detail') },
+        { role: 'detail', image: c(5, 'Table Corner', 'landscape', 'table') },
+      ] },
+      { id: 'cuisine-menu', layout: 'feature-right', slots: [
+        { role: 'primary', image: c(9, 'Dinner Light', 'landscape', 'dinner') },
+        { role: 'secondary', image: c(7, 'Plate Study', 'square', 'plate') },
+        { role: 'detail', image: c(8, 'Cup Shadow', 'portrait', 'glass') },
+      ] },
+      { id: 'cuisine-close', layout: 'stack-right', slots: [
+        { role: 'primary', image: c(12, 'Aftertaste', 'landscape', 'table') },
+        { role: 'secondary', image: c(10, 'Dish Detail', 'square', 'dish') },
+        { role: 'detail', image: c(11, 'Soft Table Light', 'portrait', 'detail') },
+      ] },
+      { id: 'cuisine-service', layout: 'feature-left', slots: [
+        { role: 'primary', image: c(13, 'Shared Service', 'landscape', 'table') },
+        { role: 'secondary', image: c(14, 'Sauce Detail', 'square', 'detail') },
+        { role: 'detail', image: c(15, 'Quiet Cup', 'portrait', 'glass') },
+      ] },
+      { id: 'cuisine-night', layout: 'feature-right', slots: [
+        { role: 'primary', image: c(18, 'Late Table', 'landscape', 'dinner') },
+        { role: 'secondary', image: c(16, 'Small Dish', 'square', 'dish') },
+        { role: 'detail', image: c(17, 'Table Texture', 'portrait', 'detail') },
+      ] },
+      { id: 'cuisine-tail', layout: 'stack-left', slots: [
+        { role: 'primary', image: c(21, 'Last Bite', 'landscape', 'table') },
+        { role: 'secondary', image: c(19, 'Plate Ending', 'square', 'plate') },
+        { role: 'detail', image: c(20, 'Warm Fragment', 'portrait', 'detail') },
+      ] },
     ],
   },
   {
-    id: 'interior-routes',
-    eyebrow: '03 / Interior Routes',
-    title: 'Architecture becomes movement inside the building.',
-    body: 'Stairs, corridors, arches, and quiet rooms turn the gallery into a walk through space.',
-    images: [
-      { id: 5, src: '/frame/buildings/05.webp', title: 'Brick Stair', location: 'Shanghai / Interior Passage', meta: 'Museum light / brick and steel', orientation: 'landscape', tone: 'interior', scale: 'medium', align: 'center', pace: 'normal' },
-      { id: 6, src: '/frame/buildings/06.webp', title: 'Narrow Alley', location: 'Shanghai / Stair Corridor', meta: 'Lamp glow / compressed depth', orientation: 'landscape', tone: 'alley', scale: 'large', align: 'top', pace: 'tight' },
-      { id: 12, src: '/frame/buildings/12.webp', title: 'Lit Descent', location: 'Shanghai / Stairwell', meta: 'Gallery light / beige concrete', orientation: 'landscape', tone: 'stair', scale: 'medium', align: 'bottom', pace: 'normal' },
-      { id: 13, src: '/frame/buildings/13.webp', title: 'Arches At Night', location: 'Shanghai / Courtyard', meta: 'Warm facade / evening crowd', orientation: 'landscape', tone: 'night-city', scale: 'hero', align: 'center', pace: 'wide' },
-      { id: 16, src: '/frame/buildings/16.webp', title: 'Concrete Quiet', location: 'Shanghai / Minimal Interior', meta: 'Neutral tone / open floor', orientation: 'landscape', tone: 'minimal', scale: 'small', align: 'bottom', pace: 'wide' },
-    ],
-  },
-  {
-    id: 'night-current',
-    eyebrow: '04 / Night Current',
-    title: 'Night turns structure into current.',
-    body: 'Rooftops, table light, machinery, traffic, and riverfront glow close the archive with motion.',
-    images: [
-      { id: 7, src: '/frame/buildings/07.webp', title: 'Gold Riverfront', location: 'Shanghai / Bund', meta: 'Night skyline / controlled glow', orientation: 'landscape', tone: 'skyline', scale: 'hero', align: 'center', pace: 'wide' },
-      { id: 14, src: '/frame/buildings/14.webp', title: 'Rooftop Neon', location: 'Shanghai / Night Roof', meta: 'Skyline color / plant foreground', orientation: 'landscape', tone: 'night-city', scale: 'medium', align: 'top', pace: 'normal' },
-      { id: 15, src: '/frame/buildings/15.webp', title: 'Table Light', location: 'Shanghai / Interior', meta: 'Soft glass / lifestyle detail', orientation: 'portrait', tone: 'interior', scale: 'small', align: 'bottom', pace: 'tight' },
-      { id: 17, src: '/frame/buildings/17.webp', title: 'Urban Machinery', location: 'Shanghai / Rooftop Structure', meta: 'Late-day light / industrial edge', orientation: 'landscape', tone: 'industrial', scale: 'large', align: 'center', pace: 'normal' },
-      { id: 18, src: '/frame/buildings/18.webp', title: 'Night Crossing', location: 'Shanghai / Street Canopy', meta: 'Traffic glow / tree shadow', orientation: 'portrait', tone: 'street', scale: 'large', align: 'bottom', pace: 'wide' },
+    id: 'scenery',
+    eyebrow: '03 / Scenery',
+    title: 'Open air slows the archive down.',
+    body: 'Landscapes and travel fragments give the section its final breath.',
+    direction: 'right-to-left',
+    clusters: [
+      { id: 'scenery-panorama', layout: 'panorama', slots: [
+        { role: 'primary', image: s(1, 'Open Distance', 'wide', 'open-air') },
+        { role: 'secondary', image: s(2, 'Edge Detail', 'landscape', 'detail') },
+      ] },
+      { id: 'scenery-memory', layout: 'feature-left', slots: [
+        { role: 'primary', image: s(3, 'Travel Light', 'landscape', 'travel') },
+        { role: 'secondary', image: s(4, 'Quiet Field', 'portrait', 'field') },
+        { role: 'detail', image: s(5, 'Small Horizon', 'landscape', 'horizon') },
+      ] },
+      { id: 'scenery-release', layout: 'feature-right', slots: [
+        { role: 'primary', image: s(8, 'Wide Release', 'wide', 'release') },
+        { role: 'secondary', image: s(6, 'Path Memory', 'landscape', 'path') },
+        { role: 'detail', image: s(7, 'Air Detail', 'portrait', 'air') },
+      ] },
+      { id: 'scenery-close', layout: 'panorama', slots: [
+        { role: 'primary', image: s(11, 'Final Horizon', 'wide', 'horizon') },
+        { role: 'secondary', image: s(9, 'Soft Distance', 'landscape', 'distance') },
+        { role: 'detail', image: s(10, 'Quiet Detail', 'portrait', 'detail') },
+      ] },
     ],
   },
 ]
 
-export const frameOutro: FramePanel = {
+export const archiveOutro: ArchivePanel = {
   layout: 'outro',
   eyebrow: 'Next',
   title: 'Back to building systems.',
-  body: 'After the visual archive, the page returns to stack, tools, and shipped projects.',
+  body: 'After the archive, the page returns to stack, tools, and shipped projects.',
 }
 
-export const frameImages: FrameImage[] = frameChapters.flatMap((chapter) => chapter.images)
+export const archiveClusters = archiveThemes.flatMap((theme) => theme.clusters)
+export const archiveImages = archiveThemes.flatMap((theme) => theme.clusters.flatMap((cluster) => cluster.slots.map((slot) => slot.image)))
 
-export const framePanels: FramePanel[] = [
-  frameIntro,
-  ...frameChapters.flatMap((chapter) => [
-    { layout: 'chapter' as const, chapter },
-    ...chapter.images.map((image) => ({ layout: 'image' as const, chapter, image })),
+export const archivePanels: ArchivePanel[] = [
+  archiveIntro,
+  ...archiveThemes.flatMap((theme) => [
+    { layout: 'theme' as const, theme },
+    ...theme.clusters.map((cluster) => ({ layout: 'cluster' as const, theme, cluster })),
   ]),
-  frameOutro,
+  archiveOutro,
 ]
