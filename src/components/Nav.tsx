@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getLenis } from '../lib/lenis'
 import { navChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
+import { scrollToChapter } from '../lib/chapterScroll'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 
@@ -12,7 +12,10 @@ export default function Nav() {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) setActive(e.target.id)
+          if (e.isIntersecting) {
+            setActive(e.target.id)
+            window.history.replaceState(null, '', `#${e.target.id}`)
+          }
         })
       },
       { threshold: 0.35 }
@@ -30,21 +33,10 @@ export default function Nav() {
     }
   }, [])
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id)
-    if (!el) return
-    const lenis = getLenis()
-    if (lenis) {
-      lenis.scrollTo(el, { offset: -40, duration: 1.4 })
-    } else {
-      el.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
-
   return (
     <header className="nav">
       <div className="container nav__inner">
-        <a className="nav__brand" href="#hero" onClick={(e) => { e.preventDefault(); scrollTo('hero') }}>
+        <a className="nav__brand" href="#hero" onClick={(e) => { e.preventDefault(); scrollToChapter('hero', { updateHash: true }) }}>
           Tim · 蔡
         </a>
         <nav>
@@ -53,7 +45,7 @@ export default function Nav() {
               <li key={l.id}>
                 <button
                   className={`nav__link${active === l.id ? ' is-active' : ''}`}
-                  onClick={() => scrollTo(l.id)}
+                  onClick={() => scrollToChapter(l.id, { updateHash: true })}
                 >
                   {l.label}
                 </button>

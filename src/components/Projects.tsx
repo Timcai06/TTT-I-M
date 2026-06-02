@@ -17,7 +17,8 @@ function ProjectMedia({ project }: { project: Project }) {
   }
 
   const { kind, shots } = project.media
-  const shot = shots[active]
+  const shot = shots[active] ?? shots[0]
+  if (!shot) return null
   const multi = shots.length > 1
 
   const chromeLabel =

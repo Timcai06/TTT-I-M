@@ -3,6 +3,7 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
+import { onIntroExit } from '../lib/intro'
 
 const vertexShader = /* glsl */ `
   uniform sampler2D uTexture;
@@ -126,13 +127,7 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   const [started, setStarted] = useState(false)
 
   useEffect(() => {
-    const handleStart = () => setStarted(true)
-    window.addEventListener('loader:exit', handleStart)
-    const timer = setTimeout(() => setStarted(true), 2200)
-    return () => {
-      window.removeEventListener('loader:exit', handleStart)
-      clearTimeout(timer)
-    }
+    return onIntroExit(() => setStarted(true))
   }, [])
 
   const aspect = useMemo<[number, number]>(() => {
@@ -186,8 +181,10 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
         isHoveringRef.current = true
         mouseRef.current.set(targetX, targetY)
         targetMouseRef.current.set(targetX, targetY)
-        if (matRef.current) {
-          matRef.current.uniforms.uMouse.value.set(targetX, targetY)
+        const mouseUniform = matRef.current?.uniforms.uMouse
+        if (mouseUniform) {
+          const mouseValue = mouseUniform.value as THREE.Vector2
+          mouseValue.set(targetX, targetY)
         }
       } else {
         targetMouseRef.current.set(targetX, targetY)
@@ -208,14 +205,20 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   useFrame((_, delta) => {
     if (!matRef.current) return
     const u = matRef.current.uniforms
-    u.uTime.value += delta
+    const timeUniform = u.uTime
+    const mouseUniform = u.uMouse
+    const introUniform = u.uIntro
+    if (!timeUniform || !mouseUniform || !introUniform) return
+
+    timeUniform.value += delta
     mouseRef.current.lerp(targetMouseRef.current, 0.08)
-    u.uMouse.value.copy(mouseRef.current)
+    const mouseValue = mouseUniform.value as THREE.Vector2
+    mouseValue.copy(mouseRef.current)
     if (started) {
       introRef.current = Math.min(1, introRef.current + delta / 2.2)
-      u.uIntro.value = 1 - Math.pow(1 - introRef.current, 3)
+      introUniform.value = 1 - Math.pow(1 - introRef.current, 3)
     } else {
-      u.uIntro.value = 0
+      introUniform.value = 0
     }
   })
 
@@ -247,14 +250,20 @@ function useImperativeTexture(src: string) {
 
   useEffect(() => {
     let cancelled = false
+    let currentTexture: THREE.Texture | null = null
     const loader = new THREE.TextureLoader()
+    
     loader.load(
       src,
       (tex) => {
-        if (cancelled) return
+        if (cancelled) {
+          tex.dispose()
+          return
+        }
         tex.minFilter = THREE.LinearFilter
         tex.magFilter = THREE.LinearFilter
         tex.generateMipmaps = false
+        currentTexture = tex
         setTexture(tex)
       },
       undefined,
@@ -264,8 +273,12 @@ function useImperativeTexture(src: string) {
         console.warn(`[ParticlePortrait] failed to load ${src} — run \`npm run setup\` inside portfolio/.`)
       }
     )
+    
     return () => {
       cancelled = true
+      if (currentTexture) {
+        currentTexture.dispose()
+      }
     }
   }, [src])
 
@@ -302,7 +315,9 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
     const el = wrapRef.current
     if (!el) return
     const io = new IntersectionObserver(
-      ([entry]) => setVisible(entry.isIntersecting),
+      ([entry]) => {
+        if (entry) setVisible(entry.isIntersecting)
+      },
       { rootMargin: '120px' }
     )
     io.observe(el)

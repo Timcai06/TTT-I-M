@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
+import { dispatchIntroExit } from '../lib/intro'
 
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
+
+function randomBaffleChar() {
+  return BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)] ?? ''
+}
 
 export default function Loader() {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -28,10 +33,10 @@ export default function Loader() {
         let frame = 0
         const interval = setInterval(() => {
           if (frame < 11) {
-            el.textContent = BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)]
+            el.textContent = randomBaffleChar()
           } else if (frame < 15) {
             el.textContent = frame % 2 === 0
-              ? BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)]
+              ? randomBaffleChar()
               : final
           } else {
             el.textContent = final
@@ -82,7 +87,7 @@ export default function Loader() {
       }, '<')
 
       /* ── hand off to hero just before the panel clears ── */
-      tl.call(() => window.dispatchEvent(new CustomEvent('loader:exit')), [], '>-0.15')
+      tl.call(dispatchIntroExit, [], '>-0.15')
 
       /* ── single panel wipes up, revealing the hero already composed beneath ── */
       tl.to(panelRef.current, {

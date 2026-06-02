@@ -1,17 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
-import { ScrollTrigger } from '../lib/gsap'
+import { gsap, ScrollTrigger } from '../lib/gsap'
 import { progressChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
-import { getLenis } from '../lib/lenis'
+import { scrollToChapter } from '../lib/chapterScroll'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
   index: c.progress.index,
   name: c.progress.name,
 }))
+const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
 export default function ScrollIndicator() {
-  const [activeSection, setActiveSection] = useState(sections[0])
+  const [activeSection, setActiveSection] = useState(firstSection)
   const [scrollPercent, setScrollPercent] = useState(0)
   const [proportions, setProportions] = useState<number[]>(
     sections.map(() => 1 / sections.length)
@@ -39,51 +40,45 @@ export default function ScrollIndicator() {
   }, [measureSections])
 
   useEffect(() => {
-    // The overall progress trigger has no element dependency.
-    const progressTrigger = ScrollTrigger.create({
-      start: 0,
-      end: 'max',
-      onUpdate: (self) => {
-        setScrollPercent(self.progress)
-      },
+    const ctx = gsap.context(() => {
+      // The overall progress trigger has no element dependency.
+      ScrollTrigger.create({
+        start: 0,
+        end: 'max',
+        onUpdate: (self) => {
+          setScrollPercent(self.progress)
+        },
+      })
     })
 
     // Per-section triggers must be created after the (lazy) sections mount —
     // otherwise `#about`…`#contact` resolve to null and collapse to scroll 0,
     // making the last section spuriously "active" at the top of the page.
-    let sectionTriggers: ScrollTrigger[] = []
     const cancel = onChaptersReady(() => {
-      sectionTriggers = sections.map((sec) =>
-        ScrollTrigger.create({
-          trigger: `#${sec.id}`,
-          start: 'top 50%',
-          end: 'bottom 50%',
-          onToggle: (self) => {
-            if (self.isActive) {
-              setActiveSection(sec)
-            }
-          },
-        })
-      )
+      ctx.add(() => {
+        sections.forEach((sec) =>
+          ScrollTrigger.create({
+            trigger: `#${sec.id}`,
+            start: 'top 50%',
+            end: 'bottom 50%',
+            onToggle: (self) => {
+              if (self.isActive) {
+                setActiveSection(sec)
+              }
+            },
+          })
+        )
+      })
     })
 
     return () => {
       cancel()
-      progressTrigger.kill()
-      sectionTriggers.forEach((t) => t.kill())
+      ctx.revert()
     }
   }, [])
 
   const handleSegmentClick = (id: string) => {
-    const el = document.getElementById(id)
-    if (!el) return
-    const lenis = getLenis()
-    if (lenis) {
-      // Use standard scroll with 1.4s duration to align with Nav
-      lenis.scrollTo(el, { offset: -40, duration: 1.4 })
-    } else {
-      el.scrollIntoView({ behavior: 'smooth' })
-    }
+    scrollToChapter(id, { updateHash: true })
   }
 
   const activeIdx = sections.findIndex((s) => s.id === activeSection.id)
@@ -102,7 +97,7 @@ export default function ScrollIndicator() {
 
       <div className="scroll-indicator__track-container">
         {sections.map((sec, i) => {
-          const prop = proportions[i]
+          const prop = proportions[i] ?? 0
           const prevSum = proportions
             .slice(0, i)
             .reduce((a, b) => a + b, 0)
@@ -140,4 +135,3 @@ export default function ScrollIndicator() {
     </div>
   )
 }
-

@@ -1,6 +1,9 @@
 import { useEffect, Suspense } from 'react'
 import { useLenis } from './lib/lenis'
 import { gsap, ScrollTrigger } from './lib/gsap'
+import { INTRO_EXIT_EVENT } from './lib/intro'
+import { onChaptersReady } from './lib/chaptersReady'
+import { scrollToChapter } from './lib/chapterScroll'
 import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ScrollIndicator from './components/ScrollIndicator'
@@ -21,13 +24,28 @@ export default function App() {
   // regardless of when the last chunk lands.
   useEffect(() => {
     const refresh = () => ScrollTrigger.refresh()
-    window.addEventListener('loader:exit', refresh)
+    window.addEventListener(INTRO_EXIT_EVENT, refresh)
     window.addEventListener('load', refresh)
     const t = window.setTimeout(refresh, 1200)
     return () => {
-      window.removeEventListener('loader:exit', refresh)
+      window.removeEventListener(INTRO_EXIT_EVENT, refresh)
       window.removeEventListener('load', refresh)
       clearTimeout(t)
+    }
+  }, [])
+
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '')
+    if (!hash) return
+
+    let timer: number | undefined
+    const cancel = onChaptersReady(() => {
+      timer = window.setTimeout(() => scrollToChapter(hash), 250)
+    })
+
+    return () => {
+      cancel()
+      if (timer !== undefined) clearTimeout(timer)
     }
   }, [])
 
@@ -35,8 +53,10 @@ export default function App() {
     const ctx = gsap.context(() => {
       const inner = gsap.utils.toArray<HTMLElement>('.hero__split .split-line__inner')
       if (inner.length < 2) return
+      const [firstLine, secondLine] = inner
+      if (!firstLine || !secondLine) return
 
-      gsap.to(inner[0], {
+      gsap.to(firstLine, {
         xPercent: -45,
         scale: 0.75,
         opacity: 0.35,
@@ -49,7 +69,7 @@ export default function App() {
         },
       })
 
-      gsap.to(inner[1], {
+      gsap.to(secondLine, {
         xPercent: 45,
         scale: 0.75,
         opacity: 0.35,

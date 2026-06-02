@@ -1,5 +1,6 @@
 import { useEffect, useRef, Suspense, lazy } from 'react'
 import { gsap } from '../lib/gsap'
+import { onIntroExit } from '../lib/intro'
 
 const ParticlePortrait = lazy(() => import('./ParticlePortrait'))
 
@@ -8,6 +9,7 @@ export default function Hero() {
 
   useEffect(() => {
     if (!root.current) return
+    let cancelIntroExit = () => {}
     const ctx = gsap.context(() => {
       // intro reveal
       gsap.set('.hero__split .split-line__inner', { yPercent: 110 })
@@ -17,10 +19,9 @@ export default function Hero() {
 
       const tl = gsap.timeline({ paused: true })
 
-      const startHero = () => tl.play()
-      window.addEventListener('loader:exit', startHero, { once: true })
-      // fallback if Loader is already gone
-      setTimeout(() => { if (tl.paused()) tl.play() }, 2200)
+      cancelIntroExit = onIntroExit(() => {
+        if (tl.paused()) void tl.play()
+      })
 
       tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' })
         .to('.hero__split .split-line__inner', {
@@ -85,7 +86,10 @@ export default function Hero() {
       })
     }, root)
 
-    return () => ctx.revert()
+    return () => {
+      cancelIntroExit()
+      ctx.revert()
+    }
   }, [])
 
   return (

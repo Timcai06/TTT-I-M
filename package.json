@@ -9,6 +9,7 @@
     "prebuild": "node scripts/setup-assets.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty false",
     "lint": "eslint .",
     "preview": "vite preview"
   },
