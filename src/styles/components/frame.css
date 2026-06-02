@@ -137,6 +137,12 @@
   gap: clamp(10px, 1.1vw, 18px);
   align-items: stretch;
   flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity 0.22s var(--ease-out);
+}
+
+.archive-theme-section.is-frame-theme-active .archive-cluster {
+  opacity: 1;
 }
 
 .archive-cluster--feature-left,
@@ -401,6 +407,7 @@
     margin: 0;
     padding-inline: 0;
     align-self: auto;
+    opacity: 1;
   }
 
   .archive-cluster,

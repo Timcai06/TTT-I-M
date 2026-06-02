@@ -184,6 +184,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
               scrub: 1,
               start: 'top top',
               end: () => `+=${scrollDistance()}`,
+              toggleClass: { targets: sectionEl, className: 'is-frame-theme-active' },
               invalidateOnRefresh: true,
               anticipatePin: 1,
               onUpdate: updateActiveCluster,
