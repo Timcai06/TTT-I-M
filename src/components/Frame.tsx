@@ -1,35 +1,141 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
-import { framePanels } from '../data/frames'
+import { frameChapters, frameImages, framePanels, type FrameChapter, type FrameImage } from '../data/frames'
+
+interface ActiveFrameState {
+  imageIndex: number
+  chapterIndex: number
+}
+
+function FrameRail({
+  active,
+  currentImage,
+  currentChapter,
+}: {
+  active: ActiveFrameState
+  currentImage?: FrameImage
+  currentChapter?: FrameChapter
+}) {
+  return (
+    <aside className="frame-horizontal__rail" aria-label="Frame gallery progress">
+      <span className="frame-horizontal__rail-kicker">Frame</span>
+      <span className="frame-horizontal__rail-title">{currentChapter?.title ?? 'Architecture'}</span>
+      <span className="frame-horizontal__rail-count">
+        {String(active.chapterIndex + 1).padStart(2, '0')} / {String(frameChapters.length).padStart(2, '0')}
+      </span>
+      <span className="frame-horizontal__rail-subcount">
+        Image {String(active.imageIndex + 1).padStart(2, '0')} / {String(frameImages.length).padStart(2, '0')}
+      </span>
+      {currentImage && <span className="frame-horizontal__rail-current">{currentImage.title}</span>}
+    </aside>
+  )
+}
+
+function FrameChapterPanel({ chapter }: { chapter: FrameChapter }) {
+  return (
+    <article className="frame-panel frame-panel--chapter frame-chapter-panel" data-chapter={chapter.id}>
+      <p className="frame-panel__eyebrow">{chapter.eyebrow}</p>
+      <h2 className="frame-chapter-panel__title">{chapter.title}</h2>
+      <p className="frame-panel__body frame-chapter-panel__body">{chapter.body}</p>
+    </article>
+  )
+}
+
+function FrameTextPanel({ layout, eyebrow, title, body }: { layout: 'intro' | 'outro'; eyebrow?: string; title?: string; body?: string }) {
+  return (
+    <article className={`frame-panel frame-panel--${layout} frame-chapter-panel`}>
+      {eyebrow && <p className="frame-panel__eyebrow">{eyebrow}</p>}
+      {title && <h2 className="frame-chapter-panel__title">{title}</h2>}
+      {body && <p className="frame-panel__body frame-chapter-panel__body">{body}</p>}
+    </article>
+  )
+}
+
+function FrameImagePanel({ image, chapter }: { image: FrameImage; chapter: FrameChapter }) {
+  return (
+    <figure
+      className={[
+        'frame-panel',
+        'frame-panel--image',
+        `frame-panel--${image.orientation}`,
+        `frame-panel--scale-${image.scale}`,
+        `frame-panel--align-${image.align}`,
+        `frame-panel--pace-${image.pace}`,
+      ].join(' ')}
+      key={image.src}
+      data-tone={image.tone}
+      data-frame-id={image.id}
+      data-chapter={chapter.id}
+      data-cursor="hover"
+    >
+      <div className="frame-panel__media">
+        <img src={image.src} alt={image.title} loading="lazy" decoding="async" />
+      </div>
+      <figcaption className="frame-panel__caption">
+        <span className="frame-panel__caption-title">{image.title}</span>
+        <span>{image.location}</span>
+        <span>{image.meta}</span>
+      </figcaption>
+    </figure>
+  )
+}
 
 export default function Frame() {
   const root = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState(0)
+  const [active, setActive] = useState<ActiveFrameState>({ imageIndex: 0, chapterIndex: 0 })
 
-  const imagePanels = useMemo(
-    () => framePanels.filter((panel) => panel.layout === 'image'),
-    []
-  )
-  const imageCount = imagePanels.length
-  const current = imagePanels[active]?.frame
+  const currentImage = frameImages[active.imageIndex]
+  const currentChapter = frameChapters[active.chapterIndex]
+
+  const chapterByImageId = useMemo(() => {
+    const map = new Map<number, number>()
+    frameChapters.forEach((chapter, chapterIndex) => {
+      chapter.images.forEach((image) => map.set(image.id, chapterIndex))
+    })
+    return map
+  }, [])
 
   useEffect(() => {
     const rootEl = root.current
     const trackEl = track.current
     if (!rootEl || !trackEl) return
 
+    const updateActivePanel = () => {
+      const panels = Array.from(trackEl.querySelectorAll<HTMLElement>('.frame-panel--image'))
+      const center = window.innerWidth / 2
+      let imageIndex = 0
+      let closest = Number.POSITIVE_INFINITY
+
+      panels.forEach((panel, index) => {
+        const rect = panel.getBoundingClientRect()
+        const distance = Math.abs(rect.left + rect.width / 2 - center)
+        if (distance < closest) {
+          closest = distance
+          imageIndex = index
+        }
+      })
+
+      const imageId = Number(panels[imageIndex]?.dataset.frameId)
+      const chapterIndex = chapterByImageId.get(imageId) ?? 0
+      setActive((prev) => (
+        prev.imageIndex === imageIndex && prev.chapterIndex === chapterIndex
+          ? prev
+          : { imageIndex, chapterIndex }
+      ))
+    }
+
     const mm = gsap.matchMedia()
     const ctx = gsap.context(() => {
       gsap.fromTo(
-        '.frame-horizontal__title .split-line__inner',
-        { yPercent: 110, skewY: 6 },
+        '.frame-chapter-panel__title',
+        { y: 28, opacity: 0 },
         {
-          yPercent: 0,
-          skewY: 0,
-          duration: 1.4,
+          y: 0,
+          opacity: 1,
+          duration: 1,
           ease: 'expo.out',
-          stagger: 0.12,
+          stagger: 0.08,
           scrollTrigger: { trigger: rootEl, start: 'top 78%' },
         }
       )
@@ -46,23 +152,12 @@ export default function Frame() {
             end: () => `+=${Math.max(1, trackEl.scrollWidth - window.innerWidth)}`,
             invalidateOnRefresh: true,
             anticipatePin: 1,
-            onUpdate: () => {
-              const panels = Array.from(trackEl.querySelectorAll<HTMLElement>('.frame-panel--image'))
-              const center = window.innerWidth / 2
-              let next = 0
-              let closest = Number.POSITIVE_INFINITY
-              panels.forEach((panel, index) => {
-                const rect = panel.getBoundingClientRect()
-                const distance = Math.abs(rect.left + rect.width / 2 - center)
-                if (distance < closest) {
-                  closest = distance
-                  next = index
-                }
-              })
-              setActive((prev) => (prev === next ? prev : next))
-            },
+            onUpdate: updateActivePanel,
+            onRefresh: updateActivePanel,
           },
         })
+
+        updateActivePanel()
 
         return () => {
           tween.scrollTrigger?.kill()
@@ -80,56 +175,36 @@ export default function Frame() {
       mm.revert()
       ctx.revert()
     }
-  }, [])
+  }, [chapterByImageId])
 
   return (
     <section className="frame-horizontal" id="frame" ref={root} data-horizontal-section>
       <div className="frame-horizontal__pin">
-        <aside className="frame-horizontal__rail" aria-label="Frame gallery progress">
-          <span className="frame-horizontal__rail-kicker">Frame</span>
-          <span className="frame-horizontal__rail-title">Architecture</span>
-          <span className="frame-horizontal__rail-count">
-            {String(active + 1).padStart(2, '0')} / {String(imageCount).padStart(2, '0')}
-          </span>
-          {current && <span className="frame-horizontal__rail-current">{current.title}</span>}
-        </aside>
+        <FrameRail active={active} currentImage={currentImage} currentChapter={currentChapter} />
 
         <div className="frame-horizontal__track" ref={track} data-horizontal-track>
           {framePanels.map((panel, index) => {
-            if (panel.layout === 'intro' || panel.layout === 'callout' || panel.layout === 'outro') {
+            if (panel.layout === 'intro' || panel.layout === 'outro') {
               return (
-                <article className={`frame-panel frame-panel--${panel.layout}`} key={`${panel.layout}-${index}`}>
-                  {panel.eyebrow && <p className="frame-panel__eyebrow">{panel.eyebrow}</p>}
-                  {panel.title && (
-                    <h2 className="section__title frame-horizontal__title">
-                      <span className="split-line"><span className="split-line__inner">{panel.title}</span></span>
-                    </h2>
-                  )}
-                  {panel.body && <p className="frame-panel__body">{panel.body}</p>}
-                </article>
+                <FrameTextPanel
+                  key={`${panel.layout}-${index}`}
+                  layout={panel.layout}
+                  eyebrow={panel.eyebrow}
+                  title={panel.title}
+                  body={panel.body}
+                />
               )
             }
 
-            const frame = panel.frame
-            if (!frame) return null
+            if (panel.layout === 'chapter' && panel.chapter) {
+              return <FrameChapterPanel chapter={panel.chapter} key={panel.chapter.id} />
+            }
 
-            return (
-              <figure
-                className={`frame-panel frame-panel--image frame-panel--${frame.orientation}`}
-                key={frame.src}
-                data-tone={frame.tone}
-                data-cursor="hover"
-              >
-                <div className="frame-panel__media">
-                  <img src={frame.src} alt={frame.title} loading="lazy" decoding="async" />
-                </div>
-                <figcaption className="frame-panel__caption">
-                  <span className="frame-panel__caption-title">{frame.title}</span>
-                  <span>{frame.location}</span>
-                  <span>{frame.meta}</span>
-                </figcaption>
-              </figure>
-            )
+            if (panel.layout === 'image' && panel.image && panel.chapter) {
+              return <FrameImagePanel image={panel.image} chapter={panel.chapter} key={panel.image.src} />
+            }
+
+            return null
           })}
         </div>
       </div>
