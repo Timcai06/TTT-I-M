@@ -29,7 +29,7 @@ npm run build
 - Chapter order and nav/progress metadata: `src/chapters/registry.ts`
 - Project cards and media: `src/data/projects.ts`
 - Skill rows: `src/data/skills.ts`
-- Frame architecture gallery chapters, captions, and rhythm metadata: `src/data/frames.ts`
+- Visual archive themes, clusters, captions, and rhythm metadata: `src/data/frames.ts`
 - Life gallery photos: `src/data/life.ts`
 - Intro, hero, about, skills, work, life, and contact sections: `src/components/`
 
@@ -46,7 +46,7 @@ npm run build
 
 - `scripts/setup-assets.mjs` prepares generated/public assets before dev and build.
 - Active public assets live under `public/portrait`, `public/life`, `public/frame`, and `public/projects`.
-- Frame architecture photos are sourced from `../sources/beautified/buildings` and generated into `public/frame/buildings` by `npm run setup`.
+- Visual archive images are generated into `public/frame/buildings`, `public/frame/cuisine`, and `public/frame/scenery` by `npm run setup`.
 - Large unused source/archive material should stay outside `public`, otherwise Vite will ship it.
 
 ## Deployment

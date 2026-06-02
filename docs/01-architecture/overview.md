@@ -21,7 +21,9 @@ portfolio/
 │   │   └── about_me.jpg     # About 区肖像
 │   ├── life/                # 生活图片区 WebP
 │   ├── frame/
-│   │   └── buildings/       # Frame 建筑横向画廊 WebP
+│   │   ├── buildings/       # Frame / Building 子主题 WebP
+│   │   ├── cuisine/         # Frame / Cuisine 子主题 WebP
+│   │   └── scenery/         # Frame / Scenery 子主题 WebP
 │   └── projects/            # 作品展示图 WebP
 │
 ├── scripts/
@@ -73,7 +75,7 @@ src/data/projects.ts  ──import──▶  src/components/Projects.tsx  ──
 ```
 
 - 作品数据脱离组件，集中管理于 `src/data/projects.ts`
-- `src/data/frames.ts` 将 Frame 图片组织为章节，并存储横向画廊所需的图片尺寸、垂直对齐和节奏间距元数据。
+- `src/data/frames.ts` 将 Frame 视觉档案组织为 Building、Cuisine、Scenery 三个子主题，并存储 cluster 布局、图片槽位、方向和 caption 元数据。
 - 每个组件内部持有自己的 GSAP `context()`，挂载时注册动画，卸载时 `ctx.revert()`
 - 组件间通过 DOM 类名（非 props）通信，动画系统依赖 ScrollTrigger 位置
 
@@ -83,7 +85,7 @@ src/data/projects.ts  ──import──▶  src/components/Projects.tsx  ──
 npm run dev / build
         │
         ▼
-scripts/setup-assets.mjs    # 复制肖像，并将 ../sources/beautified/buildings 编码为 public/frame/buildings WebP
+scripts/setup-assets.mjs    # 复制肖像，并将 Frame 子主题源图编码为 public/frame/* WebP
         │
         ▼
 Vite dev server / build     # tsc + vite build
