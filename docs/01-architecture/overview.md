@@ -75,7 +75,8 @@ src/data/projects.ts  ──import──▶  src/components/Projects.tsx  ──
 ```
 
 - 作品数据脱离组件，集中管理于 `src/data/projects.ts`
-- `src/data/frames.ts` 将 Frame 视觉档案组织为 Building、Cuisine、Scenery 三个子主题，并存储 cluster 布局、图片槽位、方向和 caption 元数据。
+- `src/data/frames.ts` 将 Frame 视觉档案组织为 Building、Cuisine、Scenery 三个独立子主题，并存储 cluster 布局、图片槽位、方向和 caption 元数据。
+- `src/components/Frame.tsx` 为每个子主题创建独立 pinned horizontal rail；Building 沿用 Surface Memory、Skyline Weather、Interior Routes、Night Current 四组分类。
 - 每个组件内部持有自己的 GSAP `context()`，挂载时注册动画，卸载时 `ctx.revert()`
 - 组件间通过 DOM 类名（非 props）通信，动画系统依赖 ScrollTrigger 位置
 

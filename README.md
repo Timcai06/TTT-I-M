@@ -38,6 +38,8 @@ npm run build
 - `src/chapters/registry.ts` is the source of truth for page order, nav entries, and scroll-progress entries.
 - Below-the-fold chapters are lazy-loaded so the hero can paint first.
 - GSAP and Lenis are integrated through `src/lib/gsap.ts` and `src/lib/lenis.ts`.
+- Frame renders Building, Cuisine, and Scenery as independent pinned theme rails instead of one shared horizontal track.
+- Building uses four curated groups: Surface Memory, Skyline Weather, Interior Routes, and Night Current.
 - Intro handoff timing is centralized in `src/lib/intro.ts`.
 - Chapter scrolling and hash updates are centralized in `src/lib/chapterScroll.ts`.
 - The WebGL portrait lives in `src/components/ParticlePortrait.tsx`.
