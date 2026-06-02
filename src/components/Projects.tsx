@@ -152,14 +152,14 @@ export default function Projects() {
                 ))}
               </div>
               <div className="project-card__links">
-                <a className="project-card__link" href={p.github} target="_blank" rel="noreferrer">
+                <a className="project-card__link" href={p.github} target="_blank" rel="noopener noreferrer">
                   GitHub
                   <svg viewBox="0 0 12 12" fill="none">
                     <path d="M3 9l6-6M4 3h5v5" stroke="currentColor" strokeWidth="1.2" />
                   </svg>
                 </a>
                 {p.live && (
-                  <a className="project-card__link" href={p.live} target="_blank" rel="noreferrer">
+                  <a className="project-card__link" href={p.live} target="_blank" rel="noopener noreferrer">
                     Live
                     <svg viewBox="0 0 12 12" fill="none">
                       <path d="M3 9l6-6M4 3h5v5" stroke="currentColor" strokeWidth="1.2" />

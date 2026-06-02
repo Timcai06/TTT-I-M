@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { gsap } from '../lib/gsap'
+import { scrollToChapter } from '../lib/chapterScroll'
 
 export default function Footer() {
   const root = useRef<HTMLElement>(null)
@@ -8,17 +9,9 @@ export default function Footer() {
 
   useEffect(() => {
     if (!root.current || !blobRef.current || !wrapRef.current) return
+    const rootEl = root.current
 
     const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        trigger: root.current!,
-        start: 'top bottom',
-        onEnter: () => { wrapRef.current!.style.visibility = 'visible' },
-        onLeaveBack: () => { wrapRef.current!.style.visibility = 'hidden' },
-        onEnterBack: () => { wrapRef.current!.style.visibility = 'visible' },
-        onLeave: () => { wrapRef.current!.style.visibility = 'hidden' },
-      })
-
       // Set initial states for elements that will animate in
       gsap.set('.footer__kicker', { opacity: 0, y: 15 })
       gsap.set('.footer__title .split-line__inner', { yPercent: 110 })
@@ -27,7 +20,7 @@ export default function Footer() {
 
       const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: root.current!,
+          trigger: rootEl,
           start: 'top bottom',
           end: 'bottom bottom',
           scrub: true,
@@ -42,7 +35,9 @@ export default function Footer() {
       tl.to('.footer__meta', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.45)
     }, root)
 
-    return () => ctx.revert()
+    return () => {
+      ctx.revert()
+    }
   }, [])
 
   return (
@@ -70,7 +65,7 @@ export default function Footer() {
               <span className="contact__btn-text">cairentian932@gmail.com</span>
               <span className="contact__btn-arrow">↗</span>
             </a>
-            <a href="https://github.com/Timcai06" target="_blank" rel="noreferrer" className="contact__btn">
+            <a href="https://github.com/Timcai06" target="_blank" rel="noopener noreferrer" className="contact__btn">
               <span className="contact__btn-text">github.com/Timcai06</span>
               <span className="contact__btn-arrow">↗</span>
             </a>
@@ -78,9 +73,9 @@ export default function Footer() {
           <div className="footer__meta">
             <div>© 2026 · Tim Cai · Shanghai</div>
             <div className="footer__links">
-              <a href="https://github.com/Timcai06" target="_blank" rel="noreferrer">GitHub ↗</a>
+              <a href="https://github.com/Timcai06" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
               <a href="mailto:cairentian932@gmail.com">Email ↗</a>
-              <a href="#hero" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>↑ top</a>
+              <a href="#hero" onClick={(e) => { e.preventDefault(); scrollToChapter('hero', { updateHash: true }) }}>↑ top</a>
             </div>
           </div>
         </div>
@@ -88,4 +83,3 @@ export default function Footer() {
     </footer>
   )
 }
-
