@@ -73,6 +73,7 @@ src/data/projects.ts  ──import──▶  src/components/Projects.tsx  ──
 ```
 
 - 作品数据脱离组件，集中管理于 `src/data/projects.ts`
+- `src/data/frames.ts` 将 Frame 图片组织为章节，并存储横向画廊所需的图片尺寸、垂直对齐和节奏间距元数据。
 - 每个组件内部持有自己的 GSAP `context()`，挂载时注册动画，卸载时 `ctx.revert()`
 - 组件间通过 DOM 类名（非 props）通信，动画系统依赖 ScrollTrigger 位置
 

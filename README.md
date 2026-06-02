@@ -29,7 +29,7 @@ npm run build
 - Chapter order and nav/progress metadata: `src/chapters/registry.ts`
 - Project cards and media: `src/data/projects.ts`
 - Skill rows: `src/data/skills.ts`
-- Frame architecture gallery: `src/data/frames.ts`
+- Frame architecture gallery chapters, captions, and rhythm metadata: `src/data/frames.ts`
 - Life gallery photos: `src/data/life.ts`
 - Intro, hero, about, skills, work, life, and contact sections: `src/components/`
 
