@@ -67,6 +67,18 @@ const FRAME_BUILDING_QUALITY = 82
 const FRAME_BUILDING_SIG = `edge${FRAME_BUILDING_MAX_EDGE}-q${FRAME_BUILDING_QUALITY}`
 const frameBuildingsCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-buildings.json')
 
+/* Frame archive: cuisine/scenery sources -> optimized WebP */
+const frameCuisineBeautifiedSrcDir = resolve(repoRoot, 'sources/beautified/cuisine')
+const frameCuisineRawSrcDir = resolve(repoRoot, 'sources/cuisine')
+const frameCuisineOutDir = resolve(projectRoot, 'public/frame/cuisine')
+const frameScenerySrcDir = resolve(repoRoot, 'sources/scenery')
+const frameSceneryOutDir = resolve(projectRoot, 'public/frame/scenery')
+const FRAME_ARCHIVE_MAX_EDGE = 1600
+const FRAME_ARCHIVE_QUALITY = 82
+const FRAME_ARCHIVE_SIG = `edge${FRAME_ARCHIVE_MAX_EDGE}-q${FRAME_ARCHIVE_QUALITY}`
+const frameCuisineCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-cuisine.json')
+const frameSceneryCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-scenery.json')
+
 function readCache(file, sig) {
   try {
     const c = JSON.parse(readFileSync(file, 'utf8'))
@@ -74,6 +86,45 @@ function readCache(file, sig) {
   } catch {
     return { sig, files: {} }
   }
+}
+
+function hasSourceImages(srcDir, extensions = ['.jpg', '.jpeg', '.png']) {
+  return existsSync(srcDir)
+    && readdirSync(srcDir).some((file) => extensions.some((ext) => file.toLowerCase().endsWith(ext)))
+}
+
+async function encodeImageDir({ label, srcDir, outDir, cacheFile, extensions = ['.jpg', '.jpeg', '.png'] }) {
+  if (!existsSync(srcDir)) {
+    console.warn(`[setup-assets] No ${label} dir at ${srcDir}. Assets not generated.`)
+    return
+  }
+
+  const { default: sharp } = await import('sharp')
+  mkdirSync(outDir, { recursive: true })
+
+  const cache = readCache(cacheFile, FRAME_ARCHIVE_SIG)
+  const files = readdirSync(srcDir)
+    .filter((file) => extensions.some((ext) => file.toLowerCase().endsWith(ext)))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+
+  for (const file of files) {
+    const src = resolve(srcDir, file)
+    const out = resolve(outDir, `${basename(file, extname(file))}.webp`)
+    const srcMtime = statSync(src).mtimeMs
+
+    const fresh = existsSync(out) && cache.files[file] === srcMtime
+    if (fresh) continue
+
+    await sharp(src)
+      .resize({ width: FRAME_ARCHIVE_MAX_EDGE, height: FRAME_ARCHIVE_MAX_EDGE, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: FRAME_ARCHIVE_QUALITY, effort: 5 })
+      .toFile(out)
+    cache.files[file] = srcMtime
+    console.log(`[setup-assets] ${label}/${file} -> ${out.replace(`${projectRoot}/`, '')} (${FRAME_ARCHIVE_SIG})`)
+  }
+
+  mkdirSync(dirname(cacheFile), { recursive: true })
+  writeFileSync(cacheFile, JSON.stringify(cache, null, 2))
 }
 
 if (existsSync(lifeSrcDir)) {
@@ -136,3 +187,21 @@ if (existsSync(frameBuildingsSrcDir)) {
 } else {
   console.warn('[setup-assets] No sources/beautified/buildings dir. Frame building WebP not generated.')
 }
+
+const frameCuisineSrcDir = hasSourceImages(frameCuisineBeautifiedSrcDir)
+  ? frameCuisineBeautifiedSrcDir
+  : frameCuisineRawSrcDir
+
+await encodeImageDir({
+  label: frameCuisineSrcDir === frameCuisineBeautifiedSrcDir ? 'sources/beautified/cuisine' : 'sources/cuisine',
+  srcDir: frameCuisineSrcDir,
+  outDir: frameCuisineOutDir,
+  cacheFile: frameCuisineCacheFile,
+})
+
+await encodeImageDir({
+  label: 'sources/scenery',
+  srcDir: frameScenerySrcDir,
+  outDir: frameSceneryOutDir,
+  cacheFile: frameSceneryCacheFile,
+})
