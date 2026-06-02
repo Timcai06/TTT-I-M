@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import {
   archiveIntro,
@@ -25,6 +25,7 @@ function ArchiveRail({
   themeIndex: number
 }) {
   const cluster = theme.clusters[active.clusterIndex]
+  const clusterNumber = active.clusterIndex >= 0 ? active.clusterIndex + 1 : 0
 
   return (
     <aside className="frame-horizontal__rail" aria-label={`${theme.title} progress`}>
@@ -34,7 +35,7 @@ function ArchiveRail({
         Part {String(themeIndex + 1).padStart(2, '0')} / {String(archiveThemes.length).padStart(2, '0')}
       </span>
       <span className="frame-horizontal__rail-subcount">
-        Cluster {String(active.clusterIndex + 1).padStart(2, '0')} / {String(theme.clusters.length).padStart(2, '0')}
+        Cluster {String(clusterNumber).padStart(2, '0')} / {String(theme.clusters.length).padStart(2, '0')}
       </span>
       {cluster && <span className="frame-horizontal__rail-current">{cluster.title}</span>}
     </aside>
@@ -61,8 +62,19 @@ function ArchiveThemeMarker({ theme }: { theme: ArchiveTheme }) {
   )
 }
 
+interface ArchiveSlotStyle extends CSSProperties {
+  '--slot-x'?: string
+  '--slot-y'?: string
+  '--slot-scale'?: number
+}
+
 function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveClusterSlot }) {
   const image: ArchiveImage = slot.image
+  const slotStyle: ArchiveSlotStyle = {
+    '--slot-x': `${slot.offset?.x ?? 0}px`,
+    '--slot-y': `${slot.offset?.y ?? 0}px`,
+    '--slot-scale': slot.offset?.scale ?? 1,
+  }
 
   return (
     <figure
@@ -73,6 +85,7 @@ function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveCluste
       ].join(' ')}
       data-tone={image.tone}
       data-cursor="hover"
+      style={slotStyle}
     >
       <div className="archive-slot__media">
         <img
@@ -93,10 +106,12 @@ function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveCluste
 }
 
 function ArchiveClusterPanel({
+  active,
   cluster,
   eagerFirstImage,
   theme,
 }: {
+  active: boolean
   cluster: ArchiveCluster
   eagerFirstImage: boolean
   theme: ArchiveTheme
@@ -110,6 +125,8 @@ function ArchiveClusterPanel({
         `archive-cluster--${cluster.layout}`,
         `archive-cluster--theme-${theme.id}`,
         `archive-cluster--direction-${theme.direction}`,
+        `archive-cluster--rhythm-${cluster.rhythm}`,
+        active ? 'is-active-cluster' : '',
       ].join(' ')}
       data-theme={theme.id}
       data-cluster={cluster.id}
@@ -139,11 +156,14 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
     const updateActiveCluster = () => {
       const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
       const center = window.innerWidth / 2
-      let clusterIndex = 0
+      let clusterIndex = -1
       let closest = Number.POSITIVE_INFINITY
 
       clusters.forEach((cluster, index) => {
         const rect = cluster.getBoundingClientRect()
+        const fullyInsideViewport = rect.left >= 0 && rect.right <= window.innerWidth
+        if (!fullyInsideViewport) return
+
         const distance = Math.abs(rect.left + rect.width / 2 - center)
         if (distance < closest) {
           closest = distance
@@ -239,6 +259,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
           <ArchiveThemeMarker theme={theme} />
           {theme.clusters.map((cluster, clusterIndex) => (
             <ArchiveClusterPanel
+              active={clusterIndex === active.clusterIndex}
               cluster={cluster}
               eagerFirstImage={clusterIndex === 0}
               key={cluster.id}

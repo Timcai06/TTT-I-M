@@ -10,6 +10,13 @@ export type ArchiveClusterLayout =
   | 'mosaic-right'
 export type ArchiveSlotRole = 'primary' | 'secondary' | 'detail' | 'support'
 export type ArchiveOrientation = 'portrait' | 'landscape' | 'square' | 'wide' | 'tall'
+export type ArchiveClusterRhythm = 'architectural' | 'dense' | 'balanced' | 'open'
+
+export interface ArchiveSlotOffset {
+  x?: number
+  y?: number
+  scale?: number
+}
 
 export interface ArchiveImage {
   id: number
@@ -24,12 +31,14 @@ export interface ArchiveImage {
 export interface ArchiveClusterSlot {
   role: ArchiveSlotRole
   image: ArchiveImage
+  offset?: ArchiveSlotOffset
 }
 
 export interface ArchiveCluster {
   id: string
   title: string
   layout: ArchiveClusterLayout
+  rhythm: ArchiveClusterRhythm
   slots: ArchiveClusterSlot[]
 }
 
@@ -96,46 +105,50 @@ export const archiveThemes: ArchiveTheme[] = [
         id: 'building-surface-memory',
         title: 'Surface Memory',
         layout: 'mosaic-left',
+        rhythm: 'architectural',
         slots: [
-          { role: 'primary', image: b(1, 'Shadow Wall', 'portrait', 'old-wall') },
-          { role: 'secondary', image: b(3, 'Green Doorway', 'portrait', 'heritage') },
-          { role: 'detail', image: b(4, 'Raking Stone', 'portrait', 'detail') },
-          { role: 'support', image: b(8, 'Lantern Facade', 'tall', 'detail') },
-          { role: 'support', image: b(11, 'Weathered Geometry', 'landscape', 'detail') },
+          { role: 'primary', image: b(1, 'Shadow Wall', 'portrait', 'old-wall'), offset: { y: -10, scale: 0.98 } },
+          { role: 'secondary', image: b(3, 'Green Doorway', 'portrait', 'heritage'), offset: { x: 10, y: 18, scale: 0.92 } },
+          { role: 'detail', image: b(4, 'Raking Stone', 'portrait', 'detail'), offset: { x: -4, y: -22, scale: 0.86 } },
+          { role: 'support', image: b(8, 'Lantern Facade', 'tall', 'detail'), offset: { x: 16, y: -6, scale: 0.9 } },
+          { role: 'support', image: b(11, 'Weathered Geometry', 'landscape', 'detail'), offset: { x: -12, y: 12, scale: 0.94 } },
         ],
       },
       {
         id: 'building-skyline-weather',
         title: 'Skyline Weather',
         layout: 'panorama',
+        rhythm: 'open',
         slots: [
-          { role: 'primary', image: b(2, 'Night Blocks', 'wide', 'night-city') },
-          { role: 'secondary', image: b(9, 'Framed Skyline', 'landscape', 'skyline') },
-          { role: 'detail', image: b(10, 'Afterglow Blocks', 'landscape', 'sunset') },
+          { role: 'primary', image: b(2, 'Night Blocks', 'wide', 'night-city'), offset: { y: 14, scale: 0.96 } },
+          { role: 'secondary', image: b(9, 'Framed Skyline', 'landscape', 'skyline'), offset: { x: -10, y: -30, scale: 0.9 } },
+          { role: 'detail', image: b(10, 'Afterglow Blocks', 'landscape', 'sunset'), offset: { x: 18, y: 20, scale: 0.86 } },
         ],
       },
       {
         id: 'building-interior-routes',
         title: 'Interior Routes',
         layout: 'mosaic-right',
+        rhythm: 'dense',
         slots: [
-          { role: 'primary', image: b(13, 'Arches At Night', 'landscape', 'night-city') },
-          { role: 'secondary', image: b(5, 'Brick Stair', 'landscape', 'interior') },
-          { role: 'detail', image: b(6, 'Narrow Alley', 'landscape', 'alley') },
-          { role: 'support', image: b(12, 'Lit Descent', 'landscape', 'stair') },
-          { role: 'support', image: b(16, 'Concrete Quiet', 'landscape', 'minimal') },
+          { role: 'primary', image: b(13, 'Arches At Night', 'landscape', 'night-city'), offset: { y: 18, scale: 0.97 } },
+          { role: 'secondary', image: b(5, 'Brick Stair', 'landscape', 'interior'), offset: { x: -16, y: -16, scale: 0.9 } },
+          { role: 'detail', image: b(6, 'Narrow Alley', 'landscape', 'alley'), offset: { x: 10, y: 22, scale: 0.84 } },
+          { role: 'support', image: b(12, 'Lit Descent', 'landscape', 'stair'), offset: { x: -8, y: 4, scale: 0.94 } },
+          { role: 'support', image: b(16, 'Concrete Quiet', 'landscape', 'minimal'), offset: { x: 14, y: -20, scale: 0.88 } },
         ],
       },
       {
         id: 'building-night-current',
         title: 'Night Current',
         layout: 'mosaic-left',
+        rhythm: 'balanced',
         slots: [
-          { role: 'primary', image: b(7, 'Gold Riverfront', 'wide', 'skyline') },
-          { role: 'secondary', image: b(14, 'Rooftop Neon', 'landscape', 'night-city') },
-          { role: 'detail', image: b(15, 'Table Light', 'portrait', 'interior') },
-          { role: 'support', image: b(17, 'Urban Machinery', 'landscape', 'industrial') },
-          { role: 'support', image: b(18, 'Night Crossing', 'portrait', 'street') },
+          { role: 'primary', image: b(7, 'Gold Riverfront', 'wide', 'skyline'), offset: { y: -18, scale: 0.96 } },
+          { role: 'secondary', image: b(14, 'Rooftop Neon', 'landscape', 'night-city'), offset: { x: 14, y: 8, scale: 0.9 } },
+          { role: 'detail', image: b(15, 'Table Light', 'portrait', 'interior'), offset: { x: -10, y: -26, scale: 0.86 } },
+          { role: 'support', image: b(17, 'Urban Machinery', 'landscape', 'industrial'), offset: { x: 10, y: -2, scale: 0.92 } },
+          { role: 'support', image: b(18, 'Night Crossing', 'portrait', 'street'), offset: { x: -18, y: 20, scale: 0.9 } },
         ],
       },
     ],
@@ -147,40 +160,40 @@ export const archiveThemes: ArchiveTheme[] = [
     body: 'Food, plates, cups, and warm fragments form a closer daily register.',
     direction: 'left-to-right',
     clusters: [
-      { id: 'cuisine-table', title: 'Table Opening', layout: 'feature-left', slots: [
-        { role: 'primary', image: c(1, 'Table Opening', 'landscape', 'table') },
-        { role: 'secondary', image: c(2, 'Small Plate', 'square', 'plate') },
-        { role: 'detail', image: c(3, 'Glass Detail', 'portrait', 'glass') },
+      { id: 'cuisine-table', title: 'Table Opening', layout: 'feature-left', rhythm: 'dense', slots: [
+        { role: 'primary', image: c(1, 'Table Opening', 'landscape', 'table'), offset: { y: 16, scale: 0.96 } },
+        { role: 'secondary', image: c(2, 'Small Plate', 'square', 'plate'), offset: { x: 12, y: -20, scale: 0.84 } },
+        { role: 'detail', image: c(3, 'Glass Detail', 'portrait', 'glass'), offset: { x: -10, y: 22, scale: 0.9 } },
       ] },
-      { id: 'cuisine-stack', title: 'Warm Stack', layout: 'stack-left', slots: [
-        { role: 'primary', image: c(6, 'Warm Dish', 'portrait', 'dish') },
-        { role: 'secondary', image: c(4, 'Shared Bite', 'square', 'detail') },
-        { role: 'detail', image: c(5, 'Table Corner', 'landscape', 'table') },
+      { id: 'cuisine-stack', title: 'Warm Stack', layout: 'stack-left', rhythm: 'dense', slots: [
+        { role: 'primary', image: c(6, 'Warm Dish', 'portrait', 'dish'), offset: { y: -12, scale: 0.94 } },
+        { role: 'secondary', image: c(4, 'Shared Bite', 'square', 'detail'), offset: { x: -14, y: 20, scale: 0.88 } },
+        { role: 'detail', image: c(5, 'Table Corner', 'landscape', 'table'), offset: { x: 12, y: -18, scale: 0.92 } },
       ] },
-      { id: 'cuisine-menu', title: 'Dinner Menu', layout: 'feature-right', slots: [
-        { role: 'primary', image: c(9, 'Dinner Light', 'landscape', 'dinner') },
-        { role: 'secondary', image: c(7, 'Plate Study', 'square', 'plate') },
-        { role: 'detail', image: c(8, 'Cup Shadow', 'portrait', 'glass') },
+      { id: 'cuisine-menu', title: 'Dinner Menu', layout: 'feature-right', rhythm: 'balanced', slots: [
+        { role: 'primary', image: c(9, 'Dinner Light', 'landscape', 'dinner'), offset: { y: 18, scale: 0.96 } },
+        { role: 'secondary', image: c(7, 'Plate Study', 'square', 'plate'), offset: { x: -12, y: -22, scale: 0.86 } },
+        { role: 'detail', image: c(8, 'Cup Shadow', 'portrait', 'glass'), offset: { x: 16, y: 14, scale: 0.9 } },
       ] },
-      { id: 'cuisine-close', title: 'Close Table', layout: 'stack-right', slots: [
-        { role: 'primary', image: c(12, 'Aftertaste', 'landscape', 'table') },
-        { role: 'secondary', image: c(10, 'Dish Detail', 'square', 'dish') },
-        { role: 'detail', image: c(11, 'Soft Table Light', 'portrait', 'detail') },
+      { id: 'cuisine-close', title: 'Close Table', layout: 'stack-right', rhythm: 'dense', slots: [
+        { role: 'primary', image: c(12, 'Aftertaste', 'landscape', 'table'), offset: { y: -10, scale: 0.95 } },
+        { role: 'secondary', image: c(10, 'Dish Detail', 'square', 'dish'), offset: { x: 14, y: 24, scale: 0.88 } },
+        { role: 'detail', image: c(11, 'Soft Table Light', 'portrait', 'detail'), offset: { x: -12, y: -20, scale: 0.9 } },
       ] },
-      { id: 'cuisine-service', title: 'Shared Service', layout: 'feature-left', slots: [
-        { role: 'primary', image: c(13, 'Shared Service', 'landscape', 'table') },
-        { role: 'secondary', image: c(14, 'Sauce Detail', 'square', 'detail') },
-        { role: 'detail', image: c(15, 'Quiet Cup', 'portrait', 'glass') },
+      { id: 'cuisine-service', title: 'Shared Service', layout: 'feature-left', rhythm: 'balanced', slots: [
+        { role: 'primary', image: c(13, 'Shared Service', 'landscape', 'table'), offset: { y: 14, scale: 0.96 } },
+        { role: 'secondary', image: c(14, 'Sauce Detail', 'square', 'detail'), offset: { x: 18, y: -16, scale: 0.86 } },
+        { role: 'detail', image: c(15, 'Quiet Cup', 'portrait', 'glass'), offset: { x: -10, y: 20, scale: 0.9 } },
       ] },
-      { id: 'cuisine-night', title: 'Late Table', layout: 'feature-right', slots: [
-        { role: 'primary', image: c(18, 'Late Table', 'landscape', 'dinner') },
-        { role: 'secondary', image: c(16, 'Small Dish', 'square', 'dish') },
-        { role: 'detail', image: c(17, 'Table Texture', 'portrait', 'detail') },
+      { id: 'cuisine-night', title: 'Late Table', layout: 'feature-right', rhythm: 'open', slots: [
+        { role: 'primary', image: c(18, 'Late Table', 'landscape', 'dinner'), offset: { y: -18, scale: 0.94 } },
+        { role: 'secondary', image: c(16, 'Small Dish', 'square', 'dish'), offset: { x: -16, y: 18, scale: 0.82 } },
+        { role: 'detail', image: c(17, 'Table Texture', 'portrait', 'detail'), offset: { x: 14, y: -12, scale: 0.9 } },
       ] },
-      { id: 'cuisine-tail', title: 'Last Bite', layout: 'stack-left', slots: [
-        { role: 'primary', image: c(21, 'Last Bite', 'landscape', 'table') },
-        { role: 'secondary', image: c(19, 'Plate Ending', 'square', 'plate') },
-        { role: 'detail', image: c(20, 'Warm Fragment', 'portrait', 'detail') },
+      { id: 'cuisine-tail', title: 'Last Bite', layout: 'stack-left', rhythm: 'balanced', slots: [
+        { role: 'primary', image: c(21, 'Last Bite', 'landscape', 'table'), offset: { y: 12, scale: 0.95 } },
+        { role: 'secondary', image: c(19, 'Plate Ending', 'square', 'plate'), offset: { x: -12, y: -18, scale: 0.86 } },
+        { role: 'detail', image: c(20, 'Warm Fragment', 'portrait', 'detail'), offset: { x: 18, y: 20, scale: 0.9 } },
       ] },
     ],
   },
@@ -191,24 +204,24 @@ export const archiveThemes: ArchiveTheme[] = [
     body: 'Landscapes and travel fragments give the section its final breath.',
     direction: 'right-to-left',
     clusters: [
-      { id: 'scenery-panorama', title: 'Open Distance', layout: 'panorama', slots: [
-        { role: 'primary', image: s(1, 'Open Distance', 'wide', 'open-air') },
-        { role: 'secondary', image: s(2, 'Edge Detail', 'landscape', 'detail') },
+      { id: 'scenery-panorama', title: 'Open Distance', layout: 'panorama', rhythm: 'open', slots: [
+        { role: 'primary', image: s(1, 'Open Distance', 'wide', 'open-air'), offset: { y: -10, scale: 0.94 } },
+        { role: 'secondary', image: s(2, 'Edge Detail', 'landscape', 'detail'), offset: { x: 16, y: 24, scale: 0.82 } },
       ] },
-      { id: 'scenery-memory', title: 'Travel Memory', layout: 'feature-left', slots: [
-        { role: 'primary', image: s(3, 'Travel Light', 'landscape', 'travel') },
-        { role: 'secondary', image: s(4, 'Quiet Field', 'portrait', 'field') },
-        { role: 'detail', image: s(5, 'Small Horizon', 'landscape', 'horizon') },
+      { id: 'scenery-memory', title: 'Travel Memory', layout: 'feature-left', rhythm: 'open', slots: [
+        { role: 'primary', image: s(3, 'Travel Light', 'landscape', 'travel'), offset: { y: 18, scale: 0.94 } },
+        { role: 'secondary', image: s(4, 'Quiet Field', 'portrait', 'field'), offset: { x: 12, y: -28, scale: 0.82 } },
+        { role: 'detail', image: s(5, 'Small Horizon', 'landscape', 'horizon'), offset: { x: -18, y: 14, scale: 0.86 } },
       ] },
-      { id: 'scenery-release', title: 'Wide Release', layout: 'feature-right', slots: [
-        { role: 'primary', image: s(8, 'Wide Release', 'wide', 'release') },
-        { role: 'secondary', image: s(6, 'Path Memory', 'landscape', 'path') },
-        { role: 'detail', image: s(7, 'Air Detail', 'portrait', 'air') },
+      { id: 'scenery-release', title: 'Wide Release', layout: 'feature-right', rhythm: 'open', slots: [
+        { role: 'primary', image: s(8, 'Wide Release', 'wide', 'release'), offset: { y: -16, scale: 0.93 } },
+        { role: 'secondary', image: s(6, 'Path Memory', 'landscape', 'path'), offset: { x: -18, y: 20, scale: 0.84 } },
+        { role: 'detail', image: s(7, 'Air Detail', 'portrait', 'air'), offset: { x: 14, y: -18, scale: 0.86 } },
       ] },
-      { id: 'scenery-close', title: 'Final Horizon', layout: 'panorama', slots: [
-        { role: 'primary', image: s(11, 'Final Horizon', 'wide', 'horizon') },
-        { role: 'secondary', image: s(9, 'Soft Distance', 'landscape', 'distance') },
-        { role: 'detail', image: s(10, 'Quiet Detail', 'portrait', 'detail') },
+      { id: 'scenery-close', title: 'Final Horizon', layout: 'panorama', rhythm: 'open', slots: [
+        { role: 'primary', image: s(11, 'Final Horizon', 'wide', 'horizon'), offset: { y: 12, scale: 0.94 } },
+        { role: 'secondary', image: s(9, 'Soft Distance', 'landscape', 'distance'), offset: { x: 18, y: -22, scale: 0.84 } },
+        { role: 'detail', image: s(10, 'Quiet Detail', 'portrait', 'detail'), offset: { x: -14, y: 24, scale: 0.86 } },
       ] },
     ],
   },
