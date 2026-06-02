@@ -106,12 +106,10 @@ function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveCluste
 }
 
 function ArchiveClusterPanel({
-  active,
   cluster,
   eagerFirstImage,
   theme,
 }: {
-  active: boolean
   cluster: ArchiveCluster
   eagerFirstImage: boolean
   theme: ArchiveTheme
@@ -126,7 +124,6 @@ function ArchiveClusterPanel({
         `archive-cluster--theme-${theme.id}`,
         `archive-cluster--direction-${theme.direction}`,
         `archive-cluster--rhythm-${cluster.rhythm}`,
-        active ? 'is-active-cluster' : '',
       ].join(' ')}
       data-theme={theme.id}
       data-cluster={cluster.id}
@@ -146,6 +143,8 @@ function ArchiveClusterPanel({
 function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; themeIndex: number }) {
   const section = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
+  const activeClusterIndex = useRef(0)
+  const activeUpdateFrame = useRef(0)
   const [active, setActive] = useState<ActiveArchiveState>({ clusterIndex: 0 })
 
   useEffect(() => {
@@ -154,24 +153,27 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
     if (!sectionEl || !trackEl) return
 
     const updateActiveCluster = () => {
-      const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
-      const center = window.innerWidth / 2
-      let clusterIndex = 0
-      let closest = Number.POSITIVE_INFINITY
+      window.cancelAnimationFrame(activeUpdateFrame.current)
+      activeUpdateFrame.current = window.requestAnimationFrame(() => {
+        const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
+        const center = window.innerWidth / 2
+        let clusterIndex = 0
+        let closest = Number.POSITIVE_INFINITY
 
-      clusters.forEach((cluster, index) => {
-        const rect = cluster.getBoundingClientRect()
+        clusters.forEach((cluster, index) => {
+          const rect = cluster.getBoundingClientRect()
 
-        const distance = Math.abs(rect.left + rect.width / 2 - center)
-        if (distance < closest) {
-          closest = distance
-          clusterIndex = index
-        }
+          const distance = Math.abs(rect.left + rect.width / 2 - center)
+          if (distance < closest) {
+            closest = distance
+            clusterIndex = index
+          }
+        })
+
+        if (clusterIndex === activeClusterIndex.current) return
+        activeClusterIndex.current = clusterIndex
+        setActive({ clusterIndex })
       })
-
-      setActive((prev) => (
-        prev.clusterIndex === clusterIndex ? prev : { clusterIndex }
-      ))
     }
 
     const mm = gsap.matchMedia()
@@ -238,6 +240,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
     }, sectionEl)
 
     return () => {
+      window.cancelAnimationFrame(activeUpdateFrame.current)
       mm.revert()
       ctx.revert()
     }
@@ -257,7 +260,6 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
           <ArchiveThemeMarker theme={theme} />
           {theme.clusters.map((cluster, clusterIndex) => (
             <ArchiveClusterPanel
-              active={clusterIndex === active.clusterIndex}
               cluster={cluster}
               eagerFirstImage={clusterIndex === 0}
               key={cluster.id}
