@@ -20,6 +20,8 @@ portfolio/
 │   │   ├── tim.jpg          # 粒子肖像源图（setup-assets 复制而来）
 │   │   └── about_me.jpg     # About 区肖像
 │   ├── life/                # 生活图片区 WebP
+│   ├── frame/
+│   │   └── buildings/       # Frame 建筑横向画廊 WebP
 │   └── projects/            # 作品展示图 WebP
 │
 ├── scripts/
@@ -80,7 +82,7 @@ src/data/projects.ts  ──import──▶  src/components/Projects.tsx  ──
 npm run dev / build
         │
         ▼
-scripts/setup-assets.mjs    # 复制 ../sources/ 下的肖像到 public/portrait/
+scripts/setup-assets.mjs    # 复制肖像，并将 ../sources/beautified/buildings 编码为 public/frame/buildings WebP
         │
         ▼
 Vite dev server / build     # tsc + vite build
