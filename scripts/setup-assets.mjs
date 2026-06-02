@@ -59,12 +59,20 @@ const LIFE_QUALITY = 80
 const LIFE_SIG = `edge${LIFE_MAX_EDGE}-q${LIFE_QUALITY}`
 const cacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-life.json')
 
-function readCache() {
+/* ── Frame gallery: beautified building PNGs → optimized WebP ── */
+const frameBuildingsSrcDir = resolve(repoRoot, 'sources/beautified/buildings')
+const frameBuildingsOutDir = resolve(projectRoot, 'public/frame/buildings')
+const FRAME_BUILDING_MAX_EDGE = 1600
+const FRAME_BUILDING_QUALITY = 82
+const FRAME_BUILDING_SIG = `edge${FRAME_BUILDING_MAX_EDGE}-q${FRAME_BUILDING_QUALITY}`
+const frameBuildingsCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-buildings.json')
+
+function readCache(file, sig) {
   try {
-    const c = JSON.parse(readFileSync(cacheFile, 'utf8'))
-    return c && c.sig === LIFE_SIG && c.files ? c : { sig: LIFE_SIG, files: {} }
+    const c = JSON.parse(readFileSync(file, 'utf8'))
+    return c && c.sig === sig && c.files ? c : { sig, files: {} }
   } catch {
-    return { sig: LIFE_SIG, files: {} }
+    return { sig, files: {} }
   }
 }
 
@@ -72,7 +80,7 @@ if (existsSync(lifeSrcDir)) {
   const { default: sharp } = await import('sharp')
   mkdirSync(lifeOutDir, { recursive: true })
 
-  const cache = readCache()
+  const cache = readCache(cacheFile, LIFE_SIG)
   const pngs = readdirSync(lifeSrcDir).filter((f) => /\.png$/i.test(f))
   for (const file of pngs) {
     const src = resolve(lifeSrcDir, file)
@@ -96,4 +104,35 @@ if (existsSync(lifeSrcDir)) {
   writeFileSync(cacheFile, JSON.stringify(cache, null, 2))
 } else {
   console.warn('[setup-assets] No sources/life dir. Life gallery WebP not generated.')
+}
+
+if (existsSync(frameBuildingsSrcDir)) {
+  const { default: sharp } = await import('sharp')
+  mkdirSync(frameBuildingsOutDir, { recursive: true })
+
+  const cache = readCache(frameBuildingsCacheFile, FRAME_BUILDING_SIG)
+  const pngs = readdirSync(frameBuildingsSrcDir)
+    .filter((f) => /\.png$/i.test(f))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+
+  for (const file of pngs) {
+    const src = resolve(frameBuildingsSrcDir, file)
+    const out = resolve(frameBuildingsOutDir, `${basename(file, extname(file))}.webp`)
+    const srcMtime = statSync(src).mtimeMs
+
+    const fresh = existsSync(out) && cache.files[file] === srcMtime
+    if (fresh) continue
+
+    await sharp(src)
+      .resize({ width: FRAME_BUILDING_MAX_EDGE, height: FRAME_BUILDING_MAX_EDGE, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: FRAME_BUILDING_QUALITY, effort: 5 })
+      .toFile(out)
+    cache.files[file] = srcMtime
+    console.log(`[setup-assets] sources/beautified/buildings/${file} → public/frame/buildings/${basename(out)} (${FRAME_BUILDING_SIG})`)
+  }
+
+  mkdirSync(dirname(frameBuildingsCacheFile), { recursive: true })
+  writeFileSync(frameBuildingsCacheFile, JSON.stringify(cache, null, 2))
+} else {
+  console.warn('[setup-assets] No sources/beautified/buildings dir. Frame building WebP not generated.')
 }
