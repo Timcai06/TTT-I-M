@@ -286,8 +286,8 @@ Browser/performance checks:
 - Do not force phone landscape orientation.
 - Do not ship raw PNG files.
 
-## Open Decision
+## Final Scope Decision
 
-The recommended implementation is desktop pinned horizontal gallery with mobile vertical fallback.
+The first implementation should include all 18 beautified building images in one pass.
 
-Before implementation, confirm whether Frame should include all 18 images in one pass, or start with a curated subset of 10 to 12 images and keep the rest in the source pool.
+The gallery must still pace the 18 images with intro/outro panels and text callouts so the section feels composed instead of a raw image dump.
