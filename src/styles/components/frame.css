@@ -139,14 +139,7 @@
   gap: clamp(10px, 1.1vw, 18px);
   align-items: stretch;
   flex: 0 0 auto;
-  opacity: 0;
-  pointer-events: none;
-  transition: none;
-}
-
-.archive-theme-section.is-frame-theme-active .archive-cluster.is-active-cluster {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .archive-cluster--feature-left,

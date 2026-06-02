@@ -156,13 +156,11 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
     const updateActiveCluster = () => {
       const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
       const center = window.innerWidth / 2
-      let clusterIndex = -1
+      let clusterIndex = 0
       let closest = Number.POSITIVE_INFINITY
 
       clusters.forEach((cluster, index) => {
         const rect = cluster.getBoundingClientRect()
-        const fullyInsideViewport = rect.left >= 0 && rect.right <= window.innerWidth
-        if (!fullyInsideViewport) return
 
         const distance = Math.abs(rect.left + rect.width / 2 - center)
         if (distance < closest) {
