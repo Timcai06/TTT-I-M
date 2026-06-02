@@ -1,42 +1,52 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import {
-  archiveClusters,
-  archivePanels,
+  archiveIntro,
+  archiveOutro,
   archiveThemes,
   type ArchiveCluster,
   type ArchiveClusterSlot,
   type ArchiveImage,
+  type ArchiveTextPanel,
   type ArchiveTheme,
 } from '../data/frames'
 
 interface ActiveArchiveState {
-  themeIndex: number
   clusterIndex: number
 }
 
-function ArchiveRail({ active, theme, cluster }: { active: ActiveArchiveState; theme?: ArchiveTheme; cluster?: ArchiveCluster }) {
+function ArchiveRail({
+  active,
+  theme,
+  themeIndex,
+}: {
+  active: ActiveArchiveState
+  theme: ArchiveTheme
+  themeIndex: number
+}) {
+  const cluster = theme.clusters[active.clusterIndex]
+
   return (
-    <aside className="frame-horizontal__rail" aria-label="Visual archive progress">
+    <aside className="frame-horizontal__rail" aria-label={`${theme.title} progress`}>
       <span className="frame-horizontal__rail-kicker">Frame</span>
-      <span className="frame-horizontal__rail-title">{theme?.title ?? 'Visual Archive'}</span>
+      <span className="frame-horizontal__rail-title">{theme.title}</span>
       <span className="frame-horizontal__rail-count">
-        {String(active.themeIndex + 1).padStart(2, '0')} / {String(archiveThemes.length).padStart(2, '0')}
+        Part {String(themeIndex + 1).padStart(2, '0')} / {String(archiveThemes.length).padStart(2, '0')}
       </span>
       <span className="frame-horizontal__rail-subcount">
-        Cluster {String(active.clusterIndex + 1).padStart(2, '0')} / {String(archiveClusters.length).padStart(2, '0')}
+        Cluster {String(active.clusterIndex + 1).padStart(2, '0')} / {String(theme.clusters.length).padStart(2, '0')}
       </span>
-      {cluster && <span className="frame-horizontal__rail-current">{cluster.id.replace(/-/g, ' ')}</span>}
+      {cluster && <span className="frame-horizontal__rail-current">{cluster.title}</span>}
     </aside>
   )
 }
 
-function ArchiveTextPanel({ layout, eyebrow, title, body }: { layout: 'intro' | 'outro'; eyebrow?: string; title?: string; body?: string }) {
+function ArchiveTextPanel({ panel, layout }: { panel: ArchiveTextPanel; layout: 'intro' | 'outro' }) {
   return (
-    <article className={`frame-panel frame-panel--${layout} archive-theme-marker`}>
-      {eyebrow && <p className="frame-panel__eyebrow">{eyebrow}</p>}
-      {title && <h2 className="archive-theme-marker__title">{title}</h2>}
-      {body && <p className="frame-panel__body archive-theme-marker__body">{body}</p>}
+    <article className={`archive-frame-text archive-frame-text--${layout}`}>
+      <p className="frame-panel__eyebrow">{panel.eyebrow}</p>
+      <h2 className="archive-theme-marker__title">{panel.title}</h2>
+      <p className="frame-panel__body archive-theme-marker__body">{panel.body}</p>
     </article>
   )
 }
@@ -45,14 +55,15 @@ function ArchiveThemeMarker({ theme }: { theme: ArchiveTheme }) {
   return (
     <article className="frame-panel frame-panel--theme archive-theme-marker" data-theme={theme.id}>
       <p className="frame-panel__eyebrow">{theme.eyebrow}</p>
-      <h2 className="archive-theme-marker__title">{theme.title}</h2>
+      <h2 className="archive-theme-marker__title" id={`frame-${theme.id}-title`}>{theme.title}</h2>
       <p className="frame-panel__body archive-theme-marker__body">{theme.body}</p>
     </article>
   )
 }
 
-function ArchiveImageSlot({ slot }: { slot: ArchiveClusterSlot }) {
+function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveClusterSlot }) {
   const image: ArchiveImage = slot.image
+
   return (
     <figure
       className={[
@@ -64,7 +75,13 @@ function ArchiveImageSlot({ slot }: { slot: ArchiveClusterSlot }) {
       data-cursor="hover"
     >
       <div className="archive-slot__media">
-        <img src={image.src} alt={image.title} loading="lazy" decoding="async" />
+        <img
+          src={image.src}
+          alt={image.title}
+          loading={eager ? 'eager' : 'lazy'}
+          decoding={eager ? 'sync' : 'async'}
+          fetchPriority={eager ? 'high' : 'auto'}
+        />
       </div>
       <figcaption className="archive-slot__caption">
         <span className="archive-slot__caption-title">{image.title}</span>
@@ -75,7 +92,15 @@ function ArchiveImageSlot({ slot }: { slot: ArchiveClusterSlot }) {
   )
 }
 
-function ArchiveClusterPanel({ theme, cluster }: { theme: ArchiveTheme; cluster: ArchiveCluster }) {
+function ArchiveClusterPanel({
+  cluster,
+  eagerFirstImage,
+  theme,
+}: {
+  cluster: ArchiveCluster
+  eagerFirstImage: boolean
+  theme: ArchiveTheme
+}) {
   return (
     <article
       className={[
@@ -90,35 +115,28 @@ function ArchiveClusterPanel({ theme, cluster }: { theme: ArchiveTheme; cluster:
       data-cluster={cluster.id}
       data-direction={theme.direction}
     >
-      {cluster.slots.map((slot) => (
-        <ArchiveImageSlot key={`${cluster.id}-${slot.image.src}`} slot={slot} />
+      {cluster.slots.map((slot, index) => (
+        <ArchiveImageSlot
+          eager={eagerFirstImage && index === 0}
+          key={`${cluster.id}-${slot.image.src}`}
+          slot={slot}
+        />
       ))}
     </article>
   )
 }
 
-export default function Frame() {
-  const root = useRef<HTMLElement>(null)
+function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; themeIndex: number }) {
+  const section = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
-  const [active, setActive] = useState<ActiveArchiveState>({ themeIndex: 0, clusterIndex: 0 })
-
-  const currentTheme = archiveThemes[active.themeIndex]
-  const currentCluster = archiveClusters[active.clusterIndex]
-
-  const themeByClusterId = useMemo(() => {
-    const map = new Map<string, number>()
-    archiveThemes.forEach((theme, themeIndex) => {
-      theme.clusters.forEach((cluster) => map.set(cluster.id, themeIndex))
-    })
-    return map
-  }, [])
+  const [active, setActive] = useState<ActiveArchiveState>({ clusterIndex: 0 })
 
   useEffect(() => {
-    const rootEl = root.current
+    const sectionEl = section.current
     const trackEl = track.current
-    if (!rootEl || !trackEl) return
+    if (!sectionEl || !trackEl) return
 
-    const updateActivePanel = () => {
+    const updateActiveCluster = () => {
       const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
       const center = window.innerWidth / 2
       let clusterIndex = 0
@@ -133,12 +151,8 @@ export default function Frame() {
         }
       })
 
-      const clusterId = clusters[clusterIndex]?.dataset.cluster ?? ''
-      const themeIndex = themeByClusterId.get(clusterId) ?? 0
       setActive((prev) => (
-        prev.themeIndex === themeIndex && prev.clusterIndex === clusterIndex
-          ? prev
-          : { themeIndex, clusterIndex }
+        prev.clusterIndex === clusterIndex ? prev : { clusterIndex }
       ))
     }
 
@@ -146,104 +160,104 @@ export default function Frame() {
     const ctx = gsap.context(() => {
       gsap.fromTo(
         '.archive-theme-marker__title',
-        { y: 28, opacity: 0 },
+        { y: 24, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          duration: 1,
+          duration: 0.9,
           ease: 'expo.out',
-          stagger: 0.08,
-          scrollTrigger: { trigger: rootEl, start: 'top 78%' },
+          scrollTrigger: { trigger: sectionEl, start: 'top 76%' },
         }
       )
 
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
         const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)
-        const tween = gsap.to(trackEl, {
-          x: () => -scrollDistance(),
-          ease: 'none',
-          scrollTrigger: {
-            trigger: rootEl,
-            pin: true,
-            scrub: 1,
-            start: 'top top',
-            end: () => `+=${scrollDistance()}`,
-            invalidateOnRefresh: true,
-            anticipatePin: 1,
-            onUpdate: updateActivePanel,
-            onRefresh: updateActivePanel,
-          },
-        })
-
-        const directionTween = gsap.fromTo(
-          '.archive-cluster--direction-left-to-right',
-          { xPercent: -42 },
+        const tween = gsap.fromTo(
+          trackEl,
+          { x: () => (theme.direction === 'left-to-right' ? -scrollDistance() : 0) },
           {
-            xPercent: 42,
+            x: () => (theme.direction === 'left-to-right' ? 0 : -scrollDistance()),
             ease: 'none',
             scrollTrigger: {
-              trigger: rootEl,
+              trigger: sectionEl,
+              pin: true,
               scrub: 1,
               start: 'top top',
               end: () => `+=${scrollDistance()}`,
               invalidateOnRefresh: true,
+              anticipatePin: 1,
+              onUpdate: updateActiveCluster,
+              onRefresh: updateActiveCluster,
             },
           }
         )
 
-        updateActivePanel()
+        updateActiveCluster()
 
         return () => {
-          directionTween.scrollTrigger?.kill()
-          directionTween.kill()
           tween.scrollTrigger?.kill()
           tween.kill()
         }
       })
 
-      gsap.utils.toArray<HTMLImageElement>('.archive-slot img').forEach((img) => {
+      let refreshFrame = 0
+      const scheduleRefresh = () => {
+        window.cancelAnimationFrame(refreshFrame)
+        refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh())
+      }
+
+      const images = gsap.utils.toArray<HTMLImageElement>('.archive-slot img')
+      images.forEach((img) => {
         if (img.complete) return
-        img.addEventListener('load', () => ScrollTrigger.refresh(), { once: true })
+        img.addEventListener('load', scheduleRefresh, { once: true })
       })
-    }, rootEl)
+
+      return () => {
+        window.cancelAnimationFrame(refreshFrame)
+        images.forEach((img) => img.removeEventListener('load', scheduleRefresh))
+      }
+    }, sectionEl)
 
     return () => {
       mm.revert()
       ctx.revert()
     }
-  }, [themeByClusterId])
+  }, [theme.direction])
 
   return (
-    <section className="frame-horizontal" id="frame" ref={root} data-horizontal-section>
-      <div className="frame-horizontal__pin">
-        <ArchiveRail active={active} theme={currentTheme} cluster={currentCluster} />
+    <section
+      aria-labelledby={`frame-${theme.id}-title`}
+      className={`archive-theme-section archive-theme-section--${theme.id}`}
+      data-archive-theme={theme.id}
+      ref={section}
+    >
+      <div className="archive-theme-section__pin">
+        <ArchiveRail active={active} theme={theme} themeIndex={themeIndex} />
 
-        <div className="frame-horizontal__track" ref={track} data-horizontal-track>
-          {archivePanels.map((panel, index) => {
-            if (panel.layout === 'intro' || panel.layout === 'outro') {
-              return (
-                <ArchiveTextPanel
-                  key={`${panel.layout}-${index}`}
-                  layout={panel.layout}
-                  eyebrow={panel.eyebrow}
-                  title={panel.title}
-                  body={panel.body}
-                />
-              )
-            }
-
-            if (panel.layout === 'theme' && panel.theme) {
-              return <ArchiveThemeMarker theme={panel.theme} key={panel.theme.id} />
-            }
-
-            if (panel.layout === 'cluster' && panel.theme && panel.cluster) {
-              return <ArchiveClusterPanel theme={panel.theme} cluster={panel.cluster} key={panel.cluster.id} />
-            }
-
-            return null
-          })}
+        <div className="archive-theme-section__track" data-horizontal-track ref={track}>
+          <ArchiveThemeMarker theme={theme} />
+          {theme.clusters.map((cluster, clusterIndex) => (
+            <ArchiveClusterPanel
+              cluster={cluster}
+              eagerFirstImage={clusterIndex === 0}
+              key={cluster.id}
+              theme={theme}
+            />
+          ))}
         </div>
       </div>
+    </section>
+  )
+}
+
+export default function Frame() {
+  return (
+    <section className="frame-horizontal" id="frame" data-horizontal-section>
+      <ArchiveTextPanel layout="intro" panel={archiveIntro} />
+      {archiveThemes.map((theme, index) => (
+        <ArchiveThemeSection key={theme.id} theme={theme} themeIndex={index} />
+      ))}
+      <ArchiveTextPanel layout="outro" panel={archiveOutro} />
     </section>
   )
 }
