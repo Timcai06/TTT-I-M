@@ -25,5 +25,8 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
   expect(trackTransform).not.toBe('none')
   await expect(page.locator('.archive-slot__media img').first()).toBeVisible()
 
+  await page.mouse.wheel(0, 1600)
+  await page.waitForTimeout(500)
+
   await page.screenshot({ path: 'test-results/frame-smoke.png', fullPage: false })
 })
