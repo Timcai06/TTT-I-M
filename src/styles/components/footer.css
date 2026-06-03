@@ -172,6 +172,40 @@
   border-top: 1px solid rgba(10, 10, 10, 0.1);
 }
 
+.footer__meta-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer__now {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(10, 10, 10, 0.62);
+}
+
+.footer__now-time {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  color: #0a0a0a;
+}
+
+.footer__now-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1fa971;
+  box-shadow: 0 0 0 0 rgba(31, 169, 113, 0.5);
+  animation: footer-now-pulse 2.4s var(--ease-out) infinite;
+}
+
+@keyframes footer-now-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(31, 169, 113, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(31, 169, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(31, 169, 113, 0); }
+}
+
 .footer__meta a {
   color: inherit;
   transition: color 0.3s ease;
