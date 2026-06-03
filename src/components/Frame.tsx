@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useRef, useState } from 'react'
+import { Fragment, type CSSProperties, useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import {
   archiveIntro,
@@ -62,6 +62,28 @@ function ArchiveThemeMarker({ theme }: { theme: ArchiveTheme }) {
   )
 }
 
+function ArchiveClusterMarker({
+  cluster,
+  clusterIndex,
+  theme,
+}: {
+  cluster: ArchiveCluster
+  clusterIndex: number
+  theme: ArchiveTheme
+}) {
+  if (theme.id !== 'building' || !cluster.body) return null
+
+  return (
+    <article className="frame-panel archive-cluster-marker" data-cluster-marker={cluster.id}>
+      <p className="frame-panel__eyebrow">
+        Building / {String(clusterIndex + 1).padStart(2, '0')}
+      </p>
+      <h3 className="archive-cluster-marker__title">{cluster.title}</h3>
+      <p className="archive-cluster-marker__body">{cluster.body}</p>
+    </article>
+  )
+}
+
 interface ArchiveSlotStyle extends CSSProperties {
   '--slot-x'?: string
   '--slot-y'?: string
@@ -73,9 +95,9 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveClusterSlot }) {
   const image: ArchiveImage = slot.image
   const slotStyle: ArchiveSlotStyle = {
-    '--slot-x': `${clamp(slot.offset?.x ?? 0, -14, 14)}px`,
-    '--slot-y': `${clamp(slot.offset?.y ?? 0, -16, 16)}px`,
-    '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.94, 1),
+    '--slot-x': `${clamp(slot.offset?.x ?? 0, -10, 10)}px`,
+    '--slot-y': `${clamp(slot.offset?.y ?? 0, -12, 12)}px`,
+    '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.98, 1),
   }
 
   return (
@@ -184,6 +206,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
 
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
         const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)
+        const scrollEndDistance = () => Math.ceil(scrollDistance() + window.innerHeight * 0.8)
         const tween = gsap.fromTo(
           trackEl,
           { x: () => (theme.direction === 'left-to-right' ? -scrollDistance() : 0) },
@@ -193,9 +216,9 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
             scrollTrigger: {
               trigger: sectionEl,
               pin: true,
-              scrub: 1,
+              scrub: true,
               start: 'top top',
-              end: () => `+=${scrollDistance()}`,
+              end: () => `+=${scrollEndDistance()}`,
               toggleClass: { targets: sectionEl, className: 'is-frame-theme-active' },
               invalidateOnRefresh: true,
               anticipatePin: 1,
@@ -257,12 +280,14 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
         <div className="archive-theme-section__track" data-horizontal-track ref={track}>
           <ArchiveThemeMarker theme={theme} />
           {theme.clusters.map((cluster, clusterIndex) => (
-            <ArchiveClusterPanel
-              cluster={cluster}
-              eagerFirstImage={clusterIndex === 0}
-              key={cluster.id}
-              theme={theme}
-            />
+            <Fragment key={cluster.id}>
+              <ArchiveClusterMarker cluster={cluster} clusterIndex={clusterIndex} theme={theme} />
+              <ArchiveClusterPanel
+                cluster={cluster}
+                eagerFirstImage={clusterIndex === 0}
+                theme={theme}
+              />
+            </Fragment>
           ))}
         </div>
       </div>

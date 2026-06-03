@@ -37,6 +37,7 @@ export interface ArchiveClusterSlot {
 export interface ArchiveCluster {
   id: string
   title: string
+  body?: string
   layout: ArchiveClusterLayout
   rhythm: ArchiveClusterRhythm
   slots: ArchiveClusterSlot[]
@@ -104,6 +105,7 @@ export const archiveThemes: ArchiveTheme[] = [
       {
         id: 'building-surface-memory',
         title: 'Surface Memory',
+        body: 'Walls, doorways, stone, and lantern edges open the city as material memory before the skyline appears.',
         layout: 'mosaic-left',
         rhythm: 'architectural',
         slots: [
@@ -117,6 +119,7 @@ export const archiveThemes: ArchiveTheme[] = [
       {
         id: 'building-skyline-weather',
         title: 'Skyline Weather',
+        body: 'The view pulls back into block, glow, and weather, where distance turns structure into atmosphere.',
         layout: 'panorama',
         rhythm: 'open',
         slots: [
@@ -128,6 +131,7 @@ export const archiveThemes: ArchiveTheme[] = [
       {
         id: 'building-interior-routes',
         title: 'Interior Routes',
+        body: 'Stairs, alleys, arches, and concrete passages make the archive move through the inside of the city.',
         layout: 'mosaic-right',
         rhythm: 'dense',
         slots: [
@@ -141,6 +145,7 @@ export const archiveThemes: ArchiveTheme[] = [
       {
         id: 'building-night-current',
         title: 'Night Current',
+        body: 'At night the city becomes a current of glass, neon, crossings, and mechanical light.',
         layout: 'mosaic-left',
         rhythm: 'balanced',
         slots: [
