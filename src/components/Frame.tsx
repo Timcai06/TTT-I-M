@@ -1,5 +1,6 @@
 import { Fragment, type CSSProperties, useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
+import { revealWordsOnce } from '../lib/wordReveal'
 import {
   archiveIntro,
   archiveOutro,
@@ -43,8 +44,21 @@ function ArchiveRail({
 }
 
 function ArchiveTextPanel({ panel, layout }: { panel: ArchiveTextPanel; layout: 'intro' | 'outro' }) {
+  const ref = useRef<HTMLElement>(null)
+
+  // Vertical (non-pinned) panels — a one-shot per-word reveal on enter.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ctx = gsap.context(() => {
+      revealWordsOnce(el, '.archive-theme-marker__title', { start: 'top 82%' })
+      revealWordsOnce(el, '.frame-panel__body', { start: 'top 78%' })
+    }, el)
+    return () => ctx.revert()
+  }, [])
+
   return (
-    <article className={`archive-frame-text archive-frame-text--${layout}`}>
+    <article ref={ref} className={`archive-frame-text archive-frame-text--${layout}`}>
       <p className="frame-panel__eyebrow">{panel.eyebrow}</p>
       <h2 className="archive-theme-marker__title">{panel.title}</h2>
       <p className="frame-panel__body archive-theme-marker__body">{panel.body}</p>
@@ -192,17 +206,11 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
 
     const mm = gsap.matchMedia()
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.archive-theme-marker__title',
-        { y: 24, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.9,
-          ease: 'expo.out',
-          scrollTrigger: { trigger: sectionEl, start: 'top 76%' },
-        }
-      )
+      // The theme marker is the first panel in the pinned track (visible when
+      // the section pins), so a one-shot per-word reveal on section enter reads
+      // correctly without fighting the horizontal scrub.
+      revealWordsOnce(sectionEl, '.archive-theme-marker__title', { trigger: sectionEl, start: 'top 76%' })
+      revealWordsOnce(sectionEl, '.archive-theme-marker__body', { trigger: sectionEl, start: 'top 72%' })
 
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
         const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)

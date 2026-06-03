@@ -52,6 +52,49 @@ interface RevealOptions {
   end?: string
 }
 
+interface RevealOnceOptions {
+  /** Element whose entry fires the reveal (default: each matched target). */
+  trigger?: HTMLElement
+  /** ScrollTrigger start (default 'top 82%'). */
+  start?: string
+}
+
+/**
+ * One-shot per-word blur→clear + lift reveal (no scrub). Use inside pinned /
+ * horizontally-scrubbed sections where a vertical scrub can't track progress,
+ * or anywhere a title should resolve once as it enters. Same CJK-aware split as
+ * revealWords; blur dropped under reduced-motion / touch.
+ *
+ * MUST be called inside a `gsap.context(..., scope)`.
+ */
+export function revealWordsOnce(scope: HTMLElement, selector: string, opts: RevealOnceOptions = {}) {
+  const noBlur = prefersReducedMotion() || window.matchMedia('(hover: none)').matches
+
+  gsap.utils.toArray<HTMLElement>(scope.querySelectorAll(selector)).forEach((target) => {
+    splitWords(target)
+    const words = target.querySelectorAll<HTMLElement>('.word')
+    if (!words.length) return
+
+    gsap.fromTo(
+      words,
+      { opacity: 0, yPercent: 30, ...(noBlur ? {} : { filter: 'blur(6px)' }) },
+      {
+        opacity: 1,
+        yPercent: 0,
+        ...(noBlur ? {} : { filter: 'blur(0px)' }),
+        ease: 'power3.out',
+        duration: 0.7,
+        stagger: 0.018,
+        scrollTrigger: {
+          trigger: opts.trigger ?? target,
+          start: opts.start ?? 'top 82%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    )
+  })
+}
+
 /**
  * Scroll-scrubbed blur→clear reveal for every element matching `selector`
  * inside `scope`. One ScrollTrigger per paragraph (cheap); the cascade comes
