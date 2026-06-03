@@ -12,7 +12,7 @@ export default function Hero() {
     let cancelIntroExit = () => {}
     const ctx = gsap.context(() => {
       // intro reveal
-      gsap.set('.hero__split .split-line__inner', { yPercent: 110 })
+      gsap.set('.hero__split .split-line__inner', { yPercent: 110, skewY: 6 })
       gsap.set('.hero__meta-block', { opacity: 0, y: 12 })
       gsap.set('.hero__subline > *', { opacity: 0, y: 8 })
       gsap.set('.hero__kicker', { opacity: 0, y: 10 })
@@ -26,6 +26,7 @@ export default function Hero() {
       tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' })
         .to('.hero__split .split-line__inner', {
         yPercent: 0,
+        skewY: 0,
         duration: 2.2,
         ease: 'expo.out',
         stagger: 0.12,

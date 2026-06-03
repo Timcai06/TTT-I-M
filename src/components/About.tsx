@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
+import { revealWords } from '../lib/wordReveal'
 import { facts } from '../data/about'
 
 export default function About() {
@@ -12,7 +13,7 @@ export default function About() {
       // Title stagger lines reveal
       gsap.fromTo(
         '.about__lead-line',
-        { yPercent: 100 },
+        { yPercent: 100, skewY: 5 },
         {
           scrollTrigger: {
             trigger: '.about__lead',
@@ -20,30 +21,37 @@ export default function About() {
             toggleActions: 'play none none reverse', // 双向回退触发
           },
           yPercent: 0,
+          skewY: 0,
           duration: 1.8,
           ease: 'expo.out',
           stagger: 0.12,
         }
       )
 
-      // Independent paragraph blocks reveal
-      gsap.utils.toArray<HTMLElement>('.about__block').forEach((block) => {
-        gsap.fromTo(
-          block,
-          { y: 32, opacity: 0 },
-          {
-            scrollTrigger: {
-              trigger: block,
-              start: 'top 90%',
-              toggleActions: 'play none none reverse', // 双向回退触发
-            },
-            y: 0,
-            opacity: 1,
-            duration: 1.6,
-            ease: 'expo.out',
-          }
-        )
-      })
+      // Independent paragraph blocks reveal. The manifesto is excluded here —
+      // it gets a word-level blur→clear reveal instead (see below).
+      gsap.utils
+        .toArray<HTMLElement>('.about__block:not(.about__block--manifesto)')
+        .forEach((block) => {
+          gsap.fromTo(
+            block,
+            { y: 32, opacity: 0 },
+            {
+              scrollTrigger: {
+                trigger: block,
+                start: 'top 90%',
+                toggleActions: 'play none none reverse', // 双向回退触发
+              },
+              y: 0,
+              opacity: 1,
+              duration: 1.6,
+              ease: 'expo.out',
+            }
+          )
+        })
+
+      // Manifesto: scrubbed word-by-word de-blur as the line crosses the band.
+      revealWords(root.current!, '.about__block--manifesto p')
 
       // Stats reveal
       gsap.from('.about__fact', {

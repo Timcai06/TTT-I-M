@@ -163,7 +163,17 @@
 
 .life__intro-p .split-line__inner {
   display: inline-block;
-  transform: translateY(110%);
+  /* Each split-line must stay on ONE visual line — the rise-from-mask reveal
+     clips vertically, so a wrapped line would be cut off mid-paragraph. Copy is
+     kept short; nowrap guarantees it even if a glyph nudges the width. */
+  white-space: nowrap;
+  /* Initial hidden state is owned by GSAP via `yPercent` (set on mount).
+     Do NOT set a CSS `transform: translateY(110%)` here: GSAP reads the
+     computed % transform back as a stray pixel `y`, and once it animates
+     `yPercent` to 0 that pixel residual stays — shoving the revealed line
+     ~110px below its `overflow:hidden` clip box, so the text never shows.
+     Hiding with opacity keeps the reveal purely in GSAP's transform space. */
+  opacity: 0;
 }
 
 @media (max-width: 768px) {

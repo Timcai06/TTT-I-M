@@ -37,7 +37,12 @@ export default function LifeGallery() {
           gsap.set(paragraphs, { opacity: 0, y: 0 })
         }
         if (allLines.length > 0) {
-          gsap.set(allLines, { yPercent: 110, opacity: 0 })
+          // `y: 0` is explicit on purpose: GSAP reads any CSS transform back as
+          // a pixel `y`, so if the stylesheet ever (re)introduces a translateY
+          // baseline, animating `yPercent` to 0 would leave that px behind and
+          // shove the revealed line out of its overflow:hidden clip box. Pinning
+          // y to 0 keeps the reveal purely in yPercent space.
+          gsap.set(allLines, { yPercent: 110, y: 0, opacity: 0 })
         }
 
         // 钉住 .gallery-wrap（正好 100vh），让 gallery 完整填满视口；
@@ -82,9 +87,9 @@ export default function LifeGallery() {
             tl.fromTo(p, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, index === 0 ? '+=0.1' : '+=0.6')
             
             // Slide up the split-text lines (concurrent with paragraph fade)
-            tl.fromTo(lines, 
-              { yPercent: 110, opacity: 0 },
-              { yPercent: 0, opacity: 1, stagger: 0.14, duration: 1.0, ease: 'power3.out' },
+            tl.fromTo(lines,
+              { yPercent: 110, y: 0, opacity: 0 },
+              { yPercent: 0, y: 0, opacity: 1, stagger: 0.14, duration: 1.0, ease: 'power3.out' },
               '<'
             )
             
@@ -94,7 +99,7 @@ export default function LifeGallery() {
             // Fade out and slide up
             tl.to(p, { opacity: 0, y: -24, duration: 0.7, ease: 'power2.in' })
             // 重置该段文字行，避免回滚/叠层残留
-            tl.set(lines, { yPercent: 110, opacity: 0 })
+            tl.set(lines, { yPercent: 110, y: 0, opacity: 0 })
           })
         }
 
@@ -164,19 +169,19 @@ export default function LifeGallery() {
         <div className="life__intro-overlay" aria-hidden="true">
           <div className="life__intro-container">
             <p className="life__intro-p">
-              <span className="split-line"><span className="split-line__inner">在绿茵场上，我是习惯掌控防守节奏的 6 号位后腰。</span></span>
-              <span className="split-line"><span className="split-line__inner">足球不仅是对抗与折返跑，更是对空间落点、</span></span>
-              <span className="split-line"><span className="split-line__inner">以及攻防瞬时转换的精准捕捉。</span></span>
+              <span className="split-line"><span className="split-line__inner">在绿茵场上，我是前场的 10 号。</span></span>
+              <span className="split-line"><span className="split-line__inner">像梅西那样在防线之间寻找缝隙，</span></span>
+              <span className="split-line"><span className="split-line__inner">一次直塞或转身，就改写节奏。</span></span>
             </p>
             <p className="life__intro-p">
-              <span className="split-line"><span className="split-line__inner">在镜头背后，我是夜幕下上海街头的寻光者。</span></span>
-              <span className="split-line"><span className="split-line__inner">从高耸的陆家嘴天际线，到泛着霓虹倒影的沥青马路，</span></span>
-              <span className="split-line"><span className="split-line__inner">记录着数字代码与物理实体空间融合的瞬间。</span></span>
+              <span className="split-line"><span className="split-line__inner">在镜头背后，我是街头的寻光者。</span></span>
+              <span className="split-line"><span className="split-line__inner">从陆家嘴天际线到霓虹的马路，</span></span>
+              <span className="split-line"><span className="split-line__inner">记录代码之外的城市瞬间。</span></span>
             </p>
             <p className="life__intro-p">
-              <span className="split-line"><span className="split-line__inner">在屏幕面前，我是把 strange ideas 写进代码的 builder。</span></span>
-              <span className="split-line"><span className="split-line__inner">我习惯写清文档，并和队友在深夜并肩攻克最后一公里。</span></span>
-              <span className="split-line"><span className="split-line__inner">那些跑通算法与还原高保真界面的时刻，胜过所有词藻。</span></span>
+              <span className="split-line"><span className="split-line__inner">在屏幕面前，我是写代码的 builder。</span></span>
+              <span className="split-line"><span className="split-line__inner">写清文档，陪队友啃下最后一公里。</span></span>
+              <span className="split-line"><span className="split-line__inner">让想法真正跑起来，胜过千言。</span></span>
             </p>
           </div>
         </div>

@@ -75,6 +75,7 @@
 }
 
 .scroll-indicator__segment {
+  flex: 1 1 0; /* every chapter segment is the same height — uniform rail */
   width: 24px; /* Wider hover & click target */
   display: flex;
   justify-content: flex-end;
@@ -110,17 +111,22 @@
 
 .scroll-indicator__segment-fill {
   position: absolute;
-  bottom: 0;
-  left: 0;
+  inset: 0; /* full height; we reveal it by scaling from the bottom edge */
   width: 100%;
   background: var(--fg);
   border-radius: 1px;
-  transition: height 0.12s linear;
+  transform-origin: bottom;
+  transform: scaleY(0);
+  /* scaleY is GPU-composited (no layout/paint per scroll tick like `height`),
+     and the ease-out gives the fill a smooth bottom-up trail as it catches the
+     scroll instead of the old stepped linear growth. */
+  transition: transform 0.45s var(--ease-out);
+  will-change: transform;
 }
 
 .scroll-indicator__segment.is-active .scroll-indicator__segment-fill {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent); /* Elegant glow */
+  background: linear-gradient(to top, var(--accent), color-mix(in srgb, var(--accent) 55%, #fff));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 /* ── Segment Tooltips ── */

@@ -6,6 +6,7 @@ import Hero from '../components/Hero'
 // while the loader intro plays), so the initial app chunk only carries Hero.
 const About = lazy(() => import('../components/About'))
 const LifeGallery = lazy(() => import('../components/LifeGallery'))
+const Frame = lazy(() => import('../components/Frame'))
 const Skills = lazy(() => import('../components/Skills'))
 const Projects = lazy(() => import('../components/Projects'))
 const Footer = lazy(() => import('../components/Footer'))
@@ -51,22 +52,28 @@ export const chapters: Chapter[] = [
     Component: LifeGallery,
   },
   {
+    id: 'frame',
+    Component: Frame,
+    nav: { label: '02 · Frame' },
+    progress: { index: '03', name: 'FRAME' },
+  },
+  {
     id: 'skills',
     Component: Skills,
-    nav: { label: '02 · Stack' },
-    progress: { index: '03', name: 'STACK' },
+    nav: { label: '03 · Stack' },
+    progress: { index: '04', name: 'STACK' },
   },
   {
     id: 'projects',
     Component: Projects,
-    nav: { label: '03 · Work' },
-    progress: { index: '04', name: 'WORK' },
+    nav: { label: '04 · Work' },
+    progress: { index: '05', name: 'WORK' },
   },
   {
     id: 'contact',
     Component: Footer,
-    nav: { label: '04 · Contact' },
-    progress: { index: '05', name: 'CONTACT' },
+    nav: { label: '05 · Contact' },
+    progress: { index: '06', name: 'CONTACT' },
   },
 ]
 

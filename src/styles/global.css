@@ -50,6 +50,10 @@ body {
   line-height: 1.7;
 }
 
+p {
+  text-wrap: pretty; /* avoids orphans / ragged last lines in body copy */
+}
+
 ::selection {
   background: rgba(255, 255, 255, 0.15);
   color: var(--fg);
@@ -156,6 +160,9 @@ main {
   line-height: 1;
   letter-spacing: -0.04em;
   margin: 0;
+  text-wrap: balance; /* even line lengths instead of a lonely last word */
+  font-kerning: normal;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
 }
 
 .section__title em {
@@ -168,13 +175,23 @@ main {
 .split-line {
   display: block;
   overflow: hidden;
-  padding-bottom: 0.1em;
-  margin-bottom: -0.1em;
+  /* Generous bleading on every edge so the masked rise never clips serif
+     descenders, italic <em> overhang, or the slight skew used on the reveal.
+     Negative margins cancel the padding so layout/leading is unchanged. */
+  padding: 0.14em 0.12em 0.18em;
+  margin: -0.14em -0.12em -0.18em;
 }
 
 .split-line__inner {
   display: block;
   will-change: transform;
+  transform-origin: left center; /* skew/rise pivots from the left edge */
+}
+
+/* ── Word-level reveal token (see lib/wordReveal.ts) ── */
+.word {
+  display: inline-block;
+  will-change: opacity, filter;
 }
 
 /* ── Hardware Acceleration Layer Promotion ── */

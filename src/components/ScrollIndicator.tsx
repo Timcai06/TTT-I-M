@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import { progressChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
@@ -12,62 +12,38 @@ const sections = progressChapters.map((c) => ({
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
 export default function ScrollIndicator() {
-  const [activeSection, setActiveSection] = useState(firstSection)
-  const [scrollPercent, setScrollPercent] = useState(0)
-  const [proportions, setProportions] = useState<number[]>(
-    sections.map(() => 1 / sections.length)
-  )
-
-  const measureSections = useCallback(() => {
-    const heights = sections
-      .map((s) => document.getElementById(s.id))
-      .filter(Boolean) as HTMLElement[]
-
-    const total = heights.reduce((sum, el) => sum + el.offsetHeight, 0)
-    if (total <= 0) return
-
-    setProportions(heights.map((el) => el.offsetHeight / total))
-  }, [])
+  const [activeId, setActiveId] = useState(firstSection.id)
+  const [fills, setFills] = useState<number[]>(() => sections.map(() => 0))
 
   useEffect(() => {
-    window.addEventListener('resize', measureSections)
-    // Sections are lazy-loaded; measure only once they exist.
-    const cancel = onChaptersReady(measureSections)
-    return () => {
-      cancel()
-      window.removeEventListener('resize', measureSections)
-    }
-  }, [measureSections])
+    const ctx = gsap.context(() => {})
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // The overall progress trigger has no element dependency.
-      ScrollTrigger.create({
-        start: 0,
-        end: 'max',
-        onUpdate: (self) => {
-          setScrollPercent(self.progress)
-        },
-      })
-    })
-
-    // Per-section triggers must be created after the (lazy) sections mount —
-    // otherwise `#about`…`#contact` resolve to null and collapse to scroll 0,
-    // making the last section spuriously "active" at the top of the page.
+    // Every segment is driven by its OWN section's ScrollTrigger, with the same
+    // `top 50% → bottom 50%` span used for the active state. So all chapters
+    // share one identical behaviour: the bar fills 0→1 exactly as that section
+    // passes the viewport middle — same easing, same appearance, no chapter
+    // filling faster or differently than another. Because each fill is its own
+    // section's progress, it can never race ahead of the page either.
     const cancel = onChaptersReady(() => {
       ctx.add(() => {
-        sections.forEach((sec) =>
+        sections.forEach((sec, i) => {
           ScrollTrigger.create({
             trigger: `#${sec.id}`,
             start: 'top 50%',
             end: 'bottom 50%',
+            onUpdate: (self) => {
+              setFills((prev) => {
+                if (prev[i] === self.progress) return prev
+                const next = prev.slice()
+                next[i] = self.progress
+                return next
+              })
+            },
             onToggle: (self) => {
-              if (self.isActive) {
-                setActiveSection(sec)
-              }
+              if (self.isActive) setActiveId(sec.id)
             },
           })
-        )
+        })
       })
     })
 
@@ -77,11 +53,12 @@ export default function ScrollIndicator() {
     }
   }, [])
 
+  const activeIdx = sections.findIndex((s) => s.id === activeId)
+  const activeSection = sections[activeIdx] ?? firstSection
+
   const handleSegmentClick = (id: string) => {
     scrollToChapter(id, { updateHash: true })
   }
-
-  const activeIdx = sections.findIndex((s) => s.id === activeSection.id)
 
   return (
     <div className="scroll-indicator" aria-hidden="true">
@@ -97,23 +74,13 @@ export default function ScrollIndicator() {
 
       <div className="scroll-indicator__track-container">
         {sections.map((sec, i) => {
-          const prop = proportions[i] ?? 0
-          const prevSum = proportions
-            .slice(0, i)
-            .reduce((a, b) => a + b, 0)
-
-          const rawFill =
-            prop > 0
-              ? ((scrollPercent - prevSum) / prop) * 100
-              : 0
-          const fill = Math.min(100, Math.max(0, rawFill))
+          const fill = Math.min(1, Math.max(0, fills[i] ?? 0))
           const isActive = i === activeIdx
 
           return (
             <button
               key={sec.id}
               className={`scroll-indicator__segment${isActive ? ' is-active' : ''}`}
-              style={{ height: `calc(${prop} * 280px)` }}
               onClick={() => handleSegmentClick(sec.id)}
               tabIndex={-1}
               aria-label={`Scroll to ${sec.name}`}
@@ -125,7 +92,7 @@ export default function ScrollIndicator() {
               <span className="scroll-indicator__segment-bar">
                 <span
                   className="scroll-indicator__segment-fill"
-                  style={{ height: `${fill}%` }}
+                  style={{ transform: `scaleY(${fill.toFixed(4)})` }}
                 />
               </span>
             </button>

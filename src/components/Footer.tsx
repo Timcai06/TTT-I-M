@@ -14,7 +14,7 @@ export default function Footer() {
     const ctx = gsap.context(() => {
       // Set initial states for elements that will animate in
       gsap.set('.footer__kicker', { opacity: 0, y: 15 })
-      gsap.set('.footer__title .split-line__inner', { yPercent: 110 })
+      gsap.set('.footer__title .split-line__inner', { yPercent: 110, skewY: 6 })
       gsap.set('.contact__btn', { opacity: 0, y: 30 })
       gsap.set('.footer__meta', { opacity: 0 })
 
@@ -30,7 +30,7 @@ export default function Footer() {
       tl.fromTo(blobRef.current, { scale: 0 }, { scale: 1, duration: 0.6, ease: 'none' }, 0)
       tl.to('.footer__inner', { opacity: 1, duration: 0.1, ease: 'none' }, 0.18)
       tl.to('.footer__kicker', { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.18)
-      tl.to('.footer__title .split-line__inner', { yPercent: 0, duration: 0.5, stagger: 0.12, ease: 'power3.out' }, 0.22)
+      tl.to('.footer__title .split-line__inner', { yPercent: 0, skewY: 0, duration: 0.5, stagger: 0.12, ease: 'power3.out' }, 0.22)
       tl.to('.contact__btn', { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power3.out' }, 0.32)
       tl.to('.footer__meta', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.45)
     }, root)

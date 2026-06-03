@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
+import { attachTilt } from '../lib/tilt'
 import { projects, type Project } from '../data/projects'
 
 function ProjectMedia({ project }: { project: Project }) {
@@ -104,7 +105,18 @@ export default function Projects() {
 
       ScrollTrigger.refresh()
     }, root)
-    return () => ctx.revert()
+
+    // Pointer-following 3D tilt on each media frame (no-ops on touch / reduced
+    // motion). Lives outside the gsap.context — it owns its own ticker/listeners
+    // and is torn down explicitly below.
+    const tiltDisposers = gsap.utils
+      .toArray<HTMLElement>(root.current.querySelectorAll('.media-frame'))
+      .map((frame) => attachTilt(frame))
+
+    return () => {
+      tiltDisposers.forEach((dispose) => dispose())
+      ctx.revert()
+    }
   }, [])
 
   return (
