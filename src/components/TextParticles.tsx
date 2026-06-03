@@ -139,6 +139,16 @@ export default function TextParticles({
     progress = st.progress
     draw()
 
+    // Re-layout once the serif web font loads — otherwise the first build
+    // samples the fallback glyph shapes and the particles form the wrong type.
+    let cancelled = false
+    document.fonts?.ready.then(() => {
+      if (cancelled) return
+      build()
+      draw()
+      ScrollTrigger.refresh()
+    })
+
     let resizeRaf = 0
     const onResize = () => {
       cancelAnimationFrame(resizeRaf)
@@ -151,6 +161,7 @@ export default function TextParticles({
     window.addEventListener('resize', onResize)
 
     return () => {
+      cancelled = true
       cancelAnimationFrame(resizeRaf)
       window.removeEventListener('resize', onResize)
       st.kill()
