@@ -3,7 +3,7 @@ import type { ErrorInfo, ReactNode, RefObject } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ScrollTrigger } from '../lib/gsap'
-import { prefersReducedMotion } from '../lib/motion'
+import { useReducedMotion } from '../lib/motion'
 import { buildTextParticleField, type TextParticleField } from '../lib/textParticles'
 
 // Share the hero portrait's tonal palette so the manifesto reads as the same
@@ -191,7 +191,11 @@ interface Props {
 export default function TextParticles({ text, className = '', fontSize = 72 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [field, setField] = useState<TextParticleField | null>(null)
-  const [fallback, setFallback] = useState(() => prefersReducedMotion())
+  // Reactive: respects a runtime OS "reduce motion" toggle. WebGL failure is a
+  // separate latch set by the error boundary. Either one drops to plain type.
+  const reduced = useReducedMotion()
+  const [webglFailed, setWebglFailed] = useState(false)
+  const fallback = reduced || webglFailed
 
   useEffect(() => {
     if (fallback) return
@@ -202,14 +206,17 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
       const cw = Math.max(1, wrap.clientWidth)
       const fs = Math.max(26, Math.min(fontSize, cw / 6.5))
       const serif = getComputedStyle(wrap).getPropertyValue('--font-serif').trim() || 'serif'
+      // Lighter particle budget on phones (fewer points, sparser grid) to keep
+      // the GPU cost well within frame on mobile hardware.
+      const mobile = window.innerWidth < 768
       const f = buildTextParticleField({
         text,
         maxWidth: cw,
         fontSize: fs,
         fontFamily: serif,
         fontWeight: 500,
-        sampleGap: 5,
-        maxTargets: 6000,
+        sampleGap: mobile ? 7 : 5,
+        maxTargets: mobile ? 2600 : 6000,
       })
       wrap.style.height = `${f.height}px`
       setField(f)
@@ -249,7 +256,7 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
 
   return (
     <div ref={wrapRef} className={`text-particles text-particles--gl ${className}`}>
-      <CanvasErrorBoundary onError={() => setFallback(true)}>
+      <CanvasErrorBoundary onError={() => setWebglFailed(true)}>
         {field && (
           <Canvas
             frameloop="demand"
@@ -257,6 +264,7 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
             gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
             camera={{ position: [0, 0, 5], fov: 60 }}
             style={{ position: 'absolute', inset: 0 }}
+            aria-hidden="true"
           >
             <GlyphPoints field={field} triggerRef={wrapRef} />
           </Canvas>
