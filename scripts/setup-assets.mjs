@@ -62,8 +62,8 @@ const cacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-life.js
 /* ── Frame gallery: beautified building PNGs → optimized WebP ── */
 const frameBuildingsSrcDir = resolve(repoRoot, 'sources/beautified/buildings')
 const frameBuildingsOutDir = resolve(projectRoot, 'public/frame/buildings')
-const FRAME_BUILDING_MAX_EDGE = 1600
-const FRAME_BUILDING_QUALITY = 82
+const FRAME_BUILDING_MAX_EDGE = 1400
+const FRAME_BUILDING_QUALITY = 80
 const FRAME_BUILDING_SIG = `edge${FRAME_BUILDING_MAX_EDGE}-q${FRAME_BUILDING_QUALITY}`
 const frameBuildingsCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-buildings.json')
 
@@ -71,10 +71,11 @@ const frameBuildingsCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-
 const frameCuisineBeautifiedSrcDir = resolve(repoRoot, 'sources/beautified/cuisine')
 const frameCuisineRawSrcDir = resolve(repoRoot, 'sources/cuisine')
 const frameCuisineOutDir = resolve(projectRoot, 'public/frame/cuisine')
-const frameScenerySrcDir = resolve(repoRoot, 'sources/scenery')
+const frameSceneryBeautifiedSrcDir = resolve(repoRoot, 'sources/beautified/scenery')
+const frameSceneryRawSrcDir = resolve(repoRoot, 'sources/scenery')
 const frameSceneryOutDir = resolve(projectRoot, 'public/frame/scenery')
-const FRAME_ARCHIVE_MAX_EDGE = 1600
-const FRAME_ARCHIVE_QUALITY = 82
+const FRAME_ARCHIVE_MAX_EDGE = 1400
+const FRAME_ARCHIVE_QUALITY = 80
 const FRAME_ARCHIVE_SIG = `edge${FRAME_ARCHIVE_MAX_EDGE}-q${FRAME_ARCHIVE_QUALITY}`
 const frameCuisineCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-cuisine.json')
 const frameSceneryCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-scenery.json')
@@ -125,6 +126,71 @@ async function encodeImageDir({ label, srcDir, outDir, cacheFile, extensions = [
 
   mkdirSync(dirname(cacheFile), { recursive: true })
   writeFileSync(cacheFile, JSON.stringify(cache, null, 2))
+}
+
+function numberedFrameImageEntries({ beautifiedDir, rawDir, rawPrefix }) {
+  if (!existsSync(rawDir)) {
+    console.warn(`[setup-assets] No raw frame scenery dir at ${rawDir}. Assets not generated.`)
+    return []
+  }
+
+  const rawFiles = readdirSync(rawDir)
+    .filter((file) => /\.(jpe?g|png)$/i.test(file))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+
+  return rawFiles.flatMap((rawFile) => {
+    const match = rawFile.match(/(\d+)/)
+    if (!match) return []
+
+    const id = match[1].padStart(2, '0')
+    const beautifiedFile = existsSync(beautifiedDir)
+      ? readdirSync(beautifiedDir).find((file) => {
+        const beautifiedMatch = file.match(/(\d+)/)
+        return beautifiedMatch?.[1].padStart(2, '0') === id && /\.(jpe?g|png)$/i.test(file)
+      })
+      : undefined
+
+    const sourceFile = beautifiedFile ?? rawFile
+    const sourceDir = beautifiedFile ? beautifiedDir : rawDir
+    return [{
+      file: sourceFile,
+      id,
+      label: beautifiedFile ? 'sources/beautified/scenery' : 'sources/scenery',
+      outName: `${rawPrefix}-${id}.webp`,
+      src: resolve(sourceDir, sourceFile),
+    }]
+  })
+}
+
+async function encodeFrameSceneryDir() {
+  const { default: sharp } = await import('sharp')
+  mkdirSync(frameSceneryOutDir, { recursive: true })
+
+  const cache = readCache(frameSceneryCacheFile, FRAME_ARCHIVE_SIG)
+  const entries = numberedFrameImageEntries({
+    beautifiedDir: frameSceneryBeautifiedSrcDir,
+    rawDir: frameSceneryRawSrcDir,
+    rawPrefix: 'scenery',
+  })
+
+  for (const entry of entries) {
+    const out = resolve(frameSceneryOutDir, entry.outName)
+    const srcMtime = statSync(entry.src).mtimeMs
+    const cacheKey = `${entry.outName}:${entry.src}`
+
+    const fresh = existsSync(out) && cache.files[cacheKey] === srcMtime
+    if (fresh) continue
+
+    await sharp(entry.src)
+      .resize({ width: FRAME_ARCHIVE_MAX_EDGE, height: FRAME_ARCHIVE_MAX_EDGE, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: FRAME_ARCHIVE_QUALITY, effort: 5 })
+      .toFile(out)
+    cache.files[cacheKey] = srcMtime
+    console.log(`[setup-assets] ${entry.label}/${entry.file} -> ${out.replace(`${projectRoot}/`, '')} (${FRAME_ARCHIVE_SIG})`)
+  }
+
+  mkdirSync(dirname(frameSceneryCacheFile), { recursive: true })
+  writeFileSync(frameSceneryCacheFile, JSON.stringify(cache, null, 2))
 }
 
 if (existsSync(lifeSrcDir)) {
@@ -199,9 +265,4 @@ await encodeImageDir({
   cacheFile: frameCuisineCacheFile,
 })
 
-await encodeImageDir({
-  label: 'sources/scenery',
-  srcDir: frameScenerySrcDir,
-  outDir: frameSceneryOutDir,
-  cacheFile: frameSceneryCacheFile,
-})
+await encodeFrameSceneryDir()
