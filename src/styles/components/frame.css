@@ -326,6 +326,13 @@
   grid-template-rows: minmax(0, 1fr) auto;
   overflow: hidden;
   contain: layout paint;
+  /* The horizontal rail holds ~50 image slots; only a few are ever on screen.
+     content-visibility skips layout/paint/decode for the off-screen ones, so
+     fast scrubbing through the rail stops repainting dozens of photos per
+     frame. The cluster grid tracks keep each slot's box size when skipped, and
+     `auto` remembers the last rendered size to avoid any reveal pop. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
   transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0) scale(var(--slot-scale, 1));
   transform-origin: center;
 }
