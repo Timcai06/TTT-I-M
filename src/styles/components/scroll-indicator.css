@@ -96,7 +96,6 @@
   overflow: hidden;
   border-radius: 1px;
   transition: width 0.3s var(--ease-out), background 0.3s var(--ease-out);
-  will-change: width, background;
 }
 
 .scroll-indicator__segment.is-active .scroll-indicator__segment-bar {

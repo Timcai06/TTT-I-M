@@ -194,11 +194,13 @@ main {
   will-change: opacity, filter;
 }
 
-/* ── Hardware Acceleration Layer Promotion ── */
-.about__portrait-frame,
-.about__portrait-img,
+/* ── Hardware Acceleration Layer Promotion ──
+   Only elements that animate over a sustained scroll *scrub* get a permanent
+   composite layer. One-time reveals (portrait frame/img, project cards) used to
+   live here too, but a permanent layer for a single 1.4s reveal is wasted
+   memory — the browser auto-promotes a transform/opacity tween for its duration
+   anyway, so they're left off the always-on list. */
 .skills__flow-svg,
-.project-card,
 .contact__blob {
   will-change: transform, opacity;
   backface-visibility: hidden;

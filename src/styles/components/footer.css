@@ -123,7 +123,6 @@
   overflow: hidden;
   z-index: 1;
   transition: border-color 0.4s var(--ease-out), color 0.4s var(--ease-out);
-  will-change: border-color, color;
 }
 
 .contact__btn::before {
