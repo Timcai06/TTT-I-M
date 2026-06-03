@@ -8,6 +8,7 @@ import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ScrollIndicator from './components/ScrollIndicator'
 import Nav from './components/Nav'
+import PerfHud from './components/PerfHud'
 import { chapters } from './chapters/registry'
 import './styles/app.css'
 
@@ -102,6 +103,7 @@ export default function App() {
         ))}
       </main>
       <div className="grain" aria-hidden="true" />
+      {import.meta.env.DEV && <PerfHud />}
     </>
   )
 }
