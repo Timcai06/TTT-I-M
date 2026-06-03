@@ -8,8 +8,17 @@
  */
 
 export interface ParticleTarget {
+  /** Target position in canvas px (where the glyph ink is). */
   x: number
   y: number
+  /** Per-particle randoms in [-0.5, 0.5] for the scatter origin (x/y/z). */
+  rx: number
+  ry: number
+  rz: number
+  /** Formation stagger 0–1. */
+  delay: number
+  /** Colour-variance seed 0–1. */
+  seed: number
 }
 
 export interface TextParticleField {
@@ -108,9 +117,16 @@ export function buildTextParticleField(opts: TextParticleOptions): TextParticleF
   for (let y = 0; y < height; y += sampleGap) {
     for (let x = 0; x < width; x += sampleGap) {
       if (data[(y * width + x) * 4 + 3]! > alphaThreshold) {
+        // All randomness lives here (called from an effect, never React
+        // render) so the GL component can map it deterministically.
         targets.push({
           x: x + (Math.random() - 0.5) * sampleGap,
           y: y + (Math.random() - 0.5) * sampleGap,
+          rx: Math.random() - 0.5,
+          ry: Math.random() - 0.5,
+          rz: Math.random() - 0.5,
+          delay: Math.random(),
+          seed: Math.random(),
         })
       }
     }

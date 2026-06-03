@@ -11,6 +11,19 @@
   margin-inline: auto;
 }
 
+/* R3F (GL) variant: the <Canvas> is absolutely positioned to fill the band,
+   whose height is set in JS to the laid-out text height. */
+.text-particles--gl {
+  position: relative;
+}
+
+.text-particles--gl canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* Real text for assistive tech / SEO — visually hidden while the canvas shows
    the particle version. */
 .text-particles__sr {
