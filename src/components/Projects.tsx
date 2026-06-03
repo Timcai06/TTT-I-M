@@ -89,6 +89,19 @@ export default function Projects() {
   useEffect(() => {
     if (!root.current) return
     const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.section__title .split-line__inner',
+        { yPercent: 110, skewY: 6 },
+        {
+          yPercent: 0,
+          skewY: 0,
+          duration: 1.4,
+          ease: 'expo.out',
+          stagger: 0.12,
+          scrollTrigger: { trigger: '.section__title', start: 'top 88%', toggleActions: 'play none none reverse' },
+        }
+      )
+
       gsap.utils.toArray<HTMLElement>('.project-card').forEach((card) => {
         ScrollTrigger.create({
           trigger: card,
@@ -125,7 +138,8 @@ export default function Projects() {
         <div>
           <div className="section__label">Work — 选作</div>
           <h2 className="section__title">
-            Six things <em>I made</em><br />in 2026.
+            <span className="split-line"><span className="split-line__inner">Six things <em>I made</em></span></span>
+            <span className="split-line"><span className="split-line__inner">in 2026.</span></span>
           </h2>
         </div>
         <p className="projects__header-side">

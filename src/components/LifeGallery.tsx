@@ -127,17 +127,25 @@ export default function LifeGallery() {
     if (!wrap) return
 
     const ctx = gsap.context(() => {
-      gsap.from('.life__header > *', {
-        scrollTrigger: {
-          trigger: '.life__header',
-          start: 'top 85%',
-        },
+      gsap.from('.life__header .section__label', {
+        scrollTrigger: { trigger: '.life__header', start: 'top 85%' },
         opacity: 0,
-        y: 32,
-        duration: 1.8,
-        stagger: 0.12,
+        y: 24,
+        duration: 1.6,
         ease: 'expo.out',
       })
+      gsap.fromTo(
+        '.life__header .section__title .split-line__inner',
+        { yPercent: 110, skewY: 6 },
+        {
+          yPercent: 0,
+          skewY: 0,
+          duration: 1.6,
+          ease: 'expo.out',
+          stagger: 0.12,
+          scrollTrigger: { trigger: '.life__header', start: 'top 85%' },
+        }
+      )
     }, wrap)
 
     return () => ctx.revert()
@@ -148,7 +156,7 @@ export default function LifeGallery() {
       <div className="life__header container">
         <div className="section__label">Life — 生活</div>
         <h2 className="section__title">
-          Off the <em>clock</em>.
+          <span className="split-line"><span className="split-line__inner">Off the <em>clock</em>.</span></span>
         </h2>
       </div>
 

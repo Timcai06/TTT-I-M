@@ -107,6 +107,19 @@ export default function Skills() {
   useEffect(() => {
     if (!root.current) return
     const ctx = gsap.context(() => {
+      gsap.fromTo(
+        '.section__title .split-line__inner',
+        { yPercent: 110, skewY: 6 },
+        {
+          yPercent: 0,
+          skewY: 0,
+          duration: 1.4,
+          ease: 'expo.out',
+          stagger: 0.12,
+          scrollTrigger: { trigger: '.section__title', start: 'top 88%', toggleActions: 'play none none reverse' },
+        }
+      )
+
       gsap.utils.toArray<HTMLElement>('.skill-row').forEach((row, index) => {
         ScrollTrigger.create({
           trigger: '.skills__list',
@@ -160,7 +173,8 @@ export default function Skills() {
 
       <div className="section__label">Stack — 技术栈</div>
       <h2 className="section__title">
-        Tools <em>I trust to</em><br />ship.
+        <span className="split-line"><span className="split-line__inner">Tools <em>I trust to</em></span></span>
+        <span className="split-line"><span className="split-line__inner">ship.</span></span>
       </h2>
 
       <div className="skills__list">
