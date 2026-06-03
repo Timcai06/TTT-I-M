@@ -3,7 +3,16 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
-import { onIntroExit } from '../lib/intro'
+import { onIntroExit, INTRO_EXIT_EVENT } from '../lib/intro'
+
+// Has the loader intro finished at least once? When the hero scrolls far away
+// its Canvas is unmounted to free GPU memory; on scroll-back it remounts, and
+// this flag lets the portrait re-materialize instantly instead of waiting on
+// (or replaying) the 2.2s reveal.
+let introExitedOnce = false
+if (typeof window !== 'undefined') {
+  window.addEventListener(INTRO_EXIT_EVENT, () => { introExitedOnce = true }, { once: true })
+}
 
 const vertexShader = /* glsl */ `
   uniform sampler2D uTexture;
@@ -118,15 +127,18 @@ const fragmentShader = /* glsl */ `
 
 function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   const matRef = useRef<THREE.ShaderMaterial>(null)
-  const introRef = useRef(0)
+  // On a remount after the intro already played, start fully materialized
+  // (introRef = 1) so there's no blank wait or replayed reveal.
+  const introRef = useRef(introExitedOnce ? 1 : 0)
   const mouseRef = useRef(new THREE.Vector2(99, 99))
   const targetMouseRef = useRef(new THREE.Vector2(99, 99))
   const isHoveringRef = useRef(false)
   const { size, viewport } = useThree()
 
-  const [started, setStarted] = useState(false)
+  const [started, setStarted] = useState(introExitedOnce)
 
   useEffect(() => {
+    if (introExitedOnce) return
     return onIntroExit(() => setStarted(true))
   }, [])
 
@@ -305,23 +317,32 @@ function PortraitScene({ src }: { src: string }) {
 export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: string }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(true)
+  const [mounted, setMounted] = useState(true)
   const reduced = useReducedMotion()
 
-  // Pause the WebGL render loop whenever the hero is scrolled out of view.
-  // The shader pushes ~78k points every frame; left running off-screen it
-  // steals GPU from the scroll animations below. frameloop="never" stops it
-  // cold and resumes instantly when the hero returns.
+  // Two observers on the same wrapper, with hysteresis between their margins:
+  //
+  //  • render (120px)  — pauses the render loop (frameloop="never"). The shader
+  //    pushes ~78k points/frame; off-screen it would steal GPU from the scroll
+  //    animations below.
+  //  • mount (100% vh) — unmounts the whole Canvas once the hero is more than a
+  //    viewport away, freeing its WebGL context / texture / geometry memory,
+  //    and remounts it just before the hero returns. The gap between the two
+  //    margins keeps a paused-but-mounted band so we never thrash mount/unmount.
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry) setVisible(entry.isIntersecting)
-      },
+    const render = new IntersectionObserver(
+      ([entry]) => { if (entry) setVisible(entry.isIntersecting) },
       { rootMargin: '120px' }
     )
-    io.observe(el)
-    return () => io.disconnect()
+    const mount = new IntersectionObserver(
+      ([entry]) => { if (entry) setMounted(entry.isIntersecting) },
+      { rootMargin: '100% 0px' }
+    )
+    render.observe(el)
+    mount.observe(el)
+    return () => { render.disconnect(); mount.disconnect() }
   }, [])
 
   // Honour the OS "reduce motion" setting: skip the animated particle field
@@ -331,15 +352,17 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
   return (
     <CanvasErrorBoundary>
       <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
-        <Canvas
-          frameloop={visible ? 'always' : 'never'}
-          dpr={[1, 1.5]}
-          gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
-          camera={{ position: [0, 0, 2.4], fov: 45 }}
-          style={{ background: 'transparent' }}
-        >
-          <PortraitScene src={src} />
-        </Canvas>
+        {mounted && (
+          <Canvas
+            frameloop={visible ? 'always' : 'never'}
+            dpr={[1, 1.5]}
+            gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
+            camera={{ position: [0, 0, 2.4], fov: 45 }}
+            style={{ background: 'transparent' }}
+          >
+            <PortraitScene src={src} />
+          </Canvas>
+        )}
       </div>
     </CanvasErrorBoundary>
   )
