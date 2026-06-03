@@ -154,23 +154,11 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
     const trackEl = track.current
     if (!sectionEl || !trackEl) return
 
-    const updateActiveCluster = () => {
+    const updateActiveCluster = (progress = 0) => {
       window.cancelAnimationFrame(activeUpdateFrame.current)
       activeUpdateFrame.current = window.requestAnimationFrame(() => {
-        const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>('.archive-cluster'))
-        const center = window.innerWidth / 2
-        let clusterIndex = 0
-        let closest = Number.POSITIVE_INFINITY
-
-        clusters.forEach((cluster, index) => {
-          const rect = cluster.getBoundingClientRect()
-
-          const distance = Math.abs(rect.left + rect.width / 2 - center)
-          if (distance < closest) {
-            closest = distance
-            clusterIndex = index
-          }
-        })
+        const clusterCount = theme.clusters.length
+        const clusterIndex = Math.min(clusterCount - 1, Math.max(0, Math.floor(progress * clusterCount)))
 
         if (clusterIndex === activeClusterIndex.current) return
         activeClusterIndex.current = clusterIndex
@@ -209,13 +197,13 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
               toggleClass: { targets: sectionEl, className: 'is-frame-theme-active' },
               invalidateOnRefresh: true,
               anticipatePin: 1,
-              onUpdate: updateActiveCluster,
-              onRefresh: updateActiveCluster,
+              onUpdate: (self) => updateActiveCluster(self.progress),
+              onRefresh: (self) => updateActiveCluster(self.progress),
             },
           }
         )
 
-        updateActiveCluster()
+        updateActiveCluster(0)
 
         return () => {
           tween.scrollTrigger?.kill()
@@ -246,7 +234,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
       mm.revert()
       ctx.revert()
     }
-  }, [theme.direction])
+  }, [theme.clusters.length, theme.direction])
 
   return (
     <section

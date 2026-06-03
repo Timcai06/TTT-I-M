@@ -1,37 +1,11 @@
-import { useEffect, useState } from 'react'
 import { navChapters } from '../chapters/registry'
-import { onChaptersReady } from '../lib/chaptersReady'
 import { scrollToChapter } from '../lib/chapterScroll'
+import { useActiveChapter } from '../lib/useActiveChapter'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 
 export default function Nav() {
-  const [active, setActive] = useState(links[0]?.id ?? '')
-
-  useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            setActive(e.target.id)
-            window.history.replaceState(null, '', `#${e.target.id}`)
-          }
-        })
-      },
-      { threshold: 0.35 }
-    )
-    // Sections are lazy-loaded; observe them only once they're in the DOM.
-    const cancel = onChaptersReady(() => {
-      links
-        .map((l) => document.getElementById(l.id))
-        .filter(Boolean)
-        .forEach((s) => io.observe(s as HTMLElement))
-    })
-    return () => {
-      cancel()
-      io.disconnect()
-    }
-  }, [])
+  const active = useActiveChapter(navChapters, links[0]?.id ?? '')
 
   return (
     <header className="nav">

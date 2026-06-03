@@ -3,6 +3,7 @@ import { gsap, ScrollTrigger } from '../lib/gsap'
 import { progressChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
 import { scrollToChapter } from '../lib/chapterScroll'
+import { useActiveChapter } from '../lib/useActiveChapter'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -12,7 +13,7 @@ const sections = progressChapters.map((c) => ({
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
 export default function ScrollIndicator() {
-  const [activeId, setActiveId] = useState(firstSection.id)
+  const activeId = useActiveChapter(progressChapters, firstSection.id)
   const [fills, setFills] = useState<number[]>(() => sections.map(() => 0))
 
   useEffect(() => {
@@ -38,9 +39,6 @@ export default function ScrollIndicator() {
                 next[i] = self.progress
                 return next
               })
-            },
-            onToggle: (self) => {
-              if (self.isActive) setActiveId(sec.id)
             },
           })
         })
