@@ -11,6 +11,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty false",
     "lint": "eslint .",
+    "test:e2e": "playwright test",
+    "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

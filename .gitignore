@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+test-results
 *.local
 
 # Local source/archive material that should not be shipped by Vite publicDir

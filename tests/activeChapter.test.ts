@@ -22,11 +22,11 @@ void test('moves to the next chapter only after the viewport center enters it', 
   assert.equal(pickActiveChapterId(rects, 720, 'frame'), 'projects')
 })
 
-void test('falls back to the closest chapter when the center is between sections', () => {
+void test('keeps the previous chapter active while the center is between sections', () => {
   const rects: ChapterRectSnapshot[] = [
     { id: 'frame', top: -900, bottom: 120 },
     { id: 'skills', top: 520, bottom: 1080 },
   ]
 
-  assert.equal(pickActiveChapterId(rects, 720, 'frame'), 'skills')
+  assert.equal(pickActiveChapterId(rects, 720, 'frame'), 'frame')
 })

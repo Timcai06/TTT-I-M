@@ -68,12 +68,14 @@ interface ArchiveSlotStyle extends CSSProperties {
   '--slot-scale'?: number
 }
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
 function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveClusterSlot }) {
   const image: ArchiveImage = slot.image
   const slotStyle: ArchiveSlotStyle = {
-    '--slot-x': `${slot.offset?.x ?? 0}px`,
-    '--slot-y': `${slot.offset?.y ?? 0}px`,
-    '--slot-scale': slot.offset?.scale ?? 1,
+    '--slot-x': `${clamp(slot.offset?.x ?? 0, -14, 14)}px`,
+    '--slot-y': `${clamp(slot.offset?.y ?? 0, -16, 16)}px`,
+    '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.94, 1),
   }
 
   return (
@@ -92,8 +94,8 @@ function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveCluste
           src={image.src}
           alt={image.title}
           loading={eager ? 'eager' : 'lazy'}
-          decoding={eager ? 'sync' : 'async'}
-          fetchPriority={eager ? 'high' : 'auto'}
+          decoding="async"
+          fetchPriority={eager ? 'high' : 'low'}
         />
       </div>
       <figcaption className="archive-slot__caption">
@@ -212,9 +214,13 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
       })
 
       let refreshFrame = 0
+      let refreshTimer = 0
       const scheduleRefresh = () => {
-        window.cancelAnimationFrame(refreshFrame)
-        refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh())
+        window.clearTimeout(refreshTimer)
+        refreshTimer = window.setTimeout(() => {
+          window.cancelAnimationFrame(refreshFrame)
+          refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh())
+        }, 180)
       }
 
       const images = gsap.utils.toArray<HTMLImageElement>('.archive-slot img')
@@ -224,6 +230,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
       })
 
       return () => {
+        window.clearTimeout(refreshTimer)
         window.cancelAnimationFrame(refreshFrame)
         images.forEach((img) => img.removeEventListener('load', scheduleRefresh))
       }
