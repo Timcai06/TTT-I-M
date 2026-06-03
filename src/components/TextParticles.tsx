@@ -142,7 +142,7 @@ export default function TextParticles({
     // Re-layout once the serif web font loads — otherwise the first build
     // samples the fallback glyph shapes and the particles form the wrong type.
     let cancelled = false
-    document.fonts?.ready.then(() => {
+    void document.fonts?.ready.then(() => {
       if (cancelled) return
       build()
       draw()
