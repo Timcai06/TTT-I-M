@@ -206,16 +206,16 @@ export const archiveThemes: ArchiveTheme[] = [
     clusters: [
       { id: 'scenery-panorama', title: 'Open Distance', layout: 'panorama', rhythm: 'open', slots: [
         { role: 'primary', image: s(1, 'Open Distance', 'wide', 'open-air'), offset: { y: -10, scale: 0.94 } },
-        { role: 'secondary', image: s(2, 'Edge Detail', 'landscape', 'detail'), offset: { x: 12, y: 18, scale: 0.9 } },
+        { role: 'secondary', image: s(2, 'Window Green', 'portrait', 'detail'), offset: { x: 12, y: 18, scale: 0.9 } },
       ] },
       { id: 'scenery-memory', title: 'Travel Memory', layout: 'feature-left', rhythm: 'open', slots: [
         { role: 'primary', image: s(3, 'Travel Light', 'landscape', 'travel'), offset: { y: 18, scale: 0.94 } },
         { role: 'secondary', image: s(4, 'Quiet Field', 'portrait', 'field'), offset: { x: 10, y: -20, scale: 0.9 } },
-        { role: 'detail', image: s(5, 'Small Horizon', 'landscape', 'horizon'), offset: { x: -14, y: 12, scale: 0.9 } },
+        { role: 'detail', image: s(5, 'Autumn Passage', 'portrait', 'horizon'), offset: { x: -14, y: 12, scale: 0.9 } },
       ] },
       { id: 'scenery-release', title: 'Wide Release', layout: 'feature-right', rhythm: 'open', slots: [
-        { role: 'primary', image: s(8, 'Wide Release', 'wide', 'release'), offset: { y: -16, scale: 0.93 } },
-        { role: 'secondary', image: s(6, 'Path Memory', 'landscape', 'path'), offset: { x: -14, y: 16, scale: 0.9 } },
+        { role: 'primary', image: s(8, 'Wide Release', 'landscape', 'release'), offset: { y: -16, scale: 0.93 } },
+        { role: 'secondary', image: s(6, 'Slow Road', 'square', 'path'), offset: { x: -14, y: 16, scale: 0.9 } },
         { role: 'detail', image: s(7, 'Air Detail', 'portrait', 'air'), offset: { x: 12, y: -14, scale: 0.9 } },
       ] },
       { id: 'scenery-close', title: 'Final Horizon', layout: 'panorama', rhythm: 'open', slots: [

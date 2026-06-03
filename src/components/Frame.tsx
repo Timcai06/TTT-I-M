@@ -127,6 +127,7 @@ function ArchiveClusterPanel({
       ].join(' ')}
       data-theme={theme.id}
       data-cluster={cluster.id}
+      data-cluster-title={cluster.title}
       data-direction={theme.direction}
     >
       {cluster.slots.map((slot, index) => (
@@ -146,6 +147,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
   const activeClusterIndex = useRef(0)
   const activeUpdateFrame = useRef(0)
   const [active, setActive] = useState<ActiveArchiveState>({ clusterIndex: 0 })
+  const themeWord = theme.id.toUpperCase()
 
   useEffect(() => {
     const sectionEl = section.current
@@ -251,6 +253,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
       aria-labelledby={`frame-${theme.id}-title`}
       className={`archive-theme-section archive-theme-section--${theme.id}`}
       data-archive-theme={theme.id}
+      data-theme-word={themeWord}
       ref={section}
     >
       <div className="archive-theme-section__pin">
