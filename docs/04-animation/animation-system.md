@@ -1,70 +1,53 @@
-# 动画系统
+# 动画系统与时序编排 (Animation & Orchestration)
 
-## 三层架构
+> [!NOTE]
+> 本文档基于 `src/lib/lenis.ts` 与 `src/components/ScrollIndicator.tsx` 等真实源码逆向分析写成。揭示了如何安全地在懒加载环境下使用 GSAP。
 
+## 1. 全局滚动中枢：Lenis 与 GSAP 的完美融合
+
+传统的平滑滚动（Smooth Scrolling）往往会和 GSAP `ScrollTrigger` 产生抖动或计算偏差。本项目在 `src/lib/lenis.ts` 中构建了一个统一的动画跳动（Ticker）中枢。
+
+### 1.1 统一 Ticker 驱动
+```typescript
+const tickerFn = (time: number) => {
+  lenis.raf(time * 1000)
+}
+// 1. 让 GSAP 的原生 Ticker 接管 Lenis 的帧渲染
+gsap.ticker.add(tickerFn)
+// 2. 彻底关闭 GSAP 自带的滞后平滑，防止两个平滑算法冲突打架
+gsap.ticker.lagSmoothing(0)
 ```
-Lenis (平滑滚动)
-  │
-  ├── lenis.on('scroll', ScrollTrigger.update)  # 滚动位置同步
-  └── gsap.ticker.add(rAF)                      # 帧同步
-        │
-        └── GSAP (动画引擎)
-              ├── Timeline 动画 (Loader / Hero intro)
-              ├── ScrollTrigger 驱动 (About / Skills / Projects / Footer)
-              └── Ticker 插值 (Cursor)
-```
+这段基建确保了所有基于滚动的特效（如光标滞后、SVG 变形、文字逐行出现）与原生滚动体验**100% 帧同步**，绝不撕裂。
 
-## Lenis
+## 2. 异步 GSAP 实例的安全销毁 (Safe Destruction)
 
-**文件**: `src/lib/lenis.ts`
+在常规的 React 单页应用中，通过 `useEffect` 配合 `return () => ctx.revert()` 就能完美注销动画。
+**但本项目的极速按需加载架构带来了挑战**：因为目标 DOM（如下方的 Projects 章节）还没挂载，我们必须等 `chaptersReady` 触发后才能去 `ScrollTrigger.create(...)`。这导致创建动作变成了“未来的异步行为”。
 
-- 实例：全局单例，通过 `getLenis()` 导出
-- 参数：`duration: 1.15`，缓动函数 `1.001 - 2^(-10t)`（指数衰减近似）
-- 集成：`lenis.on('scroll', ScrollTrigger.update)` + `gsap.ticker.add(lenis.raf)`
-- 滞后平滑：`gsap.ticker.lagSmoothing(0)`
-- 启动延迟 150ms 刷新 ScrollTrigger 确保高度稳定
-
-## GSAP Context 模式
-
-所有动画组件遵循的统一生命周期：
+### 2.1 闭包注入：`ctx.add()`
+在 `src/components/ScrollIndicator.tsx` 中，我们采用了高级的上下文注入范式：
 
 ```typescript
 useEffect(() => {
-  const ctx = gsap.context(() => {
-    // 注册动画 (gsap.to / from / fromTo)
-    // 注册 ScrollTrigger
-  }, rootRef)  // scope 限制在组件 DOM 内
+  // 1. 创建同步的 GSAP 上下文
+  const ctx = gsap.context(() => {})
 
-  return () => ctx.revert()  // 卸载时完全清理
+  // 2. 开启异步监听
+  const cancel = onChaptersReady(() => {
+    // 3. 当 DOM 准备就绪时，把异步生成的 ScrollTrigger 强行塞进早前的 ctx 中！
+    ctx.add(() => {
+      sections.forEach((sec) => {
+        ScrollTrigger.create({ trigger: `#${sec.id}` /* ... */ })
+      })
+    })
+  })
+
+  // 4. 清理函数：即使是未来塞进去的 Trigger，也会被这一句 revert() 一网打尽，彻底销毁
+  return () => {
+    cancel()
+    ctx.revert()
+  }
 }, [])
 ```
-
-## 动画分类
-
-### 1. 时间线驱动 (Timeline)
-
-| 组件 | 用途 |
-|------|------|
-| Loader | 计数进度 → 滑动退出 |
-| Hero | 三段式进入动画（stagger 重叠） |
-
-### 2. 滚动驱动 (ScrollTrigger)
-
-| 组件 | 触发模式 | 动画类型 |
-|------|----------|----------|
-| Hero | scrub (滚动即变) | 视差 + 形变 |
-| About | toggleActions + scrub | 文字展开 + 路径绘制 + 肖像形变 |
-| Skills | scrub + toggle | SVG 曲线 + 行展开 |
-| Projects | toggle | 卡片可见性 |
-| Footer | onEnter | 文字展开 + 淡入 |
-
-### 3. Ticker 驱动
-
-| 组件 | 用途 |
-|------|------|
-| Cursor | deltaRatio lerp 跟随鼠标 |
-
-## ScrollTrigger 回退控制
-
-- `toggleActions: 'play none none reverse'`：在回滚时自动重置动画
-- `onLeaveBack`：用于类名切换 (Skills / Projects)
+> [!IMPORTANT]
+> **底层防御**：如果在 `chaptersReady` 触发之前（即 DOM 还在下载时），用户极其疯狂地按了浏览器的“后退”按钮导致组件卸载，`cancel()` 会截断 MutationObserver，`ctx.revert()` 会清空同步上下文。没有任何游离的“幽灵触发器”会残留在内存中。

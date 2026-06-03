@@ -1,46 +1,34 @@
 # Portfolio — Tim Cai
 
-> 一个以 WebGL 粒子肖像为视觉锚点的个人作品集站点。React + TypeScript + Vite + GSAP + Three.js (R3F)。
+> 一个以 WebGL 粒子肖像为视觉锚点，极致工程化打底的个人作品集站点。
+> **技术栈**：React 18 + TypeScript + Vite + GSAP + Three.js (R3F)。
 
 ---
 
-## 文档导航
+## 📖 文档中枢 (Map of Content)
 
-```
-docs/
-├── README.md                        # ← 你在这里
-├── 01-architecture/
-│   ├── overview.md                  # 项目架构总览（目录结构、数据流、构建管线）
-│   └── tech-stack.md                # 技术栈逐项详解
-├── 02-components/
-│   ├── overview.md                  # 组件层次结构与职责矩阵
-│   ├── hero.md                      # Hero 区：粒子肖像 + 进入动画 + scroll-driven 形变
-│   ├── particle-portrait.md         # GLSL 着色器粒子系统（核心视觉）
-│   ├── about.md                     # 自述区：滚动驱动排版 + 技术栈流动曲线
-│   ├── skills.md                    # 技能区：响应式 SVG 蛇形曲线
-│   ├── projects.md                  # 作品展示区：数据驱动卡片
-│   ├── nav.md                       # 顶部导航：IntersectionObserver 活性追踪
-│   ├── footer.md                    # 页脚：CTA + 联系信息
-│   ├── loader.md                    # 启动加载器：进度条 → 滑动退出
-│   ├── cursor.md                    # 自定义光标：GSAP ticker 滞后跟随
-│   └── scroll-indicator.md          # 侧边滚动指示器：进度 + 章节名
-├── 03-styles/
-│   └── design-system.md             # 设计令牌、字体、暗色主题、排版系统
-├── 04-animation/
-│   └── animation-system.md          # Lenis + GSAP + ScrollTrigger 动画编排
-├── 05-projects/
-│   └── project-data.md              # 作品数据模型与六个项目的完整内容
-└── 06-scripts/
-    └── setup-assets.md              # 构建前置脚本：肖像资产复制
-```
+这里的每一篇文档均基于**代码即真理 (Code as Single Source of Truth)** 原则编写，100% 映射最新的底层源代码，拒绝凭空架构。
+
+### 01. 核心架构与基建 (Architecture & Infrastructure)
+如果您想了解项目是如何进行模块解耦和极速加载的，请阅读以下章节：
+- [核心架构总览 (Overview)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/01-architecture/overview.md) - 解析 `registry.ts` 驱动模式与混合懒加载机制。
+- [性能优化与构建策略 (Performance Optimization)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/01-architecture/performance-optimization.md) - 解析 Vite 分包拆离机制与交互降级。
+
+### 02. 动画与时序编排 (Animation Orchestration)
+如果您想了解复杂的滚动特效和 GSAP 的防泄漏机制，请阅读以下章节：
+- [动画系统与时序编排 (Animation System)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/04-animation/animation-system.md) - 解析 GSAP `ctx.add()` 异步托管与 Lenis 单例劫持。
+
+### 03. 高阶组件深度解剖 (Component Deep Dives)
+对代码最复杂、视觉冲击力最强的核心组件逐一拆解：
+- [WebGL 粒子肖像系统 (Particle Portrait)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/particle-portrait.md) - 解析 GPU 节流与垃圾回收机制。
+- [侧边滚动指示器 (Scroll Indicator)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/scroll-indicator.md) - 解析 `MutationObserver` 是如何实现自愈（Self-healing）绑定的。
+- [首屏视觉系统 (Hero Section)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/hero.md) - 解析首屏急切渲染与加载器握手时序。
+- [页脚交互系统 (Footer & CTA)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/footer.md) - 解析 GSAP 时间轴排版与多米诺骨牌级特效。
 
 ---
 
-## 快速指引
+## 🎯 面向未来的开发指南
 
-| 目标 | 入口 |
-|------|------|
-| 理解项目全貌 | `01-architecture/overview.md` |
-| 理解核心视觉 | `02-components/particle-portrait.md` |
-| 理解动画体系 | `04-animation/animation-system.md` |
-| 获取作品数据 | `05-projects/project-data.md` |
+1. **新增章节**：只需要修改 `src/chapters/registry.ts`，全站的侧边栏、导航栏、锚点路由会自动为您处理完毕。
+2. **新增动效**：切记，如果是针对懒加载 DOM（非首屏）的滚动特效，请务必使用 `onChaptersReady` 结合 `gsap.context().add()`，以免发生极端的生命周期泄漏。
+3. **增加高渲染开销组件**：务必模仿 `ParticlePortrait`，加入 `IntersectionObserver` 判定。如果它不在视口内，请掐断它的计算资源。

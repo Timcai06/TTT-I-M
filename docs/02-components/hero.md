@@ -1,47 +1,51 @@
-# Hero 组件
+# 首屏视觉系统 (Hero Section)
 
-**文件**: `src/components/Hero.tsx`
+> [!NOTE]
+> 本文档基于 `src/components/Hero.tsx` 真实源码编写。Hero 是全站唯一一个急切渲染 (Eager Render) 的组件。
 
-## 职责
+## 1. 混合渲染与悬念呈现
 
-- 展示全屏肖像粒子系统
-- 执行三段式文字进入动画
-- 滚动时对粒子画布和文字施加视差与形变
-
-## 进入动画时间线
-
-| 阶段 | 选择器 | 效果 | 持续时间 | 触发延迟 |
-|------|--------|------|----------|----------|
-| 预热 | `.hero__kicker` | 上划线淡入 | 1.8s | 1.8s 后 |
-| 核心 | `.split-line__inner` | 文字从下方展开 (yPercent: 110 → 0) | 2.2s | stagger 0.12s |
-| 元信息 | `.hero__meta-block` | 侧边信息淡入+上移 | 1.8s | stagger 0.15s |
-| 副线 | `.hero__subline > *` | 底部文字淡入+上移 | 1.8s | stagger 0.12s |
-
-使用负值 `-=` 重叠，总时长约 2.5s。
-
-## 滚动驱动的形变
-
-四个独立的 GSAP 动画，`scrub: true`，从 `top top` → `bottom top`：
-
-| 目标 | 属性变化 |
-|------|----------|
-| `.hero__canvas` | `yPercent: 18`（画布下移） |
-| `.hero__ghost` | 透明度降至 0.05，scale 1.08，灰度+模糊 |
-| `.hero__scan` | 透明度降至 0.05，yPercent 12 |
-| `.hero__content` | yPercent -8，透明度降至 0（文字淡出） |
-
-## 结构
-
+Hero 区域负责给用户第一印象。它混搭了传统的 DOM 排版与异步的 WebGL 系统。
+```tsx
+<div className="hero__canvas">
+  <img className="hero__ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
+  <Suspense fallback={null}>
+    <ParticlePortrait />
+  </Suspense>
+  <div className="hero__scan" aria-hidden="true" />
+</div>
 ```
-section.hero
-├── .hero__canvas
-│   ├── img.hero__ghost          # 源照片（幽灵层，滚动时渐变为灰度）
-│   ├── Canvas (ParticlePortrait) # R3F 粒子系统
-│   └── .hero__scan              # 扫描线装饰
-├── .hero__vignette               # 暗角遮罩
-└── .container.hero__content
-    ├── .hero__meta               # 侧边元信息
-    ├── .hero__kicker             # 上划线
-    ├── h1.hero__name             # "Tim Cai." 分两行 split-line
-    └── .hero__subline            # 副标题 + scroll 提示
+> [!TIP]
+> **为什么背后要有一张 `.hero__ghost` 图片？**
+> `ParticlePortrait` 是懒加载且通过 WebGL 渲染的，首屏会有几十到几百毫秒的白屏空白期。背后的 `img` 作为占位符，不仅填补了这段时间，还在后续粒子生成后，透过 WebGL 的 `alpha` 混合，赋予了整个场景深远的纵深感和暗角质感。
+
+## 2. 开场动画时序 (Intro Orchestration)
+
+Hero 的文字入场并不是简单的 `useEffect` 自动播放，而是受到了全站加载器 (`Loader.tsx`) 的控制。
+
+### 2.1 拦截与解冻
+```typescript
+const tl = gsap.timeline({ paused: true })
+
+cancelIntroExit = onIntroExit(() => {
+  if (tl.paused()) void tl.play()
+})
 ```
+这保证了只有当全屏黑色的 Loader 完全褪去、粒子准备好呼吸时，巨大的 `Tim Cai.` 和自我介绍才会行云流水地进入视口。
+
+## 3. 滚动视差与性能平衡
+
+在 Hero 区域往下滚时，我们为背景和前景分别赋予了不同的速度（Scrub）。
+
+**核心性能决断：**
+```typescript
+gsap.to('.hero__ghost', {
+  opacity: 0.05,
+  scale: 1.08,
+  // ... scrub
+})
+```
+> [!IMPORTANT]
+> **注释中隐藏的架构权衡**：
+> 源码特别标注了 `// NOTE: only transform/opacity are scrubbed here. Animating filter (esp. blur) on scrub forced a full-frame repaint...`。
+> 之前可能尝试过通过滚动增加背景模糊（`filter: blur()`），但这导致了浏览器在每一次滚轮触发时强制发生全屏重绘，FPS 暴跌。最终改为只操作 `opacity` 和 `scale`（被 GPU 硬件加速的属性），彻底杜绝了性能瓶颈。
