@@ -30,6 +30,19 @@ if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSourc
   throw new Error('ChapterTransition must listen for nav requests and jump directly while the cover is active.')
 }
 
+const transitionLayerInputs = [
+  'TransitionField',
+  "import('three')",
+  'chapter-transition__target-glyph',
+  'chapter-transition__item-char',
+  'usePretextTextInteraction',
+]
+
+const missingTransitionLayerInputs = transitionLayerInputs.filter((needle) => !transitionSource.includes(needle))
+if (missingTransitionLayerInputs.length > 0) {
+  throw new Error(`ChapterTransition is missing layered transition affordances: ${missingTransitionLayerInputs.join(', ')}`)
+}
+
 if (!transitionApiSource.includes('portfolio:chapter-transition') || !transitionApiSource.includes('portfolio:chapter-arrived')) {
   throw new Error('Chapter transition requests must use the shared chapter transition event.')
 }

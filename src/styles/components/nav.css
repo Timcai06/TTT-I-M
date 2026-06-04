@@ -84,6 +84,15 @@
   visibility: visible;
 }
 
+.chapter-transition__field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .chapter-transition__chrome {
   position: absolute;
   top: clamp(20px, 4vw, 48px);
@@ -102,11 +111,9 @@
 .chapter-transition__grid {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(243, 240, 235, 0.075) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(243, 240, 235, 0.055) 1px, transparent 1px);
-  background-size: 9vw 9vw;
-  mask-image: radial-gradient(circle at 50% 52%, #000 0 42%, transparent 76%);
+  background:
+    radial-gradient(circle at 50% 52%, rgba(234, 65, 45, 0.12), transparent 46%),
+    radial-gradient(circle at 78% 34%, rgba(243, 240, 235, 0.06), transparent 30%);
   pointer-events: none;
 }
 
@@ -144,12 +151,25 @@
 }
 
 .chapter-transition__target strong {
+  display: block;
   font-family: var(--font-serif);
   font-size: clamp(64px, 13vw, 184px);
   font-weight: 400;
   line-height: 0.84;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.chapter-transition__target-name {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  max-width: min(66vw, 760px);
+}
+
+.chapter-transition__target-glyph {
+  display: inline-block;
+  will-change: transform, opacity;
 }
 
 .chapter-transition__nav {
@@ -192,10 +212,17 @@
 }
 
 .chapter-transition__item-name {
+  display: flex;
+  flex-wrap: wrap;
   font-family: var(--font-serif);
   font-size: clamp(28px, 4.9vw, 72px);
   line-height: 0.92;
   letter-spacing: 0;
+}
+
+.chapter-transition__item-char {
+  display: inline-block;
+  will-change: transform, opacity;
 }
 
 .chapter-transition__rail {
