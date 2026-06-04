@@ -30,6 +30,10 @@ if (!loaderSource.includes('useIntroPretextInteraction')) {
   throw new Error('Loader must attach the Pretext-powered intro text interaction hook.')
 }
 
+if (!loaderSource.includes('introReady && !done && !exiting')) {
+  throw new Error('Loader must wait until the intro title has landed before measuring Pretext glyphs.')
+}
+
 if (!loaderSource.includes('intro__stage')) {
   throw new Error('Loader must show a compact current preload stage while the full-site gate is active.')
 }
@@ -92,6 +96,7 @@ const requiredIntroPretextInputs = [
   'useIntroPretextInteraction',
   'requestAnimationFrame',
   'press',
+  'catch',
   'waitForFontsBeforePretext',
   'FONT_READY_INTERACTION_TIMEOUT_MS',
 ]

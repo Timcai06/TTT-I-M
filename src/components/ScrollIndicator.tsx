@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import { progressChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
-import { scrollToChapter } from '../lib/chapterScroll'
 import { useChapterState } from '../lib/chapterState'
+import { transitionToChapter } from '../lib/chapterTransition'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -55,7 +55,7 @@ export default function ScrollIndicator() {
   const activeSection = sections[activeIdx] ?? firstSection
 
   const handleSegmentClick = (id: string) => {
-    scrollToChapter(id, { updateHash: true })
+    transitionToChapter(id, { updateHash: true })
   }
 
   return (

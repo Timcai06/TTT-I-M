@@ -1,9 +1,13 @@
 import { readFileSync } from 'node:fs'
 
 const appSource = readFileSync('src/App.tsx', 'utf8')
+const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const providerSource = readFileSync('src/components/ChapterStateProvider.tsx', 'utf8')
 const navSource = readFileSync('src/components/Nav.tsx', 'utf8')
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
+const transitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
+const transitionApiSource = readFileSync('src/lib/chapterTransition.ts', 'utf8')
+const scrollSource = readFileSync('src/lib/chapterScroll.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
@@ -16,6 +20,26 @@ if (!appSource.includes('<ChapterStateProvider>')) {
 
 if (!providerSource.includes('useActiveChapter')) {
   throw new Error('ChapterStateProvider must own the active chapter subscription.')
+}
+
+if (!appSource.includes('<ChapterTransition />')) {
+  throw new Error('App must mount the full-screen chapter transition layer.')
+}
+
+if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSource.includes('immediate: true')) {
+  throw new Error('ChapterTransition must listen for nav requests and jump directly while the cover is active.')
+}
+
+if (!transitionApiSource.includes('portfolio:chapter-transition') || !transitionApiSource.includes('portfolio:chapter-arrived')) {
+  throw new Error('Chapter transition requests must use the shared chapter transition event.')
+}
+
+if (!scrollSource.includes('immediate?: boolean')) {
+  throw new Error('chapterScroll must support immediate section jumps for transition-covered navigation.')
+}
+
+if (!heroSource.includes('onChapterArrived') || !heroSource.includes('pretextRefreshKey') || !heroSource.includes('heroTitleReady')) {
+  throw new Error('Hero must recalibrate its title and Pretext interaction after returning to the index chapter.')
 }
 
 const directActiveReaders = consumers

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
-import { scrollToChapter } from '../lib/chapterScroll'
+import { transitionToChapter } from '../lib/chapterTransition'
 import { attachMagnetic } from '../lib/magnetic'
 
 export default function Footer() {
@@ -108,7 +108,7 @@ export default function Footer() {
             <div className="footer__links">
               <a href="https://github.com/Timcai06" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
               <a href="mailto:cairentian932@gmail.com">Email ↗</a>
-              <a href="#hero" onClick={(e) => { e.preventDefault(); scrollToChapter('hero', { updateHash: true }) }}>↑ top</a>
+              <a href="#hero" onClick={(e) => { e.preventDefault(); transitionToChapter('hero', { updateHash: true }) }}>↑ top</a>
             </div>
           </div>
         </div>

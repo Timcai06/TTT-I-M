@@ -10,6 +10,7 @@ import ScrollIndicator from './components/ScrollIndicator'
 import Nav from './components/Nav'
 import PerfHud from './components/PerfHud'
 import ChapterStateProvider from './components/ChapterStateProvider'
+import ChapterTransition from './components/ChapterTransition'
 import { chapters } from './chapters/registry'
 import './styles/app.css'
 
@@ -96,6 +97,7 @@ export default function App() {
         <ScrollIndicator />
         <Nav />
       </ChapterStateProvider>
+      <ChapterTransition />
       <main>
         {chapters.map(({ id, Component }) => (
           // One boundary per chapter so a still-loading section can't suspend

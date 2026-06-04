@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { onIntroExit } from '../lib/intro'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
+import { onChapterArrived } from '../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLHeadingElement>(null)
   const [introExited, setIntroExited] = useState(false)
+  const [heroTitleReady, setHeroTitleReady] = useState(false)
+  const [pretextRefreshKey, setPretextRefreshKey] = useState(0)
   const [showParticleLayer] = useState(() => {
     if (typeof window === 'undefined') return false
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -16,6 +19,7 @@ export default function Hero() {
   useEffect(() => {
     if (!root.current) return
     let cancelIntroExit = () => {}
+    let cancelHeroArrived = () => {}
     const ctx = gsap.context(() => {
       // intro reveal
       gsap.set('.hero__split .split-line__inner', { yPercent: 110, skewY: 6 })
@@ -24,10 +28,29 @@ export default function Hero() {
       gsap.set('.hero__kicker', { opacity: 0, y: 10 })
 
       const tl = gsap.timeline({ paused: true })
+      tl.eventCallback('onComplete', () => {
+        setHeroTitleReady(true)
+        setPretextRefreshKey((key) => key + 1)
+      })
 
       cancelIntroExit = onIntroExit(() => {
         setIntroExited(true)
         if (tl.paused()) void tl.play()
+      })
+
+      cancelHeroArrived = onChapterArrived((id) => {
+        if (id !== 'hero') return
+        setIntroExited(true)
+        setHeroTitleReady(true)
+        gsap.set('.hero__content', { opacity: 1, yPercent: 0 })
+        gsap.set('.hero__split .split-line__inner', {
+          opacity: 1,
+          scale: 1,
+          skewY: 0,
+          xPercent: 0,
+          yPercent: 0,
+        })
+        setPretextRefreshKey((key) => key + 1)
       })
 
       tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' })
@@ -96,11 +119,13 @@ export default function Hero() {
 
     return () => {
       cancelIntroExit()
+      cancelHeroArrived()
       ctx.revert()
     }
   }, [])
   usePretextTextInteraction(nameRef, {
-    enabled: introExited,
+    enabled: introExited && heroTitleReady,
+    refreshKey: pretextRefreshKey,
     strength: 0.78,
     text: 'Tim Cai.',
   })

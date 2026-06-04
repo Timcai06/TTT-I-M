@@ -20,7 +20,7 @@ export default function Loader() {
   const [exiting, setExiting] = useState(false)
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
-  useIntroPretextInteraction(textRef, !done && !exiting)
+  useIntroPretextInteraction(textRef, introReady && !done && !exiting)
   const stageText = preload.ready ? 'ready' : preload.label
 
   useEffect(() => {

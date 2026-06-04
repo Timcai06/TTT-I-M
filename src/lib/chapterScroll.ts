@@ -1,6 +1,11 @@
 import { getLenis } from './lenis'
 
-export function scrollToChapter(id: string, options: { updateHash?: boolean } = {}) {
+interface ChapterScrollOptions {
+  immediate?: boolean
+  updateHash?: boolean
+}
+
+export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) {
   const el = document.getElementById(id)
   if (!el) return
 
@@ -10,8 +15,17 @@ export function scrollToChapter(id: string, options: { updateHash?: boolean } = 
 
   const lenis = getLenis()
   if (lenis) {
-    lenis.scrollTo(el, { offset: -40, duration: 1.4 })
+    lenis.scrollTo(el, {
+      offset: -40,
+      duration: options.immediate ? 0 : 1.4,
+      force: options.immediate,
+      immediate: options.immediate,
+    })
   } else {
-    el.scrollIntoView({ behavior: 'smooth' })
+    const top = el.getBoundingClientRect().top + window.scrollY - 40
+    window.scrollTo({
+      top,
+      behavior: options.immediate ? 'auto' : 'smooth',
+    })
   }
 }

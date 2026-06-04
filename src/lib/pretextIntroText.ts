@@ -2,16 +2,23 @@ import { useEffect, type RefObject } from 'react'
 
 const FONT_READY_INTERACTION_TIMEOUT_MS = 1600
 const MIN_FIELD_RADIUS = 150
+const GLYPH_HIT_PADDING = 18
 type PretextModule = typeof import('@chenglou/pretext')
 let pretextPromise: Promise<PretextModule> | null = null
 
 interface GlyphState {
+  bottom: number
   el: HTMLElement
+  height: number
   homeX: number
   homeY: number
+  left: number
   phase: number
+  right: number
   rotation: number
   scale: number
+  top: number
+  width: number
   x: number
   y: number
 }
@@ -19,6 +26,7 @@ interface GlyphState {
 interface PretextTextInteractionOptions {
   enabled: boolean
   glyphSelector?: string
+  refreshKey?: number
   strength?: number
   text: string
 }
@@ -70,14 +78,57 @@ function measureGlyphWidth(
   return Math.max(1, pretext.measureNaturalWidth(prepared))
 }
 
+function createGlyphStateFromRect(el: HTMLElement, index: number, rect: DOMRect): GlyphState {
+  return {
+    bottom: rect.bottom,
+    el,
+    height: rect.height,
+    homeX: rect.left + rect.width / 2,
+    homeY: rect.top + rect.height / 2,
+    left: rect.left,
+    phase: index * 0.68,
+    right: rect.right,
+    rotation: 0,
+    scale: 1,
+    top: rect.top,
+    width: rect.width,
+    x: 0,
+    y: 0,
+  }
+}
+
+function pointerInfluenceForGlyph(glyph: GlyphState, mouseX: number, mouseY: number) {
+  const padding = Math.max(GLYPH_HIT_PADDING, Math.min(glyph.width, glyph.height) * 0.24)
+  const left = glyph.left - padding
+  const right = glyph.right + padding
+  const top = glyph.top - padding
+  const bottom = glyph.bottom + padding
+
+  if (mouseX < left || mouseX > right || mouseY < top || mouseY > bottom) return 0
+
+  const closestX = clamp(mouseX, glyph.left, glyph.right)
+  const closestY = clamp(mouseY, glyph.top, glyph.bottom)
+  const edgeDistance = Math.hypot(mouseX - closestX, mouseY - closestY)
+  return clamp(1 - edgeDistance / padding, 0, 1)
+}
+
 async function createGlyphStates(
   textEl: HTMLElement,
   text: string,
   glyphSelector: string
 ): Promise<GlyphState[]> {
-  const pretext = await loadPretext()
   const glyphs = Array.from(textEl.querySelectorAll<HTMLElement>(glyphSelector))
   const rect = textEl.getBoundingClientRect()
+  if (glyphs.length === 0) return []
+
+  const fallbackStates = () => glyphs.map((el, index) => {
+    const glyphRect = el.getBoundingClientRect()
+    return createGlyphStateFromRect(el, index, glyphRect)
+  })
+
+  if (rect.width <= 0 || rect.height <= 0) return fallbackStates()
+
+  const pretext = await loadPretext()
   const { font, fontSize, letterSpacing } = fontFromElement(textEl)
   const glyphChars = glyphs.map((glyph) => glyph.dataset.final ?? glyph.textContent ?? '')
   const measuredText = glyphChars.join('') || text
@@ -97,14 +148,21 @@ async function createGlyphStates(
     const width = (glyphWidths[index] ?? fontSize * 0.32) * scaleToNatural
     const center = cursor + width / 2
     cursor += width
+    const glyphRect = el.getBoundingClientRect()
 
     return {
+      bottom: glyphRect.bottom,
       el,
+      height: glyphRect.height,
       homeX: rect.left + rect.width / 2 + (center / naturalWidth) * rect.width,
       homeY: rect.top + rect.height / 2,
+      left: glyphRect.left,
       phase: index * 0.68,
+      right: glyphRect.right,
       rotation: 0,
       scale: 1,
+      top: glyphRect.top,
+      width: glyphRect.width,
       x: 0,
       y: 0,
     }
@@ -116,6 +174,7 @@ export function usePretextTextInteraction(
   {
     enabled,
     glyphSelector = '.pretext-glyph',
+    refreshKey = 0,
     strength = 1,
     text,
   }: PretextTextInteractionOptions
@@ -144,6 +203,7 @@ export function usePretextTextInteraction(
     let mouseY = Number.POSITIVE_INFINITY
     let lastMove = 0
     let fieldRadius = MIN_FIELD_RADIUS
+    let hasPointer = false
     let press = 0
 
     const resetGlyphs = () => {
@@ -159,16 +219,24 @@ export function usePretextTextInteraction(
       void createGlyphStates(textEl, text, glyphSelector).then((nextGlyphs) => {
         if (cancelled) return
         glyphs = nextGlyphs
+      }).catch(() => {
+        if (cancelled) return
+        glyphs = Array.from(textEl.querySelectorAll<HTMLElement>(glyphSelector)).map((el, index) => {
+          const glyphRect = el.getBoundingClientRect()
+          return createGlyphStateFromRect(el, index, glyphRect)
+        })
       })
     }
 
     const onPointerMove = (event: PointerEvent) => {
+      hasPointer = true
       mouseX = event.clientX
       mouseY = event.clientY
       lastMove = performance.now()
     }
 
     const onPointerLeave = () => {
+      hasPointer = false
       mouseX = Number.POSITIVE_INFINITY
       mouseY = Number.POSITIVE_INFINITY
       press = 0
@@ -185,18 +253,19 @@ export function usePretextTextInteraction(
     const animate = (time: number) => {
       if (cancelled) return
 
-      const inactive = performance.now() - lastMove > 1400
+      const inactive = !hasPointer || performance.now() - lastMove > 1400
       press += (0 - press) * 0.045
       glyphs.forEach((glyph) => {
         const dx = glyph.homeX - mouseX
         const dy = glyph.homeY - mouseY
         const distance = Math.hypot(dx, dy)
-        const influence = inactive ? 0 : clamp(1 - distance / fieldRadius, 0, 1)
+        const proximity = inactive ? 0 : pointerInfluenceForGlyph(glyph, mouseX, mouseY)
+        const influence = proximity * clamp(1 - distance / fieldRadius, 0, 1)
         const eased = influence * influence * (3 - 2 * influence)
         const safeDistance = Math.max(distance, 1)
         const pulse = Math.sin(time * 0.0024 + glyph.phase)
-        const push = eased * (58 + press * 42) * strength
-        const ambient = (pulse * eased * 5.5 + Math.sin(time * 0.0014 + glyph.phase) * 1.2) * strength
+        const push = eased * (62 + press * 42) * strength
+        const ambient = pulse * eased * 4.5 * strength
         const tangent = Math.cos(time * 0.002 + glyph.phase) * eased * 7 * strength
         const targetX = (dx / safeDistance) * push + tangent
         const targetY = (dy / safeDistance) * push + ambient
@@ -236,7 +305,7 @@ export function usePretextTextInteraction(
       window.removeEventListener('resize', prepareGlyphs)
       resetGlyphs()
     }
-  }, [enabled, glyphSelector, strength, text, textRef])
+  }, [enabled, glyphSelector, refreshKey, strength, text, textRef])
 }
 
 export function useIntroPretextInteraction(

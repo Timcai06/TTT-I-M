@@ -1,6 +1,6 @@
 import { navChapters } from '../chapters/registry'
-import { scrollToChapter } from '../lib/chapterScroll'
 import { useChapterState } from '../lib/chapterState'
+import { transitionToChapter } from '../lib/chapterTransition'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 
@@ -10,7 +10,7 @@ export default function Nav() {
   return (
     <header className="nav">
       <div className="container nav__inner">
-        <a className="nav__brand" href="#hero" onClick={(e) => { e.preventDefault(); scrollToChapter('hero', { updateHash: true }) }}>
+        <a className="nav__brand" href="#hero" onClick={(e) => { e.preventDefault(); transitionToChapter('hero', { updateHash: true }) }}>
           Tim · 蔡
         </a>
         <nav>
@@ -19,7 +19,7 @@ export default function Nav() {
               <li key={l.id}>
                 <button
                   className={`nav__link${activeId === l.id ? ' is-active' : ''}`}
-                  onClick={() => scrollToChapter(l.id, { updateHash: true })}
+                  onClick={() => transitionToChapter(l.id, { updateHash: true })}
                 >
                   {l.label}
                 </button>
