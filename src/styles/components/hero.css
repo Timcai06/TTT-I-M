@@ -116,6 +116,11 @@
   color: var(--fg-mute);
 }
 
+.hero__name .pretext-glyph {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
 .hero__subline {
   display: flex;
   justify-content: space-between;

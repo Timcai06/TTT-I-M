@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 
 const loaderSource = readFileSync('src/components/Loader.tsx', 'utf8')
+const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 if (!existsSync('src/lib/sitePreload.ts')) {
   throw new Error('Missing src/lib/sitePreload.ts for the whole-site preload manifest.')
@@ -29,8 +30,16 @@ if (!loaderSource.includes('useIntroPretextInteraction')) {
   throw new Error('Loader must attach the Pretext-powered intro text interaction hook.')
 }
 
+if (!loaderSource.includes('intro__stage')) {
+  throw new Error('Loader must show a compact current preload stage while the full-site gate is active.')
+}
+
 if (!loaderSource.includes('intro__text-wrap--interactive')) {
   throw new Error('Loader must release the intro text mask while the Pretext interaction is active.')
+}
+
+if (!heroSource.includes('usePretextTextInteraction') || !heroSource.includes('pretext-glyph')) {
+  throw new Error('Hero title must reuse the Pretext text interaction used by the intro.')
 }
 
 if (loaderSource.includes('v: 100') || loaderSource.includes('duration: 1.6')) {
@@ -49,6 +58,10 @@ const requiredPreloadInputs = [
   '@chenglou/pretext',
   'decode().catch',
   'FONT_READY_DEV_TIMEOUT_MS',
+  'priorityTasks',
+  'imageTasks',
+  'chunks:pretext',
+  'texture:hero',
   '__portfolioPreloadDebug',
   'console.table',
   'pending',
@@ -72,8 +85,10 @@ const requiredIntroPretextInputs = [
   '@chenglou/pretext',
   'prepareWithSegments',
   'measureNaturalWidth',
+  'usePretextTextInteraction',
   'useIntroPretextInteraction',
   'requestAnimationFrame',
+  'press',
   'waitForFontsBeforePretext',
   'FONT_READY_INTERACTION_TIMEOUT_MS',
 ]

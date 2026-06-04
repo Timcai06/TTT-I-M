@@ -1,6 +1,5 @@
 import { useEffect, type RefObject } from 'react'
 
-const INTRO_TEXT = 'Tim Cai.'
 const FONT_READY_INTERACTION_TIMEOUT_MS = 1600
 const MIN_FIELD_RADIUS = 150
 type PretextModule = typeof import('@chenglou/pretext')
@@ -15,6 +14,13 @@ interface GlyphState {
   scale: number
   x: number
   y: number
+}
+
+interface PretextTextInteractionOptions {
+  enabled: boolean
+  glyphSelector?: string
+  strength?: number
+  text: string
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -64,18 +70,24 @@ function measureGlyphWidth(
   return Math.max(1, pretext.measureNaturalWidth(prepared))
 }
 
-async function createGlyphStates(textEl: HTMLElement): Promise<GlyphState[]> {
+async function createGlyphStates(
+  textEl: HTMLElement,
+  text: string,
+  glyphSelector: string
+): Promise<GlyphState[]> {
   const pretext = await loadPretext()
-  const glyphs = Array.from(textEl.querySelectorAll<HTMLElement>('.intro__char-glyph'))
+  const glyphs = Array.from(textEl.querySelectorAll<HTMLElement>(glyphSelector))
   const rect = textEl.getBoundingClientRect()
   const { font, fontSize, letterSpacing } = fontFromElement(textEl)
-  const prepared = pretext.prepareWithSegments(INTRO_TEXT, font, {
+  const glyphChars = glyphs.map((glyph) => glyph.dataset.final ?? glyph.textContent ?? '')
+  const measuredText = glyphChars.join('') || text
+  const prepared = pretext.prepareWithSegments(measuredText, font, {
     letterSpacing,
     whiteSpace: 'pre-wrap',
   })
   const naturalWidth = Math.max(1, pretext.measureNaturalWidth(prepared))
-  const glyphWidths = glyphs.map((glyph) =>
-    measureGlyphWidth(pretext, glyph.dataset.final ?? glyph.textContent ?? '', font, fontSize, letterSpacing)
+  const glyphWidths = glyphChars.map((char) =>
+    measureGlyphWidth(pretext, char, font, fontSize, letterSpacing)
   )
   const widthSum = glyphWidths.reduce((sum, width) => sum + width, 0) || naturalWidth
   const scaleToNatural = naturalWidth / widthSum
@@ -99,14 +111,19 @@ async function createGlyphStates(textEl: HTMLElement): Promise<GlyphState[]> {
   })
 }
 
-export function useIntroPretextInteraction(
+export function usePretextTextInteraction(
   textRef: RefObject<HTMLElement | null>,
-  enabled: boolean
+  {
+    enabled,
+    glyphSelector = '.pretext-glyph',
+    strength = 1,
+    text,
+  }: PretextTextInteractionOptions
 ) {
   useEffect(() => {
     if (!enabled) {
       textRef.current
-        ?.querySelectorAll<HTMLElement>('.intro__char-glyph')
+        ?.querySelectorAll<HTMLElement>(glyphSelector)
         .forEach((glyph) => {
           glyph.style.transform = ''
           glyph.style.opacity = ''
@@ -127,6 +144,7 @@ export function useIntroPretextInteraction(
     let mouseY = Number.POSITIVE_INFINITY
     let lastMove = 0
     let fieldRadius = MIN_FIELD_RADIUS
+    let press = 0
 
     const resetGlyphs = () => {
       glyphs.forEach(({ el }) => {
@@ -137,8 +155,8 @@ export function useIntroPretextInteraction(
 
     const prepareGlyphs = () => {
       const rect = textEl.getBoundingClientRect()
-      fieldRadius = Math.max(MIN_FIELD_RADIUS, rect.width * 0.46)
-      void createGlyphStates(textEl).then((nextGlyphs) => {
+      fieldRadius = Math.max(MIN_FIELD_RADIUS, rect.width * 0.5)
+      void createGlyphStates(textEl, text, glyphSelector).then((nextGlyphs) => {
         if (cancelled) return
         glyphs = nextGlyphs
       })
@@ -153,12 +171,22 @@ export function useIntroPretextInteraction(
     const onPointerLeave = () => {
       mouseX = Number.POSITIVE_INFINITY
       mouseY = Number.POSITIVE_INFINITY
+      press = 0
+    }
+
+    const onPointerDown = () => {
+      press = 1
+    }
+
+    const onPointerUp = () => {
+      press = 0
     }
 
     const animate = (time: number) => {
       if (cancelled) return
 
       const inactive = performance.now() - lastMove > 1400
+      press += (0 - press) * 0.045
       glyphs.forEach((glyph) => {
         const dx = glyph.homeX - mouseX
         const dy = glyph.homeY - mouseY
@@ -166,20 +194,22 @@ export function useIntroPretextInteraction(
         const influence = inactive ? 0 : clamp(1 - distance / fieldRadius, 0, 1)
         const eased = influence * influence * (3 - 2 * influence)
         const safeDistance = Math.max(distance, 1)
-        const push = eased * 46
-        const ambient = Math.sin(time * 0.002 + glyph.phase) * eased * 3.5
-        const targetX = (dx / safeDistance) * push
+        const pulse = Math.sin(time * 0.0024 + glyph.phase)
+        const push = eased * (58 + press * 42) * strength
+        const ambient = (pulse * eased * 5.5 + Math.sin(time * 0.0014 + glyph.phase) * 1.2) * strength
+        const tangent = Math.cos(time * 0.002 + glyph.phase) * eased * 7 * strength
+        const targetX = (dx / safeDistance) * push + tangent
         const targetY = (dy / safeDistance) * push + ambient
-        const targetRotation = (targetX / 46) * 7
-        const targetScale = 1 + eased * 0.035
+        const targetRotation = (targetX / 58) * 10 + press * pulse * 6
+        const targetScale = 1 + eased * 0.055 + press * 0.035
 
-        glyph.x += (targetX - glyph.x) * 0.16
-        glyph.y += (targetY - glyph.y) * 0.16
-        glyph.rotation += (targetRotation - glyph.rotation) * 0.14
-        glyph.scale += (targetScale - glyph.scale) * 0.12
+        glyph.x += (targetX - glyph.x) * 0.2
+        glyph.y += (targetY - glyph.y) * 0.2
+        glyph.rotation += (targetRotation - glyph.rotation) * 0.16
+        glyph.scale += (targetScale - glyph.scale) * 0.15
 
         glyph.el.style.transform = `translate3d(${glyph.x.toFixed(2)}px, ${glyph.y.toFixed(2)}px, 0) rotate(${glyph.rotation.toFixed(2)}deg) scale(${glyph.scale.toFixed(3)})`
-        glyph.el.style.opacity = String(1 - eased * 0.08)
+        glyph.el.style.opacity = String(1 - eased * 0.1)
       })
 
       frame = window.requestAnimationFrame(animate)
@@ -190,6 +220,8 @@ export function useIntroPretextInteraction(
       prepareGlyphs()
       window.addEventListener('pointermove', onPointerMove, { passive: true })
       window.addEventListener('pointerleave', onPointerLeave)
+      window.addEventListener('pointerdown', onPointerDown, { passive: true })
+      window.addEventListener('pointerup', onPointerUp, { passive: true })
       window.addEventListener('resize', prepareGlyphs, { passive: true })
       frame = window.requestAnimationFrame(animate)
     })
@@ -199,8 +231,22 @@ export function useIntroPretextInteraction(
       window.cancelAnimationFrame(frame)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerleave', onPointerLeave)
+      window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('resize', prepareGlyphs)
       resetGlyphs()
     }
-  }, [enabled, textRef])
+  }, [enabled, glyphSelector, strength, text, textRef])
+}
+
+export function useIntroPretextInteraction(
+  textRef: RefObject<HTMLElement | null>,
+  enabled: boolean
+) {
+  usePretextTextInteraction(textRef, {
+    enabled,
+    glyphSelector: '.intro__char-glyph',
+    strength: 1,
+    text: 'Tim Cai.',
+  })
 }

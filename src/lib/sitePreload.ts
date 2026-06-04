@@ -232,12 +232,16 @@ function createWholeSitePreloadTasks(): PreloadTask[] {
     load: () => loadImage(src),
   }))
 
-  return [
-    { id: 'chunks:chapters', label: 'chapters', load: preloadLazyChapters },
+  const priorityTasks: PreloadTask[] = [
     { id: 'chunks:pretext', label: 'Pretext', load: () => import('@chenglou/pretext').then(() => undefined) },
-    { id: 'chunks:text-particles', label: 'TextParticles', load: () => import('../components/TextParticles').then(() => undefined) },
     { id: 'texture:hero', label: 'hero texture', load: loadHeroTexture },
     { id: 'fonts:document', label: 'fonts', load: loadFonts },
+    { id: 'chunks:chapters', label: 'chapters', load: preloadLazyChapters },
+    { id: 'chunks:text-particles', label: 'TextParticles', load: () => import('../components/TextParticles').then(() => undefined) },
+  ]
+
+  return [
+    ...priorityTasks,
     ...imageTasks,
   ]
 }

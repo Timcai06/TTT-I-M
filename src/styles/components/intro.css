@@ -92,6 +92,17 @@
   color: rgba(240, 240, 240, 0.45);
 }
 
+.intro__stage {
+  max-width: min(48vw, 360px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(240, 240, 240, 0.34);
+}
+
 /* ── Bottom hairline progress ── */
 .intro__bar-track {
   position: absolute;

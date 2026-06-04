@@ -21,6 +21,7 @@ export default function Loader() {
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
   useIntroPretextInteraction(textRef, !done && !exiting)
+  const stageText = preload.ready ? 'ready' : preload.label
 
   useEffect(() => {
     if (!panelRef.current) return
@@ -170,6 +171,7 @@ export default function Loader() {
       <div className="intro__counter">
         <span ref={countRef}>00</span>
         <span className="intro__counter-sep">/ 100</span>
+        <span className="intro__stage">{stageText}</span>
       </div>
 
       <div className="intro__bar-track">

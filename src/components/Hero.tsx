@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { onIntroExit } from '../lib/intro'
+import { usePretextTextInteraction } from '../lib/pretextIntroText'
 import ParticlePortrait from './ParticlePortrait'
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
+  const nameRef = useRef<HTMLHeadingElement>(null)
+  const [introExited, setIntroExited] = useState(false)
   const [showParticleLayer] = useState(() => {
     if (typeof window === 'undefined') return false
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -23,6 +26,7 @@ export default function Hero() {
       const tl = gsap.timeline({ paused: true })
 
       cancelIntroExit = onIntroExit(() => {
+        setIntroExited(true)
         if (tl.paused()) void tl.play()
       })
 
@@ -95,6 +99,22 @@ export default function Hero() {
       ctx.revert()
     }
   }, [])
+  usePretextTextInteraction(nameRef, {
+    enabled: introExited,
+    strength: 0.78,
+    text: 'Tim Cai.',
+  })
+
+  const heroGlyphs = (text: string) => text.split('').map((char, index) => {
+    if (char === '.') {
+      return <em className="pretext-glyph" data-final="." key={`${char}-${index}`}>.</em>
+    }
+    return (
+      <span className="pretext-glyph" data-final={char} key={`${char}-${index}`}>
+        {char}
+      </span>
+    )
+  })
 
   return (
     <section className="hero" id="hero" ref={root}>
@@ -121,9 +141,9 @@ export default function Hero() {
         </div>
 
         <div className="hero__kicker">visual systems / webgl / front-end storytelling</div>
-        <h1 className="hero__name hero__split">
-          <span className="split-line"><span className="split-line__inner">Tim</span></span>
-          <span className="split-line"><span className="split-line__inner">Cai<em>.</em></span></span>
+        <h1 className="hero__name hero__split" ref={nameRef}>
+          <span className="split-line"><span className="split-line__inner">{heroGlyphs('Tim')}</span></span>
+          <span className="split-line"><span className="split-line__inner">{heroGlyphs('Cai.')}</span></span>
         </h1>
 
         <div className="hero__subline">
