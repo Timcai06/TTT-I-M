@@ -2,6 +2,8 @@ import Lenis from 'lenis'
 import { useEffect } from 'react'
 import { gsap, ScrollTrigger } from './gsap'
 import { prefersReducedMotion } from './motion'
+import { subscribeStage } from './stage'
+import { requestScrollRefresh } from './scroll/requestRefresh'
 
 let lenisInstance: Lenis | null = null
 
@@ -48,14 +50,24 @@ export function useLenis() {
     gsap.ticker.add(tickerFn)
     gsap.ticker.lagSmoothing(0)
 
+    // A chapter-jump transition owns the viewport: freeze smooth scrolling while
+    // the overlay plays and resume when we land. This lives here (the single
+    // Lenis owner) as a stage side-effect instead of being driven imperatively
+    // from inside ChapterTransition. stop()/start() are idempotent.
+    const unsubStage = subscribeStage((stage) => {
+      if (stage === 'transitioning') lenis.stop()
+      else if (stage === 'live') lenis.start()
+    })
+
     // Refresh ScrollTrigger after a tick to make sure the DOM heights have settled
     const refreshTimer = setTimeout(() => {
-      ScrollTrigger.refresh()
+      requestScrollRefresh()
     }, 150)
 
     return () => {
       clearTimeout(refreshTimer)
       clearTimeout(hoverTimeout)
+      unsubStage()
       document.body.classList.remove('disable-hover')
       lenis.off('scroll', onScroll)
       gsap.ticker.remove(tickerFn)

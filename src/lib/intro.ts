@@ -1,36 +1,54 @@
-export const INTRO_EXIT_EVENT = 'loader:exit'
-export const INTRO_FALLBACK_MS = 2200
+import { isLive, setStage, subscribeStage } from './stage'
 
-let introExited = false
+// The intro lifecycle is now backed by the runtime stage machine (lib/stage.ts).
+// This module keeps the small, ergonomic surface its callers already use
+// (Loader hands off, Hero/ParticlePortrait react to the hand-off), but the
+// truth lives in `stage` — no more separate `introExited` flag or window event.
 
+const INTRO_FALLBACK_MS = 2200
+
+/** True once the intro has handed off to the live page. */
 export function hasIntroExited() {
-  return introExited
+  return isLive()
 }
 
+/** Loader calls this when its exit timeline reaches the hand-off beat. */
 export function dispatchIntroExit() {
-  introExited = true
-  window.dispatchEvent(new CustomEvent(INTRO_EXIT_EVENT))
+  setStage('live')
 }
 
+/**
+ * Fire `callback` once the intro has exited (immediately if it already has).
+ * Includes a safety fallback so a missed hand-off can't strand a subscriber —
+ * the fallback also forces the stage to `live` so the global truth stays honest.
+ */
 export function onIntroExit(callback: () => void) {
-  if (introExited) {
+  if (isLive()) {
     callback()
     return () => {}
   }
 
   let fired = false
+  let unsub = () => {}
+  let timer = 0
+
+  const cleanup = () => {
+    unsub()
+    window.clearTimeout(timer)
+  }
+
   const runOnce = () => {
     if (fired) return
     fired = true
-    introExited = true
+    cleanup()
+    setStage('live')
     callback()
   }
 
-  window.addEventListener(INTRO_EXIT_EVENT, runOnce, { once: true })
-  const timer = window.setTimeout(runOnce, INTRO_FALLBACK_MS)
+  unsub = subscribeStage((stage) => {
+    if (stage === 'live' || stage === 'transitioning') runOnce()
+  })
+  timer = window.setTimeout(runOnce, INTRO_FALLBACK_MS)
 
-  return () => {
-    window.removeEventListener(INTRO_EXIT_EVENT, runOnce)
-    window.clearTimeout(timer)
-  }
+  return cleanup
 }

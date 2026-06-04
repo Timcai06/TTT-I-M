@@ -1,0 +1,21 @@
+# Agent Collaboration Guidelines
+
+You are modifying a highly visual, performance-sensitive React + Vite portfolio featuring GSAP, Three.js, and complex animation sequences.
+
+## 1. Visual & Animation Boundaries
+- NEVER simplify, remove, or degrade existing 3D shaders, particle systems, or transition animations in the name of "Lighthouse score optimization". Performance optimization must be visually lossless.
+- Maintain the visual tone: Darkroom, editorial publication, mechanical precision, photography. AVOID neon cyberpunk, cheap sci-fi glow, or purple/blue gradients.
+- GSAP animations must primarily use `transform` and `opacity`. DO NOT animate `width`, `height`, `top`, or `left` unless strictly necessary for layout transitions where transforms are impossible.
+
+## 2. Architecture & DOM Rules
+- When modifying DOM structure, ALWAYS globally search for associated `ScrollTrigger` bindings or `SplitText` targets. Changing a DOM hierarchy can break scrubbed animations.
+- The `Loader` handles the global preload manifest. Do not bypass the loader by injecting heavy assets directly without adding them to the preload cycle or explicitly lazy-loading them.
+- Be aware of the `Chapter` lifecycle. Heavy assets should be released/disposed when unmounted or out of viewport (especially Three.js contexts).
+
+## 3. Pre-Commit Checklist
+Before proposing changes or finalizing a task, run the local guards:
+1. `npm run typecheck` - Ensure R3F and GSAP types remain sound.
+2. `npm run lint` - Prevent Hook dependency issues and detached animations.
+3. `npm run test:build` - Ensure Vite chunking and dependency boundaries are intact.
+
+DO NOT bypass these guardrails.

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { dispatchIntroExit } from '../lib/intro'
+import { setStage } from '../lib/stage'
 import { useIntroPretextInteraction } from '../lib/pretextIntroText'
-import { useWholeSitePreload } from '../lib/sitePreload'
+import { useWholeSitePreload } from '../lib/resources/preloadController'
 
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
 
@@ -66,7 +67,10 @@ export default function Loader() {
         ease: 'expo.out',
       }, 0.1)
 
-      tl.call(() => setIntroReady(true))
+      tl.call(() => {
+        setStage('intro')
+        setIntroReady(true)
+      })
     }, panelRef)
 
     return () => {

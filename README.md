@@ -1,56 +1,46 @@
-# Tim Cai Portfolio
+# Tim Cai - Personal Portfolio
 
-High-motion personal portfolio for Tim Cai, built as a static React/Vite site with GSAP, Lenis, and a WebGL particle portrait.
+A highly interactive, visually driven personal portfolio built with React, Vite, GSAP, and Three.js. 
+This project focuses on editorial design, physical animation metaphors, and seamless WebGL integration.
 
-## Quick Start
+## Core Tech Stack
+- **Framework**: React 19 + Vite
+- **Animation**: GSAP (ScrollTrigger, SplitText) + Lenis (Smooth Scroll)
+- **3D / WebGL**: Three.js + React Three Fiber (R3F)
+- **Interaction**: Pretext (Typography physics)
 
+## Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- npm
+
+### Installation
 ```bash
 npm install
+```
+
+### Local Development
+```bash
+# This will automatically run `scripts/setup-assets.mjs` via the predev hook
 npm run dev
 ```
 
-## Production Build
+## Available Scripts
+- `npm run dev` - Start local development server.
+- `npm run build` - Typecheck and build for production.
+- `npm run typecheck` - Verify TypeScript integrity.
+- `npm run lint` - Run ESLint.
+- `npm run test:build` - Run architectural build guards.
+- `npm run test:e2e` - Run Playwright tests.
 
-```bash
-npm run build
-npm run preview
-```
+## Engineering Guidelines
+This project is governed by strict visual and performance rules. Please refer to the `docs/` directory for detailed architecture blueprints:
+- [Architecture & Flow](docs/01-architecture.md)
+- [Visual System](docs/02-visual-system.md)
+- [Performance Strategy](docs/03-performance-and-assets.md)
+- [File Structure](docs/04-file-structure.md)
+- [Tests & Guards](docs/05-tests-and-guards.md)
 
-## Verification
-
-```bash
-npm run typecheck
-npm run lint
-npm run build
-```
-
-## Content Editing
-
-- Chapter order and nav/progress metadata: `src/chapters/registry.ts`
-- Project cards and media: `src/data/projects.ts`
-- Skill rows: `src/data/skills.ts`
-- Visual archive themes, clusters, captions, and rhythm metadata: `src/data/frames.ts`
-- Life gallery photos: `src/data/life.ts`
-- Intro, hero, about, skills, work, life, and contact sections: `src/components/`
-
-## Architecture Notes
-
-- `src/chapters/registry.ts` is the source of truth for page order, nav entries, and scroll-progress entries.
-- Below-the-fold chapters are lazy-loaded so the hero can paint first.
-- GSAP and Lenis are integrated through `src/lib/gsap.ts` and `src/lib/lenis.ts`.
-- Frame renders Building, Cuisine, and Scenery as independent pinned theme rails instead of one shared horizontal track.
-- Building uses four curated groups: Surface Memory, Skyline Weather, Interior Routes, and Night Current.
-- Intro handoff timing is centralized in `src/lib/intro.ts`.
-- Chapter scrolling and hash updates are centralized in `src/lib/chapterScroll.ts`.
-- The WebGL portrait lives in `src/components/ParticlePortrait.tsx`.
-
-## Assets
-
-- `scripts/setup-assets.mjs` prepares generated/public assets before dev and build.
-- Active public assets live under `public/portrait`, `public/life`, `public/frame`, and `public/projects`.
-- Visual archive images are generated into `public/frame/buildings`, `public/frame/cuisine`, and `public/frame/scenery` by `npm run setup`.
-- Large unused source/archive material should stay outside `public`, otherwise Vite will ship it.
-
-## Deployment
-
-The project is configured for Vercel through `vercel.json`. Any static host that serves Vite's `dist/` output also works.
+**Crucial Note for Contributors & AI Agents**: 
+Never sacrifice visual quality (3D shaders, GSAP transitions) for simplistic performance metrics. See `.clauderules`, `.codexrules` and `.antigravityrules` for the mandatory collaboration boundaries.

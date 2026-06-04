@@ -1,7 +1,7 @@
 import { useEffect, Suspense } from 'react'
 import { useLenis } from './lib/lenis'
-import { gsap, ScrollTrigger } from './lib/gsap'
-import { INTRO_EXIT_EVENT } from './lib/intro'
+import { subscribeStage } from './lib/stage'
+import { requestScrollRefresh } from './lib/scroll/requestRefresh'
 import { onChaptersReady } from './lib/chaptersReady'
 import { scrollToChapter } from './lib/chapterScroll'
 import Loader from './components/Loader'
@@ -22,16 +22,19 @@ export default function App() {
   // Below-the-fold chapters are lazy-loaded, so they mount slightly after the
   // first paint and change the document height — which invalidates every
   // pinned/scrubbed ScrollTrigger's start/end. Re-measure once the lazy
-  // sections have settled. refresh() is idempotent, so firing on a few signals
-  // (loader handoff, full load, a safety timeout) is safe and covers the race
-  // regardless of when the last chunk lands.
+  // sections have settled. All refreshes route through the coordinator so the
+  // intro hand-off, window load and safety timeout coalesce instead of thrashing
+  // layout; the intro→live hand-off refreshes immediately (the one moment a
+  // stale measurement is most visible).
   useEffect(() => {
-    const refresh = () => ScrollTrigger.refresh()
-    window.addEventListener(INTRO_EXIT_EVENT, refresh)
+    const unsub = subscribeStage((stage) => {
+      if (stage === 'live') requestScrollRefresh(true)
+    })
+    const refresh = () => requestScrollRefresh()
     window.addEventListener('load', refresh)
     const t = window.setTimeout(refresh, 1200)
     return () => {
-      window.removeEventListener(INTRO_EXIT_EVENT, refresh)
+      unsub()
       window.removeEventListener('load', refresh)
       clearTimeout(t)
     }
@@ -50,43 +53,6 @@ export default function App() {
       cancel()
       if (timer !== undefined) clearTimeout(timer)
     }
-  }, [])
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const inner = gsap.utils.toArray<HTMLElement>('.hero__split .split-line__inner')
-      if (inner.length < 2) return
-      const [firstLine, secondLine] = inner
-      if (!firstLine || !secondLine) return
-
-      gsap.to(firstLine, {
-        xPercent: -45,
-        scale: 0.75,
-        opacity: 0.35,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#hero',
-          start: 'bottom bottom',
-          end: 'bottom top',
-          scrub: 1.5,
-        },
-      })
-
-      gsap.to(secondLine, {
-        xPercent: 45,
-        scale: 0.75,
-        opacity: 0.35,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#hero',
-          start: 'bottom bottom',
-          end: 'bottom top',
-          scrub: 1.5,
-        },
-      })
-    })
-
-    return () => ctx.revert()
   }, [])
 
   return (

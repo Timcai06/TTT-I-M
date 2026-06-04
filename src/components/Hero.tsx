@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
+import { createHeroParallax } from '../lib/timelines/heroParallax'
 import { onIntroExit } from '../lib/intro'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
 import { onChapterArrived } from '../lib/chapterTransition'
@@ -123,6 +124,9 @@ export default function Hero() {
           scrub: true,
         },
       })
+
+      // Title lines split apart and recede as the hero scrolls away.
+      if (root.current) createHeroParallax(root.current)
     }, root)
 
     return () => {

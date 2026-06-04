@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
+import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
 import { projects, type Project } from '../data/projects'
 
@@ -116,7 +117,7 @@ export default function Projects() {
         card.style.setProperty('--accent', accent)
       })
 
-      ScrollTrigger.refresh()
+      requestScrollRefresh()
     }, root)
 
     // Pointer-following 3D tilt on each media frame (no-ops on touch / reduced

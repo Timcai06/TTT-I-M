@@ -8,7 +8,10 @@ import {
   type ChapterTransitionRequest,
 } from '../lib/chapterTransition'
 import { scrollToChapter } from '../lib/chapterScroll'
-import { getLenis } from '../lib/lenis'
+import { getStage, setStage } from '../lib/stage'
+import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
+import { acquireContext, canAcquire, releaseContext } from '../lib/webgl/contextRegistry'
+import { createTransitionTimeline } from '../lib/timelines/transitionTimeline'
 import { prefersReducedMotion } from '../lib/motion'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
 
@@ -42,12 +45,17 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
 
   useEffect(() => {
     if (!active || prefersReducedMotion()) return
+    // The field is ambient: if the WebGL context budget is tight (Hero + About
+    // already live), skip it and let the CSS grid carry the transition rather
+    // than spawning a third/fourth context at the heaviest moment.
+    if (!canAcquire()) return
     const canvas = canvasRef.current
     if (!canvas) return
 
     let disposed = false
     let frame = 0
     let cleanup = () => {}
+    acquireContext()
 
     void import('three').then((THREE) => {
       if (disposed) return
@@ -128,6 +136,7 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
     return () => {
       disposed = true
       cleanup()
+      releaseContext()
     }
   }, [active, targetId])
 
@@ -138,7 +147,6 @@ export default function ChapterTransition() {
   const rootRef = useRef<HTMLDivElement>(null)
   const railRef = useRef<HTMLSpanElement>(null)
   const targetNameRef = useRef<HTMLSpanElement>(null)
-  const busyRef = useRef(false)
   const queuedRef = useRef<ChapterTransitionRequest | null>(null)
   const [active, setActive] = useState(false)
   const [pretextReady, setPretextReady] = useState(false)
@@ -160,7 +168,7 @@ export default function ChapterTransition() {
 
   useEffect(() => {
     const runTransition = async (request: ChapterTransitionRequest) => {
-      if (busyRef.current) {
+      if (getStage() === 'transitioning') {
         queuedRef.current = request
         return
       }
@@ -170,7 +178,9 @@ export default function ChapterTransition() {
         return
       }
 
-      busyRef.current = true
+      // Entering `transitioning` freezes Lenis and pauses heavy WebGL surfaces
+      // (Hero portrait) via their stage subscriptions — no imperative wiring here.
+      setStage('transitioning')
       setPretextReady(false)
       setTargetId(request.id)
       setActive(true)
@@ -179,91 +189,34 @@ export default function ChapterTransition() {
       const root = rootRef.current
       if (!root) {
         scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
-        busyRef.current = false
+        setStage('live')
         return
       }
 
-      const lenis = getLenis()
-      lenis?.stop()
-
-      const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__item'))
-      const itemChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__item-char'))
-      const activeItem = root.querySelector<HTMLElement>('.chapter-transition__item.is-target')
-      const caption = root.querySelector<HTMLElement>('.chapter-transition__caption')
-      const targetText = root.querySelector<HTMLElement>('.chapter-transition__target')
-      const targetChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__target-glyph'))
-      const grid = root.querySelector<HTMLElement>('.chapter-transition__grid')
-      const field = root.querySelector<HTMLElement>('.chapter-transition__field')
-      const rail = railRef.current
-
-      gsap.set(root, { clipPath: 'inset(100% 0% 0% 0%)', autoAlpha: 1, pointerEvents: 'auto' })
-      gsap.set(items, { opacity: 1 })
-      gsap.set(itemChars, { yPercent: 96, opacity: 0, skewY: 4 })
-      gsap.set(targetChars, { filter: 'blur(10px)', opacity: 0, rotate: 2, scale: 1.08, yPercent: 38 })
-      gsap.set([caption, targetText], { y: 18, opacity: 0 })
-      gsap.set([grid, field], { opacity: 0 })
-      gsap.set(rail, { scaleX: 0, transformOrigin: 'left center' })
-
       await new Promise<void>((resolve) => {
-        gsap.timeline({
-          defaults: { ease: 'power3.inOut' },
-          onComplete: resolve,
-        })
-          .to(root, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.34 })
-          .to({}, { duration: 0.1 })
-          .to([grid, field], { opacity: 1, duration: 0.78, ease: 'power2.out' }, '<')
-          .to(itemChars, {
-            yPercent: 0,
-            opacity: 1,
-            skewY: 0,
-            duration: 0.74,
-            stagger: 0.01,
-          }, '<0.12')
-          .to([caption, targetText], { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' }, '<0.22')
-          .to(targetChars, {
-            filter: 'blur(0px)',
-            yPercent: 0,
-            opacity: 1,
-            rotate: 0,
-            scale: 1,
-            duration: 0.92,
-            stagger: 0.028,
-            ease: 'expo.out',
-          }, '<0.05')
-          .to(rail, { scaleX: 1, duration: 0.72, ease: 'power2.inOut' }, '<0.08')
-          .call(() => {
+        createTransitionTimeline(root, railRef.current, {
+          onRevealTarget: () => {
             setPretextReady(true)
             setPretextRefreshKey((key) => key + 1)
-          })
-          .to(activeItem, { x: 12, duration: 0.32, ease: 'power2.out' }, '>-0.02')
-          .call(() => {
+          },
+          onLand: () => {
             setPretextReady(false)
             scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
             window.requestAnimationFrame(() => {
-              ScrollTrigger.refresh()
+              requestScrollRefresh(true)
               ScrollTrigger.update()
               dispatchChapterArrived(request.id)
             })
-          })
-          .to(activeItem, { x: 0, duration: 0.22, ease: 'power2.in' })
-          .to(itemChars, {
-            yPercent: -86,
-            opacity: 0,
-            skewY: -3,
-            duration: 0.38,
-            stagger: 0.01,
-            ease: 'power3.in',
-          }, '+=0.12')
-          .to(targetChars, { filter: 'blur(7px)', yPercent: -58, opacity: 0, duration: 0.36, stagger: 0.012, ease: 'power3.in' }, '<')
-          .to([caption, targetText], { y: -14, opacity: 0, duration: 0.32, ease: 'power2.in' }, '<')
-          .to(root, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.52 }, '<0.1')
+          },
+          onComplete: resolve,
+        })
       })
 
       gsap.set(root, { autoAlpha: 0, pointerEvents: 'none' })
       setActive(false)
       setPretextReady(false)
-      lenis?.start()
-      busyRef.current = false
+      // Back to `live` resumes Lenis (stage subscription) and re-arms the queue.
+      setStage('live')
 
       const queued = queuedRef.current
       queuedRef.current = null

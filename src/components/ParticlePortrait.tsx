@@ -3,16 +3,16 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
-import { hasIntroExited, onIntroExit, INTRO_EXIT_EVENT } from '../lib/intro'
+import { onIntroExit } from '../lib/intro'
+import { isLive, useStage } from '../lib/stage'
+import { useGLSurface } from '../lib/webgl/useGLSurface'
+import { acquireContext, releaseContext } from '../lib/webgl/contextRegistry'
+import { acquireTexture, releaseTexture } from '../lib/webgl/textureCache'
 
-// Has the loader intro finished at least once? When the hero scrolls far away
-// its Canvas is unmounted to free GPU memory; on scroll-back it remounts, and
-// this flag lets the portrait re-materialize instantly instead of waiting on
-// (or replaying) the 2.2s reveal.
-let introExitedOnce = hasIntroExited()
-if (typeof window !== 'undefined') {
-  window.addEventListener(INTRO_EXIT_EVENT, () => { introExitedOnce = true }, { once: true })
-}
+// "Has the loader intro finished at least once?" now reads from the stage SSOT
+// (isLive()). When the hero scrolls far away its Canvas is unmounted to free GPU
+// memory; on scroll-back it remounts, and a live stage lets the portrait
+// re-materialize instantly instead of waiting on (or replaying) the 2.2s reveal.
 
 const vertexShader = /* glsl */ `
   uniform sampler2D uTexture;
@@ -129,16 +129,16 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   const matRef = useRef<THREE.ShaderMaterial>(null)
   // On a remount after the intro already played, start fully materialized
   // (introRef = 1) so there's no blank wait or replayed reveal.
-  const introRef = useRef(introExitedOnce ? 1 : 0)
+  const introRef = useRef(isLive() ? 1 : 0)
   const mouseRef = useRef(new THREE.Vector2(99, 99))
   const targetMouseRef = useRef(new THREE.Vector2(99, 99))
   const isHoveringRef = useRef(false)
   const { size, viewport } = useThree()
 
-  const [started, setStarted] = useState(introExitedOnce)
+  const [started, setStarted] = useState(() => isLive())
 
   useEffect(() => {
-    if (introExitedOnce) return
+    if (isLive()) return
     return onIntroExit(() => setStarted(true))
   }, [])
 
@@ -255,42 +255,33 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
   )
 }
 
-/** Imperative texture loader — handles 404 gracefully. */
+/** Imperative texture loader — handles 404 gracefully, ref-counted via cache. */
 function useImperativeTexture(src: string) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    let currentTexture: THREE.Texture | null = null
-    const loader = new THREE.TextureLoader()
-    
-    loader.load(
-      src,
-      (tex) => {
-        if (cancelled) {
-          tex.dispose()
-          return
-        }
-        tex.minFilter = THREE.LinearFilter
-        tex.magFilter = THREE.LinearFilter
-        tex.generateMipmaps = false
-        currentTexture = tex
+    // Shared cache so concurrent uses dedupe; ref-counted so the last release
+    // disposes — preserving the unmount-frees-GPU-memory design (see textureCache).
+    void acquireTexture(src, (tex) => {
+      tex.minFilter = THREE.LinearFilter
+      tex.magFilter = THREE.LinearFilter
+      tex.generateMipmaps = false
+    })
+      .then((tex) => {
+        if (cancelled) return
         setTexture(tex)
-      },
-      undefined,
-      () => {
+      })
+      .catch(() => {
         if (cancelled) return
         setFailed(true)
         console.warn(`[ParticlePortrait] failed to load ${src} — run \`npm run setup\` inside portfolio/.`)
-      }
-    )
-    
+      })
+
     return () => {
       cancelled = true
-      if (currentTexture) {
-        currentTexture.dispose()
-      }
+      releaseTexture(src)
     }
   }, [src])
 
@@ -315,35 +306,20 @@ function PortraitScene({ src }: { src: string }) {
 }
 
 export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: string }) {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(true)
-  const [mounted, setMounted] = useState(true)
+  // Smart mount/pause lifecycle (dual IntersectionObserver + hysteresis) is now
+  // the shared GL-surface contract. `visible` gates the render loop; `mounted`
+  // unmounts the whole Canvas a viewport away to free GPU memory.
+  const { ref: wrapRef, visible, mounted } = useGLSurface()
   const reduced = useReducedMotion()
+  const stage = useStage()
 
-  // Two observers on the same wrapper, with hysteresis between their margins:
-  //
-  //  • render (120px)  — pauses the render loop (frameloop="never"). The shader
-  //    pushes ~78k points/frame; off-screen it would steal GPU from the scroll
-  //    animations below.
-  //  • mount (100% vh) — unmounts the whole Canvas once the hero is more than a
-  //    viewport away, freeing its WebGL context / texture / geometry memory,
-  //    and remounts it just before the hero returns. The gap between the two
-  //    margins keeps a paused-but-mounted band so we never thrash mount/unmount.
+  // Account this Canvas in the WebGL context budget for its mounted lifetime,
+  // so optional surfaces (the transition field) can see real pressure.
   useEffect(() => {
-    const el = wrapRef.current
-    if (!el) return
-    const render = new IntersectionObserver(
-      ([entry]) => { if (entry) setVisible(entry.isIntersecting) },
-      { rootMargin: '120px' }
-    )
-    const mount = new IntersectionObserver(
-      ([entry]) => { if (entry) setMounted(entry.isIntersecting) },
-      { rootMargin: '100% 0px' }
-    )
-    render.observe(el)
-    mount.observe(el)
-    return () => { render.disconnect(); mount.disconnect() }
-  }, [])
+    if (reduced || !mounted) return
+    acquireContext()
+    return () => releaseContext()
+  }, [reduced, mounted])
 
   // Honour the OS "reduce motion" setting: skip the animated particle field
   // entirely. The static hero ghost photo behind it carries the composition.
@@ -354,7 +330,10 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
       <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
         {mounted && (
           <Canvas
-            frameloop={visible ? 'always' : 'never'}
+            // Pause during a chapter-jump transition: the overlay covers the
+            // hero, so its ~78k-point shader would just steal GPU from the
+            // transition field for nothing.
+            frameloop={visible && stage !== 'transitioning' ? 'always' : 'never'}
             dpr={[1, 1.5]}
             gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
             camera={{ position: [0, 0, 2.4], fov: 45 }}

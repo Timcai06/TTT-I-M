@@ -3,6 +3,8 @@ import type { ErrorInfo, ReactNode, RefObject } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ScrollTrigger } from '../lib/gsap'
+import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
+import { acquireContext, releaseContext } from '../lib/webgl/contextRegistry'
 import { useReducedMotion } from '../lib/motion'
 import { buildTextParticleField, type TextParticleField } from '../lib/textParticles'
 
@@ -197,6 +199,13 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
   const [webglFailed, setWebglFailed] = useState(false)
   const fallback = reduced || webglFailed
 
+  // Account the About canvas in the WebGL context budget while it's live.
+  useEffect(() => {
+    if (fallback || !field) return
+    acquireContext()
+    return () => releaseContext()
+  }, [fallback, field])
+
   useEffect(() => {
     if (fallback) return
     const wrap = wrapRef.current
@@ -227,7 +236,7 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
     void document.fonts?.ready.then(() => {
       if (cancelled) return
       compute()
-      ScrollTrigger.refresh()
+      requestScrollRefresh(true)
     })
 
     let raf = 0
@@ -235,7 +244,7 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
       cancelAnimationFrame(raf)
       raf = requestAnimationFrame(() => {
         compute()
-        ScrollTrigger.refresh()
+        requestScrollRefresh()
       })
     }
     window.addEventListener('resize', onResize)
