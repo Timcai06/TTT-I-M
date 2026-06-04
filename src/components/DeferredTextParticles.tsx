@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { scheduleIdle } from '../lib/scheduleIdle'
 
 const TextParticles = lazy(() => import('./TextParticles'))
 
@@ -25,24 +24,10 @@ export default function DeferredTextParticles(props: Props) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     if (reducedMotion.matches) return
 
-    const el = fallbackRef.current
-    if (!el) return
-
-    let cancelIdle = () => {}
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return
-        observer.disconnect()
-        cancelIdle = scheduleIdle(() => setEnabled(true), 1500, 360)
-      },
-      { rootMargin: '70% 0px' }
-    )
-
-    observer.observe(el)
+    const frame = window.requestAnimationFrame(() => setEnabled(true))
 
     return () => {
-      observer.disconnect()
-      cancelIdle()
+      window.cancelAnimationFrame(frame)
     }
   }, [])
 

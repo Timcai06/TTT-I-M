@@ -22,6 +22,26 @@
   inset: 0;
   width: 100% !important;
   height: 100% !important;
+  opacity: 0;
+  transition: opacity 0.45s var(--ease-out);
+}
+
+.text-particles--ready canvas {
+  opacity: 1;
+}
+
+.text-particles__fallback {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: clamp(28px, 4vw, 56px);
+  line-height: 1.1;
+  color: var(--fg);
+  opacity: 1;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.text-particles--ready .text-particles__fallback {
+  opacity: 0;
 }
 
 /* Real text for assistive tech / SEO — visually hidden while the canvas shows

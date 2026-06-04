@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 import { revealWords } from '../lib/wordReveal'
 import { facts } from '../data/about'
+import { ABOUT_PARTICLE_TEXT } from '../lib/aboutTextParticles'
 import DeferredTextParticles from './DeferredTextParticles'
 
 export default function About() {
@@ -142,7 +143,7 @@ export default function About() {
           </h2>
 
           <DeferredTextParticles
-            text="Built by hand, frame by frame."
+            text={ABOUT_PARTICLE_TEXT}
             className="about__manifesto-fx"
           />
 

@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 
 const loaderSource = readFileSync('src/components/Loader.tsx', 'utf8')
+const aboutSource = readFileSync('src/components/About.tsx', 'utf8')
+const deferredTextParticlesSource = readFileSync('src/components/DeferredTextParticles.tsx', 'utf8')
 const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 if (!existsSync('src/lib/sitePreload.ts')) {
@@ -8,6 +10,7 @@ if (!existsSync('src/lib/sitePreload.ts')) {
 }
 
 const preloadSource = readFileSync('src/lib/sitePreload.ts', 'utf8')
+const aboutTextParticlesSource = readFileSync('src/lib/aboutTextParticles.ts', 'utf8')
 const registrySource = readFileSync('src/chapters/registry.ts', 'utf8')
 const packageSource = readFileSync('package.json', 'utf8')
 const introPretextPath = 'src/lib/pretextIntroText.ts'
@@ -28,6 +31,18 @@ if (!loaderSource.includes('useWholeSitePreload')) {
 
 if (!loaderSource.includes('useIntroPretextInteraction')) {
   throw new Error('Loader must attach the Pretext-powered intro text interaction hook.')
+}
+
+if (!preloadSource.includes('preloadAboutTextParticles') || !preloadSource.includes('particles:about-manifesto')) {
+  throw new Error('Loader preload must include the About manifesto particle text, not wait for scroll.')
+}
+
+if (!aboutSource.includes('ABOUT_PARTICLE_TEXT') || !aboutTextParticlesSource.includes('Built by hand, frame by frame.')) {
+  throw new Error('About manifesto particle text must be shared with the preload manifest.')
+}
+
+if (deferredTextParticlesSource.includes('IntersectionObserver')) {
+  throw new Error('DeferredTextParticles must not wait for scroll intersection before loading.')
 }
 
 if (!loaderSource.includes('introReady && !done && !exiting')) {
@@ -69,6 +84,7 @@ const requiredPreloadInputs = [
   'imageTasks',
   'chunks:pretext',
   'texture:hero',
+  'particles:about-manifesto',
   '__portfolioPreloadDebug',
   'console.table',
   'pending',

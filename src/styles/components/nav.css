@@ -75,8 +75,8 @@
   opacity: 0;
   color: #f3f0eb;
   background:
-    linear-gradient(110deg, rgba(234, 65, 45, 0.12), transparent 34%),
-    linear-gradient(156deg, #070707 0%, #110c0c 48%, #210d0d 100%);
+    radial-gradient(circle at 52% 48%, rgba(80, 96, 104, 0.16), transparent 42%),
+    linear-gradient(156deg, #050607 0%, #080a0b 46%, #120b0a 100%);
   will-change: clip-path, opacity;
 }
 
@@ -91,6 +91,7 @@
   height: 100%;
   opacity: 0;
   pointer-events: none;
+  mix-blend-mode: screen;
 }
 
 .chapter-transition__chrome {
@@ -105,15 +106,16 @@
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(243, 240, 235, 0.52);
+  color: rgba(243, 240, 235, 0.42);
 }
 
 .chapter-transition__grid {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 52%, rgba(234, 65, 45, 0.12), transparent 46%),
-    radial-gradient(circle at 78% 34%, rgba(243, 240, 235, 0.06), transparent 30%);
+    radial-gradient(circle at 50% 50%, rgba(243, 240, 235, 0.07), transparent 36%),
+    radial-gradient(circle at 70% 30%, rgba(234, 65, 45, 0.07), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 34%, rgba(0, 0, 0, 0.26));
   pointer-events: none;
 }
 
@@ -133,7 +135,7 @@
   font-size: 10px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(243, 240, 235, 0.48);
+  color: rgba(243, 240, 235, 0.4);
 }
 
 .chapter-transition__target {
@@ -158,6 +160,7 @@
   line-height: 0.84;
   letter-spacing: 0;
   text-transform: uppercase;
+  text-shadow: 0 18px 52px rgba(0, 0, 0, 0.48);
 }
 
 .chapter-transition__target-name {
@@ -187,8 +190,8 @@
   align-items: baseline;
   gap: 18px;
   padding: clamp(10px, 1.8vh, 18px) 0;
-  border-bottom: 1px solid rgba(243, 240, 235, 0.13);
-  color: rgba(243, 240, 235, 0.44);
+  border-bottom: 1px solid transparent;
+  color: rgba(243, 240, 235, 0.38);
   text-align: left;
   text-transform: uppercase;
   transition: color 0.22s var(--ease-out), transform 0.22s var(--ease-out);
@@ -197,11 +200,11 @@
 
 .chapter-transition__item:hover,
 .chapter-transition__item.is-target {
-  color: #f3f0eb;
+  color: rgba(243, 240, 235, 0.94);
 }
 
 .chapter-transition__item.is-target {
-  border-bottom-color: rgba(234, 65, 45, 0.64);
+  border-bottom-color: rgba(234, 65, 45, 0.72);
 }
 
 .chapter-transition__item-index {
@@ -231,7 +234,7 @@
   right: 0;
   bottom: clamp(22px, 4vw, 48px);
   height: 1px;
-  background: linear-gradient(90deg, var(--accent-warm), rgba(243, 240, 235, 0.82), transparent);
+  background: linear-gradient(90deg, var(--accent-warm), rgba(243, 240, 235, 0.72), transparent);
   transform: scaleX(0);
   will-change: transform;
 }

@@ -3,6 +3,7 @@ import { preloadLazyChapters } from '../chapters/registry'
 import { archiveImages } from '../data/frames'
 import { photos } from '../data/life'
 import { projects } from '../data/projects'
+import { preloadAboutTextParticles } from './aboutTextParticles'
 
 interface PreloadTask {
   id: string
@@ -239,6 +240,7 @@ function createWholeSitePreloadTasks(): PreloadTask[] {
     { id: 'fonts:document', label: 'fonts', load: loadFonts, priority: true },
     { id: 'chunks:chapters', label: 'chapters', load: preloadLazyChapters, priority: true },
     { id: 'chunks:text-particles', label: 'TextParticles', load: () => import('../components/TextParticles').then(() => undefined), priority: true },
+    { id: 'particles:about-manifesto', label: 'Built by hand, frame by frame.', load: preloadAboutTextParticles, priority: true },
   ]
 
   return [

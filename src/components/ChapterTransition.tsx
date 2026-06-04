@@ -53,8 +53,9 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
       if (disposed) return
 
       const scene = new THREE.Scene()
-      const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 90)
-      camera.position.z = 18
+      scene.fog = new THREE.FogExp2(0x070707, 0.048)
+      const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 90)
+      camera.position.z = 20
 
       const renderer = new THREE.WebGLRenderer({
         alpha: true,
@@ -64,19 +65,20 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
       })
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
 
-      const count = 420
+      const count = 260
       const positions = new Float32Array(count * 3)
       const colors = new Float32Array(count * 3)
-      const color = new THREE.Color(targetId === 'frame' ? '#f1b56c' : targetId === 'projects' ? '#7cc7ff' : '#ea412d')
+      const color = new THREE.Color(targetId === 'frame' ? '#b7844d' : targetId === 'projects' ? '#557b92' : '#8c2c22')
 
       for (let i = 0; i < count; i++) {
         const i3 = i * 3
-        positions[i3] = (Math.random() - 0.5) * 32
-        positions[i3 + 1] = (Math.random() - 0.5) * 18
-        positions[i3 + 2] = (Math.random() - 0.5) * 24
-        colors[i3] = color.r * (0.55 + Math.random() * 0.45)
-        colors[i3 + 1] = color.g * (0.55 + Math.random() * 0.45)
-        colors[i3 + 2] = color.b * (0.55 + Math.random() * 0.45)
+        positions[i3] = (Math.random() - 0.5) * 38
+        positions[i3 + 1] = (Math.random() - 0.5) * 20
+        positions[i3 + 2] = -Math.random() * 28
+        const tone = 0.22 + Math.random() * 0.28
+        colors[i3] = color.r * tone
+        colors[i3 + 1] = color.g * tone
+        colors[i3 + 2] = color.b * tone
       }
 
       const geometry = new THREE.BufferGeometry()
@@ -84,8 +86,10 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
       geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 
       const material = new THREE.PointsMaterial({
-        opacity: 0.62,
-        size: 0.055,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        opacity: 0.34,
+        size: 0.038,
         transparent: true,
         vertexColors: true,
       })
@@ -101,8 +105,9 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
 
       const tick = () => {
         if (disposed) return
-        points.rotation.y += 0.0028
-        points.rotation.x = Math.sin(performance.now() * 0.0004) * 0.08
+        points.rotation.y += 0.0012
+        points.rotation.x = Math.sin(performance.now() * 0.00022) * 0.035
+        points.position.z = Math.sin(performance.now() * 0.00016) * 0.7
         renderer.render(scene, camera)
         frame = window.requestAnimationFrame(tick)
       }
@@ -193,41 +198,44 @@ export default function ChapterTransition() {
 
       gsap.set(root, { clipPath: 'inset(100% 0% 0% 0%)', autoAlpha: 1, pointerEvents: 'auto' })
       gsap.set(items, { opacity: 1 })
-      gsap.set(itemChars, { yPercent: 120, opacity: 0, skewY: 6 })
-      gsap.set(targetChars, { yPercent: 115, opacity: 0, rotate: 4 })
-      gsap.set([caption, targetText], { y: 24, opacity: 0 })
+      gsap.set(itemChars, { yPercent: 96, opacity: 0, skewY: 4 })
+      gsap.set(targetChars, { filter: 'blur(10px)', opacity: 0, rotate: 2, scale: 1.08, yPercent: 38 })
+      gsap.set([caption, targetText], { y: 18, opacity: 0 })
       gsap.set([grid, field], { opacity: 0 })
       gsap.set(rail, { scaleX: 0, transformOrigin: 'left center' })
 
       await new Promise<void>((resolve) => {
         gsap.timeline({
-          defaults: { ease: 'power4.inOut' },
+          defaults: { ease: 'power3.inOut' },
           onComplete: resolve,
         })
-          .to(root, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.48 })
-          .to([grid, field], { opacity: 1, duration: 0.42, ease: 'power2.out' }, '<0.08')
+          .to(root, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.34 })
+          .to({}, { duration: 0.1 })
+          .to([grid, field], { opacity: 1, duration: 0.78, ease: 'power2.out' }, '<')
           .to(itemChars, {
             yPercent: 0,
             opacity: 1,
             skewY: 0,
-            duration: 0.62,
-            stagger: 0.012,
-          }, '<0.04')
-          .to([caption, targetText], { y: 0, opacity: 1, duration: 0.45, stagger: 0.06, ease: 'power3.out' }, '<0.14')
+            duration: 0.74,
+            stagger: 0.01,
+          }, '<0.12')
+          .to([caption, targetText], { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' }, '<0.22')
           .to(targetChars, {
+            filter: 'blur(0px)',
             yPercent: 0,
             opacity: 1,
             rotate: 0,
-            duration: 0.68,
-            stagger: 0.024,
+            scale: 1,
+            duration: 0.92,
+            stagger: 0.028,
             ease: 'expo.out',
-          }, '<0.02')
-          .to(rail, { scaleX: 1, duration: 0.52, ease: 'power2.inOut' }, '<0.1')
+          }, '<0.05')
+          .to(rail, { scaleX: 1, duration: 0.72, ease: 'power2.inOut' }, '<0.08')
           .call(() => {
             setPretextReady(true)
             setPretextRefreshKey((key) => key + 1)
           })
-          .to(activeItem, { x: 18, duration: 0.26, ease: 'power2.out' }, '>-0.08')
+          .to(activeItem, { x: 12, duration: 0.32, ease: 'power2.out' }, '>-0.02')
           .call(() => {
             setPretextReady(false)
             scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
@@ -237,18 +245,18 @@ export default function ChapterTransition() {
               dispatchChapterArrived(request.id)
             })
           })
-          .to(activeItem, { x: 0, duration: 0.18, ease: 'power2.in' })
+          .to(activeItem, { x: 0, duration: 0.22, ease: 'power2.in' })
           .to(itemChars, {
-            yPercent: -115,
+            yPercent: -86,
             opacity: 0,
-            skewY: -4,
-            duration: 0.42,
+            skewY: -3,
+            duration: 0.38,
             stagger: 0.01,
             ease: 'power3.in',
-          }, '+=0.08')
-          .to(targetChars, { yPercent: -100, opacity: 0, duration: 0.34, stagger: 0.012, ease: 'power3.in' }, '<')
-          .to([caption, targetText], { y: -18, opacity: 0, duration: 0.28, ease: 'power2.in' }, '<')
-          .to(root, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.58 }, '<0.08')
+          }, '+=0.12')
+          .to(targetChars, { filter: 'blur(7px)', yPercent: -58, opacity: 0, duration: 0.36, stagger: 0.012, ease: 'power3.in' }, '<')
+          .to([caption, targetText], { y: -14, opacity: 0, duration: 0.32, ease: 'power2.in' }, '<')
+          .to(root, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.52 }, '<0.1')
       })
 
       gsap.set(root, { autoAlpha: 0, pointerEvents: 'none' })

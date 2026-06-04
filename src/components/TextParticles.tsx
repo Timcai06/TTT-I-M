@@ -120,9 +120,9 @@ function GlyphPoints({
     if (!el) return
     const st = ScrollTrigger.create({
       trigger: el,
-      start: 'top 85%',
-      end: 'top 30%',
-      scrub: true,
+      start: 'top 98%',
+      end: 'bottom 22%',
+      scrub: 0.85,
       onUpdate: (self) => {
         if (matRef.current) {
           matRef.current.uniforms.uProgress!.value = self.progress
@@ -255,7 +255,8 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
   }
 
   return (
-    <div ref={wrapRef} className={`text-particles text-particles--gl ${className}`}>
+    <div ref={wrapRef} className={`text-particles text-particles--gl${field ? ' text-particles--ready' : ''} ${className}`}>
+      <span className="text-particles__fallback" aria-hidden="true">{text}</span>
       <CanvasErrorBoundary onError={() => setWebglFailed(true)}>
         {field && (
           <Canvas

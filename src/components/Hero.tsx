@@ -8,8 +8,10 @@ import ParticlePortrait from './ParticlePortrait'
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLHeadingElement>(null)
+  const pretextEnableTimer = useRef<number | undefined>(undefined)
   const [introExited, setIntroExited] = useState(false)
   const [heroTitleReady, setHeroTitleReady] = useState(false)
+  const [heroPretextEnabled, setHeroPretextEnabled] = useState(false)
   const [pretextRefreshKey, setPretextRefreshKey] = useState(0)
   const [showParticleLayer] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -42,6 +44,7 @@ export default function Hero() {
         if (id !== 'hero') return
         setIntroExited(true)
         setHeroTitleReady(true)
+        setHeroPretextEnabled(false)
         gsap.set('.hero__content', { opacity: 1, yPercent: 0 })
         gsap.set('.hero__split .split-line__inner', {
           opacity: 1,
@@ -50,7 +53,12 @@ export default function Hero() {
           xPercent: 0,
           yPercent: 0,
         })
-        setPretextRefreshKey((key) => key + 1)
+        window.clearTimeout(pretextEnableTimer.current)
+        pretextEnableTimer.current = window.setTimeout(() => {
+          if (window.scrollY > 6) return
+          setPretextRefreshKey((key) => key + 1)
+          setHeroPretextEnabled(true)
+        }, 180)
       })
 
       tl.to('.hero__kicker', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' })
@@ -120,11 +128,53 @@ export default function Hero() {
     return () => {
       cancelIntroExit()
       cancelHeroArrived()
+      window.clearTimeout(pretextEnableTimer.current)
       ctx.revert()
     }
   }, [])
+
+  useEffect(() => {
+    if (!introExited || !heroTitleReady) {
+      return
+    }
+
+    let ticking = false
+    let initialFrame = 0
+    const syncPretextAvailability = () => {
+      ticking = false
+      window.clearTimeout(pretextEnableTimer.current)
+
+      if (window.scrollY > 6) {
+        setHeroPretextEnabled(false)
+        return
+      }
+
+      setHeroPretextEnabled(false)
+      pretextEnableTimer.current = window.setTimeout(() => {
+        if (window.scrollY > 6) return
+        setPretextRefreshKey((key) => key + 1)
+        setHeroPretextEnabled(true)
+      }, 140)
+    }
+
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      window.requestAnimationFrame(syncPretextAvailability)
+    }
+
+    initialFrame = window.requestAnimationFrame(syncPretextAvailability)
+    window.addEventListener('scroll', onScroll, { passive: true })
+
+    return () => {
+      window.cancelAnimationFrame(initialFrame)
+      window.removeEventListener('scroll', onScroll)
+      window.clearTimeout(pretextEnableTimer.current)
+    }
+  }, [introExited, heroTitleReady])
+
   usePretextTextInteraction(nameRef, {
-    enabled: introExited && heroTitleReady,
+    enabled: heroPretextEnabled,
     refreshKey: pretextRefreshKey,
     strength: 0.78,
     text: 'Tim Cai.',
