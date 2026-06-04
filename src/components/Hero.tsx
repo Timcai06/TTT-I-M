@@ -1,11 +1,13 @@
-import { useEffect, useRef, Suspense, lazy } from 'react'
+import { useEffect, useRef, Suspense, lazy, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { onIntroExit } from '../lib/intro'
+import { scheduleIdle } from '../lib/scheduleIdle'
 
-const ParticlePortrait = lazy(() => import('./ParticlePortrait'))
+const HeroParticleLayer = lazy(() => import('./HeroParticleLayer'))
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
+  const [showParticleLayer, setShowParticleLayer] = useState(false)
 
   useEffect(() => {
     if (!root.current) return
@@ -93,13 +95,30 @@ export default function Hero() {
     }
   }, [])
 
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    if (reducedMotion.matches) return
+
+    let cancelIdle = () => {}
+    const cancelIntroExit = onIntroExit(() => {
+      cancelIdle = scheduleIdle(() => setShowParticleLayer(true))
+    })
+
+    return () => {
+      cancelIntroExit()
+      cancelIdle()
+    }
+  }, [])
+
   return (
     <section className="hero" id="hero" ref={root}>
       <div className="hero__canvas">
         <img className="hero__ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
-        <Suspense fallback={null}>
-          <ParticlePortrait />
-        </Suspense>
+        {showParticleLayer && (
+          <Suspense fallback={null}>
+            <HeroParticleLayer />
+          </Suspense>
+        )}
         <div className="hero__scan" aria-hidden="true" />
       </div>
       <div className="hero__vignette" />

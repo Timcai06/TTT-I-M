@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 import { revealWords } from '../lib/wordReveal'
 import { facts } from '../data/about'
-import TextParticles from './TextParticles'
+import DeferredTextParticles from './DeferredTextParticles'
 
 export default function About() {
   const root = useRef<HTMLElement>(null)
@@ -141,7 +141,7 @@ export default function About() {
             <span className="split-line"><span className="about__lead-line split-line__inner"><em>瞬间。</em></span></span>
           </h2>
 
-          <TextParticles
+          <DeferredTextParticles
             text="Built by hand, frame by frame."
             className="about__manifesto-fx"
           />

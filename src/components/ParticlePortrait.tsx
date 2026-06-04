@@ -3,13 +3,13 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
-import { onIntroExit, INTRO_EXIT_EVENT } from '../lib/intro'
+import { hasIntroExited, onIntroExit, INTRO_EXIT_EVENT } from '../lib/intro'
 
 // Has the loader intro finished at least once? When the hero scrolls far away
 // its Canvas is unmounted to free GPU memory; on scroll-back it remounts, and
 // this flag lets the portrait re-materialize instantly instead of waiting on
 // (or replaying) the 2.2s reveal.
-let introExitedOnce = false
+let introExitedOnce = hasIntroExited()
 if (typeof window !== 'undefined') {
   window.addEventListener(INTRO_EXIT_EVENT, () => { introExitedOnce = true }, { once: true })
 }

@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty false",
     "lint": "eslint .",
+    "test:build:chunks": "node tests/build/chunk-guards.mjs",
     "test:e2e": "playwright test",
     "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
     "preview": "vite preview"
