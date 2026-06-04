@@ -47,6 +47,8 @@ const requiredPreloadInputs = [
   'document.fonts.ready',
   'srcSet',
   '@chenglou/pretext',
+  'decode().catch',
+  'FONT_READY_DEV_TIMEOUT_MS',
   '__portfolioPreloadDebug',
   'console.table',
   'pending',
@@ -72,6 +74,8 @@ const requiredIntroPretextInputs = [
   'measureNaturalWidth',
   'useIntroPretextInteraction',
   'requestAnimationFrame',
+  'waitForFontsBeforePretext',
+  'FONT_READY_INTERACTION_TIMEOUT_MS',
 ]
 
 const missingIntroInputs = requiredIntroPretextInputs.filter((needle) => !introPretextSource.includes(needle))

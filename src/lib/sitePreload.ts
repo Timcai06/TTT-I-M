@@ -38,6 +38,7 @@ export interface WholeSitePreloadState {
 }
 
 const HERO_TEXTURE = '/portrait/tim.jpg'
+const FONT_READY_DEV_TIMEOUT_MS = 6000
 const STALL_REPORT_DELAYS = [3000, 8000, 15000, 30000]
 
 declare global {
@@ -86,16 +87,23 @@ function collectImageUrls() {
 
 function loadImage(src: string) {
   return new Promise<void>((resolve, reject) => {
+    let settled = false
+    const complete = () => {
+      if (settled) return
+      settled = true
+      resolve()
+      if (typeof image.decode === 'function') {
+        void image.decode().catch((error) => {
+          if (import.meta.env.DEV) {
+            console.warn(`[sitePreload] image loaded but decode() rejected for ${src}`, error)
+          }
+        })
+      }
+    }
     const image = new Image()
     image.decoding = 'async'
     image.loading = 'eager'
-    image.onload = () => {
-      if (typeof image.decode !== 'function') {
-        resolve()
-        return
-      }
-      image.decode().then(() => resolve(), reject)
-    }
+    image.onload = complete
     image.onerror = () => reject(new Error(`Failed to preload image: ${src}`))
     image.src = src
 
@@ -106,17 +114,24 @@ function loadImage(src: string) {
         reject(new Error(`Failed to preload image: ${src}`))
         return
       }
-      if (typeof image.decode !== 'function') {
-        resolve()
-        return
-      }
-      image.decode().then(() => resolve(), reject)
+      complete()
     }
   })
 }
 
 function loadFonts() {
   if (typeof document === 'undefined' || !document.fonts) return Promise.resolve()
+  if (import.meta.env.DEV) {
+    return Promise.race([
+      document.fonts.ready.then(() => undefined),
+      new Promise<void>((resolve) => {
+        window.setTimeout(() => {
+          console.warn(`[sitePreload] document.fonts.ready exceeded ${FONT_READY_DEV_TIMEOUT_MS}ms in dev; continuing with current font fallback.`)
+          resolve()
+        }, FONT_READY_DEV_TIMEOUT_MS)
+      }),
+    ])
+  }
   return document.fonts.ready.then(() => undefined)
 }
 

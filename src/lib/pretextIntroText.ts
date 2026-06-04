@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from 'react'
 
 const INTRO_TEXT = 'Tim Cai.'
+const FONT_READY_INTERACTION_TIMEOUT_MS = 1600
 const MIN_FIELD_RADIUS = 150
 type PretextModule = typeof import('@chenglou/pretext')
 let pretextPromise: Promise<PretextModule> | null = null
@@ -23,6 +24,15 @@ function clamp(value: number, min: number, max: number) {
 function loadPretext() {
   pretextPromise ??= import('@chenglou/pretext')
   return pretextPromise
+}
+
+function waitForFontsBeforePretext() {
+  if (!document.fonts) return Promise.resolve()
+
+  return Promise.race([
+    document.fonts.ready.then(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, FONT_READY_INTERACTION_TIMEOUT_MS)),
+  ])
 }
 
 function fontFromElement(el: HTMLElement) {
@@ -175,7 +185,7 @@ export function useIntroPretextInteraction(
       frame = window.requestAnimationFrame(animate)
     }
 
-    void document.fonts.ready.then(() => {
+    void waitForFontsBeforePretext().then(() => {
       if (cancelled) return
       prepareGlyphs()
       window.addEventListener('pointermove', onPointerMove, { passive: true })
