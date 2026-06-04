@@ -1,8 +1,7 @@
-import { useEffect, useRef, Suspense, lazy, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { onIntroExit } from '../lib/intro'
-
-const HeroParticleLayer = lazy(() => import('./HeroParticleLayer'))
+import ParticlePortrait from './ParticlePortrait'
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
@@ -102,9 +101,7 @@ export default function Hero() {
       <div className="hero__canvas">
         <img className="hero__ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
         {showParticleLayer && (
-          <Suspense fallback={null}>
-            <HeroParticleLayer />
-          </Suspense>
+          <ParticlePortrait />
         )}
         <div className="hero__scan" aria-hidden="true" />
       </div>

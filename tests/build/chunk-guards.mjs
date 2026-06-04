@@ -2,8 +2,9 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const distDir = resolve('dist/assets')
+const indexHtml = resolve('dist/index.html')
 
-if (!existsSync(distDir)) {
+if (!existsSync(distDir) || !existsSync(indexHtml)) {
   throw new Error('dist/assets is missing. Run npm run build before chunk guards.')
 }
 
@@ -14,11 +15,26 @@ if (!indexChunk) {
 }
 
 const indexSource = readFileSync(resolve(distDir, indexChunk), 'utf8')
-const forbidden = ['three-vendor', 'ParticlePortrait']
-  .filter((needle) => indexSource.includes(needle))
+const htmlSource = readFileSync(indexHtml, 'utf8')
 
-if (forbidden.length > 0) {
-  throw new Error(`Entry chunk ${indexChunk} still references deferred WebGL assets: ${forbidden.join(', ')}`)
+const requiredHeroPreloads = ['three-vendor']
+  .filter((needle) => !htmlSource.includes(needle))
+if (requiredHeroPreloads.length > 0) {
+  throw new Error(`Hero WebGL assets are not preloaded from index.html: ${requiredHeroPreloads.join(', ')}`)
 }
 
-console.log(`[chunk-guards] ${indexChunk} does not directly reference deferred WebGL assets.`)
+if (!indexSource.includes('ParticlePortrait')) {
+  throw new Error(`Entry chunk ${indexChunk} does not contain the eager Hero particle layer.`)
+}
+
+const deferredAboutAssets = ['TextParticles']
+  .filter((needle) => htmlSource.includes(needle))
+if (deferredAboutAssets.length > 0) {
+  throw new Error(`Non-hero WebGL assets should remain deferred: ${deferredAboutAssets.join(', ')}`)
+}
+
+if (indexSource.includes('TextParticles')) {
+  throw new Error(`Entry chunk ${indexChunk} still references deferred About WebGL assets.`)
+}
+
+console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL while deferring About WebGL.`)
