@@ -1,7 +1,7 @@
 # Portfolio — Tim Cai
 
 > 一个以 WebGL 粒子肖像为视觉锚点，极致工程化打底的个人作品集站点。
-> **技术栈**：React 18 + TypeScript + Vite + GSAP + Three.js (R3F)。
+> **技术栈**：React 19 + TypeScript + Vite + GSAP + Three.js (R3F)。
 
 ---
 
@@ -34,6 +34,12 @@
 - [顶部导航栏 (Nav)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/nav.md) - 零开销 IntersectionObserver 活性追踪与路由平滑替换。
 - [启动屏障 (Loader)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/loader.md) - 乱码黑客解密阵列与全局加载状态派发。
 - [赛博光标 (Cursor)](file:///Users/tim/Desktop/TTT%20I%27M/portfolio/docs/02-components/cursor.md) - 脱离 React 渲染树的 GSAP Ticker 阻尼跟手及全局 DOM 委托吸附。
+
+### 04. 文件治理与维护约定 (File Governance & Maintenance)
+- [文件分类治理 (File Governance)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-maintenance/file-governance.md) - 约定 `src/components`、`src/lib`、`src/data`、`scripts`、`public/frame`、`tests` 目录职责及新增章节/图片/性能守卫放置。
+
+### 05. 运行时与资源策略 (Runtime & Assets)
+- [运行时与资源策略总览 (Runtime & Assets)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/03-performance/runtime-and-assets.md) - Hero 首屏 WebGL、About 延迟粒子、Frame 响应式图像资源、Vite 图片优化边界、Vercel 缓存与 chunk guards 的实际决策依据。
 
 ---
 

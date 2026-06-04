@@ -1,11 +1,11 @@
 import { navChapters } from '../chapters/registry'
 import { scrollToChapter } from '../lib/chapterScroll'
-import { useActiveChapter } from '../lib/useActiveChapter'
+import { useChapterState } from '../lib/chapterState'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 
 export default function Nav() {
-  const active = useActiveChapter(navChapters, links[0]?.id ?? '')
+  const { activeId } = useChapterState()
 
   return (
     <header className="nav">
@@ -18,7 +18,7 @@ export default function Nav() {
             {links.map((l) => (
               <li key={l.id}>
                 <button
-                  className={`nav__link${active === l.id ? ' is-active' : ''}`}
+                  className={`nav__link${activeId === l.id ? ' is-active' : ''}`}
                   onClick={() => scrollToChapter(l.id, { updateHash: true })}
                 >
                   {l.label}
