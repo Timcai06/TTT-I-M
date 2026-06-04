@@ -47,6 +47,10 @@ const requiredPreloadInputs = [
   'document.fonts.ready',
   'srcSet',
   '@chenglou/pretext',
+  '__portfolioPreloadDebug',
+  'console.table',
+  'pending',
+  'rejected',
 ]
 
 const missingInputs = requiredPreloadInputs.filter((needle) => !preloadSource.includes(needle))
