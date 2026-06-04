@@ -73,6 +73,10 @@
   gap: clamp(54px, 6vw, 120px);
   padding-left: clamp(220px, 25vw, 380px);
   padding-right: clamp(96px, 12vw, 210px);
+  transform: translate3d(0, 0, 0);
+}
+
+.archive-theme-section.is-frame-theme-active .archive-theme-section__track {
   will-change: transform;
 }
 

@@ -1,5 +1,5 @@
 import { Fragment, type CSSProperties, useEffect, useRef, useState } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { gsap } from '../lib/gsap'
 import { revealWordsOnce } from '../lib/wordReveal'
 import {
   archiveIntro,
@@ -128,6 +128,8 @@ function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveCluste
       <div className="archive-slot__media">
         <img
           src={image.src}
+          srcSet={image.srcSet}
+          sizes={image.sizes}
           alt={image.title}
           loading={eager ? 'eager' : 'lazy'}
           decoding="async"
@@ -182,7 +184,7 @@ function ArchiveClusterPanel({
 function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; themeIndex: number }) {
   const section = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
-  const activeClusterIndex = useRef(0)
+  const activeClusterIndex = useRef(-1)
   const activeUpdateFrame = useRef(0)
   const [active, setActive] = useState<ActiveArchiveState>({ clusterIndex: 0 })
   const themeWord = theme.id.toUpperCase()
@@ -192,14 +194,42 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
     const trackEl = track.current
     if (!sectionEl || !trackEl) return
 
+    const warmedImages = new Set<string>()
+    const warmClusterImages = (clusterIndex: number) => {
+      const clusters = Array.from(sectionEl.querySelectorAll<HTMLElement>('.archive-cluster'))
+      const nearbyClusters = [clusters[clusterIndex], clusters[clusterIndex + 1]]
+
+      nearbyClusters.forEach((clusterEl) => {
+        if (!clusterEl) return
+        const images = Array.from(clusterEl.querySelectorAll<HTMLImageElement>('.archive-slot img'))
+        images.forEach((img) => {
+          const key = img.src
+          if (warmedImages.has(key)) return
+
+          const preload = new Image()
+          preload.decoding = 'async'
+          preload.fetchPriority = 'low'
+          preload.sizes = img.sizes
+          preload.srcset = img.srcset
+          preload.src = img.src
+          warmedImages.add(key)
+          void preload.decode().catch(() => {})
+        })
+      })
+    }
+
     const updateActiveCluster = (progress = 0) => {
       window.cancelAnimationFrame(activeUpdateFrame.current)
       activeUpdateFrame.current = window.requestAnimationFrame(() => {
         const clusterCount = theme.clusters.length
         const clusterIndex = Math.min(clusterCount - 1, Math.max(0, Math.floor(progress * clusterCount)))
 
-        if (clusterIndex === activeClusterIndex.current) return
+        if (clusterIndex === activeClusterIndex.current) {
+          warmClusterImages(clusterIndex)
+          return
+        }
         activeClusterIndex.current = clusterIndex
+        warmClusterImages(clusterIndex)
         setActive({ clusterIndex })
       })
     }
@@ -244,27 +274,7 @@ function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; theme
         }
       })
 
-      let refreshFrame = 0
-      let refreshTimer = 0
-      const scheduleRefresh = () => {
-        window.clearTimeout(refreshTimer)
-        refreshTimer = window.setTimeout(() => {
-          window.cancelAnimationFrame(refreshFrame)
-          refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh())
-        }, 180)
-      }
-
-      const images = gsap.utils.toArray<HTMLImageElement>('.archive-slot img')
-      images.forEach((img) => {
-        if (img.complete) return
-        img.addEventListener('load', scheduleRefresh, { once: true })
-      })
-
-      return () => {
-        window.clearTimeout(refreshTimer)
-        window.cancelAnimationFrame(refreshFrame)
-        images.forEach((img) => img.removeEventListener('load', scheduleRefresh))
-      }
+      return undefined
     }, sectionEl)
 
     return () => {

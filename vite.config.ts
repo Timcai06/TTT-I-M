@@ -8,8 +8,11 @@ export default defineConfig({
     react(),
     ViteImageOptimizer({
       test: /\.(jpe?g|png|gif|tiff|webp|svg|avif)$/i,
+      exclude: /public\/frame\//,
       includePublic: true,
       logStats: true,
+      cache: true,
+      cacheLocation: 'node_modules/.cache/vite-image-optimizer',
       png: {
         quality: 80,
       },

@@ -1,3 +1,5 @@
+import { frameImageSources } from './frameImageSources.generated'
+
 export type ArchiveThemeId = 'building' | 'cuisine' | 'scenery'
 export type ArchiveDirection = 'left-to-right' | 'right-to-left'
 export type ArchiveClusterLayout =
@@ -21,6 +23,8 @@ export interface ArchiveSlotOffset {
 export interface ArchiveImage {
   id: number
   src: string
+  srcSet: string
+  sizes: string
   title: string
   location: string
   meta: string
@@ -58,7 +62,49 @@ export interface ArchiveTextPanel {
   body: string
 }
 
-const b = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => ({
+const FRAME_IMAGE_SIZES = '(max-width: 768px) calc(100vw - 32px), (max-width: 1200px) 72vw, 640px'
+
+function frameSrcSet(src: string): string {
+  const sources = frameImageSources[src as keyof typeof frameImageSources]
+
+  if (!sources?.length) {
+    return src
+  }
+
+  return sources.map((source) => `${source.src} ${source.width}w`).join(', ')
+}
+
+function frameImage({
+  id,
+  src,
+  title,
+  location,
+  meta,
+  orientation,
+  tone,
+}: {
+  id: number
+  src: string
+  title: string
+  location: string
+  meta: string
+  orientation: ArchiveOrientation
+  tone: string
+}): ArchiveImage {
+  return {
+    id,
+    src,
+    srcSet: frameSrcSet(src),
+    sizes: FRAME_IMAGE_SIZES,
+    title,
+    location,
+    meta,
+    orientation,
+    tone,
+  }
+}
+
+const b = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
   id,
   src: `/frame/buildings/${String(id).padStart(2, '0')}.webp`,
   title,
@@ -68,7 +114,7 @@ const b = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   tone,
 })
 
-const c = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => ({
+const c = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
   id,
   src: `/frame/cuisine/cuisine-${String(id).padStart(2, '0')}.webp`,
   title,
@@ -78,7 +124,7 @@ const c = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   tone,
 })
 
-const s = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => ({
+const s = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
   id,
   src: `/frame/scenery/scenery-${String(id).padStart(2, '0')}.webp`,
   title,
