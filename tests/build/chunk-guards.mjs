@@ -38,4 +38,9 @@ if (!textParticleChunk) {
   throw new Error('Could not find the split TextParticles chunk for loader-time preloading.')
 }
 
-console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL and keeps ${textParticleChunk} available for loader-time preloading.`)
+const pretextChunk = readdirSync(distDir).find((file) => /^layout-.*\.js$/.test(file))
+if (!pretextChunk) {
+  throw new Error('Could not find the split Pretext layout chunk for intro text interaction.')
+}
+
+console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL and keeps ${textParticleChunk} plus ${pretextChunk} available for loader-time preloading.`)

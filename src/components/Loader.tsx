@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { dispatchIntroExit } from '../lib/intro'
+import { useIntroPretextInteraction } from '../lib/pretextIntroText'
 import { useWholeSitePreload } from '../lib/sitePreload'
 
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
@@ -16,8 +17,10 @@ export default function Loader() {
   const barRef = useRef<HTMLSpanElement>(null)
   const exitStarted = useRef(false)
   const [done, setDone] = useState(false)
+  const [exiting, setExiting] = useState(false)
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
+  useIntroPretextInteraction(textRef, !done && !exiting)
 
   useEffect(() => {
     if (!panelRef.current) return
@@ -34,17 +37,18 @@ export default function Loader() {
 
       /* ── baffle scramble (kept) ── */
       charEls.forEach((el) => {
-        const final = el.getAttribute('data-final') || el.textContent || ''
+        const glyph = el.querySelector<HTMLElement>('.intro__char-glyph') ?? el
+        const final = glyph.getAttribute('data-final') || glyph.textContent || ''
         let frame = 0
         const interval = window.setInterval(() => {
           if (frame < 11) {
-            el.textContent = randomBaffleChar()
+            glyph.textContent = randomBaffleChar()
           } else if (frame < 15) {
-            el.textContent = frame % 2 === 0
+            glyph.textContent = frame % 2 === 0
               ? randomBaffleChar()
               : final
           } else {
-            el.textContent = final
+            glyph.textContent = final
             clearInterval(interval)
           }
           frame++
@@ -88,6 +92,7 @@ export default function Loader() {
   useEffect(() => {
     if (!introReady || !preload.ready || exitStarted.current || !panelRef.current) return
     exitStarted.current = true
+    setExiting(true)
 
     const ctx = gsap.context(() => {
       const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro__char')
@@ -134,12 +139,24 @@ export default function Loader() {
   const text = 'Tim Cai.'
   const chars = text.split('').map((ch, i) => {
     if (ch === ' ') {
-      return <span key={i} className="intro__char intro__space" data-final=" ">&nbsp;</span>
+      return (
+        <span key={i} className="intro__char intro__space">
+          <span className="intro__char-glyph" data-final=" ">&nbsp;</span>
+        </span>
+      )
     }
     if (ch === '.') {
-      return <span key={i} className="intro__char intro__dot" data-final=".">.</span>
+      return (
+        <span key={i} className="intro__char intro__dot">
+          <span className="intro__char-glyph" data-final=".">.</span>
+        </span>
+      )
     }
-    return <span key={i} className="intro__char" data-final={ch}>{ch}</span>
+    return (
+      <span key={i} className="intro__char">
+        <span className="intro__char-glyph" data-final={ch}>{ch}</span>
+      </span>
+    )
   })
 
   return (

@@ -50,6 +50,11 @@
   will-change: transform, opacity;
 }
 
+.intro__char-glyph {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
 .intro__space {
   width: 0.32em;
   display: inline-block;

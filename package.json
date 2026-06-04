@@ -21,6 +21,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.7",
     "@gsap/react": "^2.1.2",
     "@react-three/fiber": "^9.6.1",
     "gsap": "^3.15.0",

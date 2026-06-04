@@ -101,6 +101,7 @@ function createWholeSitePreloadTasks(): PreloadTask[] {
 
   return [
     { id: 'chunks:chapters', label: 'chapters', load: preloadLazyChapters },
+    { id: 'chunks:pretext', label: 'Pretext', load: () => import('@chenglou/pretext').then(() => undefined) },
     { id: 'chunks:text-particles', label: 'TextParticles', load: () => import('../components/TextParticles').then(() => undefined) },
     { id: 'texture:hero', label: 'hero texture', load: loadHeroTexture },
     { id: 'fonts:document', label: 'fonts', load: loadFonts },
