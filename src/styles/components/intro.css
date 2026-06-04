@@ -32,6 +32,10 @@
   padding: 0.12em 0.04em;
 }
 
+.intro__text-wrap--interactive {
+  overflow: visible;
+}
+
 .intro__text {
   font-family: var(--font-serif);
   font-size: clamp(56px, 13vw, 200px);

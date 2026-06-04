@@ -29,6 +29,10 @@ if (!loaderSource.includes('useIntroPretextInteraction')) {
   throw new Error('Loader must attach the Pretext-powered intro text interaction hook.')
 }
 
+if (!loaderSource.includes('intro__text-wrap--interactive')) {
+  throw new Error('Loader must release the intro text mask while the Pretext interaction is active.')
+}
+
 if (loaderSource.includes('v: 100') || loaderSource.includes('duration: 1.6')) {
   throw new Error('Loader still contains the old fake 0-100 timed counter animation.')
 }

@@ -163,7 +163,7 @@ export default function Loader() {
     <div className="intro" ref={panelRef}>
       <div className="intro__meta">// Portfolio · 2026</div>
 
-      <div className="intro__text-wrap">
+      <div className={`intro__text-wrap${introReady && !exiting ? ' intro__text-wrap--interactive' : ''}`}>
         <div className="intro__text" ref={textRef}>{chars}</div>
       </div>
 
