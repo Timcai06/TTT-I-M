@@ -207,10 +207,14 @@ main {
   transform: translateZ(0); /* Force GPU composite layer */
 }
 
-/* ── Scroll Performance Throttler ── */
-.disable-hover,
-.disable-hover * {
-  pointer-events: none !important;
+/* ── Scroll Performance Throttler ──
+   `pointer-events` is an inherited property, so setting it on <body> during a
+   scroll burst suspends hover/pointer effects across the whole tree WITHOUT a
+   universal `.disable-hover *` selector — which forced a full-tree style recalc
+   on every 150ms toggle. Children that opt back in with `pointer-events: auto`
+   (only the scroll rail) stay interactive, which is cheap and desirable. */
+.disable-hover {
+  pointer-events: none;
 }
 
 /* ── Reduced motion ──

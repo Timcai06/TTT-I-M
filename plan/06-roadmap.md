@@ -9,6 +9,14 @@
 > 未做 motion.ts→motion/ 改名与 token 全量替换、conductor 未单独抽 hook（时间线已抽出后已足够薄）。
 > 仍需人工视觉 QA：intro→hero 交接、章节跳转转场（Lenis 冻结/恢复 + GL 暂停）、hero 标题视差、
 > About 粒子、Frame 横滚（preview 环境不可靠，用真实浏览器）。
+>
+> **状态（plan 02 已落地）** — A1/A2/A5/A6/A8/A9 已在 plan 01 或本就到位；本轮新增：
+> A4（`.disable-hover *` 通配符 → 依赖 `pointer-events` 继承，去掉每次滚动全树 recalc）、
+> A7（footer 状态点 `box-shadow` 无限脉冲 → 合成友好的 `transform: scale()`+`opacity` 伪元素环）、
+> A10（`chunk-guards.mjs` 加 gzip 体积预算：three/react/gsap/index/layout 各上限 + 总量 460KB，当前 390.4KB）。
+> **刻意不做**：A3 grain（`--noise: 0.015`，1.5% 不透明度全屏 blend 开销可忽略，改动纯属视觉风险换≈0 收益）；
+> A7 的 `.contact__blob`（border-radius 形变已在独立合成层上、是签名效果）与 projects `.media-frame__caption`
+> 的 `backdrop-filter`（极小、静态、刻意磨砂）保留。均通过 typecheck/eslint/build/4 guard。
 
 
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。
