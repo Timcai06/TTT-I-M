@@ -1,13 +1,15 @@
 import { useEffect, useRef, Suspense, lazy, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { onIntroExit } from '../lib/intro'
-import { scheduleIdle } from '../lib/scheduleIdle'
 
 const HeroParticleLayer = lazy(() => import('./HeroParticleLayer'))
 
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
-  const [showParticleLayer, setShowParticleLayer] = useState(false)
+  const [showParticleLayer] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  })
 
   useEffect(() => {
     if (!root.current) return
@@ -92,21 +94,6 @@ export default function Hero() {
     return () => {
       cancelIntroExit()
       ctx.revert()
-    }
-  }, [])
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (reducedMotion.matches) return
-
-    let cancelIdle = () => {}
-    const cancelIntroExit = onIntroExit(() => {
-      cancelIdle = scheduleIdle(() => setShowParticleLayer(true))
-    })
-
-    return () => {
-      cancelIntroExit()
-      cancelIdle()
     }
   }, [])
 
