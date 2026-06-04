@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { dispatchIntroExit } from '../lib/intro'
+import { useWholeSitePreload } from '../lib/sitePreload'
 
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
 
@@ -13,10 +14,14 @@ export default function Loader() {
   const textRef = useRef<HTMLDivElement>(null)
   const countRef = useRef<HTMLSpanElement>(null)
   const barRef = useRef<HTMLSpanElement>(null)
+  const exitStarted = useRef(false)
   const [done, setDone] = useState(false)
+  const [introReady, setIntroReady] = useState(false)
+  const preload = useWholeSitePreload()
 
   useEffect(() => {
     if (!panelRef.current) return
+    const intervals: number[] = []
 
     const ctx = gsap.context(() => {
       const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro__char')
@@ -31,7 +36,7 @@ export default function Loader() {
       charEls.forEach((el) => {
         const final = el.getAttribute('data-final') || el.textContent || ''
         let frame = 0
-        const interval = setInterval(() => {
+        const interval = window.setInterval(() => {
           if (frame < 11) {
             el.textContent = randomBaffleChar()
           } else if (frame < 15) {
@@ -44,6 +49,7 @@ export default function Loader() {
           }
           frame++
         }, 42)
+        intervals.push(interval)
       })
 
       /* ── chars rise from behind the mask edge, slow expo ── */
@@ -55,18 +61,39 @@ export default function Loader() {
         ease: 'expo.out',
       }, 0.1)
 
-      /* ── corner counter + hairline, in parallel ── */
-      const count = { v: 0 }
-      tl.to(count, {
-        v: 100,
-        duration: 1.6,
-        ease: 'power2.inOut',
-        onUpdate: () => {
-          const v = Math.round(count.v)
-          if (countRef.current) countRef.current.textContent = String(v).padStart(2, '0')
-          if (barRef.current) barRef.current.style.transform = `scaleX(${v / 100})`
-        },
-      }, 0.1)
+      tl.call(() => setIntroReady(true))
+    }, panelRef)
+
+    return () => {
+      intervals.forEach((interval) => window.clearInterval(interval))
+      ctx.revert()
+    }
+  }, [])
+
+  useEffect(() => {
+    const progress = preload.total > 0 ? preload.completed / preload.total : 0
+    const value = preload.ready ? 100 : Math.min(99, Math.floor(progress * 100))
+
+    if (countRef.current) countRef.current.textContent = String(value).padStart(2, '0')
+    if (barRef.current) {
+      gsap.to(barRef.current, {
+        scaleX: preload.ready ? 1 : progress,
+        duration: 0.28,
+        ease: 'power2.out',
+        overwrite: true,
+      })
+    }
+  }, [preload.completed, preload.ready, preload.total])
+
+  useEffect(() => {
+    if (!introReady || !preload.ready || exitStarted.current || !panelRef.current) return
+    exitStarted.current = true
+
+    const ctx = gsap.context(() => {
+      const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro__char')
+      if (!charEls?.length) return
+
+      const tl = gsap.timeline()
 
       /* ── hold a beat ── */
       tl.to({}, { duration: 0.35 })
@@ -100,7 +127,7 @@ export default function Loader() {
     }, panelRef)
 
     return () => ctx.revert()
-  }, [])
+  }, [introReady, preload.ready])
 
   if (done) return null
 

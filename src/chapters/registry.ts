@@ -4,12 +4,27 @@ import Hero from '../components/Hero'
 // Hero is eager: it paints first and hands the intro off to the loader.
 // Everything below the fold is code-split and fetched on mount (in parallel,
 // while the loader intro plays), so the initial app chunk only carries Hero.
-const About = lazy(() => import('../components/About'))
-const LifeGallery = lazy(() => import('../components/LifeGallery'))
-const Frame = lazy(() => import('../components/Frame'))
-const Skills = lazy(() => import('../components/Skills'))
-const Projects = lazy(() => import('../components/Projects'))
-const Footer = lazy(() => import('../components/Footer'))
+type LazyChapterLoader = () => Promise<{ default: ComponentType }>
+
+export const lazyChapterLoaders = {
+  about: () => import('../components/About'),
+  life: () => import('../components/LifeGallery'),
+  frame: () => import('../components/Frame'),
+  skills: () => import('../components/Skills'),
+  projects: () => import('../components/Projects'),
+  contact: () => import('../components/Footer'),
+} satisfies Record<string, LazyChapterLoader>
+
+export function preloadLazyChapters() {
+  return Promise.all(Object.values(lazyChapterLoaders).map((load) => load())).then(() => undefined)
+}
+
+const About = lazy(lazyChapterLoaders.about)
+const LifeGallery = lazy(lazyChapterLoaders.life)
+const Frame = lazy(lazyChapterLoaders.frame)
+const Skills = lazy(lazyChapterLoaders.skills)
+const Projects = lazy(lazyChapterLoaders.projects)
+const Footer = lazy(lazyChapterLoaders.contact)
 
 /**
  * A Chapter is one section of the narrative, rendered in order inside <main>.

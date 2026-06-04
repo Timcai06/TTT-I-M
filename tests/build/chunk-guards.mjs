@@ -27,14 +27,15 @@ if (!indexSource.includes('ParticlePortrait')) {
   throw new Error(`Entry chunk ${indexChunk} does not contain the eager Hero particle layer.`)
 }
 
-const deferredAboutAssets = ['TextParticles']
+const runtimePreloadedAssets = ['TextParticles']
   .filter((needle) => htmlSource.includes(needle))
-if (deferredAboutAssets.length > 0) {
-  throw new Error(`Non-hero WebGL assets should remain deferred: ${deferredAboutAssets.join(', ')}`)
+if (runtimePreloadedAssets.length > 0) {
+  throw new Error(`Runtime-preloaded WebGL assets should not be forced directly from index.html: ${runtimePreloadedAssets.join(', ')}`)
 }
 
-if (indexSource.includes('TextParticles')) {
-  throw new Error(`Entry chunk ${indexChunk} still references deferred About WebGL assets.`)
+const textParticleChunk = readdirSync(distDir).find((file) => /^TextParticles-.*\.js$/.test(file))
+if (!textParticleChunk) {
+  throw new Error('Could not find the split TextParticles chunk for loader-time preloading.')
 }
 
-console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL while deferring About WebGL.`)
+console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL and keeps ${textParticleChunk} available for loader-time preloading.`)
