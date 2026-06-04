@@ -8,6 +8,7 @@ interface PreloadTask {
   id: string
   label: string
   load: () => Promise<void>
+  priority?: boolean
 }
 
 type PreloadTaskDebugStatus = 'pending' | 'fulfilled' | 'rejected'
@@ -233,11 +234,11 @@ function createWholeSitePreloadTasks(): PreloadTask[] {
   }))
 
   const priorityTasks: PreloadTask[] = [
-    { id: 'chunks:pretext', label: 'Pretext', load: () => import('@chenglou/pretext').then(() => undefined) },
-    { id: 'texture:hero', label: 'hero texture', load: loadHeroTexture },
-    { id: 'fonts:document', label: 'fonts', load: loadFonts },
-    { id: 'chunks:chapters', label: 'chapters', load: preloadLazyChapters },
-    { id: 'chunks:text-particles', label: 'TextParticles', load: () => import('../components/TextParticles').then(() => undefined) },
+    { id: 'chunks:pretext', label: 'Pretext', load: () => import('@chenglou/pretext').then(() => undefined), priority: true },
+    { id: 'texture:hero', label: 'hero texture', load: loadHeroTexture, priority: true },
+    { id: 'fonts:document', label: 'fonts', load: loadFonts, priority: true },
+    { id: 'chunks:chapters', label: 'chapters', load: preloadLazyChapters, priority: true },
+    { id: 'chunks:text-particles', label: 'TextParticles', load: () => import('../components/TextParticles').then(() => undefined), priority: true },
   ]
 
   return [
@@ -261,7 +262,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     let completed = 0
     const debug = createPreloadDebug(tasks)
 
-    const running = tasks.map(async (task, index) => {
+    const runTask = async (task: PreloadTask, index: number) => {
       try {
         await task.load()
         debug?.finish(index)
@@ -286,9 +287,40 @@ export function useWholeSitePreload(): WholeSitePreloadState {
         }
         throw error
       }
-    })
+    }
 
-    void Promise.allSettled(running).then((results) => {
+    const runTaskGroup = async (
+      indexes: number[],
+      results: PromiseSettledResult<void>[]
+    ) => {
+      const settled = await Promise.allSettled(indexes.map((index) => {
+        const task = tasks[index]
+        if (!task) return Promise.resolve()
+        return runTask(task, index)
+      }))
+      settled.forEach((result, offset) => {
+        const index = indexes[offset]
+        if (typeof index === 'number') results[index] = result
+      })
+    }
+
+    const running = async () => {
+      const results = new Array<PromiseSettledResult<void>>(tasks.length)
+      const priorityIndexes = tasks
+        .map((task, index) => task.priority ? index : -1)
+        .filter((index) => index >= 0)
+      const remainingIndexes = tasks
+        .map((task, index) => task.priority ? -1 : index)
+        .filter((index) => index >= 0)
+
+      await runTaskGroup(priorityIndexes, results)
+      if (results.some((result) => result?.status === 'rejected')) return results
+
+      await runTaskGroup(remainingIndexes, results)
+      return results
+    }
+
+    void running().then((results) => {
       if (cancelled) return
 
       const failed = results
