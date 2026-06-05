@@ -9,6 +9,8 @@ const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx',
 const transitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const transitionApiSource = readFileSync('src/lib/chapterTransition.ts', 'utf8')
 const scrollSource = readFileSync('src/lib/chapterScroll.ts', 'utf8')
+const activeChapterSource = readFileSync('src/lib/useActiveChapter.ts', 'utf8')
+const chapterScrollMetricsSource = readFileSync('src/lib/chapterScrollMetrics.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
@@ -21,6 +23,18 @@ if (!appSource.includes('<ChapterStateProvider>')) {
 
 if (!providerSource.includes('useActiveChapter')) {
   throw new Error('ChapterStateProvider must own the active chapter subscription.')
+}
+
+if (!activeChapterSource.includes('useChapterScrollMetrics') || !scrollIndicatorSource.includes('useChapterScrollMetrics')) {
+  throw new Error('Active chapter and scroll indicator must share the same chapter scroll metrics source.')
+}
+
+if (activeChapterSource.includes('getBoundingClientRect') || scrollIndicatorSource.includes('getBoundingClientRect')) {
+  throw new Error('Active chapter consumers must not each read layout independently.')
+}
+
+if (!chapterScrollMetricsSource.includes('useSyncExternalStore') || !chapterScrollMetricsSource.includes('ScrollTrigger.create')) {
+  throw new Error('Chapter scroll metrics must be a shared external store backed by one ScrollTrigger.')
 }
 
 if (!appSource.includes('<ChapterTransition />')) {

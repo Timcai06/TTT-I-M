@@ -25,6 +25,8 @@ export interface ArchiveImage {
   src: string
   srcSet: string
   sizes: string
+  width: number
+  height: number
   title: string
   location: string
   meta: string
@@ -82,6 +84,8 @@ function frameImage({
   meta,
   orientation,
   tone,
+  width,
+  height,
 }: {
   id: number
   src: string
@@ -90,18 +94,89 @@ function frameImage({
   meta: string
   orientation: ArchiveOrientation
   tone: string
+  width: number
+  height: number
 }): ArchiveImage {
   return {
     id,
     src,
     srcSet: frameSrcSet(src),
     sizes: FRAME_IMAGE_SIZES,
+    width,
+    height,
     title,
     location,
     meta,
     orientation,
     tone,
   }
+}
+
+const buildingDimensions: Record<number, [number, number]> = {
+  1: [1050, 1400],
+  2: [1400, 1050],
+  3: [1050, 1400],
+  4: [1050, 1400],
+  5: [1400, 1050],
+  6: [1400, 1050],
+  7: [1400, 1050],
+  8: [787, 1400],
+  9: [1400, 1050],
+  10: [1400, 1050],
+  11: [1400, 1050],
+  12: [1400, 1050],
+  13: [1400, 1050],
+  14: [1400, 1050],
+  15: [1050, 1400],
+  16: [1400, 1050],
+  17: [1400, 1050],
+  18: [1050, 1400],
+}
+
+const cuisineDimensions: Record<number, [number, number]> = {
+  1: [1050, 1400],
+  2: [1400, 1050],
+  3: [1050, 1400],
+  4: [788, 1400],
+  5: [1050, 1400],
+  6: [1050, 1400],
+  7: [1050, 1400],
+  8: [1050, 1400],
+  9: [1400, 1050],
+  10: [1400, 1050],
+  11: [1050, 1400],
+  12: [1050, 1400],
+  13: [1400, 1050],
+  14: [1050, 1400],
+  15: [1050, 1400],
+  16: [1050, 1400],
+  17: [1050, 1400],
+  18: [1050, 1400],
+  19: [1050, 1400],
+  20: [1050, 1400],
+  21: [1400, 1050],
+}
+
+const sceneryDimensions: Record<number, [number, number]> = {
+  1: [1400, 1050],
+  2: [1054, 1400],
+  3: [1254, 1254],
+  4: [1400, 1054],
+  5: [1206, 1305],
+  6: [1254, 1254],
+  7: [1400, 1050],
+  8: [1363, 1154],
+  9: [1400, 1050],
+  10: [1400, 1050],
+  11: [1400, 1050],
+}
+
+function imageDimensions(dimensions: Record<number, [number, number]>, id: number): [number, number] {
+  const size = dimensions[id]
+  if (!size) {
+    throw new Error(`Missing frame image dimensions for id ${id}`)
+  }
+  return size
 }
 
 const b = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
@@ -112,6 +187,8 @@ const b = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   meta: 'Light, structure, and urban texture',
   orientation,
   tone,
+  width: imageDimensions(buildingDimensions, id)[0],
+  height: imageDimensions(buildingDimensions, id)[1],
 })
 
 const c = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
@@ -122,6 +199,8 @@ const c = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   meta: 'Food, table light, and daily detail',
   orientation,
   tone,
+  width: imageDimensions(cuisineDimensions, id)[0],
+  height: imageDimensions(cuisineDimensions, id)[1],
 })
 
 const s = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
@@ -132,6 +211,8 @@ const s = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   meta: 'Open air, distance, and atmosphere',
   orientation,
   tone,
+  width: imageDimensions(sceneryDimensions, id)[0],
+  height: imageDimensions(sceneryDimensions, id)[1],
 })
 
 export const archiveIntro: ArchiveTextPanel = {

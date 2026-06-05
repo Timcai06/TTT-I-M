@@ -198,6 +198,7 @@ export function usePretextTextInteraction(
 
     let cancelled = false
     let frame = 0
+    let running = false
     let glyphs: GlyphState[] = []
     let mouseX = Number.POSITIVE_INFINITY
     let mouseY = Number.POSITIVE_INFINITY
@@ -205,6 +206,12 @@ export function usePretextTextInteraction(
     let fieldRadius = MIN_FIELD_RADIUS
     let hasPointer = false
     let press = 0
+
+    const scheduleAnimation = () => {
+      if (running || cancelled) return
+      running = true
+      frame = window.requestAnimationFrame(animate)
+    }
 
     const resetGlyphs = () => {
       glyphs.forEach(({ el }) => {
@@ -233,6 +240,7 @@ export function usePretextTextInteraction(
       mouseX = event.clientX
       mouseY = event.clientY
       lastMove = performance.now()
+      scheduleAnimation()
     }
 
     const onPointerLeave = () => {
@@ -240,10 +248,12 @@ export function usePretextTextInteraction(
       mouseX = Number.POSITIVE_INFINITY
       mouseY = Number.POSITIVE_INFINITY
       press = 0
+      scheduleAnimation()
     }
 
     const onPointerDown = () => {
       press = 1
+      scheduleAnimation()
     }
 
     const onPointerUp = () => {
@@ -255,6 +265,8 @@ export function usePretextTextInteraction(
 
       const inactive = !hasPointer || performance.now() - lastMove > 1400
       press += (0 - press) * 0.045
+      let needsNextFrame = !inactive || press > 0.002
+
       glyphs.forEach((glyph) => {
         let targetX = 0
         let targetY = 0
@@ -284,12 +296,26 @@ export function usePretextTextInteraction(
         glyph.y += (targetY - glyph.y) * 0.2
         glyph.rotation += (targetRotation - glyph.rotation) * 0.16
         glyph.scale += (targetScale - glyph.scale) * 0.15
+        if (
+          Math.abs(glyph.x) > 0.05 ||
+          Math.abs(glyph.y) > 0.05 ||
+          Math.abs(glyph.rotation) > 0.05 ||
+          Math.abs(glyph.scale - 1) > 0.002
+        ) {
+          needsNextFrame = true
+        }
 
         glyph.el.style.transform = `translate3d(${glyph.x.toFixed(2)}px, ${glyph.y.toFixed(2)}px, 0px) rotate(${glyph.rotation.toFixed(2)}deg) scale(${glyph.scale.toFixed(3)})`
         glyph.el.style.opacity = String(1 - eased * 0.1)
       })
 
-      frame = window.requestAnimationFrame(animate)
+      if (needsNextFrame) {
+        frame = window.requestAnimationFrame(animate)
+        return
+      }
+
+      running = false
+      frame = 0
     }
 
     void waitForFontsBeforePretext().then(() => {
@@ -300,7 +326,6 @@ export function usePretextTextInteraction(
       window.addEventListener('pointerdown', onPointerDown, { passive: true })
       window.addEventListener('pointerup', onPointerUp, { passive: true })
       window.addEventListener('resize', prepareGlyphs, { passive: true })
-      frame = window.requestAnimationFrame(animate)
     })
 
     return () => {

@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import type { ArchiveClusterSlot, ArchiveImage } from '../../content'
 
 interface ArchiveSlotStyle extends CSSProperties {
+  '--image-aspect'?: string
   '--slot-x'?: string
   '--slot-y'?: string
   '--slot-scale'?: number
@@ -12,9 +13,10 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 export default function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveClusterSlot }) {
   const image: ArchiveImage = slot.image
   const slotStyle: ArchiveSlotStyle = {
+    '--image-aspect': `${image.width} / ${image.height}`,
     '--slot-x': `${clamp(slot.offset?.x ?? 0, -10, 10)}px`,
     '--slot-y': `${clamp(slot.offset?.y ?? 0, -12, 12)}px`,
-    '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.98, 1),
+    '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.9, 1.08),
   }
 
   return (

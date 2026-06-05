@@ -13,6 +13,7 @@ const resourceFiles = {
   manifest: 'src/lib/resources/manifest.ts',
   loaders: 'src/lib/resources/loaders.ts',
   controller: 'src/lib/resources/preloadController.ts',
+  imageDecodeQueue: 'src/lib/resources/imageDecodeQueue.ts',
 }
 for (const [name, path] of Object.entries(resourceFiles)) {
   if (!existsSync(path)) {
@@ -23,6 +24,12 @@ for (const [name, path] of Object.entries(resourceFiles)) {
 const manifestSource = readFileSync(resourceFiles.manifest, 'utf8')
 const loadersSource = readFileSync(resourceFiles.loaders, 'utf8')
 const controllerSource = readFileSync(resourceFiles.controller, 'utf8')
+const imageDecodeQueueSource = readFileSync(resourceFiles.imageDecodeQueue, 'utf8')
+const particlePortraitSource = readFileSync('src/components/ParticlePortrait.tsx', 'utf8')
+const textParticlesSource = readFileSync('src/components/TextParticles.tsx', 'utf8')
+const chapterTransitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
+const contextRegistrySource = readFileSync('src/lib/webgl/contextRegistry.ts', 'utf8')
+const glQualitySource = readFileSync('src/lib/webgl/quality.ts', 'utf8')
 const aboutTextParticlesSource = readFileSync('src/lib/aboutTextParticles.ts', 'utf8')
 const registrySource = readFileSync('src/chapters/registry.ts', 'utf8')
 const packageSource = readFileSync('package.json', 'utf8')
@@ -139,6 +146,46 @@ if (readyFalseCount > 1) {
 
 if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('preloadLazyChapters')) {
   throw new Error('Lazy chapter loaders must be reusable by the preload manifest.')
+}
+
+if (!loadersSource.includes("decode = 'none'") || !loadersSource.includes("decode === 'eager'")) {
+  throw new Error('Image loaders must make eager decode opt-in; deferred image loading must not decode by default.')
+}
+
+if (!manifestSource.includes("decode: 'none'") || !manifestSource.includes("loading: 'lazy'")) {
+  throw new Error('Deferred manifest images must load without immediate decode pressure.')
+}
+
+if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {
+  throw new Error('Image decode queue must release deferred decode work during idle frame budget.')
+}
+
+const requiredGLQualityInputs = [
+  'getGLQualityProfile',
+  'portraitSegments',
+  'textMaxTargets',
+  'transitionParticles',
+  'optionalContextLimit',
+]
+const missingGLQualityInputs = requiredGLQualityInputs.filter((needle) => !glQualitySource.includes(needle))
+if (missingGLQualityInputs.length > 0) {
+  throw new Error(`WebGL quality profile is missing dynamic budget knobs: ${missingGLQualityInputs.join(', ')}`)
+}
+
+if (!contextRegistrySource.includes('optionalContextLimit') || !contextRegistrySource.includes('canAcquireOptionalSurface')) {
+  throw new Error('WebGL context registry must gate optional surfaces through the dynamic quality budget.')
+}
+
+if (!particlePortraitSource.includes('quality.portraitSegments') || particlePortraitSource.includes('isMobile ? 180 : 280')) {
+  throw new Error('ParticlePortrait must use the WebGL quality profile instead of fixed high-density geometry.')
+}
+
+if (!textParticlesSource.includes('quality.textMaxTargets') || !textParticlesSource.includes('quality.textSampleGap')) {
+  throw new Error('TextParticles must build its point cloud from the WebGL quality profile.')
+}
+
+if (!chapterTransitionSource.includes('quality.transitionParticles') || !chapterTransitionSource.includes('canAcquireOptionalSurface')) {
+  throw new Error('ChapterTransition field must respect optional context and particle budgets.')
 }
 
 if (!packageJson.dependencies?.['@chenglou/pretext']) {

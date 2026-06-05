@@ -81,7 +81,7 @@ export function buildResourceManifest(): ResourceTask[] {
     label: src,
     tier: 'deferred',
     type: 'image',
-    load: () => loadImage(src),
+    load: () => loadImage(src, { decode: 'none', fetchPriority: 'low', loading: 'lazy' }),
   }))
 
   return [...critical, ...deferred]

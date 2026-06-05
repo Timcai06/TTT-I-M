@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { ScrollTrigger } from '../lib/gsap'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { acquireContext, releaseContext } from '../lib/webgl/contextRegistry'
+import { getGLQualityProfile } from '../lib/webgl/quality'
 import { useReducedMotion } from '../lib/motion'
 import { buildTextParticleField, type TextParticleField } from '../lib/textParticles'
 
@@ -13,7 +14,7 @@ import { buildTextParticleField, type TextParticleField } from '../lib/textParti
 const COOL = '#7890a8'
 const WARM = '#e0d5c1'
 // Read once at module load — touching window during render trips the purity rule.
-const DPR = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1
+const DEVICE_DPR = typeof window !== 'undefined' ? window.devicePixelRatio : 1
 
 const vertexShader = /* glsl */ `
   uniform float uProgress;
@@ -62,8 +63,10 @@ const fragmentShader = /* glsl */ `
 
 function GlyphPoints({
   field,
+  dprMax,
   triggerRef,
 }: {
+  dprMax: number
   field: TextParticleField
   triggerRef: RefObject<HTMLDivElement | null>
 }) {
@@ -105,13 +108,13 @@ function GlyphPoints({
       geometry: g,
       uniforms: {
         uProgress: { value: 0 },
-        uPixelRatio: { value: DPR },
+        uPixelRatio: { value: Math.min(DEVICE_DPR, dprMax) },
         uPointBase: { value: 8.0 },
         uCool: { value: new THREE.Color(COOL) },
         uWarm: { value: new THREE.Color(WARM) },
       },
     }
-  }, [field, viewport.width, viewport.height])
+  }, [dprMax, field, viewport.width, viewport.height])
 
   useEffect(() => () => geometry.dispose(), [geometry])
 
@@ -196,6 +199,7 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
   // Reactive: respects a runtime OS "reduce motion" toggle. WebGL failure is a
   // separate latch set by the error boundary. Either one drops to plain type.
   const reduced = useReducedMotion()
+  const quality = useMemo(() => getGLQualityProfile(), [])
   const [webglFailed, setWebglFailed] = useState(false)
   const fallback = reduced || webglFailed
 
@@ -215,17 +219,14 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
       const cw = Math.max(1, wrap.clientWidth)
       const fs = Math.max(26, Math.min(fontSize, cw / 6.5))
       const serif = getComputedStyle(wrap).getPropertyValue('--font-serif').trim() || 'serif'
-      // Lighter particle budget on phones (fewer points, sparser grid) to keep
-      // the GPU cost well within frame on mobile hardware.
-      const mobile = window.innerWidth < 768
       const f = buildTextParticleField({
         text,
         maxWidth: cw,
         fontSize: fs,
         fontFamily: serif,
         fontWeight: 500,
-        sampleGap: mobile ? 7 : 5,
-        maxTargets: mobile ? 2600 : 6000,
+        sampleGap: quality.textSampleGap,
+        maxTargets: quality.textMaxTargets,
       })
       wrap.style.height = `${f.height}px`
       setField(f)
@@ -253,7 +254,7 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', onResize)
     }
-  }, [text, fontSize, fallback])
+  }, [text, fontSize, fallback, quality.textMaxTargets, quality.textSampleGap])
 
   if (fallback) {
     return (
@@ -270,13 +271,13 @@ export default function TextParticles({ text, className = '', fontSize = 72 }: P
         {field && (
           <Canvas
             frameloop="demand"
-            dpr={[1, 2]}
+            dpr={[1, Math.min(2, quality.dprMax)]}
             gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
             camera={{ position: [0, 0, 5], fov: 60 }}
             style={{ position: 'absolute', inset: 0 }}
             aria-hidden="true"
           >
-            <GlyphPoints field={field} triggerRef={wrapRef} />
+            <GlyphPoints dprMax={quality.dprMax} field={field} triggerRef={wrapRef} />
           </Canvas>
         )}
       </CanvasErrorBoundary>

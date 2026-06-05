@@ -146,11 +146,11 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
 /**
  * Whole-site preload, tiered and failure-tolerant.
  *
- * Preserves the intentional whole-site preheat (the deferred image group is
- * still fully awaited before `ready`, so a fast scroller never hits pop-in), but
- * every task is timeout-bounded and non-fatal: failures are recorded and skipped
- * rather than blocking the intro forever. `critical` runs first so the gate can
- * resolve the instant the above-the-fold experience is ready.
+ * The intro only gates critical work. Deferred images are intentionally left to
+ * native lazy loading and section-level near-viewport warmup, so the first few
+ * seconds do not concentrate a whole-site image decode/fetch storm on the main
+ * thread. Every gated task is timeout-bounded and non-fatal: failures are
+ * recorded and skipped rather than blocking the intro forever.
  */
 export function useWholeSitePreload(): WholeSitePreloadState {
   const [tasks] = useState(buildResourceManifest)
@@ -196,25 +196,20 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     const criticalIndexes = tasks
       .map((task, index) => (task.tier === 'critical' ? index : -1))
       .filter((index) => index >= 0)
-    const deferredIndexes = tasks
-      .map((task, index) => (task.tier === 'deferred' ? index : -1))
-      .filter((index) => index >= 0)
-
     const run = async () => {
       await runGroup(criticalIndexes)
-      await runGroup(deferredIndexes)
     }
 
     void run().then(() => {
       if (cancelled) return
       setState({
-        completed: tasks.length,
+        completed,
         failed: [...failed],
         label: 'Ready',
         ready: true,
         total: tasks.length,
       })
-      debug?.report(failed.length > 0 ? `ready with ${failed.length} skipped` : 'all preload tasks completed')
+      debug?.report(failed.length > 0 ? `critical ready with ${failed.length} skipped` : 'critical preload completed')
       debug?.stop()
     })
 

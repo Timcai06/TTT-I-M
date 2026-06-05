@@ -10,7 +10,8 @@ import {
 import { scrollToChapter } from '../lib/chapterScroll'
 import { getStage, setStage } from '../lib/stage'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
-import { acquireContext, canAcquire, releaseContext } from '../lib/webgl/contextRegistry'
+import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../lib/webgl/contextRegistry'
+import { getGLQualityProfile } from '../lib/webgl/quality'
 import { createTransitionTimeline } from '../lib/timelines/transitionTimeline'
 import { prefersReducedMotion } from '../lib/motion'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
@@ -45,10 +46,12 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
 
   useEffect(() => {
     if (!active || prefersReducedMotion()) return
+    const quality = getGLQualityProfile()
+    if (quality.transitionParticles <= 0) return
     // The field is ambient: if the WebGL context budget is tight (Hero + About
     // already live), skip it and let the CSS grid carry the transition rather
     // than spawning a third/fourth context at the heaviest moment.
-    if (!canAcquire()) return
+    if (!canAcquireOptionalSurface()) return
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -71,9 +74,9 @@ function TransitionField({ active, targetId }: { active: boolean; targetId: stri
         canvas,
         powerPreference: 'high-performance',
       })
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.dprMax))
 
-      const count = 260
+      const count = quality.transitionParticles
       const positions = new Float32Array(count * 3)
       const colors = new Float32Array(count * 3)
       const color = new THREE.Color(targetId === 'frame' ? '#b7844d' : targetId === 'projects' ? '#557b92' : '#8c2c22')

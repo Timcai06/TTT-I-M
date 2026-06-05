@@ -7,6 +7,7 @@ import { onIntroExit } from '../lib/intro'
 import { isLive, useStage } from '../lib/stage'
 import { useGLSurface } from '../lib/webgl/useGLSurface'
 import { acquireContext, releaseContext } from '../lib/webgl/contextRegistry'
+import { getGLQualityProfile, type GLQualityProfile } from '../lib/webgl/quality'
 import { acquireTexture, releaseTexture } from '../lib/webgl/textureCache'
 
 // "Has the loader intro finished at least once?" now reads from the stage SSOT
@@ -125,7 +126,7 @@ const fragmentShader = /* glsl */ `
   }
 `
 
-function PortraitPoints({ texture }: { texture: THREE.Texture }) {
+function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; texture: THREE.Texture }) {
   const matRef = useRef<THREE.ShaderMaterial>(null)
   // On a remount after the intro already played, start fully materialized
   // (introRef = 1) so there's no blank wait or replayed reveal.
@@ -151,9 +152,9 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
 
   const geometry = useMemo(() => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-    const segments = isMobile ? 180 : 280
+    const segments = isMobile ? Math.min(quality.portraitSegments, 160) : quality.portraitSegments
     return new THREE.PlaneGeometry(1, 1, segments, segments)
-  }, [])
+  }, [quality.portraitSegments])
 
   const uniforms = useMemo(
     () => ({
@@ -163,13 +164,13 @@ function PortraitPoints({ texture }: { texture: THREE.Texture }) {
       uMouseStrength: { value: 0.25 }, // 降低推开粒子时的物理感官力度 (从 0.35 降至 0.25)
       uDepth: { value: 0.8 },
       uPointSize: { value: 3.5 },
-      uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.5) },
+      uPixelRatio: { value: Math.min(window.devicePixelRatio, quality.dprMax) },
       uIntro: { value: 0 },
       uTintCool: { value: new THREE.Color('#7890a8') },
       uTintWarm: { value: new THREE.Color('#e0d5c1') },
       uAspect: { value: new THREE.Vector2(aspect[0], aspect[1]) },
     }),
-    [texture, aspect]
+    [texture, aspect, quality.dprMax]
   )
 
   useEffect(() => {
@@ -299,10 +300,10 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, { errored: 
   }
 }
 
-function PortraitScene({ src }: { src: string }) {
+function PortraitScene({ quality, src }: { quality: GLQualityProfile; src: string }) {
   const { texture, failed } = useImperativeTexture(src)
   if (failed || !texture) return null
-  return <PortraitPoints texture={texture} />
+  return <PortraitPoints quality={quality} texture={texture} />
 }
 
 export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: string }) {
@@ -312,6 +313,7 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
   const { ref: wrapRef, visible, mounted } = useGLSurface()
   const reduced = useReducedMotion()
   const stage = useStage()
+  const quality = useMemo(() => getGLQualityProfile(), [])
 
   // Account this Canvas in the WebGL context budget for its mounted lifetime,
   // so optional surfaces (the transition field) can see real pressure.
@@ -334,12 +336,12 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
             // hero, so its ~78k-point shader would just steal GPU from the
             // transition field for nothing.
             frameloop={visible && stage !== 'transitioning' ? 'always' : 'never'}
-            dpr={[1, 1.5]}
+            dpr={[1, quality.dprMax]}
             gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
             camera={{ position: [0, 0, 2.4], fov: 45 }}
             style={{ background: 'transparent' }}
           >
-            <PortraitScene src={src} />
+            <PortraitScene quality={quality} src={src} />
           </Canvas>
         )}
       </div>

@@ -125,11 +125,32 @@ test('Visible Frame images remain large and captions stay attached below media',
       .map((slot) => {
         const media = slot.querySelector<HTMLElement>('.archive-slot__media')
         const caption = slot.querySelector<HTMLElement>('.archive-slot__caption')
-        if (!media || !caption) return null
+        const image = slot.querySelector<HTMLImageElement>('.archive-slot__media img')
+        if (!media || !caption || !image) return null
 
         const slotRect = slot.getBoundingClientRect()
         const mediaRect = media.getBoundingClientRect()
         const captionRect = caption.getBoundingClientRect()
+        const imageRect = image.getBoundingClientRect()
+        const naturalAspect = image.naturalWidth / Math.max(1, image.naturalHeight)
+        const mediaAspect = mediaRect.width / Math.max(1, mediaRect.height)
+        const renderedRect = mediaAspect > naturalAspect
+          ? {
+              width: mediaRect.height * naturalAspect,
+              height: mediaRect.height,
+              left: mediaRect.left + (mediaRect.width - mediaRect.height * naturalAspect) / 2,
+              right: mediaRect.right - (mediaRect.width - mediaRect.height * naturalAspect) / 2,
+              top: mediaRect.top,
+              bottom: mediaRect.bottom,
+            }
+          : {
+              width: mediaRect.width,
+              height: mediaRect.width / naturalAspect,
+              left: mediaRect.left,
+              right: mediaRect.right,
+              top: mediaRect.top + (mediaRect.height - mediaRect.width / naturalAspect) / 2,
+              bottom: mediaRect.bottom - (mediaRect.height - mediaRect.width / naturalAspect) / 2,
+            }
         const visibleWidth = Math.max(0, Math.min(slotRect.right, viewport.width) - Math.max(slotRect.left, 0))
         const visibleHeight = Math.max(0, Math.min(slotRect.bottom, viewport.height) - Math.max(slotRect.top, 0))
         const ratio = (visibleWidth * visibleHeight) / Math.max(1, slotRect.width * slotRect.height)
@@ -137,24 +158,63 @@ test('Visible Frame images remain large and captions stay attached below media',
 
         return {
           title: slot.querySelector('.archive-slot__caption-title')?.textContent ?? '',
+          cluster: slot.closest<HTMLElement>('.archive-cluster')?.dataset.cluster ?? '',
+          fit: window.getComputedStyle(slot.querySelector<HTMLImageElement>('.archive-slot__media img')!).objectFit,
           mediaWidth: Math.round(mediaRect.width),
           mediaHeight: Math.round(mediaRect.height),
+          imageWidth: Math.round(renderedRect.width),
+          imageHeight: Math.round(renderedRect.height),
+          mediaToImageWidthDelta: Math.round(Math.abs(imageRect.width - renderedRect.width)),
+          mediaToImageHeightDelta: Math.round(Math.abs(imageRect.height - renderedRect.height)),
+          mediaRect: {
+            bottom: mediaRect.bottom,
+            left: mediaRect.left,
+            right: mediaRect.right,
+            top: mediaRect.top,
+          },
           captionBelowMedia: captionRect.top >= mediaRect.bottom - 2,
+          captionCenterDelta: Math.round(Math.abs(
+            (captionRect.left + captionRect.width / 2) - (renderedRect.left + renderedRect.width / 2)
+          )),
           captionInsideFigure: captionRect.left >= slotRect.left - 2 && captionRect.right <= slotRect.right + 2,
+          captionWidthRatio: Number((captionRect.width / Math.max(1, renderedRect.width)).toFixed(2)),
         }
       })
       .filter((slot): slot is NonNullable<typeof slot> => slot !== null)
+    const visibleBuildingOrCuisine = visibleSlots.filter((slot) =>
+      slot.cluster.startsWith('building-') || slot.cluster.startsWith('cuisine-')
+    )
+    const overlappingPairs = visibleBuildingOrCuisine.flatMap((slot, index) => (
+      visibleBuildingOrCuisine.slice(index + 1)
+        .filter((other) => slot.cluster === other.cluster)
+        .filter((other) => {
+          const overlapWidth = Math.min(slot.mediaRect.right, other.mediaRect.right) - Math.max(slot.mediaRect.left, other.mediaRect.left)
+          const overlapHeight = Math.min(slot.mediaRect.bottom, other.mediaRect.bottom) - Math.max(slot.mediaRect.top, other.mediaRect.top)
+          return overlapWidth > 8 && overlapHeight > 8
+        })
+        .map((other) => `${slot.title} / ${other.title}`)
+    ))
 
     return {
       visibleSlots,
-      tinySlots: visibleSlots.filter((slot) => slot.mediaWidth < 240 || slot.mediaHeight < 300),
+      tinySlots: visibleSlots.filter((slot) => slot.imageWidth < 240 || slot.imageHeight < 300),
       detachedCaptions: visibleSlots.filter((slot) => !slot.captionBelowMedia || !slot.captionInsideFigure),
+      misalignedCaptions: visibleSlots.filter((slot) => slot.captionCenterDelta > 18),
+      overwideCaptions: visibleBuildingOrCuisine.filter((slot) => slot.captionWidthRatio > 1.35),
+      letterboxedMedia: visibleBuildingOrCuisine.filter((slot) => slot.mediaToImageWidthDelta > 12 || slot.mediaToImageHeightDelta > 12),
+      croppedSlots: visibleBuildingOrCuisine.filter((slot) => slot.fit !== 'contain').map((slot) => slot.title),
+      overlappingPairs,
     }
   })
 
   expect(layout.visibleSlots.length).toBeGreaterThan(0)
   expect(layout.tinySlots, JSON.stringify(layout.tinySlots)).toHaveLength(0)
   expect(layout.detachedCaptions, JSON.stringify(layout.detachedCaptions)).toHaveLength(0)
+  expect(layout.misalignedCaptions, JSON.stringify(layout.misalignedCaptions)).toHaveLength(0)
+  expect(layout.overwideCaptions, JSON.stringify(layout.overwideCaptions)).toHaveLength(0)
+  expect(layout.letterboxedMedia, JSON.stringify(layout.letterboxedMedia)).toHaveLength(0)
+  expect(layout.croppedSlots, JSON.stringify(layout.croppedSlots)).toHaveLength(0)
+  expect(layout.overlappingPairs, JSON.stringify(layout.overlappingPairs)).toHaveLength(0)
 })
 
 test('Frame falls back to a stable vertical layout on mobile', async ({ page }) => {

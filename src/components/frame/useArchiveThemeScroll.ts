@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { gsap } from '../../lib/gsap'
 import { revealWordsOnce } from '../../lib/wordReveal'
+import { enqueueImageDecode } from '../../lib/resources/imageDecodeQueue'
 import type { ArchiveTheme } from '../../content'
 import type { ActiveArchiveState } from './ArchiveRail'
 
@@ -34,14 +35,17 @@ export default function useArchiveThemeScroll({
           const key = img.src
           if (warmedImages.has(key)) return
 
+          warmedImages.add(key)
           const preload = new Image()
           preload.decoding = 'async'
           preload.fetchPriority = 'low'
           preload.sizes = img.sizes
+
+          preload.addEventListener('load', () => {
+            void enqueueImageDecode(preload).catch(() => {})
+          }, { once: true })
           preload.srcset = img.srcset
           preload.src = img.src
-          warmedImages.add(key)
-          void preload.decode().catch(() => {})
         })
       })
     }

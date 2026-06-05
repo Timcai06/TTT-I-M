@@ -16,6 +16,20 @@ export default function Cursor() {
     const pos = { x: target.x, y: target.y }
     const speed = 0.22
     let hasMoved = false
+    let ticking = false
+    let lastMove = 0
+
+    const stopTicking = () => {
+      if (!ticking) return
+      ticking = false
+      gsap.ticker.remove(tick)
+    }
+
+    const startTicking = () => {
+      if (ticking) return
+      ticking = true
+      gsap.ticker.add(tick)
+    }
 
     const onMove = (e: MouseEvent) => {
       if (!hasMoved) {
@@ -24,6 +38,8 @@ export default function Cursor() {
       }
       target.x = e.clientX
       target.y = e.clientY
+      lastMove = performance.now()
+      startTicking()
     }
 
     const tick = () => {
@@ -31,10 +47,12 @@ export default function Cursor() {
       pos.x += (target.x - pos.x) * dt
       pos.y += (target.y - pos.y) * dt
       gsap.set(el, { x: pos.x, y: pos.y })
+
+      const settled = Math.abs(target.x - pos.x) < 0.2 && Math.abs(target.y - pos.y) < 0.2
+      if (settled && performance.now() - lastMove > 700) stopTicking()
     }
 
     window.addEventListener('mousemove', onMove)
-    gsap.ticker.add(tick)
 
     /* ── Event delegation: covers all interactive + data-cursor="hover" elements
        regardless of when they mount. ── */
@@ -58,7 +76,7 @@ export default function Cursor() {
 
     return () => {
       window.removeEventListener('mousemove', onMove)
-      gsap.ticker.remove(tick)
+      stopTicking()
       document.removeEventListener('mouseover', onEnter)
       document.removeEventListener('mouseout', onLeave)
     }

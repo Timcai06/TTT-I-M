@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { useMemo } from 'react'
 import { progressChapters } from '../chapters/registry'
-import { onChaptersReady } from '../lib/chaptersReady'
 import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
 import { computeChapterProgressFills } from '../lib/chapterProgress'
-import type { ChapterRectSnapshot } from '../lib/activeChapter'
+import { useChapterScrollMetrics } from '../lib/chapterScrollMetrics'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -14,68 +12,14 @@ const sections = progressChapters.map((c) => ({
 }))
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
-function readProgressRects(): ChapterRectSnapshot[] {
-  return sections.map((section) => {
-    const el = document.getElementById(section.id)
-    const rect = el?.getBoundingClientRect()
-    return {
-      id: section.id,
-      top: rect?.top ?? Number.POSITIVE_INFINITY,
-      bottom: rect?.bottom ?? Number.POSITIVE_INFINITY,
-    }
-  })
-}
-
 export default function ScrollIndicator() {
   const { activeId } = useChapterState()
-  const [fills, setFills] = useState<number[]>(() => sections.map(() => 0))
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {})
-    let frame = 0
-    let disposeScrollTrigger = () => {}
-
-    const updateFills = () => {
-      frame = 0
-      const nextFills = computeChapterProgressFills(readProgressRects(), window.innerHeight)
-      setFills((current) => {
-        const changed = nextFills.some((fill, index) => Math.abs(fill - (current[index] ?? 0)) > 0.002)
-        return changed ? nextFills : current
-      })
-    }
-
-    const scheduleUpdate = () => {
-      window.cancelAnimationFrame(frame)
-      frame = window.requestAnimationFrame(updateFills)
-    }
-
-    const cancel = onChaptersReady(() => {
-      ctx.add(() => {
-        updateFills()
-        const trigger = ScrollTrigger.create({
-          start: 0,
-          end: 'max',
-          invalidateOnRefresh: true,
-          onUpdate: scheduleUpdate,
-          onRefresh: scheduleUpdate,
-        })
-
-        window.addEventListener('resize', scheduleUpdate)
-
-        disposeScrollTrigger = () => {
-          trigger.kill()
-          window.removeEventListener('resize', scheduleUpdate)
-        }
-      })
-    })
-
-    return () => {
-      cancel()
-      disposeScrollTrigger()
-      ctx.revert()
-      window.cancelAnimationFrame(frame)
-    }
-  }, [])
+  const { rects, viewportHeight } = useChapterScrollMetrics(sections)
+  const fills = useMemo(() => (
+    rects.length === 0 || viewportHeight <= 0
+      ? sections.map(() => 0)
+      : computeChapterProgressFills(rects, viewportHeight)
+  ), [rects, viewportHeight])
 
   const activeIdx = sections.findIndex((s) => s.id === activeId)
   const activeSection = sections[activeIdx] ?? firstSection

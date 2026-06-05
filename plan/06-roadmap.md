@@ -25,6 +25,15 @@
 > 改到 `content`（`resources/manifest.ts` 作为 preload 基础设施保留 `data/*` 直连）。新增
 > `tests/build/content-layer-guards.mjs`（组件零 `data/*` 直连 + 接口/schema 契约）并接入 test:build。
 > **零渲染行为变化**：landing 仍走同步数据。5 个 build guard 全绿。这是 plan 03 平台层的地基。
+>
+> **状态（plan 02.5 性能/视觉硬化进行中）** — 在进入 plan 03 前，先处理 landing 自身运行时预算：
+> B2 图片 decode 风暴已改为「critical gate + deferred 原生 lazy + 近屏 idle decode 队列」；
+> B5 常驻 loop 已改为 Cursor / Pretext 空闲停机，并把 active chapter + 右侧进度条合并到
+> `chapterScrollMetrics` 单一布局快照源。Frame 的 Building/Cuisine 改为比例保真布局：
+> 不使用 `object-fit: cover`，不重叠，保留错位层次与主次，新增 e2e 约束检查可见图片尺寸、
+> caption 贴合、真实比例、无裁切、无重叠。B3 已新增 `webgl/quality`：按设备能力动态调整
+> Hero portrait segments / About text particle targets / Transition field particles 与 DPR，并让 optional
+> WebGL surface 走动态 context budget。下一步继续评估 B4 grain 降级，或按视觉 QA 结果回补 Frame 微调。
 
 
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。

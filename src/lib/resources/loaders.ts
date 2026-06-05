@@ -1,5 +1,6 @@
 import { preloadLazyChapters } from '../../chapters/registry'
 import { preloadAboutTextParticles } from '../aboutTextParticles'
+import { enqueueImageDecode } from './imageDecodeQueue'
 
 // Per-resource-type loaders. This is the seam for future asset types:
 // KTX2 (KTX2Loader.detectSupport(renderer)), Draco/Meshopt-compressed GLTF, etc.
@@ -7,27 +8,45 @@ import { preloadAboutTextParticles } from '../aboutTextParticles'
 
 export const HERO_TEXTURE = '/portrait/tim.jpg'
 const FONT_READY_DEV_TIMEOUT_MS = 6000
+type ImageDecodeMode = 'eager' | 'idle' | 'none'
 
-export function loadImage(src: string): Promise<void> {
+interface LoadImageOptions {
+  decode?: ImageDecodeMode
+  fetchPriority?: 'high' | 'low' | 'auto'
+  loading?: 'eager' | 'lazy'
+}
+
+export function loadImage(src: string, {
+  decode = 'none',
+  fetchPriority = 'low',
+  loading = 'lazy',
+}: LoadImageOptions = {}): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let settled = false
-    const complete = () => {
+    const complete = async () => {
       if (settled) return
       settled = true
-      resolve()
-      // Decode off the critical path: fire-and-forget so a heavy decode never
-      // blocks the task from settling (keeps the intro gate moving).
-      if (typeof image.decode === 'function') {
-        void image.decode().catch((error) => {
+      if (decode === 'eager' && typeof image.decode === 'function') {
+        try {
+          await image.decode()
+        } catch (error) {
           if (import.meta.env.DEV) {
-            console.warn(`[resources] image loaded but decode().catch rejected for ${src}`, error)
+            console.warn(`[resources] eager image decode rejected for ${src}`, error)
+          }
+        }
+      } else if (decode === 'idle') {
+        void enqueueImageDecode(image).catch((error) => {
+          if (import.meta.env.DEV) {
+            console.warn(`[resources] idle image decode rejected for ${src}`, error)
           }
         })
       }
+      resolve()
     }
     const image = new Image()
     image.decoding = 'async'
-    image.loading = 'eager'
+    image.loading = loading
+    image.fetchPriority = fetchPriority
     image.onload = complete
     image.onerror = () => reject(new Error(`Failed to preload image: ${src}`))
     image.src = src
@@ -39,7 +58,7 @@ export function loadImage(src: string): Promise<void> {
         reject(new Error(`Failed to preload image: ${src}`))
         return
       }
-      complete()
+      void complete()
     }
   })
 }

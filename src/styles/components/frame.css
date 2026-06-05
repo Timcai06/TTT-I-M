@@ -335,8 +335,8 @@
 }
 
 .archive-cluster--theme-cuisine {
-  width: clamp(1080px, 98vw, 1640px);
-  gap: clamp(16px, 1.5vw, 28px);
+  width: clamp(1220px, 108vw, 1840px);
+  gap: clamp(18px, 1.7vw, 32px);
 }
 
 .archive-cluster--theme-scenery {
@@ -361,6 +361,7 @@
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
   overflow: hidden;
   contain: layout paint;
   /* The horizontal rail holds ~50 image slots; only a few are ever on screen.
@@ -370,7 +371,7 @@
      `auto` remembers the last rendered size to avoid any reveal pop. */
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
-  transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0) scale(var(--slot-scale, 1));
+  transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0);
   transform-origin: center;
 }
 
@@ -507,10 +508,34 @@
 .archive-slot__media {
   position: relative;
   min-height: 0;
+  width: 100%;
+  height: auto;
   max-height: 100%;
+  aspect-ratio: var(--image-aspect, 4 / 3);
+  justify-self: center;
+  align-self: end;
   overflow: hidden;
   border-radius: 0;
   background: transparent;
+}
+
+.archive-slot--portrait .archive-slot__media,
+.archive-slot--tall .archive-slot__media {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+}
+
+.archive-slot--landscape .archive-slot__media {
+  aspect-ratio: var(--image-aspect, 4 / 3);
+}
+
+.archive-slot--wide .archive-slot__media {
+  aspect-ratio: var(--image-aspect, 16 / 9);
+}
+
+.archive-slot--square .archive-slot__media {
+  aspect-ratio: var(--image-aspect, 1 / 1);
 }
 
 .archive-slot__media img {
@@ -521,14 +546,212 @@
   background: transparent;
 }
 
+.archive-cluster--theme-building.archive-cluster--mosaic-left,
+.archive-cluster--theme-building.archive-cluster--mosaic-right {
+  width: clamp(2240px, 182vw, 3120px);
+}
+
+.archive-cluster--theme-building.archive-cluster--panorama {
+  width: clamp(1420px, 122vw, 2120px);
+}
+
+.archive-cluster--theme-building .archive-slot__media img {
+  object-fit: contain;
+}
+
+.archive-cluster--theme-building .archive-slot:hover .archive-slot__media img {
+  object-fit: contain;
+}
+
 .archive-slot:hover .archive-slot__media img {
   object-fit: contain;
+}
+
+[data-cluster='building-surface-memory'] {
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+[data-cluster='building-surface-memory'] .archive-slot:nth-child(1) {
+  grid-column: 1 / 6;
+  grid-row: 1 / 10;
+}
+
+[data-cluster='building-surface-memory'] .archive-slot:nth-child(2) {
+  grid-column: 11 / 15;
+  grid-row: 3 / 10;
+}
+
+[data-cluster='building-surface-memory'] .archive-slot:nth-child(3) {
+  grid-column: 15 / 18;
+  grid-row: 1 / 7;
+}
+
+[data-cluster='building-surface-memory'] .archive-slot:nth-child(4) {
+  grid-column: 18 / 21;
+  grid-row: 2 / 10;
+}
+
+[data-cluster='building-surface-memory'] .archive-slot:nth-child(5) {
+  grid-column: 6 / 11;
+  grid-row: 1 / 10;
+}
+
+[data-cluster='building-skyline-weather'] {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+[data-cluster='building-skyline-weather'] .archive-slot:nth-child(1) {
+  grid-column: 1 / 9;
+  grid-row: 2 / 10;
+}
+
+[data-cluster='building-skyline-weather'] .archive-slot:nth-child(2) {
+  grid-column: 9 / 13;
+  grid-row: 1 / 6;
+}
+
+[data-cluster='building-skyline-weather'] .archive-slot:nth-child(3) {
+  grid-column: 9 / 13;
+  grid-row: 7 / 11;
+}
+
+[data-cluster='building-interior-routes'] {
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+[data-cluster='building-interior-routes'] .archive-slot:nth-child(1) {
+  grid-column: 16 / 21;
+  grid-row: 2 / 10;
+}
+
+[data-cluster='building-interior-routes'] .archive-slot:nth-child(2) {
+  grid-column: 7 / 13;
+  grid-row: 1 / 6;
+}
+
+[data-cluster='building-interior-routes'] .archive-slot:nth-child(3) {
+  grid-column: 5 / 10;
+  grid-row: 6 / 11;
+}
+
+[data-cluster='building-interior-routes'] .archive-slot:nth-child(4) {
+  grid-column: 1 / 5;
+  grid-row: 2 / 9;
+}
+
+[data-cluster='building-interior-routes'] .archive-slot:nth-child(5) {
+  grid-column: 13 / 16;
+  grid-row: 4 / 9;
+}
+
+[data-cluster='building-night-current'] {
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+[data-cluster='building-night-current'] .archive-slot:nth-child(1) {
+  grid-column: 1 / 10;
+  grid-row: 2 / 10;
+}
+
+[data-cluster='building-night-current'] .archive-slot:nth-child(2) {
+  grid-column: 10 / 15;
+  grid-row: 1 / 6;
+}
+
+[data-cluster='building-night-current'] .archive-slot:nth-child(3) {
+  grid-column: 15 / 19;
+  grid-row: 4 / 10;
+}
+
+[data-cluster='building-night-current'] .archive-slot:nth-child(4) {
+  grid-column: 10 / 15;
+  grid-row: 7 / 11;
+}
+
+[data-cluster='building-night-current'] .archive-slot:nth-child(5) {
+  grid-column: 19 / 21;
+  grid-row: 1 / 5;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-left,
+.archive-cluster--theme-cuisine.archive-cluster--feature-right,
+.archive-cluster--theme-cuisine.archive-cluster--stack-left,
+.archive-cluster--theme-cuisine.archive-cluster--stack-right {
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-left .archive-slot:nth-child(1) {
+  grid-column: 1 / 9;
+  grid-row: 1 / 10;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-left .archive-slot:nth-child(2) {
+  grid-column: 9 / 15;
+  grid-row: 1 / 5;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-left .archive-slot:nth-child(3) {
+  grid-column: 10 / 15;
+  grid-row: 6 / 11;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-right .archive-slot:nth-child(1) {
+  grid-column: 6 / 15;
+  grid-row: 1 / 10;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-right .archive-slot:nth-child(2) {
+  grid-column: 1 / 6;
+  grid-row: 1 / 5;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--feature-right .archive-slot:nth-child(3) {
+  grid-column: 1 / 5;
+  grid-row: 6 / 11;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--stack-left .archive-slot:nth-child(1) {
+  grid-column: 5 / 15;
+  grid-row: 1 / 10;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--stack-left .archive-slot:nth-child(2) {
+  grid-column: 1 / 5;
+  grid-row: 1 / 5;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--stack-left .archive-slot:nth-child(3) {
+  grid-column: 2 / 5;
+  grid-row: 6 / 11;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--stack-right .archive-slot:nth-child(1) {
+  grid-column: 1 / 11;
+  grid-row: 1 / 10;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--stack-right .archive-slot:nth-child(2) {
+  grid-column: 11 / 15;
+  grid-row: 2 / 6;
+}
+
+.archive-cluster--theme-cuisine.archive-cluster--stack-right .archive-slot:nth-child(3) {
+  grid-column: 11 / 14;
+  grid-row: 7 / 11;
 }
 
 .archive-slot__caption {
   display: flex;
   flex-direction: column;
+  justify-self: center;
+  text-align: center;
   gap: 3px;
+  width: min(100%, 32ch);
   max-width: 100%;
   min-height: 0;
   margin-top: 9px;
@@ -539,6 +762,7 @@
   letter-spacing: 0.08em;
   color: var(--fg-dim);
   text-transform: uppercase;
+  transform: translate3d(0, 0, 0);
 }
 
 .archive-slot__caption-title {
@@ -589,6 +813,7 @@
   .archive-cluster--mosaic-left,
   .archive-cluster--mosaic-right,
   .archive-cluster--panorama,
+  .archive-cluster--theme-building,
   .archive-cluster--theme-cuisine,
   .archive-cluster--theme-scenery {
     width: clamp(760px, 88vw, 980px);
@@ -650,6 +875,10 @@
   .archive-cluster--mosaic-left,
   .archive-cluster--mosaic-right,
   .archive-cluster--panorama,
+  .archive-cluster--theme-building,
+  .archive-cluster--theme-building.archive-cluster--mosaic-left,
+  .archive-cluster--theme-building.archive-cluster--mosaic-right,
+  .archive-cluster--theme-building.archive-cluster--panorama,
   .archive-cluster--theme-cuisine,
   .archive-cluster--theme-scenery {
     width: 100%;
