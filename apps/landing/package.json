@@ -7,7 +7,7 @@
     "setup": "node scripts/setup-assets.mjs",
     "predev": "node scripts/setup-assets.mjs",
     "prebuild": "node scripts/setup-assets.mjs",
-    "dev": "vite",
+    "dev": "vite --port 5173 --strictPort",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty false",
     "lint": "eslint .",

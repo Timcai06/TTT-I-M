@@ -28,6 +28,7 @@ npm run test:build
 
 - Landing brand link: set `VITE_STUDIO_URL` to the deployed Studio origin if `/blog` is not yet wired as a Vercel multi-zone rewrite.
 - Studio brand link: set `NEXT_PUBLIC_LANDING_URL` to the deployed Landing origin so `Tim Cai Studio` returns to the cinematic landing.
+- Local defaults already point `landing:5173 → studio:5174/blog` and `studio:5174 → landing:5173`; run `npm run dev:landing` and `npm run dev:studio` in two terminals for local cross-app navigation. The landing dev server uses a strict `5173` port so Studio's return link cannot drift to the wrong app.
 
 ## Runtime Boundary
 

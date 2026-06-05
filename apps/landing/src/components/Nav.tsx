@@ -3,7 +3,7 @@ import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
-const studioUrl = import.meta.env.VITE_STUDIO_URL
+const studioUrl = import.meta.env.VITE_STUDIO_URL ?? (import.meta.env.DEV ? 'http://localhost:5174' : undefined)
 const blogHref = studioUrl ? new URL('/blog', studioUrl).toString() : '/blog'
 
 export default function Nav() {

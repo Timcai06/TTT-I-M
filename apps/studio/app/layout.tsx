@@ -19,7 +19,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard' },
 ]
 
-const landingHref = process.env.NEXT_PUBLIC_LANDING_URL ?? '/'
+const landingHref = process.env.NEXT_PUBLIC_LANDING_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : '/')
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

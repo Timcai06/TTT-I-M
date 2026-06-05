@@ -45,6 +45,10 @@ if (landingPackage.name !== '@timcai/landing') {
   throw new Error('The Vite landing workspace must be named @timcai/landing.')
 }
 
+if (!landingPackage.scripts?.dev?.includes('--port 5173 --strictPort')) {
+  throw new Error('Landing dev server must stay on port 5173 so local Studio return links work.')
+}
+
 if (studioPackage.name !== '@timcai/studio' || !studioPackage.dependencies?.next) {
   throw new Error('The studio workspace must be a Next.js app named @timcai/studio.')
 }
@@ -77,11 +81,11 @@ if (
   throw new Error('Landing App must mount Vercel Analytics and Speed Insights at the app shell.')
 }
 
-if (!landingNav.includes('VITE_STUDIO_URL') || !landingNav.includes('href={blogHref}')) {
+if (!landingNav.includes('VITE_STUDIO_URL') || !landingNav.includes('http://localhost:5174') || !landingNav.includes('href={blogHref}')) {
   throw new Error('Landing brand must be the configurable Blog entry point instead of a hero/index scroll button.')
 }
 
-if (!studioLayout.includes('NEXT_PUBLIC_LANDING_URL') || !studioLayout.includes('href={landingHref}')) {
+if (!studioLayout.includes('NEXT_PUBLIC_LANDING_URL') || !studioLayout.includes('http://localhost:5173') || !studioLayout.includes('href={landingHref}')) {
   throw new Error('Studio brand must point back to the landing app.')
 }
 
