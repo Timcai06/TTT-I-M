@@ -1,17 +1,7 @@
 import { createStaticRepository, defaultMeta, type Post, type WorkEntry } from '@timcai/content'
+import { readPosts } from './mdx'
 
-export const posts = createStaticRepository<Post>([
-  {
-    body: 'A short platform note about separating the cinematic landing runtime from content surfaces that need SSR, SSG, feeds, and future publishing workflows.',
-    excerpt: 'Why the landing stays Vite while the content studio starts as a separate Next surface.',
-    meta: {
-      ...defaultMeta,
-      publishedAt: '2026-06-05',
-    },
-    slug: 'platform-split',
-    title: 'Keeping the landing cinematic and the studio quiet',
-  },
-])
+export const posts = createStaticRepository<Post>(readPosts())
 
 export const works = createStaticRepository<WorkEntry>([
   {

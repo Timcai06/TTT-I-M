@@ -12,12 +12,14 @@ export default function BlogIndex() {
       <section className="studio-hero">
         <div className="studio-eyebrow">Studio / Blog</div>
         <h1 className="studio-title">Notes without landing-runtime weight.</h1>
-        <p className="studio-copy">Posts are repository-backed now and ready to swap to MDX-in-repo.</p>
+        <p className="studio-copy">Posts are authored as local MDX files, then rendered through the Studio content repository.</p>
       </section>
       <section className="studio-grid" aria-label="Posts">
         {posts.all().map((post) => (
           <Link className="studio-card" href={`/blog/${post.slug}`} key={post.slug}>
-            <span className="studio-card__meta">{post.meta.publishedAt}</span>
+            <span className="studio-card__meta">
+              {post.meta.publishedAt} · {post.readingMinutes ?? 1} min
+            </span>
             <h2>{post.title}</h2>
             <p>{post.excerpt}</p>
           </Link>

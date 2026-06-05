@@ -1,4 +1,6 @@
 import { useEffect, Suspense } from 'react'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useLenis } from './lib/lenis'
 import { subscribeStage } from './lib/stage'
 import { requestScrollRefresh } from './lib/scroll/requestRefresh'
@@ -74,6 +76,8 @@ export default function App() {
         ))}
       </main>
       <div className="grain" aria-hidden="true" />
+      <Analytics />
+      <SpeedInsights />
       {import.meta.env.DEV && <PerfHud />}
     </>
   )

@@ -1,0 +1,22 @@
+---
+title: Keeping the landing cinematic and the studio quiet
+excerpt: Why the landing stays Vite while the content studio starts as a separate Next surface.
+publishedAt: 2026-06-05
+updatedAt: 2026-06-05
+author: tim
+publishState: published
+---
+
+# The split is the feature
+
+The landing page should stay tuned around preload timing, WebGL pressure, chapter choreography, and the Frame reading experience. Those systems are powerful, but they are also the wrong place to attach long-form publishing workflows.
+
+Studio exists as the quieter sibling: repository-authored content, static generation, feeds, metadata, and future editorial tooling. That keeps the cinematic surface fast while giving writing and work details their own production path.
+
+## Current boundaries
+
+- Landing owns the theatrical runtime.
+- Studio owns content, URLs, feeds, and future publishing state.
+- Shared packages carry tokens and content contracts across both apps.
+
+This lets the site become larger without making the first screen carry every concern.

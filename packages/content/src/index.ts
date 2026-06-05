@@ -11,7 +11,9 @@ export interface Post {
   body: string
   excerpt: string
   meta: ContentMeta
+  readingMinutes?: number
   slug: string
+  sourcePath?: string
   title: string
 }
 

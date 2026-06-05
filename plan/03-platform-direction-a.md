@@ -30,6 +30,9 @@ repo/
 > `apps/studio`（Next App Router，`/blog`、`/blog/[slug]`、`/work`、`/work/[slug]`、
 > `/dashboard`、RSS、sitemap、OG image）；新增 `packages/tokens` 与 `packages/content`。
 > studio 只依赖 content/tokens/Next/React，guard 禁止引入 GSAP/R3F/Three/Lenis/preload。
+> **更新（2026-06-05）**：SOON-2 已从博客骨架升级为真实仓库内容生产链：
+> `apps/studio/content/posts/*.mdx` 作为写作入口，`apps/studio/content/mdx.ts`
+> 在构建时读取 frontmatter/body，`/blog/[slug]` 用静态参数生成详情页，RSS/sitemap 复用同一 repository。
 
 ### Vercel 拼接
 
@@ -93,7 +96,7 @@ repo/
 | 阶段 | 动作 | 依赖 |
 |---|---|---|
 | SOON-1 | monorepo 化（portfolio → apps/landing），抽 `packages/tokens` | 已完成 |
-| SOON-2 | 起 `apps/studio`（Next），MDX 博客，SSG | 已完成基础骨架 |
+| SOON-2 | 起 `apps/studio`（Next），MDX 博客，SSG | 已完成 MDX-in-repo 内容生产链 |
 | SOON-3 | 作品列表/详情页吃 repository（先 static adapter） | 已完成 static repository 骨架 |
 | SOON-4 | OG image 生成、RSS、sitemap、内容区 SEO | 已完成基础输出 |
 | LATER-1 | Auth + Postgres + repository api adapter | 04 |

@@ -5,7 +5,10 @@ const landingPackage = JSON.parse(readFileSync('apps/landing/package.json', 'utf
 const studioPackage = JSON.parse(readFileSync('apps/studio/package.json', 'utf8'))
 const studioHome = readFileSync('apps/studio/app/page.tsx', 'utf8')
 const studioContent = readFileSync('apps/studio/content/index.ts', 'utf8')
+const studioMdx = readFileSync('apps/studio/content/mdx.ts', 'utf8')
+const studioBlogDetail = readFileSync('apps/studio/app/blog/[slug]/page.tsx', 'utf8')
 const studioLayout = readFileSync('apps/studio/app/layout.tsx', 'utf8')
+const landingApp = readFileSync('apps/landing/src/App.tsx', 'utf8')
 const landingGlobal = readFileSync('apps/landing/src/styles/global.css', 'utf8')
 const vercelSource = readFileSync('vercel.json', 'utf8')
 
@@ -19,6 +22,10 @@ const requiredPaths = [
   'apps/studio/app/dashboard/page.tsx',
   'apps/studio/app/rss.xml/route.ts',
   'apps/studio/app/sitemap.ts',
+  'apps/studio/components/MdxContent.tsx',
+  'apps/studio/content/mdx.ts',
+  'apps/studio/content/posts/platform-split.mdx',
+  'apps/studio/content/posts/studio-mdx-system.mdx',
   'packages/tokens/src/tokens.css',
   'packages/content/src/index.ts',
 ]
@@ -49,6 +56,23 @@ if (badStudioDeps.length > 0) {
 
 if (!studioHome.includes('without importing GSAP, R3F, or Lenis') || !studioContent.includes('createStaticRepository')) {
   throw new Error('Studio must document the runtime split and consume repository-backed content.')
+}
+
+if (!studioContent.includes('readPosts()') || !studioMdx.includes('readdirSync(postsDirectory)')) {
+  throw new Error('Studio posts must be read from repository MDX files, not hardcoded page data.')
+}
+
+if (!studioBlogDetail.includes('MdxContent') || !studioBlogDetail.includes('post.body')) {
+  throw new Error('Studio blog detail pages must render MDX-backed post bodies.')
+}
+
+if (
+  !landingApp.includes("@vercel/analytics/react") ||
+  !landingApp.includes("@vercel/speed-insights/react") ||
+  !landingApp.includes('<Analytics />') ||
+  !landingApp.includes('<SpeedInsights />')
+) {
+  throw new Error('Landing App must mount Vercel Analytics and Speed Insights at the app shell.')
 }
 
 if (!studioLayout.includes("@timcai/tokens/css") || !landingGlobal.includes("@timcai/tokens/css")) {

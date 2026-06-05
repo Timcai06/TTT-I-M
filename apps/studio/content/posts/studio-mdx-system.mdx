@@ -1,0 +1,22 @@
+---
+title: Studio content now starts in the repository
+excerpt: A first production path for writing posts as local MDX files before adding a dashboard editor.
+publishedAt: 2026-06-05
+updatedAt: 2026-06-05
+author: tim
+publishState: published
+---
+
+# A practical first publishing surface
+
+The first Studio milestone does not need accounts or a database. It needs a dependable way to create real posts, route them, preview them, and expose them through feeds and metadata.
+
+That is why posts now live as `.mdx` files in `apps/studio/content/posts`. Each file carries frontmatter for title, excerpt, publish state, author, and timestamps. The Studio app reads those files at build time and renders static blog routes from the same repository contract used by indexes, RSS, and sitemap generation.
+
+## What this unlocks
+
+- New essays can be created without touching page components.
+- Publishing state becomes explicit from the first content layer.
+- The future dashboard can swap the adapter without changing the public route shape.
+
+This is deliberately small, but it is real enough to publish from.

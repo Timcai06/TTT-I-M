@@ -40,6 +40,10 @@
 > 承载原 Vite landing，`apps/studio` 承载 Next App Router 内容面，`packages/tokens`
 > 与 `packages/content` 提供共享 token/schema/repository。studio 已有 `/blog`、`/work`、
 > `/dashboard`、RSS、sitemap、OG image 基础输出，并通过 guard 保证不依赖 GSAP/R3F/Three/Lenis/preload。
+> **状态（plan 03-A 已落地）** — Studio 现在已有真实内容生产入口：
+> `apps/studio/content/posts/*.mdx` + frontmatter → `readPosts()` → repository → `/blog`、
+> `/blog/[slug]`、RSS、sitemap。Landing 同步接入 Vercel Analytics 与 Speed Insights，
+> 挂在 `App` 最外层 fragment 内，不改变章节运行时结构。
 
 
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。
@@ -110,7 +114,7 @@
 ## 平台期（方向 A，待 landing 重构稳定后启动）
 
 - [x] **SOON-1** monorepo 化：`portfolio` → `apps/landing`，抽 `packages/tokens`（03）
-- [x] **SOON-2** 起 `apps/studio`（Next App Router），博客 SSG 骨架
+- [x] **SOON-2** 起 `apps/studio`（Next App Router），MDX-in-repo 博客 SSG
 - [x] **SOON-3** 作品列表/详情吃 repository（static adapter）
 - [x] **SOON-4** OG image / RSS / sitemap / 内容区 SEO 基础输出
 - [ ] **跨边界转场**：View Transitions + 转场皮肤 + stage `navigating`

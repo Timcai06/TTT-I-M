@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import MdxContent from '../../../components/MdxContent'
 import { posts } from '../../../content'
 
 export function generateStaticParams() {
@@ -21,10 +22,13 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
   if (!post) notFound()
 
   return (
-    <article className="studio-hero">
-      <div className="studio-eyebrow">{post.meta.publishedAt} / {post.meta.author}</div>
+    <article className="studio-article">
+      <div className="studio-eyebrow">
+        {post.meta.publishedAt} / {post.meta.author} / {post.readingMinutes ?? 1} min
+      </div>
       <h1 className="studio-title">{post.title}</h1>
-      <p className="studio-copy">{post.body}</p>
+      <p className="studio-copy">{post.excerpt}</p>
+      <MdxContent body={post.body} />
     </article>
   )
 }
