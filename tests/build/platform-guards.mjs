@@ -9,11 +9,13 @@ const studioMdx = readFileSync('apps/studio/content/mdx.ts', 'utf8')
 const studioBlogDetail = readFileSync('apps/studio/app/blog/[slug]/page.tsx', 'utf8')
 const studioLayout = readFileSync('apps/studio/app/layout.tsx', 'utf8')
 const landingApp = readFileSync('apps/landing/src/App.tsx', 'utf8')
+const landingNav = readFileSync('apps/landing/src/components/Nav.tsx', 'utf8')
 const landingGlobal = readFileSync('apps/landing/src/styles/global.css', 'utf8')
 const vercelSource = readFileSync('vercel.json', 'utf8')
 
 const requiredPaths = [
   'apps/landing/src/App.tsx',
+  'apps/landing/src/components/Nav.tsx',
   'apps/landing/vite.config.ts',
   'apps/studio/app/blog/page.tsx',
   'apps/studio/app/blog/[slug]/page.tsx',
@@ -73,6 +75,10 @@ if (
   !landingApp.includes('<SpeedInsights />')
 ) {
   throw new Error('Landing App must mount Vercel Analytics and Speed Insights at the app shell.')
+}
+
+if (!landingNav.includes('className="nav__brand" href="/blog"')) {
+  throw new Error('Landing brand must be the Blog entry point instead of a hero/index scroll button.')
 }
 
 if (!studioLayout.includes("@timcai/tokens/css") || !landingGlobal.includes("@timcai/tokens/css")) {

@@ -10,7 +10,7 @@ export default function Nav() {
   return (
     <header className="nav">
       <div className="container nav__inner">
-        <a className="nav__brand" href="#hero" onClick={(e) => { e.preventDefault(); transitionToChapter('hero', { updateHash: true }) }}>
+        <a className="nav__brand" href="/blog" aria-label="Open Tim Cai blog">
           Tim · 蔡
         </a>
         <nav>
