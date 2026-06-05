@@ -44,6 +44,21 @@
 > `apps/studio/content/posts/*.mdx` + frontmatter → `readPosts()` → repository → `/blog`、
 > `/blog/[slug]`、RSS、sitemap。Landing 同步接入 Vercel Analytics 与 Speed Insights，
 > 挂在 `App` 最外层 fragment 内，不改变章节运行时结构。
+>
+> **代码级审计（2026-06-05，已跑通验证）** — typecheck（landing+studio）✅、landing build + 6
+> guard ✅（JS 393.7KB/460）、studio Next build ✅（12 路由 SSG）。plan 01/02/02.5/04/03/03-A
+> 在代码层**真实落地**，且 02.5 的 `webgl/quality`、`chapterScrollMetrics`、`imageDecodeQueue`
+> 是有质量的实现而非占位。审计同时确认/修复：
+> - ✅ **bug 修复在树**：`intro.ts` FIX 1（footer blob 提前 + pretext 消失）已落地；pretext 已修。
+> - ✅ **控制台噪音已修**：`loaders.ts` 清理 fonts 6000ms 误报定时器、静默 idle decode best-effort 噪音。
+> - 🔴 **线上未兑现（最高优先）**：主域 `/blog` HTML 代理成功（200）但 `/_next/*` 资源 **404**
+>   （curl 实证：main /_next css=404、studio=200）→ 博客在主域无样式/未 hydrate。根因：跨 zone
+>   rewrite 缺 `/_next/:path*` + studio 无 `assetPrefix`/`basePath`。guard 是源码字符串断言，抓不到。
+> - 🟡 **名不副实**：studio "MDX" 实为手写 markdown 子集（`MdxContent.tsx` + 扁平 frontmatter），
+>   非真 `@mdx-js`（不能嵌组件）。
+> - 🟡 **守卫盲区**：全部 guard 为静态断言，无运行时 e2e（跨 zone 资源、plan05 性能预算均未覆盖）。
+> - 🟡 **Frame cuisine/scenery**：合法 webp 但背景 `decode()` 偶发拒绝（非致命，DOM 仍显示）；
+>   建议用 sharp 重编码消除非对称噪音（buildings 不报）。
 
 
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。

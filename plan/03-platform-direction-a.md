@@ -42,6 +42,21 @@ repo/
   - `/blog/*` , `/work/*` , `/dashboard/*` → studio
 - 同一根域名，用户无感。
 
+> 🔴 **已知缺陷（2026-06-05 审计，未修，最高优先）** — 当前只 rewrite 了 `/blog`·`/work`·
+> `/dashboard`·`/rss.xml` 的**页面 HTML**，**没有 rewrite `/_next/*`**，studio `next.config.ts`
+> 也没有 `assetPrefix`/`basePath`。后果：`ttt-i-m.vercel.app/blog` 返回 studio HTML（200），
+> 但 HTML 里的 `/_next/static/*.css|js` 被当成主域请求 → 主域是 Vite，无此文件 → **404**，
+> 于是博客在主域**无样式、未 hydrate**。curl 实证：main `/_next` css = 404，studio 直连 = 200。
+> 修法（与 Vite landing 无冲突，因为 landing 用 `/assets/` 不用 `/_next/`）：root `vercel.json`
+> 增加 `{"source":"/_next/:path*","destination":"https://ttt-i-m-studio.vercel.app/_next/:path*"}`，
+> 并补 studio 自有静态（OG image、favicon、`/work` 图片等）；或给 studio 设 `assetPrefix` 指向自身 origin。
+> 同时建议加一条**运行时 guard**（curl/Playwright 断言主域 /blog 的 css/js 均 200），因为现有
+> `platform-guards.mjs` 只断言 rewrite 字符串，抓不到这类资源解析故障。
+
+> 🟡 **"MDX" 现状**：`apps/studio/components/MdxContent.tsx` 是手写 markdown 子集渲染 +
+> 扁平 frontmatter 解析（零 MDX 依赖，符合"轻运行时"），但**不是真 `@mdx-js`**：不能在正文嵌
+> 组件、frontmatter 仅支持单行字符串。要真 MDX 需引入 `next-mdx-remote`/`@next/mdx`。
+
 ## 渲染策略分配
 
 | 路由 | 渲染 | 框架能力 |

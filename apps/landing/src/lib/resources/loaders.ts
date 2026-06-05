@@ -35,11 +35,11 @@ export function loadImage(src: string, {
           }
         }
       } else if (decode === 'idle') {
-        void enqueueImageDecode(image).catch((error) => {
-          if (import.meta.env.DEV) {
-            console.warn(`[resources] idle image decode rejected for ${src}`, error)
-          }
-        })
+        // Best-effort warm-decode. A rejection here is non-fatal: onload already
+        // fired so the DOM <img> still paints (the browser decodes on demand).
+        // Some valid WebP files reject background decode() in Chrome, so swallow
+        // it silently instead of flooding the console with one warning per image.
+        void enqueueImageDecode(image).catch(() => {})
       }
       resolve()
     }
@@ -66,15 +66,24 @@ export function loadImage(src: string, {
 export function loadFonts(): Promise<void> {
   if (typeof document === 'undefined' || !document.fonts) return Promise.resolve()
   if (import.meta.env.DEV) {
-    return Promise.race([
-      document.fonts.ready.then(() => undefined),
-      new Promise<void>((resolve) => {
-        window.setTimeout(() => {
-          console.warn(`[resources] document.fonts.ready exceeded ${FONT_READY_DEV_TIMEOUT_MS}ms in dev; continuing with current font fallback.`)
-          resolve()
-        }, FONT_READY_DEV_TIMEOUT_MS)
-      }),
-    ])
+    // Race fonts.ready against a dev safety timeout, but clear the timer when
+    // fonts win so the warning only fires when fonts genuinely stall (the old
+    // version left the timer running and logged a false warning every load).
+    return new Promise<void>((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        window.clearTimeout(timer)
+        resolve()
+      }
+      const timer = window.setTimeout(() => {
+        if (settled) return
+        console.warn(`[resources] document.fonts.ready exceeded ${FONT_READY_DEV_TIMEOUT_MS}ms in dev; continuing with current font fallback.`)
+        finish()
+      }, FONT_READY_DEV_TIMEOUT_MS)
+      void document.fonts.ready.then(finish)
+    })
   }
   return document.fonts.ready.then(() => undefined)
 }

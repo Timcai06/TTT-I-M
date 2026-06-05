@@ -107,8 +107,14 @@ if (!vercelSource.includes('apps/landing/dist') || !vercelSource.includes('npm r
   throw new Error('Root Vercel config must build and serve the landing workspace output.')
 }
 
-const rewriteMap = new Map(vercelConfig.rewrites?.map((rewrite) => [rewrite.source, rewrite.destination]) ?? [])
+const rewrites = vercelConfig.rewrites ?? []
+const rewriteMap = new Map(rewrites.map((rewrite) => [rewrite.source, rewrite.destination]))
+
 const requiredRewrites = new Map([
+  // /_next must come first in the array so Vercel routes studio static assets
+  // before any page rewrite intercepts them — without this, the proxied /blog
+  // HTML loads but its /_next/*.css|js 404 on the main domain (verified by curl).
+  ['/_next/:path*', 'https://ttt-i-m-studio.vercel.app/_next/:path*'],
   ['/blog', 'https://ttt-i-m-studio.vercel.app/blog'],
   ['/blog/:path*', 'https://ttt-i-m-studio.vercel.app/blog/:path*'],
   ['/work', 'https://ttt-i-m-studio.vercel.app/work'],
@@ -124,4 +130,13 @@ for (const [source, destination] of requiredRewrites) {
   }
 }
 
-console.log('[platform-guards] Plan 03 monorepo, studio, tokens, and runtime isolation are wired.')
+// /_next must be the first rewrite entry — Vercel evaluates rewrites in order
+// and a page rewrite before /_next would shadow static asset requests.
+const firstRewrite = rewrites[0]
+if (firstRewrite?.source !== '/_next/:path*') {
+  throw new Error(
+    '/_next/:path* must be the first rewrite in vercel.json so static assets resolve before page rewrites intercept them.'
+  )
+}
+
+console.log('[platform-guards] Plan 03 monorepo, studio, tokens, runtime isolation, and /_next cross-zone routing are wired.')

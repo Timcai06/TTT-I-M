@@ -1,49 +1,49 @@
-# Portfolio — Tim Cai
+# TTT-I-M — Platform Docs
 
-> 一个以 WebGL 粒子肖像为视觉锚点，极致工程化打底的个人作品集站点。
-> **技术栈**：React 19 + TypeScript + Vite + GSAP + Three.js (R3F)。
+> 从「电影感个人作品集」演进为「landing + 内容平台」的工程文档。
+> **Monorepo（npm workspaces）**：`apps/landing`（React 19 + Vite + GSAP + Three/R3F + Lenis）
+> 承载电影感首页；`apps/studio`（Next.js App Router）承载 `/blog`·`/work`·`/dashboard`
+> 内容面；`packages/{tokens,content}` 共享设计 token 与内容 schema/repository。
+
+> 原则：**代码即真理**。本目录 100% 映射当前源码；升级蓝图与分期计划见 [`/plan`](../plan/)。
 
 ---
 
 ## 📖 文档中枢 (Map of Content)
 
-这里的每一篇文档均基于**代码即真理 (Code as Single Source of Truth)** 原则编写，100% 映射最新的底层源代码，拒绝凭空架构。
+- [01 · 核心架构与页面流](./01-architecture.md) — chapter registry、运行时 SSOT（`lib/stage.ts`）、
+  内容层、monorepo/平台分层、跨 zone 路由。
+- [02 · 视觉系统与艺术指导](./02-visual-system.md) — 暗房/工程图纸气质、配色、排版层次。
+- [03 · 性能策略与资源治理](./03-performance-and-assets.md) — 分层预热、WebGL 质量分级、
+  滚动单源、grain 降级、chunk 体积预算。
+- [04 · 文件结构与目录治理](./04-file-structure.md) — monorepo 布局与各目录职责。
+- [05 · 测试、守卫与 CI](./05-tests-and-guards.md) — build guards、platform guard、守卫覆盖盲区。
 
-### 01. 核心架构与基建 (Architecture & Infrastructure)
-- [核心架构总览 (Overview)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/01-architecture/overview.md) - 解析 `registry.ts` 驱动模式与混合懒加载机制。
-- [性能优化与构建策略 (Performance Optimization)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/01-architecture/performance-optimization.md) - 解析 Vite 分包拆离机制与交互降级。
+> 历史上曾有 `docs/01-architecture/`、`docs/02-components/*` 等子目录，已在平台化重构中
+> 合并为上面这套扁平文档；旧的 `file://` 深链已失效，以本页为准。
 
-### 02. 动画与时序编排 (Animation Orchestration)
-- [动画系统与时序编排 (Animation System)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/04-animation/animation-system.md) - 解析 GSAP `ctx.add()` 异步托管与 Lenis 单例劫持。
+---
 
-### 03. 高阶组件深度解剖 (Component Deep Dives)
-所有业务组件文档均已重写并 100% 覆盖，解析精确至代码行与生命周期边界：
+## 🗺️ 仓库形态速览
 
-**▶ 核心与交互级组件**
-- [WebGL 粒子肖像系统 (Particle Portrait)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/particle-portrait.md) - GPU 节流、鼠标排斥与显存垃圾回收。
-- [人生画廊 (Life Gallery)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/life-gallery.md) - 详解 GSAP Flip 在 Bento 到全屏过渡中的应用及响应式自愈。
-- [帧视窗相册 (Frame)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/frame.md) - 横向滚动 (Horizontal Scrolling) 的数学映射与 requestAnimationFrame 性能压制。
-- [项目画廊 (Projects)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/projects.md) - 数据驱动渲染与独立 Ticker 接管的 3D 鼠标跟随倾斜。
-
-**▶ 辅助与导航组件**
-- [侧边滚动指示器 (Scroll Indicator)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/scroll-indicator.md) - MutationObserver 自愈绑定机制。
-- [首屏视觉系统 (Hero Section)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/hero.md) - 混合渲染与首屏急切加载策略。
-- [页脚交互系统 (Footer & CTA)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/footer.md) - GSAP Timeline 交错 (Stagger) 揭示。
-- [技能矩阵 (Skills)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/skills.md) - 100% 动态计算的三次贝塞尔 (Cubic Bezier) SVG 蛇形曲线生长算法。
-- [自述模块 (About)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/about.md) - 文字级模糊解密 (revealWords) 与非侵入式滚动边界。
-- [顶部导航栏 (Nav)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/nav.md) - 零开销 IntersectionObserver 活性追踪与路由平滑替换。
-- [启动屏障 (Loader)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-components/loader.md) - 乱码黑客解密阵列与全局加载状态派发。
-- [赛博光标 (Cursor)](file:///Users/tim/Desktop/TTT%20I%27M/portfolio/docs/02-components/cursor.md) - 脱离 React 渲染树的 GSAP Ticker 阻尼跟手及全局 DOM 委托吸附。
-
-### 04. 文件治理与维护约定 (File Governance & Maintenance)
-- [文件分类治理 (File Governance)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/02-maintenance/file-governance.md) - 约定 `src/components`、`src/lib`、`src/data`、`scripts`、`public/frame`、`tests` 目录职责及新增章节/图片/性能守卫放置。
-
-### 05. 运行时与资源策略 (Runtime & Assets)
-- [运行时与资源策略总览 (Runtime & Assets)](file:///Users/tim/Desktop/TTT%20I'M/portfolio/docs/03-performance/runtime-and-assets.md) - Hero 首屏 WebGL、About 延迟粒子、Frame 响应式图像资源、Vite 图片优化边界、Vercel 缓存与 chunk guards 的实际决策依据。
+```
+apps/
+  landing/   @timcai/landing — Vite 电影感首页（chapter registry + 运行时 SSOT + WebGL）
+  studio/    @timcai/studio  — Next App Router 内容面（/blog /work /dashboard, RSS, sitemap, OG）
+packages/
+  tokens/    @timcai/tokens  — 共享设计 token（CSS 变量）
+  content/   @timcai/content — 内容 schema + repository 接口 + adapters
+plan/        升级蓝图与分期路线（00–06 + README）
+tests/build/ platform-guards.mjs（跨 workspace 守卫）
+```
 
 ---
 
 ## 🎯 面向未来的开发指南
-1. **新增章节**：只需要修改 `src/chapters/registry.ts`，全站的侧边栏、导航栏、锚点路由会自动为您处理完毕。
-2. **新增动效**：切记，如果是针对懒加载 DOM（非首屏）的滚动特效，请务必使用 `onChaptersReady` 结合 `gsap.context().add()`，以免发生极端的生命周期泄漏。
-3. **增加高渲染开销组件**：务必模仿 `ParticlePortrait`，加入 `IntersectionObserver` 判定。如果它不在视口内，请掐断它的计算资源。
+1. **新增章节（landing）**：只改 `apps/landing/src/chapters/registry.ts`，导航/进度轨/锚点自动处理。
+2. **新增动效**：懒加载 DOM 的滚动特效务必用 `onChaptersReady` + `gsap.context()`，避免生命周期泄漏。
+3. **高渲染开销组件**：复用 `lib/webgl/useGLSurface`（IntersectionObserver mount/pause）+
+   `lib/webgl/quality` 设备分级，离屏即掐断。
+4. **内容（studio）**：组件只认 `@timcai/content` 的 repository 接口，绝不直连数据文件；
+   studio 运行时**禁止** import GSAP/R3F/Three/Lenis（platform guard 强制）。
+5. **新增博文**：在 `apps/studio/content/posts/*.mdx` 写 frontmatter + 正文即可。

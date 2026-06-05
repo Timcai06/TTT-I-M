@@ -20,3 +20,15 @@ Critical paths verified:
 - Lenis scroll hijacking functions without locking the page.
 - Chapter transitions execute without throwing errors or causing memory leaks.
 - `tests/e2e/frame.spec.ts` specifically guards the horizontal scroll behaviors.
+
+## Content-layer guard
+- `content-layer-guards.mjs`: asserts no `apps/landing/src/components/**` file imports `data/*` directly (everything goes through `src/content`), and that the repository (`all()`/`list()`/`get()`) + schema (`ContentMeta`/`PublishState`) contracts exist.
+
+## Guard coverage gaps (important — "build green" ≠ "works in prod")
+All current guards are **static source-string assertions**. They do NOT exercise runtime, so they cannot catch deploy/integration failures. Concretely:
+- **Not caught**: the studio `/_next/*` assets 404 on the main domain (cross-zone asset resolution). `platform-guards.mjs` verifies the rewrite *strings* exist, not that the proxied page's assets actually load.
+- **Not implemented**: plan 05 runtime perf gates — long-task total, LCP, CLS, INP, FPS p95 on the three hot zones, WebGL context-leak after repeated chapter jumps.
+- **Recommended next guards**:
+  1. A runtime check (curl/Playwright) asserting `https://<main>/blog` returns 200 **and** its referenced `/_next/*.css|js` return 200 on the main domain.
+  2. Playwright perf budgets per plan 05.
+  3. Degradation e2e: reduced-motion / simulated WebGL failure / a 404 image must not strand the loader.
