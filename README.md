@@ -24,6 +24,11 @@ npm run test:build
 
 `npm run dev` and `npm run build` intentionally target the landing app for Vercel compatibility.
 
+## Cross-App Links
+
+- Landing brand link: set `VITE_STUDIO_URL` to the deployed Studio origin if `/blog` is not yet wired as a Vercel multi-zone rewrite.
+- Studio brand link: set `NEXT_PUBLIC_LANDING_URL` to the deployed Landing origin so `Tim Cai Studio` returns to the cinematic landing.
+
 ## Runtime Boundary
 
 The studio must never import the landing runtime stack: GSAP, Lenis, Three, R3F, or the landing preload system. Studio pages are content-first SSR/SSG surfaces; landing remains the tuned client-side cinematic entry.

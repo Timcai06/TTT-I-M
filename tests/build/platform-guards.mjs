@@ -77,8 +77,12 @@ if (
   throw new Error('Landing App must mount Vercel Analytics and Speed Insights at the app shell.')
 }
 
-if (!landingNav.includes('className="nav__brand" href="/blog"')) {
-  throw new Error('Landing brand must be the Blog entry point instead of a hero/index scroll button.')
+if (!landingNav.includes('VITE_STUDIO_URL') || !landingNav.includes('href={blogHref}')) {
+  throw new Error('Landing brand must be the configurable Blog entry point instead of a hero/index scroll button.')
+}
+
+if (!studioLayout.includes('NEXT_PUBLIC_LANDING_URL') || !studioLayout.includes('href={landingHref}')) {
+  throw new Error('Studio brand must point back to the landing app.')
 }
 
 if (!studioLayout.includes("@timcai/tokens/css") || !landingGlobal.includes("@timcai/tokens/css")) {
