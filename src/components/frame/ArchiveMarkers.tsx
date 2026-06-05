@@ -1,4 +1,4 @@
-import type { ArchiveCluster, ArchiveTheme } from '../../data/frames'
+import type { ArchiveCluster, ArchiveTheme } from '../../content'
 
 export function ArchiveThemeMarker({ theme }: { theme: ArchiveTheme }) {
   return (

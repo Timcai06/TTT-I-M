@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap, Flip } from '../lib/gsap'
-import { photos } from '../data/life'
+import { photos } from '../content'
 
 export default function LifeGallery() {
   const wrapRef = useRef<HTMLDivElement>(null)

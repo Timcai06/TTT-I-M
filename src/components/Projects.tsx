@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
-import { projects, type Project } from '../data/projects'
+import { projects, type Project } from '../content'
 
 function ProjectMedia({ project }: { project: Project }) {
   const [active, setActive] = useState(0)

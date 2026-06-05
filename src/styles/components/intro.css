@@ -12,6 +12,7 @@
   pointer-events: none;
   overflow: hidden;
   will-change: transform;
+  --intro-progress-glow: color-mix(in srgb, var(--accent-warm) 72%, transparent);
 }
 
 /* ── Editorial corner kicker ── */
@@ -29,16 +30,18 @@
 /* ── Name (scramble) inside a clip mask so letters rise from a hard edge ── */
 .intro__text-wrap {
   overflow: hidden;
-  padding: 0.12em 0.04em;
+  padding: 0.16em 0.08em;
+  contain: layout paint;
 }
 
 .intro__text-wrap--interactive {
   overflow: visible;
+  contain: layout;
 }
 
 .intro__text {
   font-family: var(--font-serif);
-  font-size: clamp(56px, 13vw, 200px);
+  font-size: clamp(64px, min(12vw, 18vh), 190px);
   font-weight: 400;
   color: #f0f0f0;
   line-height: 1;
@@ -51,20 +54,35 @@
 
 .intro__char {
   display: inline-block;
+  flex: 0 0 var(--intro-char-width, 0.62em);
+  inline-size: var(--intro-char-width, 0.62em);
+  text-align: center;
   will-change: transform, opacity;
 }
 
 .intro__char-glyph {
   display: inline-block;
+  min-inline-size: 100%;
+  text-align: center;
   will-change: transform, opacity;
 }
 
+.intro__char--narrow {
+  --intro-char-width: 0.34em;
+}
+
+.intro__char--wide {
+  --intro-char-width: 0.78em;
+}
+
 .intro__space {
-  width: 0.32em;
+  flex: 0 0 0.34em;
+  inline-size: 0.34em;
   display: inline-block;
 }
 
 .intro__dot {
+  --intro-char-width: 0.32em;
   color: var(--accent-warm);
   font-style: italic;
 }
@@ -74,15 +92,27 @@
   position: absolute;
   left: clamp(20px, 4vw, 56px);
   bottom: clamp(24px, 4vw, 52px);
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: end;
+  column-gap: 10px;
+  width: min(560px, calc(100vw - clamp(40px, 8vw, 112px)));
   font-family: var(--font-mono);
   font-size: clamp(22px, 2.8vw, 38px);
   font-weight: 300;
   color: #f0f0f0;
   letter-spacing: -0.02em;
   will-change: opacity;
+}
+
+.intro__counter::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -14px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(240, 240, 240, 0.34), rgba(240, 240, 240, 0.04));
 }
 
 .intro__counter-sep {
@@ -93,7 +123,8 @@
 }
 
 .intro__stage {
-  max-width: min(48vw, 360px);
+  align-self: center;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -106,20 +137,39 @@
 /* ── Bottom hairline progress ── */
 .intro__bar-track {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: rgba(240, 240, 240, 0.1);
+  left: clamp(20px, 4vw, 56px);
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(14px, 2.2vw, 28px);
+  height: 2px;
+  background: rgba(240, 240, 240, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
   will-change: opacity;
 }
 
+.intro__bar-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(240, 240, 240, 0.26), transparent);
+  animation: intro-progress-scan 1.8s linear infinite;
+  opacity: 0.55;
+}
+
 .intro__bar {
+  position: relative;
+  z-index: 1;
   display: block;
   height: 100%;
   width: 100%;
   transform: scaleX(0);
   transform-origin: left center;
-  background: var(--accent-warm);
+  background: linear-gradient(90deg, var(--accent-warm), #f0f0f0);
+  box-shadow: 0 0 18px var(--intro-progress-glow);
   will-change: transform;
+}
+
+@keyframes intro-progress-scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }

@@ -17,6 +17,14 @@
 > **刻意不做**：A3 grain（`--noise: 0.015`，1.5% 不透明度全屏 blend 开销可忽略，改动纯属视觉风险换≈0 收益）；
 > A7 的 `.contact__blob`（border-radius 形变已在独立合成层上、是签名效果）与 projects `.media-frame__caption`
 > 的 `backdrop-filter`（极小、静态、刻意磨砂）保留。均通过 typecheck/eslint/build/4 guard。
+>
+> **状态（plan 04 已落地）** — 新增 `src/content/`：`schema.ts`（re-export 数据类型 + 预留
+> `ContentMeta`/`PublishState`，默认 author=tim、published）、`repositories.ts`（`CollectionRepository`：
+> 同步 `all()` 给 landing 防异步空帧 + 异步 `list()/get()` 作未来 MDX/DB 契约）、
+> `adapters/static.ts`、`index.ts`（repository 实例 + 同步数据再导出）。12 处组件导入从 `data/*`
+> 改到 `content`（`resources/manifest.ts` 作为 preload 基础设施保留 `data/*` 直连）。新增
+> `tests/build/content-layer-guards.mjs`（组件零 `data/*` 直连 + 接口/schema 契约）并接入 test:build。
+> **零渲染行为变化**：landing 仍走同步数据。5 个 build guard 全绿。这是 plan 03 平台层的地基。
 
 
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。

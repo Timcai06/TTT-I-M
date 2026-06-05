@@ -256,28 +256,36 @@ export function usePretextTextInteraction(
       const inactive = !hasPointer || performance.now() - lastMove > 1400
       press += (0 - press) * 0.045
       glyphs.forEach((glyph) => {
-        const dx = glyph.homeX - mouseX
-        const dy = glyph.homeY - mouseY
-        const distance = Math.hypot(dx, dy)
-        const proximity = inactive ? 0 : pointerInfluenceForGlyph(glyph, mouseX, mouseY)
-        const influence = proximity * clamp(1 - distance / fieldRadius, 0, 1)
-        const eased = influence * influence * (3 - 2 * influence)
-        const safeDistance = Math.max(distance, 1)
-        const pulse = Math.sin(time * 0.0024 + glyph.phase)
-        const push = eased * (62 + press * 42) * strength
-        const ambient = pulse * eased * 4.5 * strength
-        const tangent = Math.cos(time * 0.002 + glyph.phase) * eased * 7 * strength
-        const targetX = (dx / safeDistance) * push + tangent
-        const targetY = (dy / safeDistance) * push + ambient
-        const targetRotation = (targetX / 58) * 10 + press * pulse * 6
-        const targetScale = 1 + eased * 0.055 + press * 0.035
+        let targetX = 0
+        let targetY = 0
+        let targetRotation = 0
+        let targetScale = 1
+        let eased = 0
+
+        if (!inactive) {
+          const dx = glyph.homeX - mouseX
+          const dy = glyph.homeY - mouseY
+          const distance = Math.hypot(dx, dy)
+          const proximity = pointerInfluenceForGlyph(glyph, mouseX, mouseY)
+          const influence = proximity * clamp(1 - distance / fieldRadius, 0, 1)
+          eased = influence * influence * (3 - 2 * influence)
+          const safeDistance = Math.max(distance, 1)
+          const pulse = Math.sin(time * 0.0024 + glyph.phase)
+          const push = eased * (62 + press * 42) * strength
+          const ambient = pulse * eased * 4.5 * strength
+          const tangent = Math.cos(time * 0.002 + glyph.phase) * eased * 7 * strength
+          targetX = (dx / safeDistance) * push + tangent
+          targetY = (dy / safeDistance) * push + ambient
+          targetRotation = (targetX / 58) * 10 + press * pulse * 6
+          targetScale = 1 + eased * 0.055 + press * 0.035
+        }
 
         glyph.x += (targetX - glyph.x) * 0.2
         glyph.y += (targetY - glyph.y) * 0.2
         glyph.rotation += (targetRotation - glyph.rotation) * 0.16
         glyph.scale += (targetScale - glyph.scale) * 0.15
 
-        glyph.el.style.transform = `translate3d(${glyph.x.toFixed(2)}px, ${glyph.y.toFixed(2)}px, 0) rotate(${glyph.rotation.toFixed(2)}deg) scale(${glyph.scale.toFixed(3)})`
+        glyph.el.style.transform = `translate3d(${glyph.x.toFixed(2)}px, ${glyph.y.toFixed(2)}px, 0px) rotate(${glyph.rotation.toFixed(2)}deg) scale(${glyph.scale.toFixed(3)})`
         glyph.el.style.opacity = String(1 - eased * 0.1)
       })
 

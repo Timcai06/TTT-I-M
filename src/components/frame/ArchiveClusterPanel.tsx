@@ -1,4 +1,4 @@
-import type { ArchiveCluster, ArchiveTheme } from '../../data/frames'
+import type { ArchiveCluster, ArchiveTheme } from '../../content'
 import ArchiveImageSlot from './ArchiveImageSlot'
 
 export default function ArchiveClusterPanel({

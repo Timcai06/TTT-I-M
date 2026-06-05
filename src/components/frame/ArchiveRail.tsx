@@ -1,4 +1,4 @@
-import { archiveThemes, type ArchiveTheme } from '../../data/frames'
+import { archiveThemes, type ArchiveTheme } from '../../content'
 
 export interface ActiveArchiveState {
   clusterIndex: number

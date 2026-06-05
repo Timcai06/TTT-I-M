@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 import { revealWords } from '../lib/wordReveal'
-import { facts } from '../data/about'
+import { facts } from '../content'
 import { ABOUT_PARTICLE_TEXT } from '../lib/aboutTextParticles'
 import DeferredTextParticles from './DeferredTextParticles'
 

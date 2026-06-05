@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
-import { skillRows as rows } from '../data/skills'
+import { skillRows as rows } from '../content'
 
 export default function Skills() {
   const root = useRef<HTMLElement>(null)

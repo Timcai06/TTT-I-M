@@ -17,12 +17,17 @@ export default function Loader() {
   const countRef = useRef<HTMLSpanElement>(null)
   const barRef = useRef<HTMLSpanElement>(null)
   const exitStarted = useRef(false)
+  const preloadRef = useRef<ReturnType<typeof useWholeSitePreload> | null>(null)
   const [done, setDone] = useState(false)
   const [exiting, setExiting] = useState(false)
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
   const stageText = preload.ready ? 'ready' : preload.label
+
+  useEffect(() => {
+    preloadRef.current = preload
+  }, [preload])
 
   useEffect(() => {
     if (!panelRef.current) return
@@ -80,19 +85,36 @@ export default function Loader() {
   }, [])
 
   useEffect(() => {
-    const progress = preload.total > 0 ? preload.completed / preload.total : 0
-    const value = preload.ready ? 100 : Math.min(99, Math.floor(progress * 100))
+    let frame = 0
+    let displayedProgress = 0
+    const startedAt = performance.now()
 
-    if (countRef.current) countRef.current.textContent = String(value).padStart(2, '0')
-    if (barRef.current) {
-      gsap.to(barRef.current, {
-        scaleX: preload.ready ? 1 : progress,
-        duration: 0.28,
-        ease: 'power2.out',
-        overwrite: true,
-      })
+    const renderProgress = () => {
+      const current = preloadRef.current
+      if (!current) return
+
+      const actualProgress = current.total > 0 ? current.completed / current.total : 0
+      const elapsed = performance.now() - startedAt
+      const waitingMotion = Math.min(0.94, 0.06 + (1 - Math.exp(-elapsed / 5200)) * 0.88)
+      const target = current.ready ? 1 : Math.min(0.98, Math.max(actualProgress, waitingMotion))
+
+      displayedProgress += (target - displayedProgress) * (current.ready ? 0.18 : 0.075)
+
+      const displayValue = current.ready
+        ? Math.min(100, Math.ceil(displayedProgress * 100))
+        : Math.min(99, Math.floor(displayedProgress * 100))
+
+      if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
+      if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
+
+      if (!current.ready || displayedProgress < 0.999) {
+        frame = window.requestAnimationFrame(renderProgress)
+      }
     }
-  }, [preload.completed, preload.ready, preload.total])
+
+    frame = window.requestAnimationFrame(renderProgress)
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
 
   useEffect(() => {
     if (!introReady || !preload.ready || exitStarted.current || !panelRef.current) return
@@ -142,6 +164,12 @@ export default function Loader() {
   if (done) return null
 
   const text = 'Tim Cai.'
+  const charClassName = (ch: string) => {
+    if (ch.toLowerCase() === 'i') return 'intro__char intro__char--narrow'
+    if (ch.toLowerCase() === 'm') return 'intro__char intro__char--wide'
+    return 'intro__char'
+  }
+
   const chars = text.split('').map((ch, i) => {
     if (ch === ' ') {
       return (
@@ -158,7 +186,7 @@ export default function Loader() {
       )
     }
     return (
-      <span key={i} className="intro__char">
+      <span key={i} className={charClassName(ch)}>
         <span className="intro__char-glyph" data-final={ch}>{ch}</span>
       </span>
     )

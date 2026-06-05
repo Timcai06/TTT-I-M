@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { ArchiveClusterSlot, ArchiveImage } from '../../data/frames'
+import type { ArchiveClusterSlot, ArchiveImage } from '../../content'
 
 interface ArchiveSlotStyle extends CSSProperties {
   '--slot-x'?: string

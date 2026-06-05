@@ -10,8 +10,8 @@ export default function Hero() {
   const root = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLHeadingElement>(null)
   const pretextEnableTimer = useRef<number | undefined>(undefined)
+  const heroTitleReady = useRef(0)
   const [introExited, setIntroExited] = useState(false)
-  const [heroTitleReady, setHeroTitleReady] = useState(false)
   const [heroPretextEnabled, setHeroPretextEnabled] = useState(false)
   const [pretextRefreshKey, setPretextRefreshKey] = useState(0)
   const [showParticleLayer] = useState(() => {
@@ -32,7 +32,7 @@ export default function Hero() {
 
       const tl = gsap.timeline({ paused: true })
       tl.eventCallback('onComplete', () => {
-        setHeroTitleReady(true)
+        heroTitleReady.current += 1
         setPretextRefreshKey((key) => key + 1)
       })
 
@@ -44,7 +44,7 @@ export default function Hero() {
       cancelHeroArrived = onChapterArrived((id) => {
         if (id !== 'hero') return
         setIntroExited(true)
-        setHeroTitleReady(true)
+        heroTitleReady.current += 1
         setHeroPretextEnabled(false)
         gsap.set('.hero__content', { opacity: 1, yPercent: 0 })
         gsap.set('.hero__split .split-line__inner', {
@@ -138,7 +138,7 @@ export default function Hero() {
   }, [])
 
   useEffect(() => {
-    if (!introExited || !heroTitleReady) {
+    if (!introExited) {
       return
     }
 
@@ -153,12 +153,8 @@ export default function Hero() {
         return
       }
 
-      setHeroPretextEnabled(false)
-      pretextEnableTimer.current = window.setTimeout(() => {
-        if (window.scrollY > 6) return
-        setPretextRefreshKey((key) => key + 1)
-        setHeroPretextEnabled(true)
-      }, 140)
+      setPretextRefreshKey((key) => key + 1)
+      setHeroPretextEnabled(true)
     }
 
     const onScroll = () => {
@@ -175,7 +171,7 @@ export default function Hero() {
       window.removeEventListener('scroll', onScroll)
       window.clearTimeout(pretextEnableTimer.current)
     }
-  }, [introExited, heroTitleReady])
+  }, [introExited])
 
   usePretextTextInteraction(nameRef, {
     enabled: heroPretextEnabled,

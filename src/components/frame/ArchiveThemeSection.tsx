@@ -1,5 +1,5 @@
 import { Fragment, useRef } from 'react'
-import type { ArchiveTheme } from '../../data/frames'
+import type { ArchiveTheme } from '../../content'
 import ArchiveClusterPanel from './ArchiveClusterPanel'
 import { ArchiveClusterMarker, ArchiveThemeMarker } from './ArchiveMarkers'
 import ArchiveRail from './ArchiveRail'

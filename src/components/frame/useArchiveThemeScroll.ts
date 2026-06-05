@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { gsap } from '../../lib/gsap'
 import { revealWordsOnce } from '../../lib/wordReveal'
-import type { ArchiveTheme } from '../../data/frames'
+import type { ArchiveTheme } from '../../content'
 import type { ActiveArchiveState } from './ArchiveRail'
 
 export default function useArchiveThemeScroll({

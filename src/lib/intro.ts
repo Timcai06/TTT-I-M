@@ -19,8 +19,13 @@ export function dispatchIntroExit() {
 
 /**
  * Fire `callback` once the intro has exited (immediately if it already has).
- * Includes a safety fallback so a missed hand-off can't strand a subscriber —
- * the fallback also forces the stage to `live` so the global truth stays honest.
+ *
+ * Includes a *local* safety fallback so a missed hand-off can't strand a
+ * subscriber's reveal. The fallback deliberately does NOT advance the global
+ * stage: only the real loader hand-off (`dispatchIntroExit`) flips stage→live,
+ * so the App's single stage→live ScrollTrigger.refresh fires once the page (and
+ * its preloaded images) have actually settled — not at the 2.2s mark while the
+ * loader is still up and the frame's pin/track widths aren't measured yet.
  */
 export function onIntroExit(callback: () => void) {
   if (isLive()) {
@@ -41,7 +46,6 @@ export function onIntroExit(callback: () => void) {
     if (fired) return
     fired = true
     cleanup()
-    setStage('live')
     callback()
   }
 

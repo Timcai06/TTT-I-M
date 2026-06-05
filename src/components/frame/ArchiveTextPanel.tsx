@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../../lib/gsap'
 import { revealWordsOnce } from '../../lib/wordReveal'
-import type { ArchiveTextPanel as ArchiveTextPanelData } from '../../data/frames'
+import type { ArchiveTextPanel as ArchiveTextPanelData } from '../../content'
 
 export default function ArchiveTextPanel({
   panel,

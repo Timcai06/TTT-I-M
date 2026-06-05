@@ -4,6 +4,8 @@ import { progressChapters } from '../chapters/registry'
 import { onChaptersReady } from '../lib/chaptersReady'
 import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
+import { computeChapterProgressFills } from '../lib/chapterProgress'
+import type { ChapterRectSnapshot } from '../lib/activeChapter'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -12,42 +14,66 @@ const sections = progressChapters.map((c) => ({
 }))
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
+function readProgressRects(): ChapterRectSnapshot[] {
+  return sections.map((section) => {
+    const el = document.getElementById(section.id)
+    const rect = el?.getBoundingClientRect()
+    return {
+      id: section.id,
+      top: rect?.top ?? Number.POSITIVE_INFINITY,
+      bottom: rect?.bottom ?? Number.POSITIVE_INFINITY,
+    }
+  })
+}
+
 export default function ScrollIndicator() {
   const { activeId } = useChapterState()
   const [fills, setFills] = useState<number[]>(() => sections.map(() => 0))
 
   useEffect(() => {
     const ctx = gsap.context(() => {})
+    let frame = 0
+    let disposeScrollTrigger = () => {}
 
-    // Every segment is driven by its OWN section's ScrollTrigger, with the same
-    // `top 50% → bottom 50%` span used for the active state. So all chapters
-    // share one identical behaviour: the bar fills 0→1 exactly as that section
-    // passes the viewport middle — same easing, same appearance, no chapter
-    // filling faster or differently than another. Because each fill is its own
-    // section's progress, it can never race ahead of the page either.
+    const updateFills = () => {
+      frame = 0
+      const nextFills = computeChapterProgressFills(readProgressRects(), window.innerHeight)
+      setFills((current) => {
+        const changed = nextFills.some((fill, index) => Math.abs(fill - (current[index] ?? 0)) > 0.002)
+        return changed ? nextFills : current
+      })
+    }
+
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frame)
+      frame = window.requestAnimationFrame(updateFills)
+    }
+
     const cancel = onChaptersReady(() => {
       ctx.add(() => {
-        sections.forEach((sec, i) => {
-          ScrollTrigger.create({
-            trigger: `#${sec.id}`,
-            start: 'top 50%',
-            end: 'bottom 50%',
-            onUpdate: (self) => {
-              setFills((prev) => {
-                if (prev[i] === self.progress) return prev
-                const next = prev.slice()
-                next[i] = self.progress
-                return next
-              })
-            },
-          })
+        updateFills()
+        const trigger = ScrollTrigger.create({
+          start: 0,
+          end: 'max',
+          invalidateOnRefresh: true,
+          onUpdate: scheduleUpdate,
+          onRefresh: scheduleUpdate,
         })
+
+        window.addEventListener('resize', scheduleUpdate)
+
+        disposeScrollTrigger = () => {
+          trigger.kill()
+          window.removeEventListener('resize', scheduleUpdate)
+        }
       })
     })
 
     return () => {
       cancel()
+      disposeScrollTrigger()
       ctx.revert()
+      window.cancelAnimationFrame(frame)
     }
   }, [])
 

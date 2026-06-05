@@ -11,11 +11,12 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty false",
     "lint": "eslint .",
-    "test:build": "npm run test:build:chunks && npm run test:build:architecture && npm run test:build:frame && npm run test:build:loader",
+    "test:build": "npm run test:build:chunks && npm run test:build:architecture && npm run test:build:frame && npm run test:build:loader && npm run test:build:content",
     "test:build:architecture": "node tests/build/chapter-state-guards.mjs",
     "test:build:chunks": "node tests/build/chunk-guards.mjs",
     "test:build:frame": "node tests/build/frame-architecture-guards.mjs",
     "test:build:loader": "node tests/build/loader-preload-guards.mjs",
+    "test:build:content": "node tests/build/content-layer-guards.mjs",
     "test:e2e": "playwright test",
     "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
     "preview": "vite preview"

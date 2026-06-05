@@ -1,4 +1,4 @@
-import { archiveIntro, archiveOutro, archiveThemes } from '../data/frames'
+import { archiveIntro, archiveOutro, archiveThemes } from '../content'
 import ArchiveTextPanel from './frame/ArchiveTextPanel'
 import ArchiveThemeSection from './frame/ArchiveThemeSection'
 
