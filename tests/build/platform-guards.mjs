@@ -13,6 +13,7 @@ const landingApp = readFileSync('apps/landing/src/App.tsx', 'utf8')
 const landingNav = readFileSync('apps/landing/src/components/Nav.tsx', 'utf8')
 const landingGlobal = readFileSync('apps/landing/src/styles/global.css', 'utf8')
 const vercelSource = readFileSync('vercel.json', 'utf8')
+const vercelConfig = JSON.parse(vercelSource)
 
 const requiredPaths = [
   'apps/landing/src/App.tsx',
@@ -104,6 +105,23 @@ if (!studioLayout.includes("@timcai/tokens/css") || !landingGlobal.includes("@ti
 
 if (!vercelSource.includes('apps/landing/dist') || !vercelSource.includes('npm run build:landing')) {
   throw new Error('Root Vercel config must build and serve the landing workspace output.')
+}
+
+const rewriteMap = new Map(vercelConfig.rewrites?.map((rewrite) => [rewrite.source, rewrite.destination]) ?? [])
+const requiredRewrites = new Map([
+  ['/blog', 'https://ttt-i-m-studio.vercel.app/blog'],
+  ['/blog/:path*', 'https://ttt-i-m-studio.vercel.app/blog/:path*'],
+  ['/work', 'https://ttt-i-m-studio.vercel.app/work'],
+  ['/work/:path*', 'https://ttt-i-m-studio.vercel.app/work/:path*'],
+  ['/dashboard', 'https://ttt-i-m-studio.vercel.app/dashboard'],
+  ['/dashboard/:path*', 'https://ttt-i-m-studio.vercel.app/dashboard/:path*'],
+  ['/rss.xml', 'https://ttt-i-m-studio.vercel.app/rss.xml'],
+])
+
+for (const [source, destination] of requiredRewrites) {
+  if (rewriteMap.get(source) !== destination) {
+    throw new Error(`Root Vercel config must rewrite ${source} to the Studio origin.`)
+  }
 }
 
 console.log('[platform-guards] Plan 03 monorepo, studio, tokens, and runtime isolation are wired.')

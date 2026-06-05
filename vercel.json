@@ -4,6 +4,36 @@
   "buildCommand": "npm run build:landing",
   "outputDirectory": "apps/landing/dist",
   "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/blog",
+      "destination": "https://ttt-i-m-studio.vercel.app/blog"
+    },
+    {
+      "source": "/blog/:path*",
+      "destination": "https://ttt-i-m-studio.vercel.app/blog/:path*"
+    },
+    {
+      "source": "/work",
+      "destination": "https://ttt-i-m-studio.vercel.app/work"
+    },
+    {
+      "source": "/work/:path*",
+      "destination": "https://ttt-i-m-studio.vercel.app/work/:path*"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "https://ttt-i-m-studio.vercel.app/dashboard"
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "https://ttt-i-m-studio.vercel.app/dashboard/:path*"
+    },
+    {
+      "source": "/rss.xml",
+      "destination": "https://ttt-i-m-studio.vercel.app/rss.xml"
+    }
+  ],
   "headers": [
     {
       "source": "/(frame|life|projects|portrait|noise)/(.*)",
