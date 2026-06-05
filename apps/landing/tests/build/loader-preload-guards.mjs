@@ -4,6 +4,7 @@ const loaderSource = readFileSync('src/components/Loader.tsx', 'utf8')
 const aboutSource = readFileSync('src/components/About.tsx', 'utf8')
 const deferredTextParticlesSource = readFileSync('src/components/DeferredTextParticles.tsx', 'utf8')
 const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
+const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 
 // The whole-site preload was refactored from the monolithic src/lib/sitePreload.ts
@@ -186,6 +187,14 @@ if (!textParticlesSource.includes('quality.textMaxTargets') || !textParticlesSou
 
 if (!chapterTransitionSource.includes('quality.transitionParticles') || !chapterTransitionSource.includes('canAcquireOptionalSurface')) {
   throw new Error('ChapterTransition field must respect optional context and particle budgets.')
+}
+
+if (!globalStyleSource.includes(".disable-hover .grain") || !globalStyleSource.includes("url('/noise/grain-128.png')")) {
+  throw new Error('The full-screen grain layer must degrade to a static texture during scroll pressure.')
+}
+
+if (!globalStyleSource.includes('@media (max-width: 768px), (hover: none)') || !globalStyleSource.includes('mix-blend-mode: normal')) {
+  throw new Error('The grain layer must avoid full-screen blend cost on mobile/touch devices.')
 }
 
 if (!packageJson.dependencies?.['@chenglou/pretext']) {

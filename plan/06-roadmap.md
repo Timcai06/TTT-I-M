@@ -33,7 +33,13 @@
 > 不使用 `object-fit: cover`，不重叠，保留错位层次与主次，新增 e2e 约束检查可见图片尺寸、
 > caption 贴合、真实比例、无裁切、无重叠。B3 已新增 `webgl/quality`：按设备能力动态调整
 > Hero portrait segments / About text particle targets / Transition field particles 与 DPR，并让 optional
-> WebGL surface 走动态 context budget。下一步继续评估 B4 grain 降级，或按视觉 QA 结果回补 Frame 微调。
+> WebGL surface 走动态 context budget。B4 grain 已保留桌面闲置 overlay 风格，但在滚动压力
+> `.disable-hover` 与移动/触屏设备切换到静态 PNG + normal blend，避免高压滚动窗口全屏重混合。
+>
+> **状态（plan 03 平台化地基已落地）** — repo 已切为 npm workspaces：`apps/landing`
+> 承载原 Vite landing，`apps/studio` 承载 Next App Router 内容面，`packages/tokens`
+> 与 `packages/content` 提供共享 token/schema/repository。studio 已有 `/blog`、`/work`、
+> `/dashboard`、RSS、sitemap、OG image 基础输出，并通过 guard 保证不依赖 GSAP/R3F/Three/Lenis/preload。
 
 
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。
@@ -78,7 +84,7 @@
 
 ## 收尾打磨（CSS / 部署）
 
-- [ ] A3 grain 隔离层 + 移动端静态 PNG 降级
+- [x] A3/B4 grain 隔离层 + 移动端/滚动压力静态 PNG 降级
 - [ ] A4 disable-hover 去通配符
 - [ ] A7 border-radius / box-shadow / backdrop-filter 改合成友好实现
 - [ ] A9 hero LCP preload hint
@@ -103,10 +109,10 @@
 
 ## 平台期（方向 A，待 landing 重构稳定后启动）
 
-- [ ] **SOON-1** monorepo 化：`portfolio` → `apps/landing`，抽 `packages/tokens`（03）
-- [ ] **SOON-2** 起 `apps/studio`（Next App Router），MDX 博客 SSG
-- [ ] **SOON-3** 作品列表/详情吃 repository（static adapter）
-- [ ] **SOON-4** OG image / RSS / sitemap / 内容区 SEO
+- [x] **SOON-1** monorepo 化：`portfolio` → `apps/landing`，抽 `packages/tokens`（03）
+- [x] **SOON-2** 起 `apps/studio`（Next App Router），博客 SSG 骨架
+- [x] **SOON-3** 作品列表/详情吃 repository（static adapter）
+- [x] **SOON-4** OG image / RSS / sitemap / 内容区 SEO 基础输出
 - [ ] **跨边界转场**：View Transitions + 转场皮肤 + stage `navigating`
 - [ ] **LATER-1** Auth + Postgres + repository api adapter
 - [ ] **LATER-2** UGC 上传（运行时媒体管线）+ 发布状态机

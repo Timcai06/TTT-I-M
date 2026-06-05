@@ -11,13 +11,17 @@ node_modules
 dist
 dist-ssr
 test-results
+apps/*/dist
+apps/*/.next
+apps/*/test-results
+apps/*/tsconfig.tsbuildinfo
 *.local
 
 # Local source/archive material that should not be shipped by Vite publicDir
 sources/archive/
-public/img*.jpg
-public/profile.jpg
-public/server.glb
+apps/landing/public/img*.jpg
+apps/landing/public/profile.jpg
+apps/landing/public/server.glb
 
 # Editor directories and files
 .vscode/*

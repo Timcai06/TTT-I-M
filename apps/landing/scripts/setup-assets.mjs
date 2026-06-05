@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Prepares public/ assets from the untracked ../sources/ input dir:
+ * Prepares public/ assets from the untracked workspace-level ../sources/ input dir:
  *   1. Copies Tim's portrait into public/portrait/tim.jpg for the WebGL hero.
  *   2. Encodes the life-gallery photos (multi-MB PNGs) into lean public/life
  *      WebP. The PNG originals live in ../sources/life and never ship.
@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(here, '..')
-const repoRoot = resolve(projectRoot, '..')
+const sourceRoot = resolve(projectRoot, '../../..')
 
 const candidates = [
   'sources/Weixin Image_20260528134123_371_7.jpg',
@@ -33,7 +33,7 @@ const dest = resolve(projectRoot, 'public/portrait/tim.jpg')
 
 let copied = false
 for (const rel of candidates) {
-  const src = resolve(repoRoot, rel)
+  const src = resolve(sourceRoot, rel)
   if (existsSync(src)) {
     mkdirSync(dirname(dest), { recursive: true })
     copyFileSync(src, dest)
@@ -48,7 +48,7 @@ if (!copied) {
 }
 
 /* ── Life gallery: PNG sources → optimized WebP ── */
-const lifeSrcDir = resolve(repoRoot, 'sources/life')
+const lifeSrcDir = resolve(sourceRoot, 'sources/life')
 const lifeOutDir = resolve(projectRoot, 'public/life')
 const LIFE_MAX_EDGE = 1280
 const LIFE_QUALITY = 80
@@ -60,7 +60,7 @@ const LIFE_SIG = `edge${LIFE_MAX_EDGE}-q${LIFE_QUALITY}`
 const cacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-life.json')
 
 /* ── Frame gallery: beautified building PNGs → optimized WebP ── */
-const frameBuildingsSrcDir = resolve(repoRoot, 'sources/beautified/buildings')
+const frameBuildingsSrcDir = resolve(sourceRoot, 'sources/beautified/buildings')
 const frameBuildingsOutDir = resolve(projectRoot, 'public/frame/buildings')
 const FRAME_BUILDING_MAX_EDGE = 1400
 const FRAME_BUILDING_QUALITY = 80
@@ -70,11 +70,11 @@ const FRAME_RESPONSIVE_WIDTHS = [720, 1080]
 const FRAME_RESPONSIVE_SIG = `responsive-width-v2-${FRAME_RESPONSIVE_WIDTHS.join('-')}`
 
 /* Frame archive: cuisine/scenery sources -> optimized WebP */
-const frameCuisineBeautifiedSrcDir = resolve(repoRoot, 'sources/beautified/cuisine')
-const frameCuisineRawSrcDir = resolve(repoRoot, 'sources/cuisine')
+const frameCuisineBeautifiedSrcDir = resolve(sourceRoot, 'sources/beautified/cuisine')
+const frameCuisineRawSrcDir = resolve(sourceRoot, 'sources/cuisine')
 const frameCuisineOutDir = resolve(projectRoot, 'public/frame/cuisine')
-const frameSceneryBeautifiedSrcDir = resolve(repoRoot, 'sources/beautified/scenery')
-const frameSceneryRawSrcDir = resolve(repoRoot, 'sources/scenery')
+const frameSceneryBeautifiedSrcDir = resolve(sourceRoot, 'sources/beautified/scenery')
+const frameSceneryRawSrcDir = resolve(sourceRoot, 'sources/scenery')
 const frameSceneryOutDir = resolve(projectRoot, 'public/frame/scenery')
 const FRAME_ARCHIVE_MAX_EDGE = 1400
 const FRAME_ARCHIVE_QUALITY = 80

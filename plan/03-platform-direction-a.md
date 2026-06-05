@@ -25,6 +25,12 @@ repo/
 > 当前 `portfolio/` 即未来的 `apps/landing/`。迁移成 monorepo 是 SOON 阶段的事，
 > 现在不必动；先把 `packages/content/` 的接口在 landing 内部建好（见 04），将来平移。
 
+> **执行状态（2026-06-05）**：SOON-1/SOON-2/SOON-3/SOON-4 的地基已落地：
+> `portfolio` repo 已改成 npm workspaces，landing 迁到 `apps/landing`；新增
+> `apps/studio`（Next App Router，`/blog`、`/blog/[slug]`、`/work`、`/work/[slug]`、
+> `/dashboard`、RSS、sitemap、OG image）；新增 `packages/tokens` 与 `packages/content`。
+> studio 只依赖 content/tokens/Next/React，guard 禁止引入 GSAP/R3F/Three/Lenis/preload。
+
 ### Vercel 拼接
 
 - 两个 Vercel project（landing、studio），或一个 project 多 zone。
@@ -86,10 +92,10 @@ repo/
 
 | 阶段 | 动作 | 依赖 |
 |---|---|---|
-| SOON-1 | monorepo 化（portfolio → apps/landing），抽 `packages/tokens` | 内容层 04 已就绪更佳 |
-| SOON-2 | 起 `apps/studio`（Next），MDX 博客，SSG | tokens |
-| SOON-3 | 作品列表/详情页吃 repository（先 static adapter） | 04 |
-| SOON-4 | OG image 生成、RSS、sitemap、内容区 SEO | studio |
+| SOON-1 | monorepo 化（portfolio → apps/landing），抽 `packages/tokens` | 已完成 |
+| SOON-2 | 起 `apps/studio`（Next），MDX 博客，SSG | 已完成基础骨架 |
+| SOON-3 | 作品列表/详情页吃 repository（先 static adapter） | 已完成 static repository 骨架 |
+| SOON-4 | OG image 生成、RSS、sitemap、内容区 SEO | 已完成基础输出 |
 | LATER-1 | Auth + Postgres + repository api adapter | 04 |
 | LATER-2 | UGC 上传（运行时媒体管线）+ 发布状态机 | LATER-1 |
 | LATER-3 | 审核队列 + 配额/限流 + 用户主页 | LATER-2 |

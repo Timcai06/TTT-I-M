@@ -1,12 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "buildCommand": "npm run build:landing",
+  "outputDirectory": "apps/landing/dist",
   "installCommand": "npm install",
   "headers": [
     {
-      "source": "/(frame|life|projects|portrait)/(.*)",
+      "source": "/(frame|life|projects|portrait|noise)/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

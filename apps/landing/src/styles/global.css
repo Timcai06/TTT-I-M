@@ -1,3 +1,5 @@
+@import '@timcai/tokens/css';
+
 :root {
   /* ── Color tokens ── */
   --bg: #0a0a0a;
@@ -12,6 +14,7 @@
   --accent: #7890a8;
   --accent-warm: #d6c5a8;
   --noise: 0.015;
+  --grain-static-opacity: 0.028;
 
   /* ── Typography ── */
   --font-sans: 'Inter', system-ui, -apple-system, 'PingFang SC', sans-serif;
@@ -127,6 +130,13 @@ main {
   background-size: 200px 200px;
 }
 
+.disable-hover .grain {
+  opacity: var(--grain-static-opacity);
+  mix-blend-mode: normal;
+  background-image: url('/noise/grain-128.png');
+  background-size: 128px 128px;
+}
+
 /* ── Section common ── */
 .section {
   position: relative;
@@ -235,5 +245,14 @@ main {
 
   .grain {
     display: none;
+  }
+}
+
+@media (max-width: 768px), (hover: none) {
+  .grain {
+    opacity: var(--grain-static-opacity);
+    mix-blend-mode: normal;
+    background-image: url('/noise/grain-128.png');
+    background-size: 128px 128px;
   }
 }
