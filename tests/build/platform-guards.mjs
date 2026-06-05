@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 const rootPackage = JSON.parse(readFileSync('package.json', 'utf8'))
 const landingPackage = JSON.parse(readFileSync('apps/landing/package.json', 'utf8'))
 const studioPackage = JSON.parse(readFileSync('apps/studio/package.json', 'utf8'))
+const studioVercel = JSON.parse(readFileSync('apps/studio/vercel.json', 'utf8'))
 const studioHome = readFileSync('apps/studio/app/page.tsx', 'utf8')
 const studioContent = readFileSync('apps/studio/content/index.ts', 'utf8')
 const studioMdx = readFileSync('apps/studio/content/mdx.ts', 'utf8')
@@ -51,6 +52,14 @@ if (!landingPackage.scripts?.dev?.includes('--port 5173 --strictPort')) {
 
 if (studioPackage.name !== '@timcai/studio' || !studioPackage.dependencies?.next) {
   throw new Error('The studio workspace must be a Next.js app named @timcai/studio.')
+}
+
+if (
+  studioVercel.framework !== 'nextjs' ||
+  studioVercel.installCommand !== 'cd ../.. && npm install' ||
+  studioVercel.buildCommand !== 'cd ../.. && npm run build:studio'
+) {
+  throw new Error('Studio Vercel project must install/build from the monorepo root when Root Directory is apps/studio.')
 }
 
 const forbiddenStudioRuntime = ['gsap', '@react-three/fiber', 'three', 'lenis', 'sitePreload']
