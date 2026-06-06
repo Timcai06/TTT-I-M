@@ -82,6 +82,18 @@ if (!studioBlogDetail.includes('MdxContent') || !studioBlogDetail.includes('post
   throw new Error('Studio blog detail pages must render MDX-backed post bodies.')
 }
 
+// Real MDX (next-mdx-remote/rsc), not the old hand-rolled markdown-subset renderer.
+const studioMdxComponent = readFileSync('apps/studio/components/MdxContent.tsx', 'utf8')
+if (!studioMdxComponent.includes('next-mdx-remote/rsc') || !studioMdxComponent.includes('MDXRemote')) {
+  throw new Error('MdxContent must render real MDX via next-mdx-remote/rsc (server-compiled), not a hand-rolled parser.')
+}
+if (!studioPackage.dependencies?.['next-mdx-remote'] || !studioPackage.dependencies?.['gray-matter']) {
+  throw new Error('Studio must depend on next-mdx-remote (real MDX) and gray-matter (robust frontmatter).')
+}
+if (!studioMdx.includes('matter(')) {
+  throw new Error('Studio frontmatter must be parsed by gray-matter, not the hand-rolled flat parser.')
+}
+
 if (
   !landingApp.includes("@vercel/analytics/react") ||
   !landingApp.includes("@vercel/speed-insights/react") ||

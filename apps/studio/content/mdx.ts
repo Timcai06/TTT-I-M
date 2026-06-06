@@ -1,61 +1,31 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import matter from 'gray-matter'
 import { defaultMeta, type ContentMeta, type Post, type PublishState } from '@timcai/content'
 
 const postsDirectory = path.join(process.cwd(), 'content/posts')
 
-type FrontmatterValue = string | undefined
+type Frontmatter = Record<string, unknown>
 
-interface ParsedFrontmatter {
-  body: string
-  data: Record<string, FrontmatterValue>
+function asString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
-function parseFrontmatter(source: string): ParsedFrontmatter {
-  if (!source.startsWith('---\n')) {
-    return { body: source.trim(), data: {} }
-  }
-
-  const closeIndex = source.indexOf('\n---', 4)
-  if (closeIndex === -1) {
-    return { body: source.trim(), data: {} }
-  }
-
-  const frontmatter = source.slice(4, closeIndex).trim()
-  const body = source.slice(closeIndex + 5).trim()
-  const data = Object.fromEntries(
-    frontmatter
-      .split('\n')
-      .map((line) => {
-        const separatorIndex = line.indexOf(':')
-        if (separatorIndex === -1) return undefined
-
-        const key = line.slice(0, separatorIndex).trim()
-        const value = line.slice(separatorIndex + 1).trim()
-        return [key, value.replace(/^["']|["']$/g, '')]
-      })
-      .filter((entry): entry is [string, string] => Boolean(entry)),
-  )
-
-  return { body, data }
-}
-
-function getRequiredValue(data: Record<string, FrontmatterValue>, key: string, filePath: string) {
-  const value = data[key]
+function requireString(data: Frontmatter, key: string, filePath: string): string {
+  const value = asString(data[key])
   if (!value) {
     throw new Error(`Missing "${key}" frontmatter in ${filePath}`)
   }
-
   return value
 }
 
-function getMeta(data: Record<string, FrontmatterValue>): ContentMeta {
+function getMeta(data: Frontmatter): ContentMeta {
   return {
     ...defaultMeta,
-    author: data.author ?? defaultMeta.author,
-    publishedAt: data.publishedAt,
-    publishState: (data.publishState ?? defaultMeta.publishState) as PublishState,
-    updatedAt: data.updatedAt,
+    author: asString(data.author) ?? defaultMeta.author,
+    publishedAt: asString(data.publishedAt),
+    publishState: (asString(data.publishState) ?? defaultMeta.publishState) as PublishState,
+    updatedAt: asString(data.updatedAt),
   }
 }
 
@@ -69,17 +39,22 @@ export function readPosts(): Post[] {
     .filter((fileName) => fileName.endsWith('.mdx'))
     .map((fileName) => {
       const filePath = path.join(postsDirectory, fileName)
-      const { body, data } = parseFrontmatter(readFileSync(filePath, 'utf8'))
+      // gray-matter: robust YAML frontmatter (arrays, nested, multiline) — replaces
+      // the previous hand-rolled flat string:value parser.
+      const { content, data } = matter(readFileSync(filePath, 'utf8'))
+      const frontmatter = data as Frontmatter
       const slug = fileName.replace(/\.mdx$/, '')
 
       return {
-        body,
-        excerpt: getRequiredValue(data, 'excerpt', filePath),
-        meta: getMeta(data),
-        readingMinutes: getReadingMinutes(body),
+        // Raw MDX body; compiled to React at render time by MdxContent (real MDX,
+        // not a markdown subset) so posts can embed components.
+        body: content.trim(),
+        excerpt: requireString(frontmatter, 'excerpt', filePath),
+        meta: getMeta(frontmatter),
+        readingMinutes: getReadingMinutes(content),
         slug,
         sourcePath: `content/posts/${fileName}`,
-        title: getRequiredValue(data, 'title', filePath),
+        title: requireString(frontmatter, 'title', filePath),
       }
     })
     .sort((a, b) => (b.meta.publishedAt ?? '').localeCompare(a.meta.publishedAt ?? ''))

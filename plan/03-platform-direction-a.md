@@ -53,9 +53,11 @@ repo/
 > 同时建议加一条**运行时 guard**（curl/Playwright 断言主域 /blog 的 css/js 均 200），因为现有
 > `platform-guards.mjs` 只断言 rewrite 字符串，抓不到这类资源解析故障。
 
-> 🟡 **"MDX" 现状**：`apps/studio/components/MdxContent.tsx` 是手写 markdown 子集渲染 +
-> 扁平 frontmatter 解析（零 MDX 依赖，符合"轻运行时"），但**不是真 `@mdx-js`**：不能在正文嵌
-> 组件、frontmatter 仅支持单行字符串。要真 MDX 需引入 `next-mdx-remote`/`@next/mdx`。
+> ✅ **"MDX" 已升级为真 MDX（2026-06-06）**：`MdxContent.tsx` 改用 `next-mdx-remote/rsc`
+> 在服务端编译 MDX（编译器不进客户端 bundle，仍符合"轻运行时"），正文现在可嵌 React 组件、
+> 支持完整 markdown；frontmatter 改用 `gray-matter`（支持数组/嵌套/多行）。platform-guard 断言
+> `MdxContent` 用 `MDXRemote`、studio 依赖 `next-mdx-remote`+`gray-matter`、`mdx.ts` 用 `matter()`，
+> 防回退到手写解析。
 
 ## 渲染策略分配
 
