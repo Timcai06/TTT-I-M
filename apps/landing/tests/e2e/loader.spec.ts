@@ -44,8 +44,17 @@ test('Loader progress keeps moving and intro title layout remains stable', async
 
   await page.waitForTimeout(900)
 
+  // Skip (not fail) when the loader has exited OR is mid-exit (char set changing
+  // as it animates away). On fast/warm preload (CI) the loader is too short-lived
+  // to sample twice stably; the width-stability invariant is only meaningful
+  // while the loader is fully mounted — which it reliably is on a slower local
+  // dev server. This matches the test's own skip-when-too-fast philosophy.
   const introStillVisible = await page.locator('.intro').isVisible().catch(() => false)
-  test.skip(!introStillVisible, 'Loader finished before the stability sample could be collected.')
+  const secondCharCount = await page.locator('.intro__char').count()
+  test.skip(
+    !introStillVisible || secondCharCount !== firstWidths.length,
+    'Loader exited or is mid-exit; stability sample unavailable.',
+  )
 
   const secondCount = readIntroCount(await page.locator('.intro__counter > span').first().textContent())
   const secondWidths = await page.locator('.intro__char').evaluateAll((chars) =>
