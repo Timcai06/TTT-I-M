@@ -14,6 +14,14 @@ async function scrollToFrame(page: Page) {
   await page.evaluate(() => {
     document.querySelector('#frame')?.scrollIntoView()
   })
+  // Wait for the frame archive to actually render rather than a fixed delay (the
+  // lazy chunk + slots can land late on slow/loaded runners). Best-effort: don't
+  // throw here, let the individual assertions report if something is truly absent.
+  await page
+    .locator('.archive-slot')
+    .first()
+    .waitFor({ state: 'attached', timeout: 15000 })
+    .catch(() => {})
   await page.waitForTimeout(500)
 }
 
