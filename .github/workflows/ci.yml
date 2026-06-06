@@ -6,6 +6,9 @@ on:
     branches: [main]
 
 jobs:
+  # Deterministic gates: typecheck + lint (both workspaces), build both apps,
+  # and run all 6 build guards (chunk budget, chapter-state, frame, loader-preload,
+  # content-layer, platform). These must always pass.
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -17,4 +20,27 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm run build
+      - run: npm run build:studio
+      - run: npm run test:build # builds landing + 5 landing guards + platform guard
+
+  # Runtime gates: real-browser Playwright (frame structure + Plan 05 perf
+  # budgets). Perf budgets get CI headroom via PERF_* env (CI runners are slower
+  # than local M-series); functional gates (CLS, overlay, stage) stay strict.
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      PERF_LCP_MS: '6000'
+      PERF_HEAP_MB: '110'
+      PERF_LOAD_LONGTASK_MS: '350'
+      PERF_SCROLL_LONGTASK_MS: '180'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/landing
+      - run: npm run test:e2e
+        working-directory: apps/landing
