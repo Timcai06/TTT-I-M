@@ -21,6 +21,15 @@
         "4174"
       ],
       "port": 4174
+    },
+    {
+      "name": "studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:studio"
+      ],
+      "port": 5174
     }
   ]
 }
