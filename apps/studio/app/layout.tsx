@@ -38,6 +38,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </nav>
         </header>
         <main className="studio-shell">{children}</main>
+        <footer className="studio-shell">
+          <div className="studio-footer">
+            <span>© {new Date().getFullYear()} Tim Cai</span>
+            <nav aria-label="Footer navigation">
+              <Link href={landingHref}>← Portfolio</Link>
+              {navItems.map((item) => (
+                <Link href={item.href} key={item.href} style={{ marginLeft: '20px' }}>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </footer>
       </body>
     </html>
   )

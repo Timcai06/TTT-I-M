@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import MdxContent from '../../../components/MdxContent'
 import { posts } from '../../../content'
@@ -22,13 +23,16 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
   if (!post) notFound()
 
   return (
-    <article className="studio-article">
-      <div className="studio-eyebrow">
-        {post.meta.publishedAt} / {post.meta.author} / {post.readingMinutes ?? 1} min
-      </div>
-      <h1 className="studio-title">{post.title}</h1>
-      <p className="studio-copy">{post.excerpt}</p>
-      <MdxContent body={post.body} />
-    </article>
+    <>
+      <Link href="/blog" className="studio-back">All posts</Link>
+      <article className="studio-article">
+        <div className="studio-eyebrow">
+          {post.meta.publishedAt} · {post.meta.author} · {post.readingMinutes ?? 1} min read
+        </div>
+        <h1 className="studio-title">{post.title}</h1>
+        <p className="studio-copy">{post.excerpt}</p>
+        <MdxContent body={post.body} />
+      </article>
+    </>
   )
 }

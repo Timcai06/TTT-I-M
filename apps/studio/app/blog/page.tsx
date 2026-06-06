@@ -18,10 +18,11 @@ export default function BlogIndex() {
         {posts.all().map((post) => (
           <Link className="studio-card" href={`/blog/${post.slug}`} key={post.slug}>
             <span className="studio-card__meta">
-              {post.meta.publishedAt} · {post.readingMinutes ?? 1} min
+              {post.meta.publishedAt} · {post.readingMinutes ?? 1} min read
             </span>
             <h2>{post.title}</h2>
             <p>{post.excerpt}</p>
+            <span className="studio-card__arrow" aria-hidden="true">↗</span>
           </Link>
         ))}
       </section>

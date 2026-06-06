@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { works } from '../../../content'
 
@@ -21,15 +22,18 @@ export default function WorkDetail({ params }: { params: { slug: string } }) {
   if (!work) notFound()
 
   return (
-    <article className="studio-hero">
-      <div className="studio-eyebrow">{work.meta.publishState} / {work.meta.author}</div>
-      <h1 className="studio-title">{work.title}</h1>
-      <p className="studio-copy">{work.description}</p>
-      <div className="studio-pills" aria-label="Tags">
-        {work.tags.map((tag) => (
-          <span className="studio-pill" key={tag}>{tag}</span>
-        ))}
-      </div>
-    </article>
+    <>
+      <Link href="/work" className="studio-back">All work</Link>
+      <article className="studio-article">
+        <div className="studio-eyebrow">{work.tags.join(' · ')}</div>
+        <h1 className="studio-title">{work.title}</h1>
+        <p className="studio-copy">{work.description}</p>
+        <div className="studio-pills" aria-label="Tags" style={{ marginTop: '8px' }}>
+          {work.tags.map((tag) => (
+            <span className="studio-pill" key={tag}>{tag}</span>
+          ))}
+        </div>
+      </article>
+    </>
   )
 }

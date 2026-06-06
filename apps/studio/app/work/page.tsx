@@ -17,7 +17,7 @@ export default function WorkIndex() {
       <section className="studio-grid" aria-label="Works">
         {works.all().map((work) => (
           <Link className="studio-card" href={`/work/${work.slug}`} key={work.slug}>
-            <span className="studio-card__meta">{work.href}</span>
+            <span className="studio-card__meta">{work.tags.slice(0, 2).join(' · ')}</span>
             <h2>{work.title}</h2>
             <p>{work.description}</p>
             <span className="studio-pills" aria-label="Tags">
@@ -25,6 +25,7 @@ export default function WorkIndex() {
                 <span className="studio-pill" key={tag}>{tag}</span>
               ))}
             </span>
+            <span className="studio-card__arrow" aria-hidden="true">↗</span>
           </Link>
         ))}
       </section>
