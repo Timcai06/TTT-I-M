@@ -222,6 +222,11 @@ test('Frame falls back to a stable vertical layout on mobile', async ({ page }) 
   await openHome(page)
   await scrollToFrame(page)
 
+  // On slower CI mobile the lazy Frame chunk + archive slots can render after the
+  // scroll settle; wait for the archive DOM before sampling its computed layout.
+  await page.locator('.archive-theme-section__track').first().waitFor({ state: 'attached', timeout: 15000 })
+  await page.locator('.archive-slot').first().waitFor({ state: 'attached', timeout: 15000 })
+
   const mobileLayout = await page.evaluate(() => {
     const track = document.querySelector<HTMLElement>('.archive-theme-section__track')
     const cluster = document.querySelector<HTMLElement>('.archive-cluster')
