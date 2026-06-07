@@ -3,6 +3,7 @@ import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
+import { isMobileExperience } from '../lib/device'
 import { onIntroExit } from '../lib/intro'
 import { isLive } from '../lib/stage'
 import { useGLSurface } from '../lib/webgl/useGLSurface'
@@ -151,8 +152,7 @@ function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; textu
   }, [texture])
 
   const geometry = useMemo(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-    const segments = isMobile ? Math.min(quality.portraitSegments, 160) : quality.portraitSegments
+    const segments = isMobileExperience() ? Math.min(quality.portraitSegments, 160) : quality.portraitSegments
     return new THREE.PlaneGeometry(1, 1, segments, segments)
   }, [quality.portraitSegments])
 

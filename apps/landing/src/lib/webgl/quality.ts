@@ -1,3 +1,5 @@
+import { isMobileExperience } from '../device'
+
 export type GLQualityTier = 'high' | 'medium' | 'low'
 
 export interface GLQualityProfile {
@@ -14,18 +16,13 @@ interface NavigatorWithDeviceHints extends Navigator {
   deviceMemory?: number
 }
 
-function isCoarseMobile(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches
-}
-
 function detectTier(): GLQualityTier {
   if (typeof navigator === 'undefined' || typeof window === 'undefined') return 'medium'
 
   const hints = navigator as NavigatorWithDeviceHints
   const memory = hints.deviceMemory ?? 8
   const cores = navigator.hardwareConcurrency ?? 8
-  const mobile = isCoarseMobile()
+  const mobile = isMobileExperience()
 
   if (memory <= 4 || cores <= 4 || (mobile && memory <= 6)) return 'low'
   if (memory <= 6 || cores <= 6 || mobile) return 'medium'

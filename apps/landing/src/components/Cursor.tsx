@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { subscribeStage } from '../lib/stage'
+import { isTouchDevice } from '../lib/device'
 
 export default function Cursor() {
   const ref = useRef<HTMLDivElement>(null)
@@ -9,7 +10,7 @@ export default function Cursor() {
     const el = ref.current
     if (!el) return
 
-    if (window.matchMedia('(hover: none)').matches) return
+    if (isTouchDevice()) return
 
     gsap.set(el, { xPercent: -50, yPercent: -50, opacity: 0 })
 
