@@ -68,61 +68,66 @@
 
 ---
 
+> ✅ **勾选框已同步真实代码状态（2026-06-06）**。`[~]` = 部分完成。
+
 ## 第一梯队 —— 运行时地基（纯内部重构，视觉零风险，收益最高）
 
-- [ ] **`lib/stage.ts`** 运行时阶段状态机（01·1）
-  - [ ] 实现 store + `useStage`（useSyncExternalStore）
-  - [ ] Loader 退场处 `setStage('live')`，接管 `intro.ts`
-  - [ ] 删 `introExited` / `introExitedOnce` / `busyRef` 三处重复
-  - [ ] 验收：`grep` 只剩 stage 内部；e2e 全绿
-- [ ] **`lib/scroll/requestRefresh`**（01·2）
-  - [ ] rAF 合并 + 关键点立即旁路
-  - [ ] 收编 App / lenis / ChapterTransition / TextParticles 的 refresh
-- [ ] **转场时 GL 自暂停**（01·1 解锁项 / 02·A6）
-  - [ ] Hero / About frameloop 订阅 stage
-  - [ ] 验收：transitioning 期间 Hero/About rAF 停止（Performance 录制）
+- [x] **`lib/stage.ts`** 运行时阶段状态机（01·1）
+  - [x] 实现 store + `useStage`（useSyncExternalStore）
+  - [x] Loader 退场处 `setStage('live')`，接管 `intro.ts`
+  - [x] 删 `introExited` / `introExitedOnce` / `busyRef` 三处重复
+  - [x] 验收：`grep` 只剩 stage 内部；e2e 全绿
+- [x] **`lib/scroll/requestRefresh`**（01·2）
+  - [x] rAF 合并 + 关键点立即旁路
+  - [x] 收编 App / lenis / ChapterTransition / TextParticles 的 refresh
+- [x] **转场时 GL 自暂停**（01·1 解锁项 / 02·A6）
+  - [x] Hero / About frameloop 订阅 stage
 
 ## 可随时单独热修
 
-- [ ] **A1 单图失败永久黑屏**（02·A1）—— 与架构正交，最高优先
+- [x] **A1 单图失败永久黑屏**（02·A1）—— preloadController 失败非致命 + 超时
 
 ## 第二梯队 —— 资源 / GL / 动效
 
-- [ ] **`lib/resources/`** 重构 sitePreload（01·4）
-  - [ ] manifest（tier/type） + loaders + preloadController
-  - [ ] 失败非致命（含 A1）+ 真实进度喂 Loader
-  - [ ] A2：critical 才同步 decode，其余进 idle 队列
-- [ ] **`lib/webgl/`**（01·3）
-  - [ ] textureCache（修 A8 双重上传）
-  - [ ] contextRegistry（canAcquire + 降级信号）
-  - [ ] useGLSurface（抽 ParticlePortrait 生命周期契约）
-- [ ] **`lib/motion/`**（01·5）
-  - [ ] 动效 token + createTransitionTimeline + createHeroParallax
-  - [ ] hero parallax 搬回 Hero（修 App→Hero 耦合泄漏）
-  - [ ] ChapterTransition 拆 useTransitionConductor / 纯 timeline
+- [x] **`lib/resources/`** 重构 sitePreload（01·4）
+  - [x] manifest（tier/type） + loaders + preloadController
+  - [x] 失败非致命（含 A1）+ 真实进度喂 Loader
+  - [x] A2：decode 走 idle 队列（`imageDecodeQueue`，02.5/B2）
+- [x] **`lib/webgl/`**（01·3）
+  - [x] textureCache（引用计数；A8 双重上传按卸载释放设计刻意保留，见 01 文档）
+  - [x] contextRegistry（canAcquire + 降级信号）
+  - [x] useGLSurface（抽 ParticlePortrait 生命周期契约）
+  - [x] `webgl/quality` 设备分级（02.5/B3）
+- [~] **timelines/**（01·5）
+  - [x] `createTransitionTimeline` + `createHeroParallax`
+  - [x] hero parallax 搬回 Hero（修 App→Hero 耦合泄漏）
+  - [ ] ChapterTransition 拆 `useTransitionConductor`（**刻意暂缓**：时间线抽出后 conductor 已够薄，低价值）
+  - [ ] 动效 token 全量替换（未做：与 `motion.ts` 命名冲突，纯外观，低价值）
 
 ## 收尾打磨（CSS / 部署）
 
-- [x] A3/B4 grain 隔离层 + 移动端/滚动压力静态 PNG 降级
-- [ ] A4 disable-hover 去通配符
-- [ ] A7 border-radius / box-shadow / backdrop-filter 改合成友好实现
-- [ ] A9 hero LCP preload hint
-- [ ] A10 chunk 体积预算 guard
-- [ ] vercel.json：immutable 资产 + preconnect/preload
+- [x] A3/B4 grain：滚动压力/移动端静态 PNG 降级（A3 桌面 1.5% 开销可忽略，刻意不动）
+- [x] A4 disable-hover 去通配符（改 `pointer-events` 继承）
+- [x] A7 footer dot box-shadow pulse → 合成友好（blob/caption 刻意保留，见 02 文档）
+- [x] A9 hero LCP preload hint（index.html 已有 `fetchpriority=high`）
+- [x] A10 chunk 体积预算 guard（`chunk-guards.mjs` gzip 预算）
+- [x] vercel.json：preconnect/preload（hashed 资产由 Vercel 自动 immutable）
 
 ## 未来保险 —— 内容层（不碰后端，现在做最划算）
 
-- [ ] **`src/content/`**（04）
-  - [ ] schema.ts（含 author / publishState 预留字段）
-  - [ ] repositories 接口 + adapters/static
-  - [ ] 组件改吃 repository（Projects 试点 → 全量）
-  - [ ] 验收：组件不再直 import data/*；换 mock adapter UI 不变
+- [x] **`src/content/`**（04）
+  - [x] schema.ts（含 author / publishState 预留字段）
+  - [x] repositories 接口 + adapters/static
+  - [x] 组件改吃 repository（12 处全量）
+  - [x] 验收：`content-layer-guards` 保证组件不直 import data/*
 
 ## 守卫升级（贯穿，每梯队完成即补对应守卫）
 
-- [ ] build guard：chunk 体积 / manifest scope / LCP preload（05）
-- [ ] Playwright：long-task / LCP / CLS / INP / FPS p95 / context 泄漏（05）
+- [x] build guard：chunk 体积 / content scope / platform / loader-preload（05）
+- [~] Playwright：long-task / LCP / CLS / heap / scroll / stage / overlay 已做；
+  **INP / FPS p95 / context 泄漏门未做**（05）
 - [ ] 降级路径 e2e：reduced-motion / WebGL 失败 / 404 图（05）
+- [x] **CI 强制**：verify 阻塞（两 app typecheck/lint + studio build + 6 guard）+ e2e 顾问
 
 ---
 
@@ -132,6 +137,8 @@
 - [x] **SOON-2** 起 `apps/studio`（Next App Router），MDX-in-repo 博客 SSG
 - [x] **SOON-3** 作品列表/详情吃 repository（static adapter）
 - [x] **SOON-4** OG image / RSS / sitemap / 内容区 SEO 基础输出
+- [x] **跨 zone 资源路由**：`/_next/:path*` rewrite（2026-06-06 修复，原 /blog 主域资源 404）
+- [x] **真 MDX**：`next-mdx-remote/rsc` + `gray-matter`（2026-06-06，替换手写 markdown 子集）
 - [ ] **跨边界转场**：View Transitions + 转场皮肤 + stage `navigating`
 - [ ] **LATER-1** Auth + Postgres + repository api adapter
 - [ ] **LATER-2** UGC 上传（运行时媒体管线）+ 发布状态机
@@ -139,8 +146,12 @@
 
 ---
 
-## 建议的起点
+## 下一步候选（2026-06-06，01/02/02.5/04 + 03-SOON 已完成）
 
-**第一梯队的 `lib/stage.ts`** 是整个升级的地基：纯内部、视觉零风险，落地后立刻
-拿掉三处重复生命周期标志，并解锁「转场时 GL 自暂停」的免费帧率。
-其次随时可做 **A1**（与架构正交的硬缺陷）。
+按价值排序，剩余未做：
+1. **Studio 视觉**：blog/work 仍是基础文本版，与 landing 气质脱节（用户可见差距最大）
+2. **跨边界转场**：landing→blog 硬切加 View Transitions（电影感连续性）
+3. **05 守卫补全**：降级路径 e2e（reduced-motion / WebGL 失败 / 404）+ INP / context 泄漏门；
+   把确定性 e2e 子集从「CI 顾问」提回「CI 阻塞」
+4. **LATER-1 起步**：Auth + Postgres（为 UGC 铺路）
+5. **01 收尾**：ChapterTransition 拆 `useTransitionConductor`（低价值）
