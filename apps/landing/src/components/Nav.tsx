@@ -3,8 +3,14 @@ import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
-const studioUrl = import.meta.env.VITE_STUDIO_URL ?? (import.meta.env.DEV ? 'http://localhost:5174' : undefined)
-const blogHref = studioUrl ? new URL('/blog', studioUrl).toString() : '/blog'
+// In prod the blog is served same-origin at /blog (vercel.json proxies it to the
+// studio origin). Linking to the relative path keeps the user on the main domain
+// (同域) AND enables cross-document View Transitions, which require same-origin
+// navigation. Only dev points cross-origin at the local studio dev server.
+const devStudioUrl = import.meta.env.DEV
+  ? (import.meta.env.VITE_STUDIO_URL ?? 'http://localhost:5174')
+  : undefined
+const blogHref = devStudioUrl ? new URL('/blog', devStudioUrl).toString() : '/blog'
 
 export default function Nav() {
   const { activeId } = useChapterState()

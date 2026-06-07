@@ -115,6 +115,13 @@ if (!studioLayout.includes("@timcai/tokens/css") || !landingGlobal.includes("@ti
   throw new Error('Landing and Studio must share packages/tokens CSS.')
 }
 
+// Cross-document View Transitions opt-in lives in shared tokens so BOTH documents
+// enable it (the requirement for cross-document VT on same-origin navigation).
+const tokensCss = readFileSync('packages/tokens/src/tokens.css', 'utf8')
+if (!tokensCss.includes('@view-transition')) {
+  throw new Error('Shared tokens.css must opt both apps into cross-document View Transitions (@view-transition).')
+}
+
 if (!vercelSource.includes('apps/landing/dist') || !vercelSource.includes('npm run build:landing')) {
   throw new Error('Root Vercel config must build and serve the landing workspace output.')
 }

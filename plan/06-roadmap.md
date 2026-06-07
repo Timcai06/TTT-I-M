@@ -140,7 +140,9 @@
 - [x] **SOON-4** OG image / RSS / sitemap / 内容区 SEO 基础输出
 - [x] **跨 zone 资源路由**：`/_next/:path*` rewrite（2026-06-06 修复，原 /blog 主域资源 404）
 - [x] **真 MDX**：`next-mdx-remote/rsc` + `gray-matter`（2026-06-06，替换手写 markdown 子集）
-- [ ] **跨边界转场**：View Transitions + 转场皮肤 + stage `navigating`
+- [~] **跨边界转场**：跨文档 View Transitions 已开启（`tokens.css` `@view-transition: auto`，
+  双 app 同源 opt-in，prod blog 链接改同源 `/blog`，reduced-motion 跳过；Chrome 126+ 渐进增强）。
+  **未做**：转场皮肤（复用 GL 粒子场）+ stage `navigating` 阶段 + 命名共享元素
 - [ ] **LATER-1** Auth + Postgres + repository api adapter
 - [ ] **LATER-2** UGC 上传（运行时媒体管线）+ 发布状态机
 - [ ] **LATER-3** 审核队列 + 配额/限流 + 用户主页
