@@ -20,6 +20,22 @@
   background: var(--fg);
 }
 
+.cursor.is-scanning {
+  width: 48px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--accent-warm, #ea412d);
+  border-color: transparent;
+  mix-blend-mode: normal;
+  box-shadow: 0 0 12px rgba(234, 65, 45, 0.6);
+  animation: pulse-scan 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-scan {
+  0% { opacity: 0.6; width: 32px; }
+  100% { opacity: 1; width: 48px; }
+}
+
 @media (hover: none), (pointer: coarse) {
   .cursor { display: none; }
 }

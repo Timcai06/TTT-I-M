@@ -4,7 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
 import { onIntroExit } from '../lib/intro'
-import { isLive, useStage } from '../lib/stage'
+import { isLive } from '../lib/stage'
 import { useGLSurface } from '../lib/webgl/useGLSurface'
 import { acquireContext, releaseContext } from '../lib/webgl/contextRegistry'
 import { getGLQualityProfile, type GLQualityProfile } from '../lib/webgl/quality'
@@ -312,7 +312,6 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
   // unmounts the whole Canvas a viewport away to free GPU memory.
   const { ref: wrapRef, visible, mounted } = useGLSurface()
   const reduced = useReducedMotion()
-  const stage = useStage()
   const quality = useMemo(() => getGLQualityProfile(), [])
 
   // Account this Canvas in the WebGL context budget for its mounted lifetime,
@@ -332,10 +331,7 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
       <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
         {mounted && (
           <Canvas
-            // Pause during a chapter-jump transition: the overlay covers the
-            // hero, so its ~78k-point shader would just steal GPU from the
-            // transition field for nothing.
-            frameloop={visible && stage !== 'transitioning' ? 'always' : 'never'}
+            frameloop={visible ? 'always' : 'never'}
             dpr={[1, quality.dprMax]}
             gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
             camera={{ position: [0, 0, 2.4], fov: 45 }}

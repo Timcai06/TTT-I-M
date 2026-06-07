@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
+import { subscribeStage } from '../lib/stage'
 
 export default function Cursor() {
   const ref = useRef<HTMLDivElement>(null)
@@ -71,6 +72,15 @@ export default function Cursor() {
       if (isTarget(e.target)) el.classList.remove('is-hover')
     }
 
+    const onStageChange = (stage: string) => {
+      if (stage === 'transitioning') {
+        el.classList.add('is-scanning')
+      } else {
+        el.classList.remove('is-scanning')
+      }
+    }
+    const unsubStage = subscribeStage(onStageChange)
+
     document.addEventListener('mouseover', onEnter)
     document.addEventListener('mouseout', onLeave)
 
@@ -79,6 +89,7 @@ export default function Cursor() {
       stopTicking()
       document.removeEventListener('mouseover', onEnter)
       document.removeEventListener('mouseout', onLeave)
+      unsubStage()
     }
   }, [])
 
