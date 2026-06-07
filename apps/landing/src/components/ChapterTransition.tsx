@@ -129,6 +129,7 @@ export default function ChapterTransition() {
       <div className="chapter-transition__shutter chapter-transition__shutter--bottom" />
       <div className="chapter-transition__grain" aria-hidden="true" />
       <div className="chapter-transition__aura" aria-hidden="true" />
+      <div className="chapter-transition__seam" aria-hidden="true" />
 
       <div className="chapter-transition__content">
         <div className="chapter-transition__target">

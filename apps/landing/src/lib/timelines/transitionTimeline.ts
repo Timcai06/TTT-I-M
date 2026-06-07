@@ -18,11 +18,14 @@ export function createTransitionTimeline(
   const grain = root.querySelector<HTMLElement>('.chapter-transition__grain')
   const index = root.querySelector<HTMLElement>('.chapter-transition__target-index')
   const aura = root.querySelector<HTMLElement>('.chapter-transition__aura')
+  const seam = root.querySelector<HTMLElement>('.chapter-transition__seam')
 
   gsap.set(root, { autoAlpha: 1, pointerEvents: 'auto' })
   gsap.set(topShutter, { yPercent: -100 })
   gsap.set(bottomShutter, { yPercent: 100 })
-  gsap.set([grain, aura], { opacity: 0 })
+  gsap.set(grain, { opacity: 0 })
+  gsap.set(aura, { opacity: 0, scale: 0.96, filter: 'blur(16px) saturate(1.04)' })
+  gsap.set(seam, { opacity: 0, scaleX: 0.18 })
   gsap.set(targetChars, {
     opacity: 0,
     filter: 'blur(8px)',
@@ -43,7 +46,8 @@ export function createTransitionTimeline(
   }, 0)
 
   // 2. 0.18 - 0.55s: Grain, aura, and central target flash in.
-  tl.to(aura, { opacity: 1, duration: 0.22, ease: 'power2.out' }, 0.16)
+  tl.to(aura, { opacity: 1, scale: 1, filter: 'blur(12px) saturate(1.18)', duration: 0.42, ease: 'power2.out' }, 0.12)
+  tl.to(seam, { opacity: 1, scaleX: 1, duration: 0.34, ease: 'expo.out' }, 0.16)
   tl.to(grain, { opacity: 0.85, duration: 0.15 }, 0.2)
   tl.to(index, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }, 0.2)
   tl.to(targetChars, {
@@ -103,6 +107,7 @@ export function createTransitionTimeline(
     duration: 0.35,
     ease: 'power2.inOut',
   }, 0.65)
+  tl.to(seam, { opacity: 0, scaleX: 0.34, duration: 0.24, ease: 'power2.inOut' }, 0.68)
 
   return tl
 }
