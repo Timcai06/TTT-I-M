@@ -33,12 +33,12 @@ export default function LifeGallery() {
         // Initial setup for the narrative text elements - query from wrap node for stability
         const paragraphs = wrap.querySelectorAll<HTMLElement>('.life__intro-p')
         const allLines = wrap.querySelectorAll<HTMLElement>('.life__intro-p .split-line__inner')
-        const allMeta = wrap.querySelectorAll<HTMLElement>('.life__intro-kicker, .life__intro-rule')
+        const allMeta = wrap.querySelectorAll<HTMLElement>('.life__intro-kicker')
         if (paragraphs.length > 0) {
           gsap.set(paragraphs, { opacity: 0, y: 0 })
         }
         if (allMeta.length > 0) {
-          gsap.set(allMeta, { opacity: 0, y: 16, scaleX: 0.45, transformOrigin: 'left center' })
+          gsap.set(allMeta, { opacity: 0, y: 14, filter: 'blur(6px)' })
         }
         if (allLines.length > 0) {
           // `y: 0` is explicit on purpose: GSAP reads any CSS transform back as
@@ -86,21 +86,21 @@ export default function LifeGallery() {
         if (paragraphs.length > 0) {
           paragraphs.forEach((p, index) => {
             const lines = p.querySelectorAll('.split-line__inner')
-            const meta = p.querySelectorAll('.life__intro-kicker, .life__intro-rule')
+            const meta = p.querySelectorAll('.life__intro-kicker')
 
             // Fade in paragraph container
             tl.fromTo(p, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, index === 0 ? '+=0.1' : '+=0.6')
             tl.fromTo(meta,
-              { opacity: 0, y: 16, scaleX: 0.45 },
-              { opacity: 1, y: 0, scaleX: 1, duration: 0.8, stagger: 0.08, ease: 'power3.out' },
+              { opacity: 0, y: 14, filter: 'blur(6px)' },
+              { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, stagger: 0.08, ease: 'power3.out' },
               '<'
             )
             
             // Slide up the split-text lines (concurrent with paragraph fade)
             tl.fromTo(lines,
-              { yPercent: 110, y: 0, opacity: 0 },
-              { yPercent: 0, y: 0, opacity: 1, stagger: 0.14, duration: 1.0, ease: 'power3.out' },
-              '<'
+              { yPercent: 120, y: 0, opacity: 0, filter: 'blur(7px)', letterSpacing: '0.03em' },
+              { yPercent: 0, y: 0, opacity: 1, filter: 'blur(0px)', letterSpacing: '-0.015em', stagger: 0.16, duration: 1.18, ease: 'expo.out' },
+              '<0.12'
             )
             
             // Hold for reading
@@ -109,8 +109,8 @@ export default function LifeGallery() {
             // Fade out and slide up
             tl.to(p, { opacity: 0, y: -24, duration: 0.7, ease: 'power2.in' })
             // 重置该段文字行，避免回滚/叠层残留
-            tl.set(lines, { yPercent: 110, y: 0, opacity: 0 })
-            tl.set(meta, { opacity: 0, y: 16, scaleX: 0.45 })
+            tl.set(lines, { yPercent: 120, y: 0, opacity: 0, filter: 'blur(7px)', letterSpacing: '0.03em' })
+            tl.set(meta, { opacity: 0, y: 14, filter: 'blur(6px)' })
           })
         }
 
@@ -188,23 +188,20 @@ export default function LifeGallery() {
         {/* 电影感叙事文字图层 */}
         <div className="life__intro-overlay" aria-hidden="true">
           <div className="life__intro-container">
-            <p className="life__intro-p" data-story="01">
+            <p className="life__intro-p">
               <span className="life__intro-kicker">01 / Motion</span>
-              <span className="life__intro-rule" />
               <span className="split-line"><span className="split-line__inner">在绿茵场上，我是前场的 10 号。</span></span>
               <span className="split-line"><span className="split-line__inner">像梅西那样在防线之间寻找缝隙，</span></span>
               <span className="split-line"><span className="split-line__inner">一次直塞或转身，就改写节奏。</span></span>
             </p>
-            <p className="life__intro-p" data-story="02">
+            <p className="life__intro-p">
               <span className="life__intro-kicker">02 / Light</span>
-              <span className="life__intro-rule" />
               <span className="split-line"><span className="split-line__inner">在镜头背后，我是街头的寻光者。</span></span>
               <span className="split-line"><span className="split-line__inner">从陆家嘴天际线到霓虹的马路，</span></span>
               <span className="split-line"><span className="split-line__inner">记录代码之外的城市瞬间。</span></span>
             </p>
-            <p className="life__intro-p" data-story="03">
+            <p className="life__intro-p">
               <span className="life__intro-kicker">03 / Build</span>
-              <span className="life__intro-rule" />
               <span className="split-line"><span className="split-line__inner">在屏幕面前，我是写代码的 builder。</span></span>
               <span className="split-line"><span className="split-line__inner">写清文档，陪队友啃下最后一公里。</span></span>
               <span className="split-line"><span className="split-line__inner">让想法真正跑起来，胜过千言。</span></span>
