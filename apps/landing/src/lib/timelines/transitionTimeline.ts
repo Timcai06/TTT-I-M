@@ -39,7 +39,7 @@ export function createTransitionTimeline(
   })
   gsap.set(targetName, { textShadow: 'none', x: 0 })
   gsap.set(index, { opacity: 0, y: 10 })
-  gsap.set(rail, { scaleX: 0, transformOrigin: 'left center' })
+  gsap.set(rail, { opacity: 1, scaleX: 0, transformOrigin: 'left center' })
 
   const tl = gsap.timeline({ onComplete: cb.onComplete })
 
