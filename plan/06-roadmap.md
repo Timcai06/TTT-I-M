@@ -126,8 +126,9 @@
 - [x] build guard：chunk 体积 / content scope / platform / loader-preload（05）
 - [~] Playwright：long-task / LCP / CLS / heap / scroll / stage / overlay 已做；
   **INP / FPS p95 / context 泄漏门未做**（05）
-- [ ] 降级路径 e2e：reduced-motion / WebGL 失败 / 404 图（05）
-- [x] **CI 强制**：verify 阻塞（两 app typecheck/lint + studio build + 6 guard）+ e2e 顾问
+- [x] 降级路径 e2e：reduced-motion / WebGL 失败 / 404 图（`degradation.spec.ts`，**CI 阻塞**）
+- [x] **CI 强制**：verify 阻塞（两 app typecheck/lint + studio build + 6 guard）
+  + e2e-gates 阻塞（degradation 确定性子集）+ e2e 顾问（scroll/perf 全量）
 
 ---
 

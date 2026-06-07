@@ -56,3 +56,20 @@ jobs:
         working-directory: apps/landing
       - run: npm run test:e2e
         working-directory: apps/landing
+
+  # Degradation gates: BLOCKING. Deterministic (no scroll dependency) — reduced
+  # motion, no WebGL, a 404 asset (A1). Load-time only, the stable part of CI, so
+  # unlike the scroll-driven `e2e` job these are a hard gate.
+  e2e-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/landing
+      - run: npm run test:e2e:gates
+        working-directory: apps/landing

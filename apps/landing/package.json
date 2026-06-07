@@ -18,6 +18,7 @@
     "test:build:loader": "node tests/build/loader-preload-guards.mjs",
     "test:build:content": "node tests/build/content-layer-guards.mjs",
     "test:e2e": "playwright test",
+    "test:e2e:gates": "playwright test tests/e2e/degradation.spec.ts",
     "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
     "preview": "vite preview"
   },
