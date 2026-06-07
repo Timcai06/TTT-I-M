@@ -143,13 +143,15 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
   }
 }
 
+const DEFERRED_CONCURRENCY = 6
+
 /**
  * Whole-site preload, tiered and failure-tolerant.
  *
- * The intro only gates critical work. Deferred images are intentionally left to
- * native lazy loading and section-level near-viewport warmup, so the first few
- * seconds do not concentrate a whole-site image decode/fetch storm on the main
- * thread. Every gated task is timeout-bounded and non-fatal: failures are
+ * The loader gates the complete curated landing manifest: critical runtime work
+ * first, then every bounded landing image. This keeps the product decision from
+ * plan/00 intact — fast scrolling into Frame should never reveal unloaded
+ * archive imagery. Every task is timeout-bounded and non-fatal: failures are
  * recorded and skipped rather than blocking the intro forever.
  */
 export function useWholeSitePreload(): WholeSitePreloadState {
@@ -187,17 +189,31 @@ export function useWholeSitePreload(): WholeSitePreloadState {
       }
     }
 
-    const runGroup = (indexes: number[]) =>
-      Promise.all(indexes.map((index) => {
-        const task = tasks[index]
-        return task ? runTask(task, index) : Promise.resolve()
-      }))
+    const runGroup = async (indexes: number[], concurrency = indexes.length) => {
+      let cursor = 0
+      const workers = Array.from({ length: Math.max(1, Math.min(concurrency, indexes.length)) }, async () => {
+        while (!cancelled) {
+          const index = indexes[cursor]
+          cursor += 1
+          if (index === undefined) return
+
+          const task = tasks[index]
+          if (task) await runTask(task, index)
+        }
+      })
+
+      await Promise.all(workers)
+    }
 
     const criticalIndexes = tasks
       .map((task, index) => (task.tier === 'critical' ? index : -1))
       .filter((index) => index >= 0)
+    const deferredIndexes = tasks
+      .map((task, index) => (task.tier === 'deferred' ? index : -1))
+      .filter((index) => index >= 0)
     const run = async () => {
       await runGroup(criticalIndexes)
+      await runGroup(deferredIndexes, DEFERRED_CONCURRENCY)
     }
 
     void run().then(() => {
@@ -209,7 +225,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
         ready: true,
         total: tasks.length,
       })
-      debug?.report(failed.length > 0 ? `critical ready with ${failed.length} skipped` : 'critical preload completed')
+      debug?.report(failed.length > 0 ? `landing ready with ${failed.length} skipped` : 'whole-site preload completed')
       debug?.stop()
     })
 

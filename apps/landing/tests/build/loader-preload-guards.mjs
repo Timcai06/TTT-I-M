@@ -149,12 +149,16 @@ if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('
   throw new Error('Lazy chapter loaders must be reusable by the preload manifest.')
 }
 
-if (!loadersSource.includes("decode = 'none'") || !loadersSource.includes("decode === 'eager'")) {
+if (!loadersSource.includes("decode = 'none'") || !loadersSource.includes("decode === 'eager'") || !loadersSource.includes("decode === 'idle'")) {
   throw new Error('Image loaders must make eager decode opt-in; deferred image loading must not decode by default.')
 }
 
-if (!manifestSource.includes("decode: 'none'") || !manifestSource.includes("loading: 'lazy'")) {
-  throw new Error('Deferred manifest images must load without immediate decode pressure.')
+if (!manifestSource.includes("decode: 'idle'") || !manifestSource.includes("loading: 'eager'")) {
+  throw new Error('Deferred manifest images must be gated by the loader with idle decode and eager fetch semantics.')
+}
+
+if (!controllerSource.includes('DEFERRED_CONCURRENCY') || !controllerSource.includes('deferredIndexes') || !controllerSource.includes('whole-site preload completed')) {
+  throw new Error('Preload controller must gate the complete landing manifest, not only critical resources.')
 }
 
 if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {

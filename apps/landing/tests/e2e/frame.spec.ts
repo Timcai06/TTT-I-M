@@ -261,7 +261,7 @@ test('Frame falls back to a stable vertical layout on mobile', async ({ page }) 
   expect(mobileLayout?.clusterHeight).toBeGreaterThan(0)
 })
 
-test('Frame keeps lazy image and offscreen rendering performance guards', async ({ page }) => {
+test('Frame keeps preloaded image and offscreen rendering performance guards', async ({ page }) => {
   await openHome(page)
   await scrollToFrame(page)
 
@@ -289,10 +289,9 @@ test('Frame keeps lazy image and offscreen rendering performance guards', async 
         .map((img) => img.alt)
     })
 
-    const badLazyImages = clusters.flatMap((cluster) => {
+    const badPreloadedImages = clusters.flatMap((cluster) => {
       return [...cluster.querySelectorAll<HTMLImageElement>('.archive-slot img')]
-        .slice(1)
-        .filter((img) => img.loading !== 'lazy' || img.fetchPriority !== 'low')
+        .filter((img) => img.loading !== 'eager' || (img.fetchPriority !== 'high' && img.fetchPriority !== 'auto'))
         .map((img) => img.alt)
     })
 
@@ -309,7 +308,7 @@ test('Frame keeps lazy image and offscreen rendering performance guards', async 
 
     return {
       badResponsiveImages,
-      badLazyImages,
+      badPreloadedImages,
       badContentVisibilityCount: badContentVisibility.length,
       inactiveWillChangeTrackCount: inactiveWillChangeTracks.length,
       visibleSlotCount: visibleSlots.length,
@@ -318,7 +317,7 @@ test('Frame keeps lazy image and offscreen rendering performance guards', async 
   })
 
   expect(performanceGuards.badResponsiveImages, JSON.stringify(performanceGuards.badResponsiveImages)).toHaveLength(0)
-  expect(performanceGuards.badLazyImages, JSON.stringify(performanceGuards.badLazyImages)).toHaveLength(0)
+  expect(performanceGuards.badPreloadedImages, JSON.stringify(performanceGuards.badPreloadedImages)).toHaveLength(0)
   expect(performanceGuards.badContentVisibilityCount).toBe(0)
   expect(performanceGuards.inactiveWillChangeTrackCount).toBe(0)
   expect(performanceGuards.visibleSlotCount).toBeLessThan(14)

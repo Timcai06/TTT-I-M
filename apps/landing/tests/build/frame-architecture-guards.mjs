@@ -29,6 +29,10 @@ if (!slotSource.includes('className=') || !slotSource.includes('archive-slot__me
   throw new Error('ArchiveImageSlot must retain the archive slot DOM contract.')
 }
 
+if (!slotSource.includes('loading="eager"') || !slotSource.includes("fetchPriority={eager ? 'high' : 'auto'}")) {
+  throw new Error('Frame archive images must not rely on lazy loading after the full landing preload gate.')
+}
+
 if (!slotSource.includes('--image-aspect') || !frameStyleSource.includes('aspect-ratio: var(--image-aspect')) {
   throw new Error('Archive slots must bind media boxes to the real image aspect ratio so captions stay attached to the visible photo.')
 }

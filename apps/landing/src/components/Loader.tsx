@@ -87,16 +87,13 @@ export default function Loader() {
   useEffect(() => {
     let frame = 0
     let displayedProgress = 0
-    const startedAt = performance.now()
 
     const renderProgress = () => {
       const current = preloadRef.current
       if (!current) return
 
       const actualProgress = current.total > 0 ? current.completed / current.total : 0
-      const elapsed = performance.now() - startedAt
-      const waitingMotion = Math.min(0.94, 0.06 + (1 - Math.exp(-elapsed / 5200)) * 0.88)
-      const target = current.ready ? 1 : Math.min(0.98, Math.max(actualProgress, waitingMotion))
+      const target = current.ready ? 1 : actualProgress
 
       displayedProgress += (target - displayedProgress) * (current.ready ? 0.18 : 0.075)
 

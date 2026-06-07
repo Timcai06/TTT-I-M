@@ -60,11 +60,11 @@ function collectImageUrls() {
 /**
  * The whole-site preload manifest, in load order.
  *
- * `critical` gates the intro (hero texture, fonts, Pretext, lazy chapter chunks,
- * the About manifesto particle field). `deferred` is every curated image — still
- * preloaded aggressively (no fast-scroll pop-in, an intentional product choice),
- * just after the critical group so the intro can resolve as soon as the
- * above-the-fold experience is ready.
+ * `critical` runs first (hero texture, fonts, Pretext, lazy chapter chunks,
+ * the About manifesto particle field). `deferred` is every curated image and is
+ * still gated by the loader after the critical group. The ordering avoids a
+ * decode/fetch storm in the first beat, while the gate remains honest: 100%
+ * means the bounded landing archive is loaded, not merely the hero.
  */
 export function buildResourceManifest(): ResourceTask[] {
   const critical: ResourceTask[] = [
@@ -81,7 +81,7 @@ export function buildResourceManifest(): ResourceTask[] {
     label: src,
     tier: 'deferred',
     type: 'image',
-    load: () => loadImage(src, { decode: 'none', fetchPriority: 'low', loading: 'lazy' }),
+    load: () => loadImage(src, { decode: 'idle', fetchPriority: 'low', loading: 'eager' }),
   }))
 
   return [...critical, ...deferred]

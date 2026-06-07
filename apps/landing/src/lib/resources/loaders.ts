@@ -35,11 +35,11 @@ export function loadImage(src: string, {
           }
         }
       } else if (decode === 'idle') {
-        // Best-effort warm-decode. A rejection here is non-fatal: onload already
-        // fired so the DOM <img> still paints (the browser decodes on demand).
-        // Some valid WebP files reject background decode() in Chrome, so swallow
-        // it silently instead of flooding the console with one warning per image.
-        void enqueueImageDecode(image).catch(() => {})
+        // Warm-decode during idle and wait for that attempt before counting the
+        // task complete. Decode rejection is still non-fatal: onload already
+        // fired, so the DOM <img> can paint and the global timeout prevents a
+        // single problematic image from stranding the intro.
+        await enqueueImageDecode(image).catch(() => {})
       }
       resolve()
     }

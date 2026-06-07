@@ -134,21 +134,66 @@
   grid-template-columns: 1fr;
   grid-template-rows: 1fr;
   place-items: center; /* Center horizontally and vertically */
-  height: 240px;
+  height: 320px;
 }
 
 .life__intro-p {
   grid-area: 1 / 1 / 2 / 2; /* Overlap paragraphs in the exact same center cell */
+  position: relative;
+  display: grid;
+  gap: clamp(10px, 1.5vw, 16px);
   font-family: var(--font-serif);
   font-size: clamp(22px, 3.8vw, 36px);
   line-height: 1.6;
   color: var(--fg);
   margin: 0;
-  width: 100%;
+  width: min(860px, 100%);
+  padding: clamp(22px, 4vw, 42px);
+  border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+  border-radius: 2px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.095), transparent 34%),
+    radial-gradient(circle at 10% 10%, rgba(214, 192, 155, 0.12), transparent 28rem),
+    rgba(5, 5, 5, 0.28);
+  box-shadow:
+    0 22px 80px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   /* opacity: 0; */
   pointer-events: none;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
-  text-align: center; /* Centered typography is premium for storytelling */
+  text-align: left;
+}
+
+.life__intro-p::after {
+  content: attr(data-story);
+  position: absolute;
+  right: clamp(18px, 3vw, 34px);
+  bottom: clamp(14px, 2vw, 24px);
+  color: color-mix(in srgb, var(--fg) 10%, transparent);
+  font-family: var(--font-mono);
+  font-size: clamp(48px, 8vw, 92px);
+  line-height: 0.8;
+  letter-spacing: -0.08em;
+}
+
+.life__intro-kicker {
+  display: inline-flex;
+  width: max-content;
+  color: var(--fg-mute);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.life__intro-rule {
+  display: block;
+  width: min(180px, 42vw);
+  height: 1px;
+  margin-bottom: clamp(2px, 0.6vw, 8px);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fg) 54%, transparent), transparent);
+  transform-origin: left center;
 }
 
 .life__intro-p em {
@@ -184,5 +229,14 @@
   .life__intro-p {
     font-size: clamp(16px, 4.5vw, 22px);
     line-height: 1.5;
+    padding: 20px;
+    text-align: center;
+  }
+  .life__intro-p .split-line__inner {
+    white-space: normal;
+  }
+  .life__intro-kicker,
+  .life__intro-rule {
+    margin-inline: auto;
   }
 }

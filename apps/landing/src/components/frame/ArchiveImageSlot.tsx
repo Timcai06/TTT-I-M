@@ -36,9 +36,9 @@ export default function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot
           srcSet={image.srcSet}
           sizes={image.sizes}
           alt={image.title}
-          loading={eager ? 'eager' : 'lazy'}
+          loading="eager"
           decoding="async"
-          fetchPriority={eager ? 'high' : 'low'}
+          fetchPriority={eager ? 'high' : 'auto'}
         />
       </div>
       <figcaption className="archive-slot__caption">

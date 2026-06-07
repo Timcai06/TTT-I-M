@@ -35,6 +35,10 @@
 > Hero portrait segments / About text particle targets / Transition field particles 与 DPR，并让 optional
 > WebGL surface 走动态 context budget。B4 grain 已保留桌面闲置 overlay 风格，但在滚动压力
 > `.disable-hover` 与移动/触屏设备切换到静态 PNG + normal blend，避免高压滚动窗口全屏重混合。
+> **更新（2026-06-07）**：根据真实 QA 回退 B2 的「deferred 不门控」取舍：
+> loader 现在重新门控完整 landing manifest，critical 先跑、deferred 图片按并发队列 eager fetch +
+> idle decode，进度条只显示真实 completed/total；Frame archive DOM 图片改为 eager，避免进入 Frame
+> 时仍依赖原生 lazy 触发。
 >
 > **状态（plan 03 平台化地基已落地）** — repo 已切为 npm workspaces：`apps/landing`
 > 承载原 Vite landing，`apps/studio` 承载 Next App Router 内容面，`packages/tokens`
