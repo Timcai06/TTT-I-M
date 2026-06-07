@@ -22,25 +22,23 @@ async function waitForLive(page: Page, timeout = 20000) {
 
 // ── 1. Reduced motion ──────────────────────────────────────────────────────────
 
-test.describe('reduced motion', () => {
-  test.use({ reducedMotion: 'reduce' })
+test('reduced motion: site loads with the static fallback and real text intact', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
 
-  test('site loads with the hero particle layer skipped and real text intact', async ({ page }) => {
-    const fatal: string[] = []
-    page.on('pageerror', (e) => {
-      if (!/WebGL context|THREE\.Clock/i.test(e.message)) fatal.push(e.message)
-    })
-
-    await page.goto('/', { waitUntil: 'domcontentloaded' })
-    await waitForLive(page)
-
-    await expect(page.locator('#hero')).toBeVisible()
-    // The static ghost photo carries the composition when motion is reduced.
-    await expect(page.locator('.hero__ghost')).toBeVisible()
-    // The real hero name text remains present (not a particle-only render).
-    await expect(page.locator('.hero__name')).toContainText('Tim')
-    expect(fatal, `uncaught errors under reduced motion:\n${fatal.join('\n')}`).toHaveLength(0)
+  const fatal: string[] = []
+  page.on('pageerror', (e) => {
+    if (!/WebGL context|THREE\.Clock/i.test(e.message)) fatal.push(e.message)
   })
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await waitForLive(page)
+
+  await expect(page.locator('#hero')).toBeVisible()
+  // The static ghost photo carries the composition when motion is reduced.
+  await expect(page.locator('.hero__ghost')).toBeVisible()
+  // The real hero name text remains present (not a particle-only render).
+  await expect(page.locator('.hero__name')).toContainText('Tim')
+  expect(fatal, `uncaught errors under reduced motion:\n${fatal.join('\n')}`).toHaveLength(0)
 })
 
 // ── 2. WebGL unavailable ────────────────────────────────────────────────────────
