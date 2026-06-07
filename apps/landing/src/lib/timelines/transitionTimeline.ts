@@ -8,29 +8,21 @@ export interface TransitionTimelineCallbacks {
 
 export function createTransitionTimeline(
   root: HTMLElement,
-  rail: HTMLElement | null,
+  _rail: HTMLElement | null,
   cb: TransitionTimelineCallbacks,
 ): gsap.core.Timeline {
-  const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__item'))
-  const itemChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__item-char'))
   const topShutter = root.querySelector<HTMLElement>('.chapter-transition__shutter--top')
   const bottomShutter = root.querySelector<HTMLElement>('.chapter-transition__shutter--bottom')
   const targetName = root.querySelector<HTMLElement>('.chapter-transition__target-name')
   const targetChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__target-glyph'))
   const grain = root.querySelector<HTMLElement>('.chapter-transition__grain')
   const index = root.querySelector<HTMLElement>('.chapter-transition__target-index')
-  const chrome = root.querySelector<HTMLElement>('.chapter-transition__chrome')
-  const caption = root.querySelector<HTMLElement>('.chapter-transition__caption')
-  const grid = root.querySelector<HTMLElement>('.chapter-transition__grid')
-  const field = root.querySelector<HTMLElement>('.chapter-transition__field')
+  const aura = root.querySelector<HTMLElement>('.chapter-transition__aura')
 
   gsap.set(root, { autoAlpha: 1, pointerEvents: 'auto' })
   gsap.set(topShutter, { yPercent: -100 })
   gsap.set(bottomShutter, { yPercent: 100 })
-  gsap.set([grain, grid, field], { opacity: 0 })
-  gsap.set([chrome, caption], { opacity: 0, y: 10 })
-  gsap.set(items, { opacity: 0.62, y: 16 })
-  gsap.set(itemChars, { yPercent: 96, opacity: 0, skewY: 4 })
+  gsap.set([grain, aura], { opacity: 0 })
   gsap.set(targetChars, {
     opacity: 0,
     filter: 'blur(8px)',
@@ -39,7 +31,6 @@ export function createTransitionTimeline(
   })
   gsap.set(targetName, { textShadow: 'none', x: 0 })
   gsap.set(index, { opacity: 0, y: 10 })
-  gsap.set(rail, { opacity: 1, scaleX: 0, transformOrigin: 'left center' })
 
   const tl = gsap.timeline({ onComplete: cb.onComplete })
 
@@ -51,10 +42,9 @@ export function createTransitionTimeline(
     ease: 'expo.inOut',
   }, 0)
 
-  // 2. 0.16 - 0.52s: Grain, metadata, and chapter rows reveal inside the cover.
-  tl.to([grid, field], { opacity: 1, duration: 0.24, ease: 'power2.out' }, 0.12)
-  tl.to([chrome, caption], { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' }, 0.16)
-  tl.to(grain, { opacity: 1, duration: 0.15 }, 0.2)
+  // 2. 0.18 - 0.55s: Grain, aura, and central target flash in.
+  tl.to(aura, { opacity: 1, duration: 0.22, ease: 'power2.out' }, 0.16)
+  tl.to(grain, { opacity: 0.85, duration: 0.15 }, 0.2)
   tl.to(index, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }, 0.2)
   tl.to(targetChars, {
     opacity: 1,
@@ -66,9 +56,6 @@ export function createTransitionTimeline(
     ease: 'power3.out',
   }, 0.2)
     .call(cb.onRevealTarget, undefined, 0.25)
-  tl.to(items, { opacity: 1, y: 0, duration: 0.32, stagger: 0.025, ease: 'power3.out' }, 0.24)
-  tl.to(itemChars, { yPercent: 0, opacity: 1, skewY: 0, duration: 0.32, stagger: 0.006, ease: 'expo.out' }, 0.26)
-  tl.to(rail, { scaleX: 1, duration: 0.52, ease: 'power3.inOut' }, 0.22)
 
   // 3. 0.45s - 0.65s: Chromatic Aberration Flash right before/during the land
   tl.to(targetName, {
@@ -106,17 +93,16 @@ export function createTransitionTimeline(
   }, 0.65)
 
   // 6. Fade out text and grain as shutters open
-  tl.to([index, chrome, caption, ...targetChars, ...items], {
+  tl.to([index, ...targetChars], {
     opacity: 0,
     duration: 0.2,
     ease: 'power2.in',
   }, 0.65)
-  tl.to([grain, grid, field], {
+  tl.to([grain, aura], {
     opacity: 0,
     duration: 0.35,
     ease: 'power2.inOut',
   }, 0.65)
-  tl.to(rail, { opacity: 0, duration: 0.25, ease: 'power2.inOut' }, 0.72)
 
   return tl
 }

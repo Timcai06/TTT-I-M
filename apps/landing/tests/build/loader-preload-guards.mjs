@@ -189,8 +189,8 @@ if (!textParticlesSource.includes('quality.textMaxTargets') || !textParticlesSou
   throw new Error('TextParticles must build its point cloud from the WebGL quality profile.')
 }
 
-if (!chapterTransitionSource.includes('quality.transitionParticles') || !chapterTransitionSource.includes('canAcquireOptionalSurface')) {
-  throw new Error('ChapterTransition field must respect optional context and particle budgets.')
+if (chapterTransitionSource.includes('quality.transitionParticles') || chapterTransitionSource.includes('canAcquireOptionalSurface') || chapterTransitionSource.includes("import('three')")) {
+  throw new Error('ChapterTransition must stay CSS-only so chapter jumps do not acquire extra WebGL contexts.')
 }
 
 if (!globalStyleSource.includes(".disable-hover .grain") || !globalStyleSource.includes("url('/noise/grain-128.png')")) {

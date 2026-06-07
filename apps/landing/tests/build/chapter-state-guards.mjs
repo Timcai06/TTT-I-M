@@ -7,6 +7,7 @@ const navSource = readFileSync('src/components/Nav.tsx', 'utf8')
 const navStyleSource = readFileSync('src/styles/components/nav.css', 'utf8')
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
 const transitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
+const transitionTimelineSource = readFileSync('src/lib/timelines/transitionTimeline.ts', 'utf8')
 const transitionApiSource = readFileSync('src/lib/chapterTransition.ts', 'utf8')
 const scrollSource = readFileSync('src/lib/chapterScroll.ts', 'utf8')
 const activeChapterSource = readFileSync('src/lib/useActiveChapter.ts', 'utf8')
@@ -46,24 +47,26 @@ if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSourc
 }
 
 const transitionLayerInputs = [
-  'TransitionField',
-  "import('three')",
+  'chapter-transition__shutter--top',
+  'chapter-transition__shutter--bottom',
+  'chapter-transition__grain',
+  'chapter-transition__aura',
   'chapter-transition__target-glyph',
-  'chapter-transition__item-char',
   'usePretextTextInteraction',
 ]
 
-const missingTransitionLayerInputs = transitionLayerInputs.filter((needle) => !transitionSource.includes(needle))
+const transitionContractSource = `${transitionSource}\n${transitionTimelineSource}`
+const missingTransitionLayerInputs = transitionLayerInputs.filter((needle) => !transitionContractSource.includes(needle))
 if (missingTransitionLayerInputs.length > 0) {
   throw new Error(`ChapterTransition is missing layered transition affordances: ${missingTransitionLayerInputs.join(', ')}`)
 }
 
-if (transitionSource.includes('chapter-transition__svg') || navStyleSource.includes('chapter-transition__svg')) {
-  throw new Error('ChapterTransition must not reintroduce extra SVG line segments.')
+if (transitionSource.includes('chapter-transition__nav') || navStyleSource.includes('chapter-transition__item-char')) {
+  throw new Error('ChapterTransition must stay shutter-only and not reintroduce the chapter menu overlay.')
 }
 
-if (!navStyleSource.includes('border-bottom: 1px solid transparent')) {
-  throw new Error('Chapter transition chapter rows must not draw non-target divider lines.')
+if (transitionTimelineSource.includes("document.querySelector('main')") || transitionTimelineSource.includes('document.querySelector(\"main\")')) {
+  throw new Error('Chapter transition timeline must not animate the global main layout.')
 }
 
 if (!transitionApiSource.includes('portfolio:chapter-transition') || !transitionApiSource.includes('portfolio:chapter-arrived')) {
