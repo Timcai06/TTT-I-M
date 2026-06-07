@@ -1,81 +1,77 @@
 import { gsap } from '../gsap'
 
 export interface TransitionTimelineCallbacks {
-  /** Mid-transition: the target name has landed — enable its Pretext interaction. */
   onRevealTarget: () => void
-  /** Apex: jump to the target chapter and re-sync ScrollTrigger. */
   onLand: () => void
-  /** Timeline finished — overlay can clear. */
   onComplete: () => void
 }
 
-/**
- * The signature chapter-jump transition.
- *
- * Gathers its own elements from `root`, sets their initial states and returns a
- * running timeline. Pure presentation — every side effect (component state,
- * scroll, ScrollTrigger refresh, arrival dispatch) is injected as a callback so
- * the conductor in ChapterTransition owns them. Extracted from the component so
- * the 50-line timeline isn't tangled with the transition state machine.
- */
 export function createTransitionTimeline(
   root: HTMLElement,
-  rail: HTMLElement | null,
+  _rail: HTMLElement | null,
   cb: TransitionTimelineCallbacks,
 ): gsap.core.Timeline {
-  const items = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__item'))
-  const itemChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__item-char'))
-  const activeItem = root.querySelector<HTMLElement>('.chapter-transition__item.is-target')
-  const caption = root.querySelector<HTMLElement>('.chapter-transition__caption')
-  const targetText = root.querySelector<HTMLElement>('.chapter-transition__target')
+  const topShutter = root.querySelector<HTMLElement>('.chapter-transition__shutter--top')
+  const bottomShutter = root.querySelector<HTMLElement>('.chapter-transition__shutter--bottom')
   const targetChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__target-glyph'))
-  const grid = root.querySelector<HTMLElement>('.chapter-transition__grid')
-  const field = root.querySelector<HTMLElement>('.chapter-transition__field')
+  const grain = root.querySelector<HTMLElement>('.chapter-transition__grain')
+  const index = root.querySelector<HTMLElement>('.chapter-transition__target-index')
 
-  gsap.set(root, { clipPath: 'inset(100% 0% 0% 0%)', autoAlpha: 1, pointerEvents: 'auto' })
-  gsap.set(items, { opacity: 1 })
-  gsap.set(itemChars, { yPercent: 96, opacity: 0, skewY: 4 })
-  gsap.set(targetChars, { filter: 'blur(10px)', opacity: 0, rotate: 2, scale: 1.08, yPercent: 38 })
-  gsap.set([caption, targetText], { y: 18, opacity: 0 })
-  gsap.set([grid, field], { opacity: 0 })
-  gsap.set(rail, { scaleX: 0, transformOrigin: 'left center' })
+  gsap.set(root, { autoAlpha: 1, pointerEvents: 'auto' })
+  gsap.set(topShutter, { yPercent: -100 })
+  gsap.set(bottomShutter, { yPercent: 100 })
+  gsap.set(grain, { opacity: 0 })
+  gsap.set(targetChars, { opacity: 0, filter: 'blur(8px)', scale: 1.05 })
+  gsap.set(index, { opacity: 0, y: 10 })
 
-  return gsap.timeline({ defaults: { ease: 'power3.inOut' }, onComplete: cb.onComplete })
-    .to(root, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.34 })
-    .to({}, { duration: 0.1 })
-    .to([grid, field], { opacity: 1, duration: 0.78, ease: 'power2.out' }, '<')
-    .to(itemChars, {
-      yPercent: 0,
-      opacity: 1,
-      skewY: 0,
-      duration: 0.74,
-      stagger: 0.01,
-    }, '<0.12')
-    .to([caption, targetText], { y: 0, opacity: 1, duration: 0.6, stagger: 0.05, ease: 'power3.out' }, '<0.22')
-    .to(targetChars, {
-      filter: 'blur(0px)',
-      yPercent: 0,
-      opacity: 1,
-      rotate: 0,
-      scale: 1,
-      duration: 0.92,
-      stagger: 0.028,
-      ease: 'expo.out',
-    }, '<0.05')
-    .to(rail, { scaleX: 1, duration: 0.72, ease: 'power2.inOut' }, '<0.08')
-    .call(cb.onRevealTarget)
-    .to(activeItem, { x: 12, duration: 0.32, ease: 'power2.out' }, '>-0.02')
-    .call(cb.onLand)
-    .to(activeItem, { x: 0, duration: 0.22, ease: 'power2.in' })
-    .to(itemChars, {
-      yPercent: -86,
-      opacity: 0,
-      skewY: -3,
-      duration: 0.38,
-      stagger: 0.01,
-      ease: 'power3.in',
-    }, '+=0.12')
-    .to(targetChars, { filter: 'blur(7px)', yPercent: -58, opacity: 0, duration: 0.36, stagger: 0.012, ease: 'power3.in' }, '<')
-    .to([caption, targetText], { y: -14, opacity: 0, duration: 0.32, ease: 'power2.in' }, '<')
-    .to(root, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.52 }, '<0.1')
+  const tl = gsap.timeline({ onComplete: cb.onComplete })
+
+  // 1. 0 - 0.35s: Shutters slam shut (extended from 0.25)
+  tl.to([topShutter, bottomShutter], {
+    yPercent: 0,
+    duration: 0.35,
+    ease: 'expo.inOut'
+  }, 0)
+
+  // 2. 0.20 - 0.50s: Grain and text flash in
+  tl.to(grain, { opacity: 1, duration: 0.15 }, 0.2)
+  tl.to(index, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }, 0.2)
+  tl.to(targetChars, {
+    opacity: 1,
+    filter: 'blur(0px)',
+    scale: 1,
+    duration: 0.25,
+    stagger: 0.02,
+    ease: 'power3.out'
+  }, 0.2)
+  .call(cb.onRevealTarget, undefined, 0.25)
+
+  // 3. 0.55s: The Landing Moment (Hold the black screen slightly longer)
+  tl.call(cb.onLand, undefined, 0.55)
+
+  // 4. 0.65 - 1.05s: Shutters snap open (extended from 0.3)
+  tl.to(topShutter, {
+    yPercent: -100,
+    duration: 0.4,
+    ease: 'expo.inOut'
+  }, 0.65)
+  tl.to(bottomShutter, {
+    yPercent: 100,
+    duration: 0.4,
+    ease: 'expo.inOut'
+  }, 0.65)
+  
+  // 5. Fade out text and grain as shutters open
+  tl.to([index, ...targetChars], {
+    opacity: 0,
+    duration: 0.2,
+    ease: 'power2.in'
+  }, 0.65)
+  tl.to(grain, {
+    opacity: 0,
+    duration: 0.3,
+    ease: 'power2.inOut'
+  }, 0.65)
+
+  return tl
 }
