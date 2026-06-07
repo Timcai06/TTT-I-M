@@ -261,6 +261,45 @@ test('Frame falls back to a stable vertical layout on mobile', async ({ page }) 
   expect(mobileLayout?.clusterHeight).toBeGreaterThan(0)
 })
 
+test('Mobile navigation collapses chapters behind a menu and lands on Frame content', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openHome(page)
+
+  await expect(page.locator('.nav__links')).toBeHidden()
+  await expect(page.getByRole('button', { name: /menu/i })).toBeVisible()
+
+  await page.getByRole('button', { name: /menu/i }).click()
+  await expect(page.locator('.nav__mobile-panel')).toBeVisible()
+
+  await page.locator('.nav__mobile-panel').getByRole('button', { name: /Frame/ }).click()
+  await page.waitForFunction(() => window.location.hash === '#frame', null, { timeout: 15000 })
+  await page.locator('.archive-theme-section__track').first().waitFor({ state: 'attached', timeout: 15000 })
+  await page.locator('.archive-slot').first().waitFor({ state: 'attached', timeout: 15000 })
+
+  const landing = await page.evaluate(() => {
+    const nav = document.querySelector<HTMLElement>('.nav')
+    const frame = document.querySelector<HTMLElement>('#frame')
+    const title = document.querySelector<HTMLElement>('.frame-hero__title, #frame h2')
+    const slot = document.querySelector<HTMLElement>('#frame .archive-slot')
+    const navRect = nav?.getBoundingClientRect()
+    const frameRect = frame?.getBoundingClientRect()
+    const titleRect = title?.getBoundingClientRect()
+    const slotRect = slot?.getBoundingClientRect()
+
+    return {
+      hash: window.location.hash,
+      navHeight: navRect ? Math.round(navRect.height) : 0,
+      frameTop: frameRect ? Math.round(frameRect.top) : null,
+      titleVisible: titleRect ? titleRect.bottom > 0 && titleRect.top < window.innerHeight : false,
+      slotVisible: slotRect ? slotRect.bottom > 0 && slotRect.top < window.innerHeight : false,
+    }
+  })
+
+  expect(landing.hash).toBe('#frame')
+  expect(landing.navHeight).toBeLessThanOrEqual(72)
+  expect(landing.titleVisible || landing.slotVisible).toBe(true)
+})
+
 test('Frame keeps preloaded image and offscreen rendering performance guards', async ({ page }) => {
   await openHome(page)
   await scrollToFrame(page)

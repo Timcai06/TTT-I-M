@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { navChapters } from '../chapters/registry'
 import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
@@ -14,9 +15,15 @@ const blogHref = devStudioUrl ? new URL('/blog', devStudioUrl).toString() : '/bl
 
 export default function Nav() {
   const { activeId } = useChapterState()
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const handleChapterClick = (id: string) => {
+    setMobileOpen(false)
+    transitionToChapter(id, { updateHash: true })
+  }
 
   return (
-    <header className="nav">
+    <header className={`nav${mobileOpen ? ' nav--mobile-open' : ''}`}>
       <div className="container nav__inner">
         <a className="nav__brand" href={blogHref} aria-label="Open Tim Cai blog">
           Tim · 蔡
@@ -27,7 +34,7 @@ export default function Nav() {
               <li key={l.id}>
                 <button
                   className={`nav__link${activeId === l.id ? ' is-active' : ''}`}
-                  onClick={() => transitionToChapter(l.id, { updateHash: true })}
+                  onClick={() => handleChapterClick(l.id)}
                 >
                   {l.label}
                 </button>
@@ -39,7 +46,33 @@ export default function Nav() {
           SHA <span style={{ color: 'var(--accent)' }}>● </span>1
           <span style={{ marginLeft: 8 }}>—</span> ZJGSU
         </div>
+        <button
+          className="nav__menu-button"
+          type="button"
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-navigation"
+          onClick={() => setMobileOpen((open) => !open)}
+        >
+          Menu
+        </button>
       </div>
+      <nav
+        className="nav__mobile-panel"
+        id="mobile-navigation"
+        aria-label="Mobile chapter navigation"
+      >
+        {links.map((l) => (
+          <button
+            className={`nav__mobile-link${activeId === l.id ? ' is-active' : ''}`}
+            key={l.id}
+            onClick={() => handleChapterClick(l.id)}
+            type="button"
+          >
+            <span>{l.label.slice(0, 2)}</span>
+            <strong>{l.label.replace(/^\d+\s*·\s*/, '')}</strong>
+          </button>
+        ))}
+      </nav>
     </header>
   )
 }

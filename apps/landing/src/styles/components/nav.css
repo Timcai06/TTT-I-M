@@ -58,8 +58,98 @@
   font-feature-settings: 'tnum';
 }
 
+.nav__menu-button,
+.nav__mobile-panel {
+  display: none;
+}
+
 @media (max-width: 768px) {
-  .nav__links { gap: 18px; }
+  .nav {
+    padding: 16px 0;
+    mix-blend-mode: normal;
+  }
+
+  .nav__inner {
+    font-size: 10px;
+  }
+
+  .nav__inner nav,
+  .nav__counter {
+    display: none;
+  }
+
+  .nav__menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    height: 32px;
+    border: 1px solid color-mix(in srgb, var(--fg) 24%, transparent);
+    border-radius: 999px;
+    background: rgba(5, 5, 5, 0.34);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    backdrop-filter: blur(12px);
+  }
+
+  .nav__mobile-panel {
+    position: fixed;
+    top: 58px;
+    left: 12px;
+    right: 12px;
+    z-index: 101;
+    display: grid;
+    gap: 2px;
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+    background:
+      radial-gradient(circle at 20% 0%, rgba(112, 133, 142, 0.12), transparent 32%),
+      rgba(5, 5, 5, 0.88);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.22s var(--ease-out), transform 0.22s var(--ease-out);
+    backdrop-filter: blur(18px);
+  }
+
+  .nav--mobile-open .nav__mobile-panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .nav__mobile-link {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 14px;
+    padding: 12px 4px;
+    color: color-mix(in srgb, var(--fg) 58%, transparent);
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .nav__mobile-link span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+  }
+
+  .nav__mobile-link strong {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 0.9;
+  }
+
+  .nav__mobile-link.is-active {
+    color: var(--fg);
+  }
 }
 
 .chapter-transition {
