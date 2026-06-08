@@ -282,6 +282,13 @@
     gap: 18px;
     flex-wrap: wrap;
   }
+
+  .footer__links a {
+    display: inline-flex;
+    align-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 600px) {

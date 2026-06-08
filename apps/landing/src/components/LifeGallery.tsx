@@ -164,7 +164,7 @@ export default function LifeGallery() {
   }, [])
 
   return (
-    <section className="life" ref={wrapRef}>
+    <section className="life" id="life" ref={wrapRef}>
       <div className="life__header container">
         <div className="section__label">Life — 生活</div>
         <h2 className="section__title">

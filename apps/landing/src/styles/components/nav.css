@@ -65,12 +65,19 @@
 
 @media (max-width: 768px) {
   .nav {
-    padding: 16px 0;
+    padding: 14px 0;
     mix-blend-mode: normal;
   }
 
   .nav__inner {
     font-size: 10px;
+  }
+
+  .nav__brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-right: 14px;
   }
 
   .nav__inner nav,
@@ -83,7 +90,7 @@
     align-items: center;
     justify-content: center;
     min-width: 58px;
-    height: 32px;
+    height: 44px;
     border: 1px solid color-mix(in srgb, var(--fg) 24%, transparent);
     border-radius: 999px;
     background: rgba(5, 5, 5, 0.34);

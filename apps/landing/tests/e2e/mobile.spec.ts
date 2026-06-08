@@ -59,6 +59,25 @@ test('Mobile Hero presents title and portrait in the first viewport', async ({ p
   expect(heroLayout.ghostRect?.right).toBeLessThanOrEqual(heroLayout.viewport.width + 80)
 })
 
+test('Mobile narrative chapters expose stable scroll anchors', async ({ page }) => {
+  await openMobileHome(page)
+
+  const anchors = await page.evaluate(() => {
+    return ['hero', 'about', 'life', 'frame', 'skills', 'projects', 'contact'].map((id) => {
+      const el = document.getElementById(id)
+      const rect = el?.getBoundingClientRect()
+      return {
+        id,
+        exists: Boolean(el),
+        height: rect ? Math.round(rect.height) : 0,
+      }
+    })
+  })
+
+  expect(anchors.filter((anchor) => !anchor.exists), JSON.stringify(anchors)).toHaveLength(0)
+  expect(anchors.filter((anchor) => anchor.height <= 0), JSON.stringify(anchors)).toHaveLength(0)
+})
+
 test('Mobile About leads with text and avoids a WebGL particle gap', async ({ page }) => {
   await openMobileHome(page)
   await scrollChapterToTop(page, 'about')
@@ -125,4 +144,27 @@ test('Mobile Contact keeps the final section compact and readable', async ({ pag
   expect(contactLayout.items?.height).toBeLessThanOrEqual(120)
   expect(contactLayout.footer?.height).toBeLessThanOrEqual(640)
   expect(contactLayout.scrollWidth).toBe(contactLayout.viewportWidth)
+})
+
+test('Mobile persistent links keep accessible tap targets', async ({ page }) => {
+  await openMobileHome(page)
+  await scrollChapterToTop(page, 'contact')
+
+  const tapTargets = await page.evaluate(() => {
+    const selectors = ['.nav__brand', '.footer__links a']
+    return selectors.flatMap((selector) => (
+      [...document.querySelectorAll<HTMLElement>(selector)].map((el) => {
+        const rect = el.getBoundingClientRect()
+        return {
+          selector,
+          text: el.textContent?.trim().replace(/\s+/g, ' ') ?? '',
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        }
+      })
+    ))
+  })
+
+  expect(tapTargets.filter((target) => target.height < 44), JSON.stringify(tapTargets)).toHaveLength(0)
+  expect(tapTargets.filter((target) => target.width < 44), JSON.stringify(tapTargets)).toHaveLength(0)
 })
