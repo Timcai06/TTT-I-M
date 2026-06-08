@@ -234,10 +234,53 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .contact__blob {
+    width: 220vmax;
+    height: 220vmax;
+  }
+
+  .contact__blob-inner {
+    animation-duration: 28s;
+  }
+
+  .footer__content {
+    width: calc(100% - 32px);
+    padding-top: 52px;
+    padding-bottom: 28px;
+  }
+
+  .footer__kicker {
+    margin-bottom: 28px;
+  }
+
+  .footer__title {
+    font-size: clamp(48px, 15vw, 64px);
+    line-height: 0.92;
+    margin-bottom: 32px;
+  }
+
   .contact__items {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .contact__btn {
+    width: 100%;
+    justify-content: space-between;
+    padding: 13px 18px;
+    font-size: 14px;
+  }
+
+  .contact__btn-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .footer__links {
+    gap: 18px;
+    flex-wrap: wrap;
   }
 }
 

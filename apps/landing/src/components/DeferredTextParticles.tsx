@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { useMobileExperience } from '../lib/device'
 
 const TextParticles = lazy(() => import('./TextParticles'))
 
@@ -19,6 +20,7 @@ function StaticTextParticles({ text, className = '' }: Pick<Props, 'text' | 'cla
 export default function DeferredTextParticles(props: Props) {
   const fallbackRef = useRef<HTMLDivElement>(null)
   const [enabled, setEnabled] = useState(false)
+  const mobile = useMobileExperience()
 
   useEffect(() => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -33,7 +35,7 @@ export default function DeferredTextParticles(props: Props) {
 
   const fallback = <StaticTextParticles text={props.text} className={props.className} />
 
-  if (!enabled) {
+  if (!enabled || mobile) {
     return <div ref={fallbackRef}>{fallback}</div>
   }
 

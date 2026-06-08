@@ -4,7 +4,16 @@ async function openMobileHome(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('networkidle')
-  await page.evaluate(() => document.querySelector('.intro')?.remove())
+  await page.locator('.intro').waitFor({ state: 'detached', timeout: 8000 }).catch(async () => {
+    await page.addStyleTag({ content: '.intro { display: none !important; pointer-events: none !important; }' })
+  })
+}
+
+async function scrollChapterToTop(page: Page, id: string) {
+  await page.evaluate((chapterId) => {
+    document.getElementById(chapterId)?.scrollIntoView({ block: 'start' })
+  }, id)
+  await page.waitForTimeout(700)
 }
 
 test('Mobile Hero presents title and portrait in the first viewport', async ({ page }) => {
@@ -48,4 +57,72 @@ test('Mobile Hero presents title and portrait in the first viewport', async ({ p
   expect(heroLayout.titleRect?.width).toBeGreaterThan(260)
   expect(heroLayout.ghostRect?.left).toBeGreaterThanOrEqual(-40)
   expect(heroLayout.ghostRect?.right).toBeLessThanOrEqual(heroLayout.viewport.width + 80)
+})
+
+test('Mobile About leads with text and avoids a WebGL particle gap', async ({ page }) => {
+  await openMobileHome(page)
+  await scrollChapterToTop(page, 'about')
+
+  const aboutLayout = await page.evaluate(() => {
+    const rectOf = (selector: string) => {
+      const el = document.querySelector<HTMLElement>(selector)
+      const rect = el?.getBoundingClientRect()
+      return rect ? {
+        top: Math.round(rect.top),
+        bottom: Math.round(rect.bottom),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      } : null
+    }
+
+    return {
+      nav: rectOf('.nav'),
+      lead: rectOf('.about__lead'),
+      portrait: rectOf('.about__portrait-frame'),
+      manifesto: rectOf('.about__manifesto-fx'),
+      hasAboutCanvas: Boolean(document.querySelector('.about__manifesto-fx canvas')),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }
+  })
+
+  expect(aboutLayout.lead?.top).toBeGreaterThanOrEqual((aboutLayout.nav?.height ?? 0) + 20)
+  expect(aboutLayout.lead?.top).toBeLessThan(220)
+  expect(aboutLayout.portrait?.top).toBeGreaterThan(aboutLayout.lead?.bottom ?? 0)
+  expect(aboutLayout.hasAboutCanvas).toBe(false)
+  expect(aboutLayout.manifesto?.height).toBeLessThanOrEqual(150)
+  expect(aboutLayout.scrollWidth).toBe(aboutLayout.viewportWidth)
+})
+
+test('Mobile Contact keeps the final section compact and readable', async ({ page }) => {
+  await openMobileHome(page)
+  await scrollChapterToTop(page, 'contact')
+
+  const contactLayout = await page.evaluate(() => {
+    const rectOf = (selector: string) => {
+      const el = document.querySelector<HTMLElement>(selector)
+      const rect = el?.getBoundingClientRect()
+      return rect ? {
+        top: Math.round(rect.top),
+        bottom: Math.round(rect.bottom),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      } : null
+    }
+
+    return {
+      footer: rectOf('#contact'),
+      title: rectOf('.footer__title'),
+      items: rectOf('.contact__items'),
+      firstButton: rectOf('.contact__btn'),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }
+  })
+
+  expect(contactLayout.title?.width).toBeLessThanOrEqual(contactLayout.viewportWidth)
+  expect(contactLayout.firstButton?.width).toBeLessThanOrEqual(contactLayout.viewportWidth - 32)
+  expect(contactLayout.items?.height).toBeLessThanOrEqual(120)
+  expect(contactLayout.footer?.height).toBeLessThanOrEqual(640)
+  expect(contactLayout.scrollWidth).toBe(contactLayout.viewportWidth)
 })

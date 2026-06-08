@@ -113,13 +113,50 @@
 }
 
 @media (max-width: 768px) {
+  .about {
+    padding-top: 112px;
+    padding-bottom: 96px;
+  }
+
+  .about__grid {
+    gap: 36px;
+  }
+
   .about__left {
+    order: 1;
     padding-left: 16px;
     padding-right: 16px;
   }
+
   .about__right {
+    order: 2;
     padding-right: 16px;
     padding-left: 16px;
+  }
+
+  .about__portrait-frame {
+    max-width: min(360px, 100%);
+    aspect-ratio: 0.86;
+  }
+
+  .about__lead {
+    font-size: clamp(30px, 9vw, 40px);
+    line-height: 1.18;
+  }
+
+  .about__manifesto-fx.text-particles {
+    margin: 28px 0 30px;
+  }
+
+  .about__manifesto-fx.text-particles--static .text-particles__sr {
+    font-size: clamp(28px, 8vw, 38px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .about__content-flow {
+    margin-top: 0;
+    gap: 24px;
   }
 }
 
