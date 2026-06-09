@@ -204,6 +204,64 @@ test('Mobile Frame and Work media stay inside the viewport', async ({ page }) =>
   expect(visibleImages.filter((image) => image.left < 0 || image.right > 390), JSON.stringify(visibleImages)).toHaveLength(0)
 })
 
+test('Mobile Cuisine and Scenery use readable in-viewport archive cards', async ({ page }) => {
+  await openMobileHome(page)
+
+  const samples = []
+  for (const theme of ['cuisine', 'scenery']) {
+    await page.evaluate((themeName) => {
+      document.querySelector(`[data-archive-theme='${themeName}']`)?.scrollIntoView({ block: 'start' })
+    }, theme)
+    await page.waitForTimeout(900)
+
+    samples.push(await page.evaluate((themeName) => {
+      const themeRoot = document.querySelector<HTMLElement>(`[data-archive-theme='${themeName}']`)
+      const track = themeRoot?.querySelector<HTMLElement>('.archive-theme-section__track')
+      const firstCluster = themeRoot?.querySelector<HTMLElement>('.archive-cluster')
+      const images = [...(themeRoot?.querySelectorAll<HTMLImageElement>('img') ?? [])]
+        .filter((img) => {
+          const rect = img.getBoundingClientRect()
+          const style = window.getComputedStyle(img)
+          return rect.width > 1
+            && rect.height > 1
+            && rect.bottom > 0
+            && rect.top < window.innerHeight
+            && style.display !== 'none'
+            && style.visibility !== 'hidden'
+        })
+        .map((img) => {
+          const rect = img.getBoundingClientRect()
+          return {
+            themeName,
+            alt: img.alt,
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          }
+        })
+
+      return {
+        themeName,
+        trackPaddingLeft: track ? Math.round(parseFloat(window.getComputedStyle(track).paddingLeft)) : -1,
+        trackPaddingRight: track ? Math.round(parseFloat(window.getComputedStyle(track).paddingRight)) : -1,
+        clusterWidth: firstCluster ? Math.round(firstCluster.getBoundingClientRect().width) : 0,
+        images,
+        scrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+      }
+    }, theme))
+  }
+
+  const visibleImages = samples.flatMap((sample) => sample.images)
+  expect(visibleImages.length).toBeGreaterThan(0)
+  expect(samples.filter((sample) => sample.trackPaddingLeft !== 16 || sample.trackPaddingRight !== 16), JSON.stringify(samples)).toHaveLength(0)
+  expect(samples.filter((sample) => sample.clusterWidth > 358), JSON.stringify(samples)).toHaveLength(0)
+  expect(visibleImages.filter((image) => image.width < 240), JSON.stringify(visibleImages)).toHaveLength(0)
+  expect(visibleImages.filter((image) => image.left < 0 || image.right > 390), JSON.stringify(visibleImages)).toHaveLength(0)
+  expect(samples.filter((sample) => sample.scrollWidth !== sample.viewportWidth), JSON.stringify(samples)).toHaveLength(0)
+})
+
 test('Mobile Contact keeps the final section compact and readable', async ({ page }) => {
   await openMobileHome(page)
   await scrollChapterToTop(page, 'contact')
@@ -225,6 +283,7 @@ test('Mobile Contact keeps the final section compact and readable', async ({ pag
       title: rectOf('.footer__title'),
       items: rectOf('.contact__items'),
       firstButton: rectOf('.contact__btn'),
+      blobWrapDisplay: window.getComputedStyle(document.querySelector<HTMLElement>('.contact__blob-wrap')!).display,
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
     }
@@ -233,7 +292,8 @@ test('Mobile Contact keeps the final section compact and readable', async ({ pag
   expect(contactLayout.title?.width).toBeLessThanOrEqual(contactLayout.viewportWidth)
   expect(contactLayout.firstButton?.width).toBeLessThanOrEqual(contactLayout.viewportWidth - 32)
   expect(contactLayout.items?.height).toBeLessThanOrEqual(120)
-  expect(contactLayout.footer?.height).toBeLessThanOrEqual(640)
+  expect(contactLayout.footer?.height).toBeLessThanOrEqual(contactLayout.viewportWidth * 2.25)
+  expect(contactLayout.blobWrapDisplay).toBe('none')
   expect(contactLayout.scrollWidth).toBe(contactLayout.viewportWidth)
 })
 
