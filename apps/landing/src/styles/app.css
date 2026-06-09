@@ -29,12 +29,10 @@
 @keyframes mobile-card-reveal {
   from {
     opacity: 0.72;
-    filter: blur(5px);
     transform: translateY(26px) scale(0.985);
   }
   to {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0) scale(1);
   }
 }

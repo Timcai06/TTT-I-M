@@ -204,6 +204,42 @@ test('Mobile Frame and Work media stay inside the viewport', async ({ page }) =>
   expect(visibleImages.filter((image) => image.left < 0 || image.right > 390), JSON.stringify(visibleImages)).toHaveLength(0)
 })
 
+test('Mobile Work cards stay visually sharp during scroll', async ({ page }) => {
+  await openMobileHome(page)
+  await scrollChapterToTop(page, 'projects')
+
+  const samples = []
+  for (let step = 0; step < 4; step += 1) {
+    if (step > 0) {
+      await page.evaluate(() => window.scrollBy(0, 280))
+      await page.waitForTimeout(250)
+    }
+
+    samples.push(await page.evaluate(() => {
+      const visibleCards = [...document.querySelectorAll<HTMLElement>('#projects .project-card')]
+        .filter((card) => {
+          const rect = card.getBoundingClientRect()
+          return rect.width > 1 && rect.height > 1 && rect.bottom > 0 && rect.top < window.innerHeight
+        })
+        .map((card) => {
+          const rect = card.getBoundingClientRect()
+          const style = window.getComputedStyle(card)
+          return {
+            top: Math.round(rect.top),
+            bottom: Math.round(rect.bottom),
+            filter: style.filter,
+          }
+        })
+
+      return visibleCards
+    }))
+  }
+
+  const visibleCards = samples.flat()
+  expect(visibleCards.length).toBeGreaterThan(0)
+  expect(visibleCards.filter((card) => card.filter !== 'none'), JSON.stringify(visibleCards)).toHaveLength(0)
+})
+
 test('Mobile Cuisine and Scenery use readable in-viewport archive cards', async ({ page }) => {
   await openMobileHome(page)
 
