@@ -254,8 +254,28 @@
     display: flex;
     align-items: flex-end;
     background:
+      linear-gradient(135deg, rgba(120, 144, 168, 0.14), transparent 28%),
       radial-gradient(circle at 12% 0%, rgba(10, 10, 10, 0.08), transparent 34%),
       linear-gradient(180deg, #f5f4f1 0%, #eeeeea 100%);
+  }
+
+  .footer::before {
+    content: '';
+    position: absolute;
+    inset: 16px;
+    border: 1px solid rgba(10, 10, 10, 0.08);
+    border-radius: 18px;
+    pointer-events: none;
+  }
+
+  .footer__inner,
+  .contact__btn,
+  .footer__meta {
+    opacity: 1 !important;
+  }
+
+  .footer__title .split-line__inner {
+    transform: none !important;
   }
 
   .footer__content {
@@ -288,7 +308,10 @@
     min-height: 54px;
     padding: 13px 18px;
     font-size: 14px;
-    background: rgba(10, 10, 10, 0.035);
+    border-color: rgba(10, 10, 10, 0.18);
+    background:
+      linear-gradient(90deg, rgba(10, 10, 10, 0.055), rgba(10, 10, 10, 0.018));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
   }
 
   .contact__btn-text {

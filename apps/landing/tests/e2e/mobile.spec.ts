@@ -284,6 +284,9 @@ test('Mobile Contact keeps the final section compact and readable', async ({ pag
       items: rectOf('.contact__items'),
       firstButton: rectOf('.contact__btn'),
       blobWrapDisplay: window.getComputedStyle(document.querySelector<HTMLElement>('.contact__blob-wrap')!).display,
+      innerOpacity: Number(window.getComputedStyle(document.querySelector<HTMLElement>('.footer__inner')!).opacity),
+      buttonOpacity: Number(window.getComputedStyle(document.querySelector<HTMLElement>('.contact__btn')!).opacity),
+      metaOpacity: Number(window.getComputedStyle(document.querySelector<HTMLElement>('.footer__meta')!).opacity),
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
     }
@@ -294,6 +297,9 @@ test('Mobile Contact keeps the final section compact and readable', async ({ pag
   expect(contactLayout.items?.height).toBeLessThanOrEqual(120)
   expect(contactLayout.footer?.height).toBeLessThanOrEqual(contactLayout.viewportWidth * 2.25)
   expect(contactLayout.blobWrapDisplay).toBe('none')
+  expect(contactLayout.innerOpacity).toBe(1)
+  expect(contactLayout.buttonOpacity).toBe(1)
+  expect(contactLayout.metaOpacity).toBe(1)
   expect(contactLayout.scrollWidth).toBe(contactLayout.viewportWidth)
 })
 

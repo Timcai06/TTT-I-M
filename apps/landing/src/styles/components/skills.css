@@ -114,10 +114,18 @@
     padding: 22px 18px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.018);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(120, 144, 168, 0.10), transparent 42%),
+      rgba(255, 255, 255, 0.018);
+    box-shadow: 0 20px 64px rgba(0, 0, 0, 0.24);
     opacity: 1;
     transform: none;
     transition: none;
+  }
+
+  .skill-row:nth-child(2n) {
+    width: calc(100% - 18px);
+    margin-left: 18px;
   }
 
   .skill-row__index {

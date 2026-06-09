@@ -847,6 +847,9 @@
     overflow: visible;
     contain: none;
     padding-block: 72px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(120, 144, 168, 0.04), transparent 30%),
+      linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.012), transparent);
   }
 
   .archive-theme-section__pin {
@@ -923,6 +926,19 @@
     background:
       radial-gradient(circle at 0% 0%, rgba(120, 144, 168, 0.08), transparent 42%),
       rgba(255, 255, 255, 0.018);
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.32);
+  }
+
+  .archive-cluster--theme-cuisine {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(214, 197, 168, 0.13), transparent 42%),
+      rgba(255, 255, 255, 0.02);
+  }
+
+  .archive-cluster--theme-scenery {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(120, 144, 168, 0.15), transparent 44%),
+      rgba(255, 255, 255, 0.018);
   }
 
   .archive-cluster--theme-cuisine.archive-cluster--feature-left,
@@ -961,6 +977,7 @@
     border-radius: 10px;
     justify-self: stretch;
     align-self: auto;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
   }
 
   .archive-slot--portrait .archive-slot__media,
@@ -980,6 +997,11 @@
 
   .archive-theme-marker {
     padding-top: clamp(18px, 5vw, 36px);
+    border-left: 1px solid var(--line-strong);
+    padding-left: 18px;
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03), transparent),
+      transparent;
   }
 
   .archive-cluster-marker {
@@ -997,5 +1019,15 @@
   .archive-slot__caption {
     font-size: 10px;
     width: 100%;
+  }
+
+  .archive-slot:nth-child(2n) {
+    transform: translateX(10px) !important;
+    width: calc(100% - 10px);
+  }
+
+  .archive-slot:nth-child(3n) {
+    transform: translateX(-6px) !important;
+    width: calc(100% - 6px);
   }
 }
