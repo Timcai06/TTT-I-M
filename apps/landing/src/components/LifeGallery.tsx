@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { gsap, Flip } from '../lib/gsap'
 import { photos } from '../content'
+import { useMobileExperience } from '../lib/device'
 
 export default function LifeGallery() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
   const ctxRef = useRef<gsap.Context | null>(null)
+  const mobile = useMobileExperience()
 
   useEffect(() => {
+    if (mobile) return
     const gallery = galleryRef.current
     const wrap = wrapRef.current
     if (!gallery || !wrap) return
@@ -132,9 +135,10 @@ export default function LifeGallery() {
       window.removeEventListener('resize', createFlip)
       ctxRef.current?.revert()
     }
-  }, [])
+  }, [mobile])
 
   useEffect(() => {
+    if (mobile) return
     const wrap = wrapRef.current
     if (!wrap) return
 
@@ -161,7 +165,7 @@ export default function LifeGallery() {
     }, wrap)
 
     return () => ctx.revert()
-  }, [])
+  }, [mobile])
 
   return (
     <section className="life" id="life" ref={wrapRef}>

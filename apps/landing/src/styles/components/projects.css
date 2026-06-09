@@ -447,3 +447,143 @@
   .project-card:hover .project-card__title { transform: none; }
   .project-card:hover .project-card__cn { transform: none; }
 }
+
+@media (max-width: 768px) {
+  .projects {
+    padding-top: 112px;
+    padding-bottom: 96px;
+  }
+
+  .projects__header {
+    display: block;
+  }
+
+  .projects .section__title {
+    font-size: clamp(48px, 15vw, 68px);
+  }
+
+  .projects__header-side {
+    max-width: none;
+    margin-top: 24px;
+    font-size: 13px;
+  }
+
+  .projects__list {
+    gap: 22px;
+    margin-top: 42px;
+    border-top: 0;
+  }
+
+  .projects__list:hover .project-card:not(:hover) {
+    opacity: 1;
+  }
+
+  .project-card {
+    gap: 24px;
+    padding: 22px 18px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 38%),
+      rgba(255, 255, 255, 0.018);
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .project-card__top {
+    margin-bottom: 18px;
+  }
+
+  .project-card__title {
+    font-size: clamp(30px, 10vw, 44px);
+    line-height: 0.98;
+    overflow-wrap: anywhere;
+  }
+
+  .project-card__cn,
+  .project-card__tagline,
+  .project-card__desc,
+  .project-card__highlights,
+  .project-card__stack {
+    margin-bottom: 18px;
+  }
+
+  .project-card__desc,
+  .project-card__highlights {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .project-card__stack {
+    gap: 7px 10px;
+    letter-spacing: 0.12em;
+    line-height: 1.6;
+  }
+
+  .project-card__stack span::after {
+    margin-left: 10px;
+  }
+
+  .project-card__links {
+    flex-wrap: wrap;
+  }
+
+  .project-card__link {
+    min-height: 44px;
+    padding: 11px 16px;
+  }
+
+  .project-card__media {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .media-frame {
+    clip-path: inset(0 0 0 0);
+    width: 100%;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .media-frame__stage,
+  .media-frame--data .media-frame__stage,
+  .media-frame--soon {
+    aspect-ratio: 16 / 10;
+  }
+
+  .media-frame--cinematic .media-frame__stage {
+    aspect-ratio: 16 / 10;
+  }
+
+  .media-frame__chrome {
+    height: 30px;
+    padding-inline: 10px;
+    gap: 8px;
+  }
+
+  .media-frame__img {
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    background: #0c0c0e;
+    transform: none !important;
+  }
+
+  .media-frame--cinematic .media-frame__img {
+    object-fit: cover;
+  }
+
+  .media-frame__thumbs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .media-thumb {
+    flex: none;
+    min-width: 0;
+    min-height: 44px;
+  }
+}

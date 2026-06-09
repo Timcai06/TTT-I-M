@@ -113,6 +113,97 @@ test('Mobile About leads with text and avoids a WebGL particle gap', async ({ pa
   expect(aboutLayout.scrollWidth).toBe(aboutLayout.viewportWidth)
 })
 
+test('Mobile Life gallery uses wide in-flow image cards', async ({ page }) => {
+  await openMobileHome(page)
+  await scrollChapterToTop(page, 'life')
+
+  const lifeLayout = await page.evaluate(() => {
+    const galleryWrap = document.querySelector<HTMLElement>('#life .gallery-wrap')
+    const overlay = document.querySelector<HTMLElement>('#life .life__intro-overlay')
+    const images = [...document.querySelectorAll<HTMLImageElement>('#life .gallery__item img')]
+      .filter((img) => {
+        const rect = img.getBoundingClientRect()
+        return rect.width > 1 && rect.height > 1 && rect.bottom > 0 && rect.top < window.innerHeight
+      })
+      .map((img) => {
+        const rect = img.getBoundingClientRect()
+        return {
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        }
+      })
+
+    return {
+      wrapPosition: galleryWrap ? window.getComputedStyle(galleryWrap).position : '',
+      overlayDisplay: overlay ? window.getComputedStyle(overlay).display : '',
+      images,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }
+  })
+
+  expect(lifeLayout.wrapPosition).toBe('relative')
+  expect(lifeLayout.overlayDisplay).toBe('none')
+  expect(lifeLayout.images.length).toBeGreaterThan(0)
+  expect(lifeLayout.images.filter((image) => image.width <= image.height), JSON.stringify(lifeLayout.images)).toHaveLength(0)
+  expect(lifeLayout.images.filter((image) => image.left < 0 || image.right > lifeLayout.viewportWidth), JSON.stringify(lifeLayout.images)).toHaveLength(0)
+  expect(lifeLayout.scrollWidth).toBe(lifeLayout.viewportWidth)
+})
+
+test('Mobile Frame and Work media stay inside the viewport', async ({ page }) => {
+  await openMobileHome(page)
+
+  const samples = []
+  for (const id of ['frame', 'projects']) {
+    await scrollChapterToTop(page, id)
+    for (let step = 0; step < 4; step += 1) {
+      if (step > 0) {
+        await page.evaluate(() => window.scrollBy(0, 420))
+        await page.waitForTimeout(300)
+      }
+      samples.push(await page.evaluate((chapterId) => {
+        const images = [...document.querySelectorAll<HTMLImageElement>(`#${chapterId} img`)]
+          .filter((img) => {
+            const rect = img.getBoundingClientRect()
+            const style = window.getComputedStyle(img)
+            return rect.width > 1
+              && rect.height > 1
+              && rect.bottom > 0
+              && rect.top < window.innerHeight
+              && style.display !== 'none'
+              && style.visibility !== 'hidden'
+          })
+          .map((img) => {
+            const rect = img.getBoundingClientRect()
+            return {
+              chapterId,
+              alt: img.alt,
+              left: Math.round(rect.left),
+              right: Math.round(rect.right),
+              top: Math.round(rect.top),
+              bottom: Math.round(rect.bottom),
+              width: Math.round(rect.width),
+              height: Math.round(rect.height),
+            }
+          })
+        return {
+          chapterId,
+          images,
+          scrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        }
+      }, id))
+    }
+  }
+
+  const visibleImages = samples.flatMap((sample) => sample.images)
+  expect(visibleImages.length).toBeGreaterThan(0)
+  expect(samples.filter((sample) => sample.scrollWidth !== sample.viewportWidth), JSON.stringify(samples)).toHaveLength(0)
+  expect(visibleImages.filter((image) => image.left < 0 || image.right > 390), JSON.stringify(visibleImages)).toHaveLength(0)
+})
+
 test('Mobile Contact keeps the final section compact and readable', async ({ page }) => {
   await openMobileHome(page)
   await scrollChapterToTop(page, 'contact')
