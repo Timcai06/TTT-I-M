@@ -2,11 +2,10 @@ import { DEFAULT_META, type WithMeta } from '../schema'
 import type { CollectionRepository } from '../repositories'
 
 /**
- * Static adapter — backs a collection with a bundled in-repo array (today's
- * source for every landing collection). `all()` hands back the array directly
- * (sync, zero copy); `list()`/`get()` satisfy the async contract and stamp the
- * default ContentMeta. Future adapters (mdx.ts, api.ts) implement the same
- * CollectionRepository against MDX files or a DB without touching components.
+ * @description 静态内容适配器，把仓库内手写数组包装成 landing 统一 CollectionRepository
+ * @dependencies DEFAULT_META、CollectionRepository 契约和调用方传入的 getId
+ * @performance all() 同步零拷贝返回原数组，避免 landing 首帧内容等待异步数据；list/get 仅为未来适配器保持异步形态
+ * @caveats all() 返回原始数组引用，组件层不要修改；未来接 MDX/API/DB 时保持同一 repository 接口即可
  */
 export function createStaticRepository<T>(
   items: T[],

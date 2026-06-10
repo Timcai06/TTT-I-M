@@ -1,52 +1,63 @@
 /**
- * Turn a line (or two) of text into a cloud of particle target points, with no
- * DOM-per-glyph and no layout thrash: the text is laid out and rasterised once
- * on an offscreen 2D canvas, then the filled pixels are sampled on a grid. The
- * renderer (TextParticles) tweens particles between a scatter origin and these
- * targets. At the portfolio's text scale native `measureText` is instant, so
- * no pretext dependency is needed.
+ * @description 单个文字粒子的目标点和散点随机种子，由离屏 canvas 采样阶段一次性生成
  */
-
 export interface ParticleTarget {
-  /** Target position in canvas px (where the glyph ink is). */
+  /** 目标 X 坐标，单位为 canvas px，对应文字墨迹像素 */
   x: number
+  /** 目标 Y 坐标，单位为 canvas px，对应文字墨迹像素 */
   y: number
-  /** Per-particle randoms in [-0.5, 0.5] for the scatter origin (x/y/z). */
+  /** 散点初始 X 随机值，范围约 [-0.5, 0.5] */
   rx: number
+  /** 散点初始 Y 随机值，范围约 [-0.5, 0.5] */
   ry: number
+  /** 散点初始 Z 随机值，范围约 [-0.5, 0.5] */
   rz: number
-  /** Formation stagger 0–1. */
+  /** 粒子成形延迟，范围 0–1 */
   delay: number
-  /** Colour-variance seed 0–1. */
+  /** 粒子颜色差异种子，范围 0–1 */
   seed: number
 }
 
+/**
+ * @description 一段文字采样后的粒子场数据，供 TextParticles 映射到 R3F 世界坐标
+ */
 export interface TextParticleField {
+  /** 离屏 canvas 宽度，单位 CSS px */
   width: number
+  /** 离屏 canvas 高度，单位 CSS px */
   height: number
+  /** 被采样出来的文字墨迹目标点集合 */
   targets: ParticleTarget[]
 }
 
+/**
+ * @description 构建文字粒子场的输入参数，控制排版、采样密度和粒子数量上限
+ */
 export interface TextParticleOptions {
+  /** 要被采样的真实文案 */
   text: string
-  /** Wrap width in CSS px. */
+  /** 文本换行宽度，单位 CSS px */
   maxWidth: number
+  /** 采样时使用的字号，单位 px */
   fontSize: number
+  /** 采样时使用的字体族，需和视觉层 CSS serif 尽量一致 */
   fontFamily: string
+  /** 字重，默认 500 */
   fontWeight?: number | string
-  /** Multiplier on fontSize for line spacing. */
+  /** 行高倍率，乘以 fontSize 得到每行高度 */
   lineHeightRatio?: number
-  /** Grid spacing (px) between samples — smaller = denser cloud. */
+  /** 采样网格间距，越小粒子越密、CPU/GPU 成本越高 */
   sampleGap?: number
-  /** Hard cap on particle count (random subsample beyond it). */
+  /** 粒子数量硬上限，超出后随机均匀截断 */
   maxTargets?: number
-  /** Alpha (0–255) above which a pixel counts as "ink". */
+  /** alpha 阈值，超过该值的像素才被视为文字墨迹 */
   alphaThreshold?: number
 }
 
 /**
- * Split into wrap tokens: whitespace runs, single CJK glyphs (which wrap
- * per-character), and contiguous latin/number runs (which wrap per-word).
+ * @description 将文本拆成换行 token：空白、单个 CJK 字符、连续拉丁/数字词
+ * @dependencies Unicode CJK 范围正则
+ * @caveats CJK 按字换行，英文/数字按词换行，避免中文长句被当成一个无法换行的大 token
  */
 function tokenize(text: string): string[] {
   // CJK ranges: U+3000-303F punctuation, U+3400-4DBF Ext-A, U+4E00-9FFF
@@ -60,6 +71,11 @@ function tokenize(text: string): string[] {
   return tokens
 }
 
+/**
+ * @description 使用 canvas measureText 执行轻量换行，生成采样前的行数组
+ * @dependencies CanvasRenderingContext2D.measureText
+ * @performance 只在 effect 中调用，不在 React render 中读 DOM；当前文本规模下成本很低
+ */
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = []
   let line = ''
@@ -76,6 +92,17 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): st
   return lines.length > 0 ? lines : ['']
 }
 
+/**
+ * @description 把一段文字离屏绘制到 2D canvas，并将不透明文字像素采样为粒子目标点
+ * @dependencies 浏览器 canvas 2D、measureText、getImageData
+ * @performance sampleGap 和 maxTargets 是主要成本阀门；随机值只在这里生成，R3F 渲染层保持确定性映射
+ * @caveats 需要在浏览器环境调用；如果 canvas context 不可用，返回空 targets 让视觉层自然降级
+ * @steps
+ * step1: 根据 maxWidth/fontSize/fontFamily 计算换行和 canvas 尺寸
+ * step2: 在离屏 canvas 居中绘制每一行文字
+ * step3: 按 sampleGap 扫描 alpha 像素，生成目标点和散点随机种子
+ * step4: 超过 maxTargets 时洗牌截断，保持粒子云分布均匀
+ */
 export function buildTextParticleField(opts: TextParticleOptions): TextParticleField {
   const {
     text,

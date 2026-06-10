@@ -1,11 +1,29 @@
 import { gsap } from '../gsap'
 
+/**
+ * @description 章节转场 timeline 在关键帧上回调 React/滚动状态的桥接函数集合
+ */
 export interface TransitionTimelineCallbacks {
+  /** 目标章节名已经可见，可以启用 Pretext glyph 测量和指针扰动 */
   onRevealTarget: () => void
+  /** 快门闭合到黑场，可以执行立即跳转、刷新 ScrollTrigger、派发 arrived 事件 */
   onLand: () => void
+  /** 快门打开且视觉层退场完成，可以把 stage 恢复为 live */
   onComplete: () => void
 }
 
+/**
+ * @description 创建章节点击后的电影感快门转场 timeline，保持页面布局稳定，只动画 overlay 元素
+ * @dependencies GSAP timeline、ChapterTransition DOM 结构和 TransitionTimelineCallbacks
+ * @performance 只动画 transform、opacity、filter、clipPath 和 textShadow；不移动页面主体，避免破坏 ScrollTrigger 测量
+ * @caveats `_rail` 参数保留给旧签名兼容，当前不使用；调用方负责 reduced-motion 分支和 stage 状态切换
+ * @steps
+ * step1: 初始化快门、grain、aura、seam 和目标字符状态
+ * step2: 0–0.35s 快门闭合覆盖当前章节
+ * step3: 0.18–0.55s 展示目标章节名、编号、光晕和噪点
+ * step4: 0.5s 触发 onLand，在黑场中执行真实章节跳转
+ * step5: 0.65–1.0s 快门打开并淡出转场视觉层
+ */
 export function createTransitionTimeline(
   root: HTMLElement,
   _rail: HTMLElement | null,

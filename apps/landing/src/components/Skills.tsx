@@ -9,10 +9,10 @@ import { skillRows as rows } from '../content'
  *   含分类标签、工具链、项目落地引用。
  *
  *   视觉亮点：在技能列表左侧绘制一条流动的三段式贝塞尔曲线 (蛇形 S 走势)，
- *   随滚动以 strokeDashoffset 方式 "生长"，80px 线宽，红色 (--accent) 描边。
+ *   红色 active 线段的前端跟随屏幕垂直中心，用户滚动时看到的是线条被视口持续“牵引”。
  *
  * @dependencies
- *   - GSAP + ScrollTrigger (strokeDashoffset scrubbing + 逐行入场)
+ *   - GSAP + ScrollTrigger (视口中心同步 strokeDasharray + 逐行入场)
  *   - `scrollToChapter` (技能标签 to→项目章节跳转)
  *   - 自适应 SVG 路径：通过 getBoundingClientRect 动态计算起点/终点，resize 时重新生成
  *
@@ -26,7 +26,7 @@ import { skillRows as rows } from '../content'
  *
  * @steps
  *   step1: Effect 1 — 动态测量并构建三段式蛇形贝塞尔曲线 pathD
- *   step2: Effect 2 — 将 pathD 绑定到 GSAP strokeDashoffset scrubbing（滚动即画线）
+ *   step2: Effect 2 — 将视口中心 Y 映射到 path length，并通过 strokeDasharray 更新 active 线段
  *   step3: Effect 3 — 标题裂分入场 + 技能行逐行 staggered reveal（120ms 间隔，双向回退）
  */
 export default function Skills() {
