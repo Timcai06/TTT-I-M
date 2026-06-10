@@ -20,10 +20,17 @@ export interface Post {
 export interface WorkEntry {
   description: string
   href: string
+  liveUrl?: string
   meta: ContentMeta
+  notes?: string[]
+  repository?: string
   slug: string
+  stack?: string[]
+  status?: string
+  summary?: string
   tags: string[]
   title: string
+  year?: string
 }
 
 export interface CollectionRepository<T extends { slug: string }> {
