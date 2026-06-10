@@ -348,15 +348,60 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+.studio-article--post {
+  max-width: 820px;
+}
+
+.studio-article__header {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 34px;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.studio-meta-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.studio-meta-strip div {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg);
+}
+
+.studio-meta-strip dt,
+.studio-meta-strip dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.studio-meta-strip dt {
+  color: var(--fg-dim);
+}
+
+.studio-meta-strip dd {
+  color: var(--fg-mute);
+}
+
 /* ── MDX body ────────────────────────────────────────────────────────────── */
 
 .studio-mdx {
   display: grid;
-  gap: 28px;
+  gap: 30px;
   padding-top: 52px;
   color: var(--fg-soft);
   font-size: clamp(17px, 1.65vw, 20px);
-  line-height: 1.8;
+  line-height: 1.82;
 }
 
 .studio-mdx h1,
