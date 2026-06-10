@@ -24,6 +24,10 @@
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.7",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/noto-serif-sc": "^5.2.9",
+    "@fontsource/playfair-display": "^5.2.8",
     "@gsap/react": "^2.1.2",
     "@react-three/fiber": "^9.6.1",
     "@vercel/analytics": "^2.0.1",
