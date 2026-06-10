@@ -4,6 +4,25 @@ import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
 import { projects, type Project } from '../content'
 
+/**
+ * @description 项目卡片右侧媒体展示器。根据 `Project.media.kind` 切换 cinematic / ui / terminal / data 四种外观，
+ *   并在多截图项目中提供缩略图 hover/focus/click 切换。该组件只负责单张项目卡片内的媒体状态，
+ *   不参与外层 ScrollTrigger 入场动画，避免项目卡片滚动生命周期和截图切换状态互相耦合。
+ * @dependencies
+ *   - `Project.media` 数据契约（`kind` 决定 Chrome 框样式，`shots` 决定截图序列）
+ *   - CSS 类 `media-frame--{kind}` / `media-thumb.is-active`
+ *   - 浏览器原生 lazy image loading
+ * @performance / @caveats
+ *   - 所有截图 DOM 会同时渲染，通过 `.is-active` 控制显示层级；这样切换时不重新 mount 图片，
+ *     代价是多帧项目会多占用少量解码/内存预算，适合当前每个项目截图数量较少的场景。
+ *   - 缩略图事件同时绑定 mouseenter/focus/click，保证桌面 hover、键盘可访问性和触摸点击都能切换。
+ *   - `project.media` 缺失时渲染 soon 占位，避免未公开项目破坏 Projects 列表布局。
+ * @steps
+ *   step1: 若 media 缺失，返回稳定占位态
+ *   step2: 取 active 下标对应截图，生成不同 media kind 的 chrome label
+ *   step3: 渲染全部截图帧，并给当前帧加 `.is-active`
+ *   step4: 多帧项目渲染缩略图导航器，事件更新 active 下标
+ */
 function ProjectMedia({ project }: { project: Project }) {
   const [active, setActive] = useState(0)
 
@@ -84,6 +103,32 @@ function ProjectMedia({ project }: { project: Project }) {
   )
 }
 
+/**
+ * @description Projects 章节 —— 六个工程项目的卡片式展示。
+ *   标题裂分入场 + 每张卡片通过 ScrollTrigger onEnter 添加 `.is-visible` 类触发 CSS 过渡。
+ *   每张卡片分为左右两部分：左侧文本 (编号/年份/标题/描述/亮点/技术栈/链接)，
+ *   右侧项目媒体 (根据 MediaKind 渲染不同 Chrome 框的截图展示)。
+ *
+ *   ProjectMedia 子组件处理单帧/多帧切换：多帧时显示缩略图导航器，hover/click 切换 active 帧。
+ *
+ * @dependencies
+ *   - GSAP + ScrollTrigger + gsap.context + gsap.utils.toArray
+ *   - `attachTilt` (每个 media-frame 的 damped 3D tilt 交互，触摸/降动时自动 no-op)
+ *   - `requestScrollRefresh` (在所有 card 绑定后刷新 ScrollTrigger 测量)
+ *
+ * @performance / @caveats
+ *   - tilt 交互在每个 media-frame 上独立运行（各自一个 gsap.ticker callback），
+ *     单帧内仅写入 rotateX/rotateY (GPU 合成)，不触发布局
+ *   - onEnter/onLeaveBack 的双向触发确保卡片进入/退出视口时 CSS transition 自然反转
+ *   - 媒体图片使用 `loading="lazy"` 延迟加载；非首屏项目不抢占网络带宽
+ *
+ * @steps
+ *   step1: 标题裂分入场 (split-line stagger)
+ *   step2: 每张 card 绑定 ScrollTrigger.onEnter → 添加 is-visible CSS 过渡
+ *   step3: 每张 card 注入 data-accent 色彩到 CSS 变量 --accent
+ *   step4: requestScrollRefresh 确保 ScrollTrigger 在测量完成后刷新
+ *   step5: 每个 media-frame 绑定 attachTilt（独立生命周期，在 ctx.revert 之外手动清理）
+ */
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
 

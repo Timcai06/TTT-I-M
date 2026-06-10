@@ -256,7 +256,25 @@ function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; textu
   )
 }
 
-/** Imperative texture loader — handles 404 gracefully, ref-counted via cache. */
+/**
+ * @description WebGL 纹理加载 hook。通过全局 `textureCache` 获取共享纹理，保证 Hero 粒子层在
+ *   scroll-away 卸载、scroll-back 重挂载时不重复上传同一张照片纹理。
+ * @dependencies
+ *   - Three.js Texture filter 参数（LinearFilter / generateMipmaps=false）
+ *   - `acquireTexture` / `releaseTexture` 引用计数缓存
+ *   - public 目录中的 `/portrait/tim.jpg`
+ * @performance / @caveats
+ *   - `generateMipmaps=false` 是有意取舍：粒子点云以点采样和 alpha 混合为主，不需要完整 mip 链，
+ *     可减少纹理上传后的 GPU 内存占用。
+ *   - effect cleanup 总是调用 `releaseTexture(src)`；即使 Promise 尚未 resolve，也通过 `cancelled`
+ *     阻止 setState，避免卸载后写入 React 状态。
+ *   - 纹理加载失败只设置 `failed=true` 并返回 null 场景，Hero 仍由 CSS ghost photo 承担兜底视觉。
+ * @steps
+ *   step1: acquireTexture(src) 从共享缓存获取或新建纹理
+ *   step2: 配置纹理 filter 与 mipmap 策略
+ *   step3: 成功时写入 texture state；失败时写入 failed state
+ *   step4: cleanup 释放当前 src 的引用计数
+ */
 function useImperativeTexture(src: string) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const [failed, setFailed] = useState(false)
@@ -289,6 +307,16 @@ function useImperativeTexture(src: string) {
   return { texture, failed }
 }
 
+/**
+ * @description WebGL Canvas 错误边界。用于捕获 R3F/Three 在运行时可能抛出的 context lost、
+ *   shader compile 或设备能力异常，让 Hero 降级为空 Canvas 而不是整站白屏。
+ * @dependencies React class ErrorBoundary；下层 Canvas 由 `ParticlePortrait` 挂载
+ * @performance / @caveats 捕获后直接返回 null，不做重试；重试 WebGL context 可能造成连续崩溃或 GPU 压力放大
+ * @steps
+ *   step1: getDerivedStateFromError 标记 errored=true
+ *   step2: componentDidCatch 输出轻量 warning，保留组件栈用于调试
+ *   step3: render 阶段返回 null，由 Hero 静态 ghost 视觉兜底
+ */
 class CanvasErrorBoundary extends Component<{ children: ReactNode }, { errored: boolean }> {
   state = { errored: false }
   static getDerivedStateFromError() { return { errored: true } }
@@ -300,12 +328,61 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, { errored: 
   }
 }
 
+/**
+ * @description 粒子肖像场景桥接层。先解析纹理加载状态，再决定是否挂载真正的 `PortraitPoints`。
+ * @dependencies `useImperativeTexture` 负责纹理缓存和失败兜底；`PortraitPoints` 负责几何与 shader 动画
+ * @performance / @caveats 在纹理未就绪或失败时返回 null，避免创建空材质/空几何造成无意义 GPU work
+ */
 function PortraitScene({ quality, src }: { quality: GLQualityProfile; src: string }) {
   const { texture, failed } = useImperativeTexture(src)
   if (failed || !texture) return null
   return <PortraitPoints quality={quality} texture={texture} />
 }
 
+/**
+ * @description 粒子肖像 —— Hero 章节的 WebGL 核心视觉层。
+ *   将 Tim 的照片转换为点云粒子场 (R3F Canvas + 自定义 GLSL 着色器)，
+ *   以 GPU 驱动的顶点着色器实现以下效果：
+ *     1. 亮度→Z 轴位移：暗区域凹陷，亮区域凸起，形成伪 3D 浮雕
+ *     2. Simplex Noise 微动：粒子随时间缓慢漂移，制造 "呼吸感"
+ *     3. 鼠标互动排斥：粒子避开指针，产生 "推开" 交互
+ *     4. 亮度→PointSize：高亮像素渲染更大粒子，边缘像素缩小
+ *     5. 入场动效：introUniform (0→1) 控制粒子从 Z 深处浮出
+ *
+ *   智能生命周期 (useGLSurface):
+ *     - visible margin (120px): 在此 band 内 frameloop="always" 运行着色器
+ *     - mount margin (100% viewport): 在此 band 外 Canvas 完全卸载，释放 WebGL context / textures / geometry
+ *     - 两边界之间的 hysteresis 防止 mount/unmount 频繁切换
+ *
+ * @dependencies
+ *   - React Three Fiber (Canvas, useFrame, useThree)
+ *   - Three.js (ShaderMaterial, BufferGeometry, Points)
+ *   - GLSL vertex/fragment shaders (Simplex noise, sRGB luma, edge detection)
+ *   - `useGLSurface` (双 IntersectionObserver smart mount/pause)
+ *   - `getGLQualityProfile` (设备能力自适应 particle count + DPR 上限)
+ *   - `acquireTexture / releaseTexture` (引用计数纹理缓存)
+ *   - `contextRegistry` (WebGL context 预算管理 —— 仅允许有限数量的并发 WebGL 场景)
+ *   - `useReducedMotion` (降动时完全跳过 Canvas 渲染)
+ *
+ * @performance / @caveats
+ *   - `geometry.setDrawRange(0, 0)` — 在没有纹理时阻止 GPU 绘制任何粒子 (避免空白帧开销)
+ *   - 着色器内置 edge detection (Sobel-like, 相邻像素亮度差) —— edge 像素使用更大 alpha/pointsSize，
+ *     在粒子密度较低 (移动端) 时保持边缘可见
+ *   - `uPixelRatio` 传入着色器以适配 Retina/HiDPI 屏幕点大小
+ *   - `useFrame` 中 `introRef` 仅在前 2.2s 递增 (0→1)，之后跳过计算分支节省 GPU ALU
+ *   - `CanvasErrorBoundary` 捕获 WebGL context lost 等异常，静默降级为 null (幽灵照片替代)
+ *   - `acquireTexture` 使用 shared cache + refcount → 快速重挂载时复用已加载纹理，卸载时最后一个引用释放才 dispose
+ *
+ * @steps
+ *   step1: 检查 reduced-motion (OS 降动) → 如果开启，返回 null
+ *   step2: useGLSurface 返回 { visible, mounted } → 控制 Canvas frameloop 与 挂载
+ *   step3: getGLQualityProfile → 根据设备能力返回 particle count / size / DPR
+ *   step4: acquireContext → 注册 WebGL context 到全局预算
+ *   step5: Canvas 渲染 (仅当 mounted) → PortraitScene
+ *   step6:   useImperativeTexture → acquireTexture (shared cache)
+ *   step7:   PortraitPoints → 构建 BufferGeometry + 着色器 → useFrame (animate intro + mouse)
+ *   step8: 卸载时释放 context + texture refcount
+ */
 export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: string }) {
   // Smart mount/pause lifecycle (dual IntersectionObserver + hysteresis) is now
   // the shared GL-surface contract. `visible` gates the render loop; `mounted`

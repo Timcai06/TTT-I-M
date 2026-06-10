@@ -13,6 +13,10 @@ interface IdleCallbackWindow {
 const MIN_IDLE_BUDGET_MS = 6
 const DEFAULT_IDLE_TIMEOUT_MS = 1800
 
+/**
+ * 等待 idle decode 的图片队列。
+ * 每个 item 对应一个已经 onload 且 naturalWidth > 0 的 HTMLImageElement。
+ */
 const queue: Array<{
   image: HTMLImageElement
   reject: (error: unknown) => void
@@ -21,6 +25,11 @@ const queue: Array<{
 
 let scheduled = false
 
+/**
+ * @description 调度一次空闲任务。优先使用 `requestIdleCallback`，不支持时回退到 32ms timeout。
+ * @dependencies 浏览器 `requestIdleCallback` / `setTimeout`
+ * @performance / @caveats fallback 的 `didTimeout=true` 表示没有真实 idle budget，只允许队列按保守节奏释放。
+ */
 function schedule(callback: (deadline: IdleDeadlineLike) => void) {
   const idleWindow = window as IdleCallbackWindow
   if (typeof idleWindow.requestIdleCallback === 'function') {
@@ -33,6 +42,19 @@ function schedule(callback: (deadline: IdleDeadlineLike) => void) {
   }), 32)
 }
 
+/**
+ * @description 按 idle budget 分片执行图片 decode。
+ *   每轮只取一个图片，避免一次 idle callback 内连续 decode 多张大图造成主线程长任务。
+ * @dependencies `HTMLImageElement.decode`
+ * @performance / @caveats
+ *   - `MIN_IDLE_BUDGET_MS=6` 是每轮继续处理的最低预算；低于该值就让出一帧。
+ *   - decode reject 不在这里吞掉，交给调用方决定是否作为非致命跳过。
+ *   - `scheduled` 是全局门闩，防止大量图片同时入队时注册多个 idle callback。
+ * @steps
+ *   step1: 取出队首图片并执行 decode
+ *   step2: resolve/reject 当前 Promise
+ *   step3: 若队列仍有任务，根据 idle budget 决定立即续排或下一帧再排
+ */
 function runQueue(deadline: IdleDeadlineLike) {
   scheduled = false
 
@@ -57,6 +79,13 @@ function runQueue(deadline: IdleDeadlineLike) {
   })
 }
 
+/**
+ * @description 将已加载图片加入 idle decode 队列。
+ *   用于 deferred 图片：网络加载完成后不立即同步 decode，而是在浏览器空闲片段中释放解码压力。
+ * @dependencies `runQueue` / `schedule`
+ * @performance / @caveats 只接受 complete 且 naturalWidth > 0 的图片；未完成图片直接 resolve，
+ *   因为加载失败/未加载的判定属于 `loadImage` 负责。
+ */
 export function enqueueImageDecode(image: HTMLImageElement): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
   if (!image.complete || image.naturalWidth <= 0) return Promise.resolve()

@@ -38,6 +38,38 @@ function splitText(text: string, className: string) {
   })
 }
 
+/**
+ * @description 章节过渡动画层 —— 点击导航时的全屏快门式过渡效果。
+ *   由上/下半快门 (shutter) + grain 噪点层 + aura 光晕层组成。
+ *   显示目标章节的 SEC 编号和名称，名称字符绑定 pretext 互动（指针漂浮）。
+ *
+ *   流程：导航点击 → `setStage('transitioning')` → 快门合拢 → 显示目标章节名
+ *   → 快门打开 → scrollToChapter (immediate) → ScrollTrigger.refresh → dispatchChapterArrived
+ *   → `setStage('live')`。
+ *
+ *   如果过渡中又收到新请求，排队到 `queuedRef`，当前过渡完成后立即执行。
+ *
+ * @dependencies
+ *   - GSAP timeline (createTransitionTimeline)
+ *   - `stage` 状态机 (transitioning ↔ live)
+ *   - `chapterTransition` 事件总线 (onChapterTransitionRequest)
+ *   - `scrollToChapter` (final jump, immediate mode)
+ *   - `usePretextTextInteraction` (目标名文字漂浮)
+ *   - `prefersReducedMotion` (降动时跳过过渡，直接 immediate scroll)
+ *
+ * @performance / @caveats
+ *   - 降动 (reduced-motion) 下完全跳过快门动画，直接 immediate scroll — 避免触发任何基于 transform 的着色器
+ *   - `setPretextReady` 由 transitionTimeline 的 onRevealTarget 回调触发 ——
+ *     保证 pretext glyph 在快门打开/目标名可见时才初始化，不会在隐藏时计算 DOM 尺寸
+ *   - 过渡过程中 Lenis 被 stage→transitioning 冻结 (`lenis.stop()`)，过渡完成后恢复 (`lenis.start()`)
+ *
+ * @steps
+ *   step1: onChapterTransitionRequest 监听事件 → 若为 transitioning 则排队
+ *   step2: setStage('transitioning') → setActive(true) → 快门动画入场
+ *   step3: onRevealTarget → setPretextReady → 激活 glyph 漂浮交互
+ *   step4: onLand → scrollToChapter + ScrollTrigger.refresh + dispatchChapterArrived
+ *   step5: onComplete → setStage('live') → 如果有排队请求则递归执行
+ */
 export default function ChapterTransition() {
   const rootRef = useRef<HTMLDivElement>(null)
   const targetNameRef = useRef<HTMLSpanElement>(null)

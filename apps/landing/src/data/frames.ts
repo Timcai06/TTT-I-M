@@ -1,45 +1,79 @@
 import { frameImageSources } from './frameImageSources.generated'
 
+/**
+ * Frame 章节的类型体系 —— 摄影存档网格的完整数据契约。
+ * 结构层级：ArchiveTheme (主题) → ArchiveCluster (集群) → ArchiveSlot (槽位) → ArchiveImage (图片)。
+ * @dependencies Frame 组件 + frame/ 子组件消费此类型树；`frameImageSources.generated.ts` 提供响应式 srcSet
+ * @caveats 图片尺寸通过 `buildingDimensions` / `cuisineDimensions` / `sceneryDimensions` 硬编码映射，
+ *   新增照片时需同步更新对应映射表，否则 Frame 渲染会抛出 `Missing frame image dimensions` 异常
+ */
 export type ArchiveThemeId = 'building' | 'cuisine' | 'scenery'
+
+/** 水平滚动方向：从左往右（奇数主题）或从右往左（偶数主题），交错形成蛇形浏览节奏。 */
 export type ArchiveDirection = 'left-to-right' | 'right-to-left'
+
+/** 集群布局算法 —— 决定 slot 在视口中的空间分配模式。 */
 export type ArchiveClusterLayout =
-  | 'feature-left'
-  | 'feature-right'
-  | 'stack-left'
-  | 'stack-right'
-  | 'panorama'
-  | 'mosaic-left'
-  | 'mosaic-right'
+  | 'feature-left'    // 主图左，辅图右
+  | 'feature-right'   // 主图右，辅图左
+  | 'stack-left'       // 垂直堆叠，靠左
+  | 'stack-right'      // 垂直堆叠，靠右
+  | 'panorama'         // 全景横跨
+  | 'mosaic-left'      // 马赛克网格，左对齐
+  | 'mosaic-right'     // 马赛克网格，右对齐
+
+/** 槽位在集群中的视觉权重角色。 */
 export type ArchiveSlotRole = 'primary' | 'secondary' | 'detail' | 'support'
+
+/** 图片宽高比分类，影响布局中的占位形状。 */
 export type ArchiveOrientation = 'portrait' | 'landscape' | 'square' | 'wide' | 'tall'
+
+/** 集群视觉节奏 —— 影响图片间距、重叠度和留白密度。 */
 export type ArchiveClusterRhythm = 'architectural' | 'dense' | 'balanced' | 'open'
 
+/** 槽位的微调偏移 —— 在布局基准之上做 px 级微调和轻微缩放，制造非对称的有机感。 */
 export interface ArchiveSlotOffset {
+  /** 水平偏移量 (px)，正值 = 右移。 */
   x?: number
+  /** 垂直偏移量 (px)，正值 = 下移。 */
   y?: number
+  /** 缩放因子，0.9 = 缩小为 90%。 */
   scale?: number
 }
 
+/**
+ * 单张存档图片的完整元数据。
+ * srcSet / sizes 由 `frameImageSources.generated.ts` 在构建时自动生成，提供多分辨率响应式变体。
+ */
 export interface ArchiveImage {
   id: number
   src: string
+  /** 响应式 srcSet 属性（自动生成的多分辨率候选 URL 字符串）。 */
   srcSet: string
+  /** 响应式 sizes 属性。 */
   sizes: string
   width: number
   height: number
   title: string
   location: string
   meta: string
+  /** 宽高比分类。 */
   orientation: ArchiveOrientation
+  /** 色调分类，用于 CSS 滤镜或叠加层配色。 */
   tone: string
 }
 
+/** 集群中的一个槽位 —— 将一张图片绑定到视觉角色 + 可选的微调偏移。 */
 export interface ArchiveClusterSlot {
   role: ArchiveSlotRole
   image: ArchiveImage
   offset?: ArchiveSlotOffset
 }
 
+/**
+ * 一个图片集群 —— Frame 水平滚动中的单个视觉组块。
+ * 每个集群独立选择布局算法和节奏，彼此之间通过滚动自然分隔。
+ */
 export interface ArchiveCluster {
   id: string
   title: string
@@ -49,15 +83,19 @@ export interface ArchiveCluster {
   slots: ArchiveClusterSlot[]
 }
 
+/** 一个摄影主题 —— Frame 章节的最大粒度分组，包含开头文本 + 滚动方向 + 所有集群。 */
 export interface ArchiveTheme {
   id: ArchiveThemeId
+  /** 分类 eyebrow（如 `01 / Buildings`）。 */
   eyebrow: string
   title: string
   body: string
+  /** 水平滚动方向。 */
   direction: ArchiveDirection
   clusters: ArchiveCluster[]
 }
 
+/** 纯文本面板 —— Frame 章节开头 (intro) 与结尾 (outro) 各一个。 */
 export interface ArchiveTextPanel {
   eyebrow: string
   title: string
@@ -66,6 +104,13 @@ export interface ArchiveTextPanel {
 
 const FRAME_IMAGE_SIZES = '(max-width: 768px) calc(100vw - 32px), (max-width: 1200px) 72vw, 640px'
 
+/**
+ * @description 将构建期生成的响应式图片清单转换为 `<img srcSet>` 字符串。
+ *   Frame 章节运行时只消费稳定的 src/srcSet/sizes 元数据，不在组件内计算图片变体。
+ * @dependencies `frameImageSources.generated.ts` 由资产脚本生成，key 必须与原始 `src` 完全一致
+ * @performance / @caveats 若生成清单缺失，直接回退到原始 src；这样新增图片不会导致页面崩溃，
+ *   但会失去响应式多尺寸收益，需要后续补跑资产生成脚本。
+ */
 function frameSrcSet(src: string): string {
   const sources = frameImageSources[src as keyof typeof frameImageSources]
 
@@ -76,6 +121,17 @@ function frameSrcSet(src: string): string {
   return sources.map((source) => `${source.src} ${source.width}w`).join(', ')
 }
 
+/**
+ * @description 构造单张 Frame 存档图片的标准元数据对象。
+ *   该函数把人工维护的摄影语义（title/location/meta/tone）和构建生成的响应式字段合并，
+ *   让 Frame 子组件只依赖 `ArchiveImage`，不关心图片资源来源。
+ * @dependencies `frameSrcSet`、`FRAME_IMAGE_SIZES`、`ArchiveOrientation`
+ * @performance / @caveats width/height 必须是真实原图比例；Frame 布局依赖它们避免裁切、漂移和 caption 错位。
+ * @steps
+ *   step1: 接收图片 id、路径、语义字段和真实尺寸
+ *   step2: 通过 frameSrcSet 取响应式候选集
+ *   step3: 返回 ArchiveImage，供 theme/cluster/slot 结构复用
+ */
 function frameImage({
   id,
   src,
@@ -171,6 +227,12 @@ const sceneryDimensions: Record<number, [number, number]> = {
   11: [1400, 1050],
 }
 
+/**
+ * @description 从主题维度映射表中读取图片真实尺寸。
+ *   Frame 设计要求保留原比例和清晰度，因此尺寸缺失时必须快速失败，而不是用默认比例猜测。
+ * @dependencies `buildingDimensions` / `cuisineDimensions` / `sceneryDimensions`
+ * @performance / @caveats 抛错是有意的构建期保护；错误默认值会导致横向布局宽度、caption 对齐和移动端可视范围失真。
+ */
 function imageDimensions(dimensions: Record<number, [number, number]>, id: number): [number, number] {
   const size = dimensions[id]
   if (!size) {

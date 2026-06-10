@@ -1,7 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
+import { scrollToChapter } from '../lib/chapterScroll'
 import { skillRows as rows } from '../content'
 
+/**
+ * @description Skills 章节 —— 技术栈与工程交付能力矩阵。
+ *   每行代表一个技能领域 (Frontend / Motion·3D / Backend / AI·Data / Infra / Math·Modeling)，
+ *   含分类标签、工具链、项目落地引用。
+ *
+ *   视觉亮点：在技能列表左侧绘制一条流动的三段式贝塞尔曲线 (蛇形 S 走势)，
+ *   随滚动以 strokeDashoffset 方式 "生长"，80px 线宽，红色 (--accent) 描边。
+ *
+ * @dependencies
+ *   - GSAP + ScrollTrigger (strokeDashoffset scrubbing + 逐行入场)
+ *   - `scrollToChapter` (技能标签 to→项目章节跳转)
+ *   - 自适应 SVG 路径：通过 getBoundingClientRect 动态计算起点/终点，resize 时重新生成
+ *
+ * @performance / @caveats
+ *   - SVG 路径的四个控制点 P0-P3 通过 viewport 宽度百分比计算 (72% / 28%)，
+ *     k=0.38 为三次贝塞尔垂直切线因子，确保拐点 C1 连续且拐弯平滑
+ *   - 80px 粗线在 resize 时重新 setPathD → 重新分配 strokeDasharray (会引起 layout)，
+ *     但仅在窗口 resize 触发，非滚动路径，不会造成滚动卡顿
+ *   - 路径依赖 `root.current` 的 getBoundingClientRect，因此 SVG 的 left 偏移量需绑定到 `svgLeft`
+ *     以覆盖 body 的 default margin
+ *
+ * @steps
+ *   step1: Effect 1 — 动态测量并构建三段式蛇形贝塞尔曲线 pathD
+ *   step2: Effect 2 — 将 pathD 绑定到 GSAP strokeDashoffset scrubbing（滚动即画线）
+ *   step3: Effect 3 — 标题裂分入场 + 技能行逐行 staggered reveal（120ms 间隔，双向回退）
+ */
 export default function Skills() {
   const root = useRef<HTMLElement>(null)
   const skillsPathRef = useRef<SVGPathElement>(null)
@@ -181,11 +208,36 @@ export default function Skills() {
         {rows.map((row) => (
           <div className="skill-row" key={row.index}>
             <div className="skill-row__index">{row.index}</div>
-            <div className="skill-row__name">{row.name}</div>
-            <div className="skill-row__tags">
-              {row.tags.map((t) => (
-                <span key={t}>{t}</span>
-              ))}
+            <div className="skill-row__main">
+              <div className="skill-row__eyebrow">{row.subtitle}</div>
+              <h3 className="skill-row__name">{row.name}</h3>
+              <p className="skill-row__desc">{row.description}</p>
+            </div>
+            <div className="skill-row__meta">
+              <div className="skill-row__tags">
+                {row.tags.map((t) => (
+                  <span key={t}>{t}</span>
+                ))}
+              </div>
+              <div className="skill-row__used">
+                <span className="skill-row__used-label">shipped in</span>
+                {row.usedIn.map((item) =>
+                  item.to ? (
+                    <button
+                      type="button"
+                      key={item.label}
+                      className="skill-row__used-link"
+                      onClick={() => scrollToChapter(item.to as string, { updateHash: true })}
+                    >
+                      {item.label}
+                    </button>
+                  ) : (
+                    <span key={item.label} className="skill-row__used-item">
+                      {item.label}
+                    </span>
+                  )
+                )}
+              </div>
             </div>
           </div>
         ))}

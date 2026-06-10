@@ -1,23 +1,51 @@
+/**
+ * 项目媒体展示形态枚举。
+ * - `cinematic`: 整幅照片级展示，带 4 角标记与 caption
+ * - `ui`: 带浏览器 Chrome 框（地址栏 + 红绿灯圆点）的界面截图
+ * - `terminal`: 终端风格 Chrome 框，标签显示 `zsh — {project-id}`
+ * - `data`: 数据看板风格 Chrome 框，标签显示 `DATA READOUT`
+ */
 export type MediaKind = 'cinematic' | 'ui' | 'terminal' | 'data'
 
+/** 项目截图的单帧定义。多帧时通过缩略图切换器浏览。 */
 export interface ProjectShot {
+  /** 图片路径（public 下的相对路径）。 */
   src: string
+  /** 图片描述标签，用作 caption 和缩略图 alt。 */
   label: string
 }
 
+/**
+ * 项目条目定义 —— Projects 组件的完整数据契约。
+ * 每个项目在内容区展示为卡片：左侧文本信息 + 右侧媒体展示。
+ * @dependencies Projects 组件直接消费此类型数组；`content/index.ts` 重导出供 UI 使用
+ */
 export interface Project {
+  /** 唯一标识，用于 key 和 URL hash 定位。 */
   id: string
+  /** 排序序号，显示为 `01` / `02` 等。 */
   index: string
+  /** 项目英文名称。 */
   name: string
+  /** 项目中文名称。 */
   cnTitle: string
+  /** 项目一句话标语。 */
   tagline: string
+  /** 项目详细简介，支持内联 HTML（如 `<span class="...">` 高亮词）。 */
   description: string
+  /** 技术栈标签列表。 */
   stack: string[]
+  /** 项目亮点列表，每项一行。 */
   highlights: string[]
+  /** 项目年份，显示在卡片右上角。 */
   year: string
+  /** GitHub 仓库链接。 */
   github: string
+  /** 在线演示链接，可选。 */
   live?: string
+  /** 卡片的主题色（HEX），通过 CSS 变量 `--accent` 注入。 */
   accent: string
+  /** 媒体展示配置。不存在时显示 'in the lab' 占位态。 */
   media?: {
     kind: MediaKind
     shots: ProjectShot[]

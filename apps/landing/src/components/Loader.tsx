@@ -11,6 +11,36 @@ function randomBaffleChar() {
   return BAFFLE_CHARS[Math.floor(Math.random() * BAFFLE_CHARS.length)] ?? ''
 }
 
+/**
+ * @description Loader 全屏加载页 —— 站点入口动画的 start-to-end 编排。
+ *   阶段 1 (intro): 标题 "Tim Cai." 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
+ *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.ready (资源就绪)，
+ *     标题向上浮出遮罩 → 计数器/进度条淡出 → 整个面板向上 wipe out，露出 Hero
+ *   阶段 3 (complete): `done` 状态置 true，组件返回 null，彻底从 DOM 卸载
+ *
+ *   生命周期通过 `stage` 状态机协调：标题落地 → `setStage('intro')`；面板退出 → `dispatchIntroExit()` → `stage→live`
+ *
+ * @dependencies
+ *   - GSAP (timeline + gsap.context)
+ *   - `stage` 状态机 (setStage → dispatchIntroExit)
+ *   - `useWholeSitePreload` (资源预加载进度反馈)
+ *   - `useIntroPretextInteraction` (字符指针漂浮，仅在 introReady 且未退场时激活)
+ *
+ * @performance / @caveats
+ *   - Baffle 乱码使用 `setInterval(42ms)` 而非 requestAnimationFrame —— 42ms ≈ 24fps，
+ *     视觉上刚好产生 "字符抖动" 效果，不需要 60fps 精度
+ *   - 进度条使用 rAF 驱动的 displayedProgress 缓动 (damp 0.075→0.18)，
+ *     避免 preload 进度跳变时进度条视觉抖动
+ *   - 退出时 panel 的 yPercent: -100 动画使用 expo.inOut 缓动 (1.15s)，制造 "卷帘门" 升起感
+ *
+ * @steps
+ *   step1: Effect 1 — 字符初始化 (opacity=0, yPercent=120) + Baffle 乱码定时器
+ *   step2: Effect 1 — 字符缓慢升起到基线 (1.25s, stagger 0.075s)
+ *   step3: Effect 1 — timeline onComplete → setStage('intro') → 激活 pretext 交互
+ *   step4: Effect 2 — 进度条 rAF loop: displayedProgress 缓动追踪 preload progress
+ *   step5: Effect 3 — introReady && preload.ready → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
+ *   step6: Effect 3 — panel yPercent: -100 → dispatchIntroExit → 若干 ms 后 setDone(true)
+ */
 export default function Loader() {
   const panelRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)

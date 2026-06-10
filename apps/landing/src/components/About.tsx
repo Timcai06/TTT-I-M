@@ -5,6 +5,37 @@ import { facts } from '../content'
 import { ABOUT_PARTICLE_TEXT } from '../lib/aboutTextParticles'
 import DeferredTextParticles from './DeferredTextParticles'
 
+/**
+ * @description About 章节 —— 自述与工程叙事。内容分为左右两栏：
+ *   左栏：标题逐行裂分入场 → 三段文字块 (Vision / Tech Stack / Manifesto)
+ *         → 统计数字牌 → DeferredTextParticles 背景粒子效果
+ *   右栏：圆角肖像框入场（一次性缓动，避免 scroll-scrub 的 border-radius repaint 开销）
+ *         → Policy 哲学段落
+ *
+ *   Manifesto 段落使用 `revealWords` 做逐字模糊→清晰 scrub reveal（CJK 感知 tokenizer），
+ *   其余段落使用 GSAP fromTo 渐现。双向回退 (`toggleActions: 'play none none reverse'`)
+ *   确保用户向上滚动时动画自然撤消。
+ *
+ * @dependencies
+ *   - GSAP + ScrollTrigger + gsap.context (动画生命周期管理)
+ *   - `revealWords` (CJK 感知 word-by-word blur→clear scrub)
+ *   - `DeferredTextParticles` (canvas 粒子背景，延迟加载不阻塞首屏)
+ *   - Tech 竖线使用自定义贝塞尔路径 (C 1,2,3,4...) strokeDashoffset scrubbing
+ *
+ * @performance / @caveats
+ *   - 肖像框的 `borderRadius` tween 原先为 scroll-scrub，每 tick 触发 repaint (border-radius 无法 GPU 合成)。
+ *     现在改为一次性进入缓动，repaint 仅发生一次（约 1.4s 内），视觉平滑度不变，性能提升显著
+ *   - Tech 竖线使用 `strokeDashoffset` 驱动（非 filter/blur），仅操作 SVG 描边，GPU 友好
+ *   - DeferredTextParticles 通过 IntersectionObserver 延迟实例化，不阻塞 About 首帧渲染
+ *
+ * @steps
+ *   step1: 标题逐行裂分 (split-line) 从下升起，stagger 0.12s
+ *   step2: 各段落块逐个 fromTo 渐现，每块独立 ScrollTrigger
+ *   step3: Manifesto 段落逐字 scrub reveal (blur→clear)
+ *   step4: 统计牌 stagger 进场
+ *   step5: 肖像框一次性 borderRadius 缓动 + 图片 scale 回缩
+ *   step6: Tech 竖线路径 strokeDashoffset scrubbing (draws progressively)
+ */
 export default function About() {
   const root = useRef<HTMLElement>(null)
   const techPathRef = useRef<SVGPathElement>(null)

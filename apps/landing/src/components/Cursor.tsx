@@ -3,6 +3,31 @@ import { gsap } from 'gsap'
 import { subscribeStage } from '../lib/stage'
 import { isTouchDevice } from '../lib/device'
 
+/**
+ * @description 自定义鼠标指针 —— 跟随实际鼠标位置的 lerped 圆点，悬浮在 z-index 最高层。
+ *   触摸设备自动跳过。hover 可交互元素 (a, button, [data-cursor="hover"]) 时放大为 `.is-hover` 样式。
+ *   章节过渡期间切换为 `.is-scanning` 扫描线风格。
+ *
+ *   关键设计：使用 GSAP ticker 驱动位置插值 (而非 mousemove→直接 set)，
+ *   解耦事件频率 (≥60Hz) 与视觉更新频率 (单帧一次)，避免 pointermove 高频触发时的布局抖动。
+ *
+ * @dependencies
+ *   - GSAP ticker (位置 lerp)
+ *   - `stage` 状态机 (transitioning → is-scanning 样式)
+ *   - `isTouchDevice()` (触摸设备直接返回 null 不渲染)
+ *
+ * @performance / @caveats
+ *   - speed=0.22 为视觉上理想的 "软弹簧跟随" 阻尼因子 —— 太低显得迟钝，太高像粘滞
+ *   - settled 检测 (dx/dy < 0.2) + 700ms 无移动后自动停止 ticker，节省 GPU 合成开销
+ *   - isTarget 使用 closest() 向上查找而非仅匹配直接 target —— 支持事件委托，适配动态挂载的子元素
+ *
+ * @steps
+ *   step1: touch → 直接 return (不渲染 DOM，不注册监听器)
+ *   step2: mousemove → 更新 target{x,y} → startTicking
+ *   step3: tick callback → pos 向 target 做指数衰减插值 (lerp) → gsap.set
+ *   step4: mouseover/mouseout 事件委托 → 检查 target → 切换 is-hover 类
+ *   step5: stage→transitioning → 切换 is-scanning 类
+ */
 export default function Cursor() {
   const ref = useRef<HTMLDivElement>(null)
 

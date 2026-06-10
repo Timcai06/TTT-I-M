@@ -3,6 +3,26 @@ import { gsap, Flip } from '../lib/gsap'
 import { photos } from '../content'
 import { useMobileExperience } from '../lib/device'
 
+/**
+ * @description Life 章节 —— 将生活照片从 bento 网格过渡到全屏影像背景，并叠加三段 split-text 叙事。
+ *   桌面端使用 GSAP Flip + ScrollTrigger pin 创建“照片吸附成全屏 → 文字逐段浮现 → 背景变暗”的电影化段落；
+ *   移动端完全跳过 Flip/pin，回退为普通 in-flow 图片卡片，避免高屏窄视口下横向溢出和 pin 失真。
+ * @dependencies
+ *   - GSAP + Flip + ScrollTrigger（桌面端网格 morph、pin、scrub 时间线）
+ *   - `photos` 内容数组（图片 src/alt）
+ *   - `useMobileExperience`（移动端降级门控）
+ *   - CSS 类 `gallery--bento` / `gallery--final` 提供 Flip 前后布局状态
+ * @performance / @caveats
+ *   - Flip 状态依赖 DOM 布局测量；resize 时必须 `ctxRef.current?.revert()` 后重建，避免旧尺寸状态污染新布局。
+ *   - 桌面 timeline 中图片 filter 会在全屏背景阶段参与 scrub，成本较高；移动端禁用该整段效果是刻意的性能边界。
+ *   - split-line 的 `y: 0` 是保护性设置，防止 CSS transform 基线残留导致文字被 overflow:hidden 裁掉。
+ * @steps
+ *   step1: 桌面端测量 bento → final 两种 gallery 布局，创建 Flip 动画
+ *   step2: pin `gallery-wrap`，让照片段落占满 100vh 并按滚动 scrub 推进
+ *   step3: gallery 吸附入场后执行 Flip，全屏化照片背景
+ *   step4: 背景图片逐步 dim/blur，为文字可读性让出层级
+ *   step5: 三段生活叙事依次 reveal、停留、退出，并在回滚时重置行状态
+ */
 export default function LifeGallery() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const galleryRef = useRef<HTMLDivElement>(null)

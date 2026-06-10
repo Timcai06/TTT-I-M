@@ -3,6 +3,26 @@ import { gsap } from '../lib/gsap'
 import { transitionToChapter } from '../lib/chapterTransition'
 import { attachMagnetic } from '../lib/magnetic'
 
+/**
+ * @description Contact/Footer 章节 —— 最后一屏的联系入口与站点收束。
+ *   通过 scroll-scrub 时间线让背景 blob、标题、联系按钮和 meta 信息随滚动进入；
+ *   联系按钮使用磁吸交互增强手感，右下角显示上海本地时间作为“当前可联系状态”的轻量信号。
+ * @dependencies
+ *   - GSAP timeline + ScrollTrigger（footer 入场 scrub）
+ *   - `attachMagnetic`（contact pill 的 pointer-following 磁吸）
+ *   - `transitionToChapter`（↑ top 走统一章节转场，而不是裸 hash 跳转）
+ *   - `Intl.DateTimeFormat` Asia/Shanghai（本地时间展示）
+ * @performance / @caveats
+ *   - `.contact__btn` 入场只改 opacity，不改 y；按钮位移由 magnetic 独占，避免两个 transform 写入源互相覆盖。
+ *   - 磁吸交互在 GSAP context 外创建，必须手动 dispose；否则按钮卸载后 ticker/listener 会泄漏。
+ *   - 时钟 30s 更新一次足够表达“本地时间”，避免每秒 setInterval 造成无意义 React/DOM 压力。
+ * @steps
+ *   step1: 设置 footer 内部元素初始状态
+ *   step2: 创建 scroll-scrub 时间线，依次展开 blob、标题、按钮、meta
+ *   step3: 为联系按钮挂载 magnetic 交互
+ *   step4: 初始化并定时刷新上海本地时间
+ *   step5: cleanup 手动释放 magnetic、clock interval 和 GSAP context
+ */
 export default function Footer() {
   const root = useRef<HTMLElement>(null)
   const blobRef = useRef<HTMLDivElement>(null)
