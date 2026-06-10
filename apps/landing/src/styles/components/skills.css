@@ -11,9 +11,6 @@
   z-index: 0;
   overflow: visible;
   mix-blend-mode: screen;
-  /* 端点渐隐：让 80px 红色粗带在章节上下边缘柔和淡入淡出，更像一条进入/离场的 signal route */
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%);
 }
 
 .skills__list,

@@ -101,30 +101,53 @@ export default function Skills() {
     }
   }, [])
 
-  // 2. 绑定流动动画（通过 strokeDashoffset 实现曲线随滚动向右下角“延长”生长）
+  // 2. 绑定流动动画：红线前端始终跟随视口中心线，而不是按整条 path 的总进度硬画完。
   useEffect(() => {
     const path = skillsPathRef.current
     if (!path || !pathD) return
 
     const ctx = gsap.context(() => {
       const length = path.getTotalLength()
-      
-      // 初始化状态：完全缩进 (strokeDashoffset 为 length)
-      gsap.set(path, { strokeDasharray: length, strokeDashoffset: length })
+      // quickSetter is typed as bare `Function` upstream; pin the real signature.
+      const setDash = gsap.quickSetter(path, 'strokeDasharray') as (value: string) => void
 
-      gsap.fromTo(
-        path,
-        { strokeDashoffset: length },
-        {
-          strokeDashoffset: 0,
-          scrollTrigger: {
-            trigger: root.current,
-            start: 'top 65%', // 调整起点，使线条在板块进入视口 35% 时才开始绘制，避免提前生长
-            end: 'bottom 35%', // 调整终点，使线条垂直生长速度与滚动速度达到 1:1 物理同步
-            scrub: 0.9, // 降低延迟，确保在每一刻停留时，线条末端都能立刻精准定位在可视屏幕内
-          },
+      const lengthAtY = (targetY: number) => {
+        let low = 0
+        let high = length
+
+        for (let i = 0; i < 16; i += 1) {
+          const mid = (low + high) / 2
+          const point = path.getPointAtLength(mid)
+          if (point.y < targetY) {
+            low = mid
+          } else {
+            high = mid
+          }
         }
-      )
+
+        return Math.min(length, Math.max(0, high))
+      }
+
+      const syncLineToViewportCenter = () => {
+        const rootEl = root.current
+        if (!rootEl) return
+
+        const rootRect = rootEl.getBoundingClientRect()
+        const centerYInSection = window.innerHeight * 0.5 - rootRect.top
+        const drawnLength = lengthAtY(centerYInSection)
+        setDash(`${drawnLength} ${length}`)
+      }
+
+      gsap.set(path, { strokeDasharray: `0 ${length}`, strokeDashoffset: 0 })
+      syncLineToViewportCenter()
+
+      ScrollTrigger.create({
+        trigger: root.current,
+        start: 'top bottom',
+        end: 'bottom top',
+        onUpdate: syncLineToViewportCenter,
+        onRefresh: syncLineToViewportCenter,
+      })
     }, root)
 
     return () => ctx.revert()
