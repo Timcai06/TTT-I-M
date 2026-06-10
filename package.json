@@ -23,6 +23,7 @@
     "lint:studio": "npm run lint --workspace @timcai/studio",
     "test:build": "npm run build:landing && npm run test:build --workspace @timcai/landing && node tests/build/platform-guards.mjs",
     "test:build:landing": "npm run test:build --workspace @timcai/landing",
+    "test:smoke": "node tests/runtime/cross-zone-smoke.mjs",
     "test:e2e:frame": "npm run test:e2e:frame --workspace @timcai/landing"
   }
 }

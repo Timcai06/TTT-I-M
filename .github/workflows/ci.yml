@@ -41,7 +41,8 @@ jobs:
       # Perf budgets get CI headroom via PERF_* env (2-core runner is slower than
       # local M-series). Load long tasks balloon during WebGL init under the covered
       # loader (~580ms observed); scroll scrub can spike under runner contention.
-      PERF_LCP_MS: '6000'
+      # Critical-only gate (2026-06-10): local budget 2800ms; CI 2-core headroom.
+      PERF_LCP_MS: '4500'
       PERF_HEAP_MB: '110'
       PERF_LOAD_LONGTASK_MS: '700'
       PERF_SCROLL_LONGTASK_MS: '300'
@@ -56,6 +57,21 @@ jobs:
         working-directory: apps/landing
       - run: npm run test:e2e
         working-directory: apps/landing
+
+  # Cross-zone runtime smoke: BLOCKING on pushes to main. Fetches the *deployed*
+  # main domain and asserts /blog,/work,/dashboard HTML + their /_next assets all
+  # 200 — the exact failure the string-based platform guard cannot see (the
+  # 2026-06-05 unstyled-blog incident). Not run on PRs: it checks current prod,
+  # not the PR's change, so a prod-side issue would block unrelated PRs.
+  cross-zone-smoke:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node tests/runtime/cross-zone-smoke.mjs
 
   # Degradation gates: BLOCKING. Deterministic (no scroll dependency) — reduced
   # motion, no WebGL, a 404 asset (A1). Load-time only, the stable part of CI, so
