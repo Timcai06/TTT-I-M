@@ -44,15 +44,27 @@ interface PreloadDebugHandle {
 
 /**
  * 全站预加载状态。Loader 使用该状态驱动真实进度条，而不是播放假的 fixed-duration 进度。
+ *
+ * 闸门语义（00 原则·整站预热约束·修复②，2026-06-10）：
+ * - `criticalReady` 是 intro 退场的唯一闸门：runtime 核心（hero texture / fonts /
+ *   chunks / about particles）就绪即放行，黑屏闸门只系在 critical 上。
+ * - deferred 图片在退场后**继续**按并发队列 eager fetch 直到 `ready`（Loader 退场后
+ *   仍保持挂载，effect 不中断）—— 总下载量不变，保留整站预热的意图，只缩小闸门。
  */
 export interface WholeSitePreloadState {
-  /** 已完成或已跳过的任务数量。 */
+  /** 已完成或已跳过的任务数量（critical + deferred 全量）。 */
   completed: number
+  /** critical 层已完成或已跳过的任务数量；进度条显示它。 */
+  criticalCompleted: number
+  /** critical 层是否全部结束 —— intro 退场闸门。 */
+  criticalReady: boolean
+  /** critical 层任务总数。 */
+  criticalTotal: number
   /** 非致命失败任务 id 列表；失败不会阻塞 ready。 */
   failed: string[]
   /** 当前完成任务的展示标签。 */
   label: string
-  /** 是否已完成 critical + deferred 全部门控任务。 */
+  /** 是否已完成 critical + deferred 全部任务（整站预热完成，非退场闸门）。 */
   ready: boolean
   /** manifest 总任务数。 */
   total: number
@@ -187,8 +199,9 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
 const DEFERRED_CONCURRENCY = 6
 
 /**
- * @description 全站资源预加载 hook。Loader 用它门控完整 landing manifest：
- *   先加载 critical runtime 资源，再按并发队列加载 deferred 图片/模块，确保快速滚入 Frame 时不出现空图。
+ * @description 全站资源预加载 hook。Loader 用 `criticalReady` 门控 intro 退场，
+ *   deferred 图片在退场后继续按并发队列 eager fetch（hook 跑完整 manifest 到 `ready`）。
+ *   Frame DOM 图片保持 eager fetch，配合后台队列把快速滚入 Frame 的空图窗口压到最小。
  * @dependencies
  *   - `buildResourceManifest` 生成资源任务列表
  *   - `withTimeout` 为每个任务提供硬超时
@@ -199,15 +212,18 @@ const DEFERRED_CONCURRENCY = 6
  *   - `tasks` 用 `useState(buildResourceManifest)` 固定一次，避免组件重渲染时重建 manifest 并重跑预加载。
  * @steps
  *   step1: 初始化 manifest 和可视化 preload state
- *   step2: critical indexes 全并发执行，保证核心 runtime 先就绪
- *   step3: deferred indexes 按 `DEFERRED_CONCURRENCY` 分片执行
- *   step4: 每个任务完成/跳过后更新 completed/label/failed
- *   step5: 全部结束后标记 ready=true，并关闭 DEV debug timers
+ *   step2: critical indexes 全并发执行，结束即 criticalReady=true（intro 退场闸门开启）
+ *   step3: deferred indexes 按 `DEFERRED_CONCURRENCY` 分片在后台继续执行
+ *   step4: 每个任务完成/跳过后更新 completed/criticalCompleted/label/failed
+ *   step5: 全部结束后标记 ready=true（整站预热完成），并关闭 DEV debug timers
  */
 export function useWholeSitePreload(): WholeSitePreloadState {
   const [tasks] = useState(buildResourceManifest)
   const [state, setState] = useState<WholeSitePreloadState>(() => ({
     completed: 0,
+    criticalCompleted: 0,
+    criticalReady: false,
+    criticalTotal: tasks.filter((task) => task.tier === 'critical').length,
     failed: [],
     label: 'Preparing',
     ready: false,
@@ -217,6 +233,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
   useEffect(() => {
     let cancelled = false
     let completed = 0
+    let criticalCompleted = 0
     const failed: string[] = []
     const debug = createPreloadDebug(tasks)
 
@@ -233,8 +250,15 @@ export function useWholeSitePreload(): WholeSitePreloadState {
         }
       } finally {
         completed += 1
+        if (task.tier === 'critical') criticalCompleted += 1
         if (!cancelled) {
-          setState((current) => ({ ...current, completed, failed: [...failed], label: task.label }))
+          setState((current) => ({
+            ...current,
+            completed,
+            criticalCompleted,
+            failed: [...failed],
+            label: task.label,
+          }))
         }
       }
     }
@@ -263,6 +287,13 @@ export function useWholeSitePreload(): WholeSitePreloadState {
       .filter((index) => index >= 0)
     const run = async () => {
       await runGroup(criticalIndexes)
+      // The intro-exit gate opens here: runtime core is ready. The deferred
+      // tier below keeps eager-fetching in the background (the Loader stays
+      // mounted after its panel exits, so this effect is never cancelled by
+      // the hand-off) — whole-site preheat intent preserved, smaller gate.
+      if (!cancelled) {
+        setState((current) => ({ ...current, criticalReady: true, label: 'Ready' }))
+      }
       await runGroup(deferredIndexes, DEFERRED_CONCURRENCY)
     }
 
@@ -270,6 +301,9 @@ export function useWholeSitePreload(): WholeSitePreloadState {
       if (cancelled) return
       setState({
         completed,
+        criticalCompleted,
+        criticalReady: true,
+        criticalTotal: criticalIndexes.length,
         failed: [...failed],
         label: 'Ready',
         ready: true,

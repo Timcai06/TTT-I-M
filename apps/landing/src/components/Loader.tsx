@@ -14,7 +14,7 @@ function randomBaffleChar() {
 /**
  * @description Loader 全屏加载页 —— 站点入口动画的 start-to-end 编排。
  *   阶段 1 (intro): 标题 "Tim Cai." 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
- *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.ready (资源就绪)，
+ *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.criticalReady (runtime 核心就绪；deferred 图片继续后台拉)，
  *     标题向上浮出遮罩 → 计数器/进度条淡出 → 整个面板向上 wipe out，露出 Hero
  *   阶段 3 (complete): `done` 状态置 true，组件返回 null，彻底从 DOM 卸载
  *
@@ -38,7 +38,7 @@ function randomBaffleChar() {
  *   step2: Effect 1 — 字符缓慢升起到基线 (1.25s, stagger 0.075s)
  *   step3: Effect 1 — timeline onComplete → setStage('intro') → 激活 pretext 交互
  *   step4: Effect 2 — 进度条 rAF loop: displayedProgress 缓动追踪 preload progress
- *   step5: Effect 3 — introReady && preload.ready → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
+ *   step5: Effect 3 — introReady && preload.criticalReady → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
  *   step6: Effect 3 — panel yPercent: -100 → dispatchIntroExit → 若干 ms 后 setDone(true)
  */
 export default function Loader() {
@@ -53,7 +53,11 @@ export default function Loader() {
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
-  const stageText = preload.ready ? 'ready' : preload.label
+  // The exit gate is criticalReady (runtime core), not full-manifest ready —
+  // deferred images keep eager-fetching in the background after the panel
+  // exits (00-principles whole-site-preheat fix ②: same total download,
+  // smaller black-screen gate).
+  const stageText = preload.criticalReady ? 'ready' : preload.label
 
   useEffect(() => {
     preloadRef.current = preload
@@ -122,19 +126,22 @@ export default function Loader() {
       const current = preloadRef.current
       if (!current) return
 
-      const actualProgress = current.total > 0 ? current.completed / current.total : 0
-      const target = current.ready ? 1 : actualProgress
+      // The bar tracks the *gate* (critical tier): 100% = runtime ready, the
+      // moment the panel may exit. Deferred background fetching continues past
+      // this and is intentionally not part of the displayed gate.
+      const actualProgress = current.criticalTotal > 0 ? current.criticalCompleted / current.criticalTotal : 0
+      const target = current.criticalReady ? 1 : actualProgress
 
-      displayedProgress += (target - displayedProgress) * (current.ready ? 0.18 : 0.075)
+      displayedProgress += (target - displayedProgress) * (current.criticalReady ? 0.18 : 0.075)
 
-      const displayValue = current.ready
+      const displayValue = current.criticalReady
         ? Math.min(100, Math.ceil(displayedProgress * 100))
         : Math.min(99, Math.floor(displayedProgress * 100))
 
       if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
 
-      if (!current.ready || displayedProgress < 0.999) {
+      if (!current.criticalReady || displayedProgress < 0.999) {
         frame = window.requestAnimationFrame(renderProgress)
       }
     }
@@ -144,7 +151,7 @@ export default function Loader() {
   }, [])
 
   useEffect(() => {
-    if (!introReady || !preload.ready || exitStarted.current || !panelRef.current) return
+    if (!introReady || !preload.criticalReady || exitStarted.current || !panelRef.current) return
     exitStarted.current = true
     setExiting(true)
 
@@ -186,7 +193,7 @@ export default function Loader() {
     }, panelRef)
 
     return () => ctx.revert()
-  }, [introReady, preload.ready])
+  }, [introReady, preload.criticalReady])
 
   if (done) return null
 

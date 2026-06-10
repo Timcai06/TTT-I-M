@@ -61,10 +61,12 @@ function collectImageUrls() {
  * The whole-site preload manifest, in load order.
  *
  * `critical` runs first (hero texture, fonts, Pretext, lazy chapter chunks,
- * the About manifesto particle field). `deferred` is every curated image and is
- * still gated by the loader after the critical group. The ordering avoids a
- * decode/fetch storm in the first beat, while the gate remains honest: 100%
- * means the bounded landing archive is loaded, not merely the hero.
+ * the About manifesto particle field) and is the intro-exit gate: 100% on the
+ * loader bar = runtime ready. `deferred` is every curated image; it keeps
+ * eager-fetching through the concurrency queue *after* the panel exits
+ * (00-principles whole-site-preheat fix ②: same total download, smaller
+ * black-screen gate). Frame DOM images stay eager-fetch as the second line of
+ * defense against pop-in on a fast scroll into Frame.
  */
 export function buildResourceManifest(): ResourceTask[] {
   const critical: ResourceTask[] = [

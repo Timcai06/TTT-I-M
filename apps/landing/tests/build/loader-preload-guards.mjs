@@ -157,8 +157,26 @@ if (!manifestSource.includes("decode: 'idle'") || !manifestSource.includes("load
   throw new Error('Deferred manifest images must be gated by the loader with idle decode and eager fetch semantics.')
 }
 
+// Whole-site preheat intent (00-principles): the controller must still RUN the
+// complete landing manifest to completion (deferred queue, full download), even
+// though the intro-exit gate is the critical tier only (fix ②, 2026-06-10).
 if (!controllerSource.includes('DEFERRED_CONCURRENCY') || !controllerSource.includes('deferredIndexes') || !controllerSource.includes('whole-site preload completed')) {
-  throw new Error('Preload controller must gate the complete landing manifest, not only critical resources.')
+  throw new Error('Preload controller must run the complete landing manifest (deferred queue), not stop at critical resources.')
+}
+
+// Gate contract (fix ②): intro exit is gated by criticalReady, NOT full-manifest
+// ready — and the deferred tier keeps fetching after the panel exits. Guard both
+// directions: the controller must expose the split, and the Loader must consume
+// the critical gate (a regression to `preload.ready` re-creates the long black
+// gate; dropping criticalReady silently would un-gate the runtime core).
+if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {
+  throw new Error('Preload controller must expose the critical-tier gate (criticalReady/criticalCompleted/criticalTotal).')
+}
+if (!loaderSource.includes('preload.criticalReady')) {
+  throw new Error('Loader must gate the intro exit on preload.criticalReady (critical tier), not the full manifest.')
+}
+if (loaderSource.includes('preload.ready')) {
+  throw new Error('Loader must not gate on full-manifest preload.ready — deferred images continue in the background after exit.')
 }
 
 if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {

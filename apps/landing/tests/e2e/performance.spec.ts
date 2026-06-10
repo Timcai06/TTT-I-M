@@ -20,7 +20,7 @@ function budget(envKey: string, localDefault: number): number {
   return Number.isFinite(parsed) ? parsed : localDefault
 }
 
-const LCP_BUDGET_MS = budget('PERF_LCP_MS', 4200)
+const LCP_BUDGET_MS = budget('PERF_LCP_MS', 2800)
 const HEAP_BUDGET_MB = budget('PERF_HEAP_MB', 80)
 const LOAD_LONGTASK_MS = budget('PERF_LOAD_LONGTASK_MS', 200)
 const SCROLL_LONGTASK_MS = budget('PERF_SCROLL_LONGTASK_MS', 100)
@@ -66,13 +66,14 @@ test('LCP is within budget', async ({ page }) => {
     (window as unknown as Record<string, number | null>).__lcpMs,
   )
 
-  // NOTE: LCP here is *whole-site-preload-bound by design* — the loader gates the
-  // hero paint until every curated image is preloaded (the deliberate no-pop-in
-  // tradeoff, see plan/00-principles.md). Local warm baseline ≈ 3.3s, so this gate
-  // catches regressions (budget = baseline + ~25% headroom) rather than chasing a
-  // 2.5s number the preload model can't hit. If LCP ever becomes a priority, the
-  // critical/deferred split in lib/resources can let the hero paint before the
-  // full preload finishes — that's the lever, and this budget would then tighten.
+  // NOTE: since the critical/deferred gate split (2026-06-10, 00-principles
+  // fix ②), the loader exits once the critical tier (hero texture / fonts /
+  // chunks / particles) is ready — deferred images keep fetching in the
+  // background. LCP is therefore critical-tier-bound, not whole-archive-bound:
+  // the old whole-gate warm baseline was ≈3.3s (budget 4200); the critical-only
+  // gate budget is 2800ms. If this fails, either the critical tier grew (check
+  // manifest.ts) or the gate regressed to full-manifest ready (guarded in
+  // loader-preload-guards.mjs).
   expect(lcpMs, `LCP ${lcpMs?.toFixed(0)}ms exceeds ${LCP_BUDGET_MS}ms budget`).toBeLessThan(LCP_BUDGET_MS)
 })
 
