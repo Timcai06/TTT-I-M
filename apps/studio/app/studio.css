@@ -452,6 +452,65 @@ a {
   color: var(--fg-mute);
 }
 
+/* ── Case study ─────────────────────────────────────────────────────────── */
+
+.studio-case-study {
+  max-width: 900px;
+}
+
+.studio-case-section {
+  display: grid;
+  gap: 18px;
+  padding: clamp(34px, 6vw, 58px) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.studio-case-section p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--fg-soft);
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.8;
+}
+
+.studio-case-notes {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--fg-mute);
+  line-height: 1.75;
+}
+
+.studio-case-notes li::marker {
+  color: var(--accent);
+}
+
+.studio-case-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 0;
+}
+
+.studio-case-links a {
+  display: inline-flex;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.studio-case-links a:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
 /* ── MDX body ────────────────────────────────────────────────────────────── */
 
 .studio-mdx {
