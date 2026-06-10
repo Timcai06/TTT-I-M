@@ -113,6 +113,40 @@ test('Mobile About leads with text and avoids a WebGL particle gap', async ({ pa
   expect(aboutLayout.scrollWidth).toBe(aboutLayout.viewportWidth)
 })
 
+test('Mobile Stack reads as a single-column engineering map without overflow', async ({ page }) => {
+  await openMobileHome(page)
+  await scrollChapterToTop(page, 'skills')
+
+  const stack = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll<HTMLElement>('#skills .skill-row')]
+    const firstRow = rows[0]
+    const rowStyle = firstRow ? window.getComputedStyle(firstRow) : null
+    const trackCount = rowStyle
+      ? rowStyle.gridTemplateColumns.split(' ').filter(Boolean).length
+      : 0
+    const rowBounds = rows.map((row) => {
+      const rect = row.getBoundingClientRect()
+      return { left: Math.round(rect.left), right: Math.round(rect.right) }
+    })
+    return {
+      rowCount: rows.length,
+      trackCount,
+      rowBounds,
+      eyebrowCount: document.querySelectorAll('#skills .skill-row__eyebrow').length,
+      descCount: document.querySelectorAll('#skills .skill-row__desc').length,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }
+  })
+
+  expect(stack.rowCount).toBe(6)
+  expect(stack.trackCount).toBe(1) // single-column grid on mobile
+  expect(stack.eyebrowCount).toBe(6)
+  expect(stack.descCount).toBe(6)
+  expect(stack.rowBounds.filter((r) => r.left < 0 || r.right > 390), JSON.stringify(stack.rowBounds)).toHaveLength(0)
+  expect(stack.scrollWidth).toBe(stack.viewportWidth)
+})
+
 test('Mobile Life gallery uses wide in-flow image cards', async ({ page }) => {
   await openMobileHome(page)
   await scrollChapterToTop(page, 'life')
