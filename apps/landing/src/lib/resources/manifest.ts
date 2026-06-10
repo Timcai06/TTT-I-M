@@ -16,7 +16,9 @@ import {
 // set. The future blog / work / UGC zones grow without bound and must NOT be
 // added here — they load lazily / via SSR. (See plan/00-principles.md.)
 
+/** 资源加载层级：critical 阻塞 Loader 退场，deferred 只做后台预热。 */
 export type ResourceTier = 'critical' | 'deferred'
+/** 资源成本分类，用于调试 preload 进度和定位卡顿来源。 */
 export type ResourceType = 'image' | 'font' | 'texture' | 'chunk' | 'particles'
 
 /**

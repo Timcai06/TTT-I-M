@@ -2,10 +2,8 @@ import { preloadLazyChapters } from '../../chapters/registry'
 import { preloadAboutTextParticles } from '../aboutTextParticles'
 import { enqueueImageDecode } from './imageDecodeQueue'
 
-// Per-resource-type loaders. This is the seam for future asset types:
-// KTX2 (KTX2Loader.detectSupport(renderer)), Draco/Meshopt-compressed GLTF, etc.
-// add a loader here and a manifest entry — nothing else changes.
-
+// 资源类型加载器集中在这里；未来 KTX2、Draco、Meshopt GLTF 只需新增 loader 和 manifest entry。
+/** Hero 粒子肖像使用的源照片路径，同时用于 preload manifest 和 texture cache 预热。 */
 export const HERO_TEXTURE = '/portrait/tim.jpg'
 const FONT_READY_DEV_TIMEOUT_MS = 6000
 type ImageDecodeMode = 'eager' | 'idle' | 'none'

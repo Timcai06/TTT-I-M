@@ -136,6 +136,12 @@ function getServerSnapshot() {
   return emptySnapshot
 }
 
+/**
+ * @description React hook 入口，返回当前章节 DOMRect 快照和 viewport 高度，供 active chapter / progress rail 共享
+ * @dependencies useSyncExternalStore、全局 subscribe/getSnapshot、传入的章节 registry
+ * @performance 章节 id 变化才更新全局 chapterIds；滚动期间由模块级 ScrollTrigger/rAF 统一刷新，不让调用方重复读布局
+ * @caveats chapters 中的 id 必须和真实 DOM id 一致，否则快照会返回 Infinity 边界并影响章节判断
+ */
 export function useChapterScrollMetrics(chapters: ChapterLike[]) {
   const ids = useMemo(() => chapters.map((chapter) => chapter.id), [chapters])
 
