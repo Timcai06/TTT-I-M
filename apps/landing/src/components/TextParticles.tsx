@@ -9,11 +9,10 @@ import { getGLQualityProfile } from '../lib/webgl/quality'
 import { useReducedMotion } from '../lib/motion'
 import { buildTextParticleField, type TextParticleField } from '../lib/textParticles'
 
-// Share the hero portrait's tonal palette so the manifesto reads as the same
-// particle "material" condensing into language.
+// 与 Hero 粒子共用冷暖色，保证 About manifesto 像同一种视觉材料凝结成语言。
 const COOL = '#7890a8'
 const WARM = '#e0d5c1'
-// Read once at module load — touching window during render trips the purity rule.
+// 在模块加载时读取一次，避免 render 阶段访问 window 触发 purity 规则。
 const DEVICE_DPR = typeof window !== 'undefined' ? window.devicePixelRatio : 1
 
 const vertexShader = /* glsl */ `
@@ -61,6 +60,17 @@ const fragmentShader = /* glsl */ `
   }
 `
 
+/**
+ * @description 将文本像素点转换成 R3F points，并根据滚动进度从散点云 morph 到文字形态
+ * @dependencies 依赖 @react-three/fiber、Three.js BufferGeometry/ShaderMaterial、ScrollTrigger 和 TextParticleField 预计算结果
+ * @performance 几何和 uniform 通过 useMemo 创建；Canvas 使用 frameloop="demand"，只有 ScrollTrigger 更新时 invalidate，避免空闲 GPU 常驻
+ * @caveats field 中的随机值已提前烘焙，这里只做像素坐标到 viewport 世界坐标的确定性映射，避免 render 期间产生随机抖动
+ * @steps
+ * step1: 把 field.targets 拆成 scatter position、aTarget、aDelay、aSeed 四组 BufferAttribute
+ * step2: 创建 shader uniform，限制 uPixelRatio 不超过设备质量档位的 dprMax
+ * step3: ScrollTrigger scrub 更新 uProgress，并手动 invalidate 一帧
+ * step4: 组件卸载或 field 变化时释放 BufferGeometry
+ */
 function GlyphPoints({
   field,
   dprMax,
@@ -73,8 +83,6 @@ function GlyphPoints({
   const matRef = useRef<THREE.ShaderMaterial>(null)
   const { viewport, invalidate } = useThree()
 
-  // Deterministic: all randomness was baked into the field, so this is a pure
-  // mapping (px → world units) and safe to run during render in useMemo.
   const { geometry, uniforms } = useMemo(() => {
     const n = field.targets.length
     const target = new Float32Array(n * 3)
@@ -84,13 +92,9 @@ function GlyphPoints({
 
     for (let i = 0; i < n; i++) {
       const t = field.targets[i]!
-      // Map glyph pixel coords → world units that fill the canvas at z=0.
       target[i * 3] = (t.x / field.width - 0.5) * viewport.width
       target[i * 3 + 1] = -(t.y / field.height - 0.5) * viewport.height
       target[i * 3 + 2] = 0
-      // Scatter cloud fills roughly the band (the canvas clips its own bounds,
-      // so a far-wider spread would render half-empty) with a shallow depth
-      // band kept in front of the camera so nothing clips behind it.
       scatter[i * 3] = t.rx * viewport.width * 1.15
       scatter[i * 3 + 1] = t.ry * viewport.height * 1.15
       scatter[i * 3 + 2] = t.rz * 3.0
@@ -118,8 +122,6 @@ function GlyphPoints({
 
   useEffect(() => () => geometry.dispose(), [geometry])
 
-  // Scrub the morph progress off the scroll position; render on demand only
-  // when it changes (frameloop="demand" → zero idle GPU).
   useEffect(() => {
     const el = triggerRef.current
     if (!el) return
@@ -158,6 +160,11 @@ function GlyphPoints({
   )
 }
 
+/**
+ * @description 捕获 R3F/Canvas 初始化或运行错误，把 About 粒子文案降级为静态文字
+ * @dependencies 依赖 React class error boundary；onError 由 TextParticles 写入 webglFailed latch
+ * @caveats 错误只影响当前 TextParticles 视觉层，真实文本仍由 sr/fallback DOM 保留，避免内容消失
+ */
 class CanvasErrorBoundary extends Component<
   { children: ReactNode; onError: () => void },
   { errored: boolean }
@@ -174,36 +181,33 @@ class CanvasErrorBoundary extends Component<
 }
 
 interface Props {
+  /** 要被采样成粒子目标的真实文案，同时用于静态 fallback 和辅助技术文本 */
   text: string
+  /** 外部样式类，用于章节局部排版 */
   className?: string
-  /** Target glyph size at desktop width; scaled down to fit narrow columns. */
+  /** 桌面端目标字号，窄列会按容器宽度自动下调 */
   fontSize?: number
 }
 
 /**
- * Signature "particle ⇄ text" reveal (Phase B2, R3F 3D).
- *
- * Native measureText lays the line out once; filled pixels become particle
- * targets (lib/textParticles). An R3F point cloud tweens each particle from a
- * scattered depth cloud into the flat words as the block scrolls through the
- * viewport — sharing the hero portrait's cool/warm palette so it reads as the
- * same material condensing into language.
- *
- * frameloop="demand": renders only on scroll ticks, no idle GPU. Reduced motion
- * or a WebGL failure falls back to ordinary serif type; the real text always
- * ships as a visually-hidden span for AT/SEO.
+ * @description About 章节的签名式“粒子凝结成文字”组件，把 manifesto 文案从散点云过渡到可读语言
+ * @dependencies 依赖 R3F Canvas、Three.js shader points、ScrollTrigger、buildTextParticleField、GLQualityProfile 和 useReducedMotion
+ * @performance 使用 frameloop="demand"、按设备质量限制 dpr/采样点数，并在 WebGL 可用时登记 context 预算；resize 通过 rAF 合并重算
+ * @caveats reduced-motion 或 WebGL 报错时降级为静态 serif 文案；真实 text 始终保留在 DOM 中，避免 SEO/无障碍依赖 Canvas
+ * @steps
+ * step1: 根据容器宽度、字体和质量档位采样文字像素点
+ * step2: 字体 ready 或窗口 resize 后重建 field，并请求 ScrollTrigger refresh
+ * step3: WebGL 可用时渲染 demand Canvas 和 GlyphPoints
+ * step4: 任意降级条件触发时输出静态文本，不占用 WebGL context
  */
 export default function TextParticles({ text, className = '', fontSize = 72 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [field, setField] = useState<TextParticleField | null>(null)
-  // Reactive: respects a runtime OS "reduce motion" toggle. WebGL failure is a
-  // separate latch set by the error boundary. Either one drops to plain type.
   const reduced = useReducedMotion()
   const quality = useMemo(() => getGLQualityProfile(), [])
   const [webglFailed, setWebglFailed] = useState(false)
   const fallback = reduced || webglFailed
 
-  // Account the About canvas in the WebGL context budget while it's live.
   useEffect(() => {
     if (fallback || !field) return
     acquireContext()

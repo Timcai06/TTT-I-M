@@ -1,13 +1,13 @@
 # Performance Strategy & Asset Governance
 
 ## Preload Manifest & Loader
-- **Why it blocks**: The `Loader` must wait for critical assets because the first impression of the 3D render and high-res typography cannot afford texture pop-in or layout shifts.
+- **Why it blocks**: The `Loader` waits for `critical` resources only (`criticalReady`): hero texture, fonts, motion chunks, lazy chapter chunks, and the About text-particle field. `deferred` images continue in the background after the panel exits.
 - Generated via `scripts/setup-assets.mjs` (runs on `predev` and `prebuild`).
 
 ## Image Loading Strategy
-- Critical hero images are preloaded via the manifest.
-- Below-the-fold or non-critical images must use `loading="lazy"` and appropriate `srcset` sizes.
-- Use `vite-plugin-image-optimizer` to compress assets at build time (WebP/AVIF preferred) to reduce payload size.
+- `apps/landing/src/lib/resources/manifest.ts` collects the bounded landing image set and marks it `deferred`; these tasks use low-priority eager fetch plus idle decode through `imageDecodeQueue`.
+- Frame archive DOM images intentionally keep `loading="eager"` with responsive `srcSet/sizes`; this is the second line of defense against pop-in when users jump or scroll quickly into Frame.
+- Do not add unbounded Studio/blog/work content to the landing manifest. Those routes load through the Next content surface, not through the cinematic landing loader.
 
 ## Animation & WebGL Guardrails
 - **CSS / GSAP**: ONLY animate `transform` and `opacity`. Forcing layout recalculations (`width`, `top`, `left`, `margin`) will cause frame drops during smooth scroll.

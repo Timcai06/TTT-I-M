@@ -22,6 +22,13 @@ Root `package.json` orchestrates via workspace scripts (`build`, `build:studio`,
 - `data/`: raw static content (consumed only by `content/adapters/static` and the preload manifest infra).
 - `styles/`: global + per-component CSS.
 
+## Agent Reading Anchors
+- **Loader / true progress**: start at `apps/landing/src/components/Loader.tsx`, then `apps/landing/src/lib/resources/preloadController.ts` and `apps/landing/src/lib/resources/manifest.ts`.
+- **Frame archive runtime**: start at `apps/landing/src/components/frame/ArchiveThemeSection.tsx`, then `useArchiveThemeScroll.ts`, `ArchiveImageSlot.tsx`, and `apps/landing/src/styles/components/frame.css`.
+- **Pretext text interaction**: start at `apps/landing/src/lib/pretextIntroText.ts`; it owns font-ready waiting, glyph measurement, and idle-stop pointer disturbance.
+- **WebGL budget**: start at `apps/landing/src/lib/webgl/quality.ts`, `contextRegistry.ts`, and `useGLSurface.ts`, then inspect the concrete surface (`ParticlePortrait.tsx`, `TextParticles.tsx`, or `ChapterTransition.tsx`).
+- **Scroll state**: start at `apps/landing/src/lib/chapterScrollMetrics.ts`; `useActiveChapter` and `ScrollIndicator` should not grow separate layout-measurement loops.
+
 ## `apps/studio` Structure
 - `app/`: Next App Router routes — `blog/`, `blog/[slug]/`, `work/`, `work/[slug]/`, `dashboard/`, `rss.xml/`, `sitemap.ts`, `opengraph-image.tsx`, `layout.tsx`.
 - `content/`: `posts/*.mdx` (writing entry) + `mdx.ts` (`readPosts()` frontmatter parser) + `index.ts` (repository wiring).

@@ -6,28 +6,55 @@ const GLYPH_HIT_PADDING = 18
 type PretextModule = typeof import('@chenglou/pretext')
 let pretextPromise: Promise<PretextModule> | null = null
 
+/**
+ * @description 单个字符在鼠标扰动场里的运行时状态，绑定 DOM 实测位置和当前动画插值值
+ * @dependencies 依赖浏览器 DOMRect、PointerEvent 坐标和 requestAnimationFrame 手写循环
+ * @performance 字段会在每帧被读写，保持扁平数值结构，避免在高频 pointermove 中创建临时对象
+ */
 interface GlyphState {
+  /** 字符命中盒底边，来自最近一次 DOMRect 测量 */
   bottom: number
+  /** 实际要写入 transform/opacity 的字符节点 */
   el: HTMLElement
+  /** 字符命中盒高度，用于计算悬停 padding */
   height: number
+  /** 字符稳定位置的屏幕 X 坐标，不直接等于 DOMRect 中心，可能经过 Pretext 自然宽度校正 */
   homeX: number
+  /** 字符稳定位置的屏幕 Y 坐标 */
   homeY: number
+  /** 字符命中盒左边界 */
   left: number
+  /** 每个字符的相位偏移，用来制造轻微错落的扰动脉冲 */
   phase: number
+  /** 字符命中盒右边界 */
   right: number
+  /** 当前旋转角度，单位为 deg */
   rotation: number
+  /** 当前缩放比例，正常状态为 1 */
   scale: number
+  /** 字符命中盒顶边 */
   top: number
+  /** 字符命中盒宽度，用于悬停命中扩展 */
   width: number
+  /** 当前相对稳定位置的 X 位移 */
   x: number
+  /** 当前相对稳定位置的 Y 位移 */
   y: number
 }
 
+/**
+ * @description Pretext 字符扰动 hook 的调用配置，控制是否启用、选择哪些 glyph、以及动画强度
+ */
 interface PretextTextInteractionOptions {
+  /** 当前交互是否挂载；关闭时会清空所有字符的 transform/opacity */
   enabled: boolean
+  /** 字符节点选择器，Intro 与普通 Pretext 文案可复用同一套扰动逻辑 */
   glyphSelector?: string
+  /** 外部布局变化信号；变化后重新测量字符位置 */
   refreshKey?: number
+  /** 位移、旋转和缩放的整体倍率，默认 1 */
   strength?: number
+  /** 原始文本，用于 Pretext 自然宽度测量的兜底输入 */
   text: string
 }
 
@@ -35,11 +62,21 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
+/**
+ * @description 懒加载 Pretext 包，避免首屏 JS 解析阶段同步拉入字符测量工具
+ * @dependencies 依赖 @chenglou/pretext 的 prepareWithSegments / measureNaturalWidth
+ * @performance 使用模块级 Promise 缓存，多个文本实例共享同一次动态 import
+ */
 function loadPretext() {
   pretextPromise ??= import('@chenglou/pretext')
   return pretextPromise
 }
 
+/**
+ * @description 等字体可用后再测量字符，防止 TimCai/Intro 强刷后因 fallback 字体导致字符槽忽大忽小
+ * @dependencies 依赖 document.fonts.ready；不支持 Font Loading API 时直接放行
+ * @caveats 最多等待 1600ms，避免字体网络异常把交互初始化永久卡住
+ */
 function waitForFontsBeforePretext() {
   if (!document.fonts) return Promise.resolve()
 
@@ -49,6 +86,11 @@ function waitForFontsBeforePretext() {
   ])
 }
 
+/**
+ * @description 从当前文本节点提取 Pretext 可用的字体字符串，保持测量宽度和真实渲染字体一致
+ * @dependencies 依赖 getComputedStyle 的 fontWeight、fontSize、fontFamily、letterSpacing
+ * @caveats letter-spacing 可能返回 normal，必须转成 0，避免传入 NaN 影响自然宽度计算
+ */
 function fontFromElement(el: HTMLElement) {
   const style = window.getComputedStyle(el)
   const size = Number.parseFloat(style.fontSize) || 120
@@ -61,6 +103,11 @@ function fontFromElement(el: HTMLElement) {
   }
 }
 
+/**
+ * @description 测量单个字符在当前字体下的自然宽度，用于重建一条稳定的字符中心线
+ * @dependencies 依赖 Pretext prepareWithSegments / measureNaturalWidth
+ * @caveats 空格没有可见轮廓，使用 fontSize 的固定比例兜底，避免字符游标坍缩
+ */
 function measureGlyphWidth(
   pretext: PretextModule,
   char: string,
@@ -78,6 +125,11 @@ function measureGlyphWidth(
   return Math.max(1, pretext.measureNaturalWidth(prepared))
 }
 
+/**
+ * @description 在 Pretext 测量失败或容器尺寸不可用时，直接用 DOMRect 中心创建字符状态
+ * @dependencies 依赖浏览器布局后的 getBoundingClientRect 结果
+ * @performance 只在初始化、resize 或 fallback 路径执行，不放进每帧循环
+ */
 function createGlyphStateFromRect(el: HTMLElement, index: number, rect: DOMRect): GlyphState {
   return {
     bottom: rect.bottom,
@@ -97,6 +149,11 @@ function createGlyphStateFromRect(el: HTMLElement, index: number, rect: DOMRect)
   }
 }
 
+/**
+ * @description 计算鼠标是否真正进入某个字符的扩展命中区域，避免整段文字被远距离鼠标整体拉扯
+ * @dependencies 依赖字符 DOMRect 边界和 GLYPH_HIT_PADDING
+ * @performance 仅做数值计算，不读取布局；可安全放进每帧 glyph 遍历
+ */
 function pointerInfluenceForGlyph(glyph: GlyphState, mouseX: number, mouseY: number) {
   const padding = Math.max(GLYPH_HIT_PADDING, Math.min(glyph.width, glyph.height) * 0.24)
   const left = glyph.left - padding
@@ -112,6 +169,15 @@ function pointerInfluenceForGlyph(glyph: GlyphState, mouseX: number, mouseY: num
   return clamp(1 - edgeDistance / padding, 0, 1)
 }
 
+/**
+ * @description 生成所有字符的稳定中心点，让 Pretext 视觉字符槽和真实字体宽度对齐
+ * @dependencies 依赖 @chenglou/pretext、DOMRect、data-final 字符数据和当前 CSS 字体
+ * @performance 该函数会读取布局并动态 import Pretext，只在启用、字体 ready、resize 或 refreshKey 变化时调用
+ * @steps
+ * step1: 收集 glyph 节点和文本容器的 DOMRect，缺少尺寸时走 DOMRect 兜底
+ * step2: 使用当前 CSS 字体测量整段文本自然宽度和每个字符宽度
+ * step3: 将自然宽度中的字符中心映射回真实渲染容器宽度，得到稳定 homeX/homeY
+ */
 async function createGlyphStates(
   textEl: HTMLElement,
   text: string,
@@ -169,6 +235,17 @@ async function createGlyphStates(
   })
 }
 
+/**
+ * @description 为 Pretext 拆分后的字符提供鼠标悬停跟随、轻扰动和按压脉冲，服务 Intro 与正文文字动效
+ * @dependencies 依赖 React effect、@chenglou/pretext、Font Loading API、PointerEvent、requestAnimationFrame
+ * @performance 交互采用“有指针活动才启动，静止后自动停机”的 rAF 策略；每帧只写 transform/opacity，避免反复读布局
+ * @caveats prefers-reduced-motion 时完全跳过动画；enabled 关闭和组件卸载都会清空内联样式，避免残留遮挡真实文字
+ * @steps
+ * step1: 等待字体 ready 或超时后测量字符稳定位置
+ * step2: 监听 pointer/resize，指针移动时启动 rAF 动画循环
+ * step3: 每帧根据字符距离、命中 padding、按压状态计算目标位移/旋转/缩放
+ * step4: 字符回到稳定状态后停止 rAF，释放空闲帧预算
+ */
 export function usePretextTextInteraction(
   textRef: RefObject<HTMLElement | null>,
   {
@@ -341,6 +418,11 @@ export function usePretextTextInteraction(
   }, [enabled, glyphSelector, refreshKey, strength, text, textRef])
 }
 
+/**
+ * @description Intro 标题 Tim Cai. 的专用 Pretext 交互封装，固定选择 intro 字符节点和文本内容
+ * @dependencies 复用 usePretextTextInteraction；字符 DOM 由 Intro 组件中的 .intro__char-glyph 提供
+ * @caveats 这里不要改变 text 文案，否则 Pretext 测量中心线会和 Intro 实际字符不一致
+ */
 export function useIntroPretextInteraction(
   textRef: RefObject<HTMLElement | null>,
   enabled: boolean

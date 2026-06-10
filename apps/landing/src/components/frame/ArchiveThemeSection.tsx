@@ -5,6 +5,12 @@ import { ArchiveClusterMarker, ArchiveThemeMarker } from './ArchiveMarkers'
 import ArchiveRail from './ArchiveRail'
 import useArchiveThemeScroll from './useArchiveThemeScroll'
 
+/**
+ * @description Frame 视觉档案的单个主题段落容器，负责把主题 marker、cluster marker 和图片 panel 串成一条横向叙事轨道
+ * @dependencies 依赖 ArchiveTheme 内容模型、useArchiveThemeScroll 横向 pin 逻辑、ArchiveRail 进度显示和 frame.css 响应式布局
+ * @performance 首个 cluster 的图片标记为 eagerFirstImage，后续 cluster 交给滚动预热和浏览器调度，避免同一帧拉高全部 fetchPriority
+ * @caveats 组件只组织真实内容和 DOM 结构，不直接写滚动动画；移动端由 CSS 文档流承接，不能把桌面 pin 假设写死在组件里
+ */
 export default function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; themeIndex: number }) {
   const section = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
