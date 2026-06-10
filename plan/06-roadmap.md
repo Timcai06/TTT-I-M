@@ -65,6 +65,14 @@
 >   建议用 sharp 重编码消除非对称噪音（buildings 不报）。
 
 
+> **状态（2026-06-10 优化轮）** — ① loader 闸门拆分落地（00 原则·修复②）：intro 退场改由
+> `criticalReady` 门控，deferred 图片退场后继续后台并发拉满（总下载量不变）；进度条改显
+> critical 进度；e2e LCP 预算 4200→2800（CI 6000→4500）；`loader-preload-guards.mjs`
+> 锁双向契约。② 新增跨 zone 运行时冒烟 `tests/runtime/cross-zone-smoke.mjs`
+> （`npm run test:smoke` + CI `cross-zone-smoke` job，main push 阻塞）——补上 2026-06-05
+> 事故的运行时盲区。③ studio `next` 从 `latest` 锁到 `^16.2.7`。④ docs/01、docs/03、
+> docs/05 过期结论（/_next 404、手写 MDX）已同步为已修复状态。
+>
 > 每步可独立上线、有 guard 兜底。勾选框直接当 todo 用。
 > 文档引用：[01 运行时](./01-runtime-architecture.md) · [02 性能](./02-performance-rendering.md)
 > · [03 平台](./03-platform-direction-a.md) · [04 内容层](./04-content-layer.md)

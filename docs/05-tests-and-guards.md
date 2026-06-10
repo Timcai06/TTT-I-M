@@ -25,10 +25,7 @@ Critical paths verified:
 - `content-layer-guards.mjs`: asserts no `apps/landing/src/components/**` file imports `data/*` directly (everything goes through `src/content`), and that the repository (`all()`/`list()`/`get()`) + schema (`ContentMeta`/`PublishState`) contracts exist.
 
 ## Guard coverage gaps (important — "build green" ≠ "works in prod")
-All current guards are **static source-string assertions**. They do NOT exercise runtime, so they cannot catch deploy/integration failures. Concretely:
-- **Not caught**: the studio `/_next/*` assets 404 on the main domain (cross-zone asset resolution). `platform-guards.mjs` verifies the rewrite *strings* exist, not that the proxied page's assets actually load.
-- **Not implemented**: plan 05 runtime perf gates — long-task total, LCP, CLS, INP, FPS p95 on the three hot zones, WebGL context-leak after repeated chapter jumps.
-- **Recommended next guards**:
-  1. A runtime check (curl/Playwright) asserting `https://<main>/blog` returns 200 **and** its referenced `/_next/*.css|js` return 200 on the main domain.
-  2. Playwright perf budgets per plan 05.
-  3. Degradation e2e: reduced-motion / simulated WebGL failure / a 404 image must not strand the loader.
+Build guards are **static source-string assertions**. They do NOT exercise runtime, so they cannot catch deploy/integration failures on their own. Runtime complements:
+- **Cross-zone smoke (implemented 2026-06-10)**: `tests/runtime/cross-zone-smoke.mjs` (`npm run test:smoke`, CI job `cross-zone-smoke` on pushes to main) fetches the deployed main domain and asserts `/blog`,`/work`,`/dashboard` HTML **and** their referenced `/_next/*.css|js` all return 200 — the unstyled-blog failure mode the string guards missed in 2026-06-05.
+- **Perf gates (partial)**: `performance.spec.ts` covers LCP / long-task / CLS / heap / scroll-scrub / stage / overlay. **Still missing: INP, FPS p95, WebGL context-leak after repeated chapter jumps.**
+- **Degradation e2e (implemented)**: `degradation.spec.ts` — reduced-motion / simulated WebGL failure / a 404 image must not strand the loader; CI-blocking (`e2e-gates`).
