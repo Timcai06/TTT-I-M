@@ -7,7 +7,7 @@
     "dev": "next dev --port 5174",
     "build": "next build",
     "typecheck": "tsc --noEmit --pretty false",
-    "lint": "tsc --noEmit --pretty false"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@timcai/content": "0.0.0",
@@ -19,9 +19,14 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "~6.0.2"
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2"
   }
 }

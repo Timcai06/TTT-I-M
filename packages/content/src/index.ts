@@ -100,3 +100,6 @@ export const defaultMeta: ContentMeta = {
   author: 'tim',
   publishState: 'published',
 }
+
+export { portfolioProjects } from './projects'
+export type { MediaKind, PortfolioProject, Project, ProjectShot } from './projects'

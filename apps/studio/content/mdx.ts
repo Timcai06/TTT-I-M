@@ -69,8 +69,7 @@ export function readPosts(): Post[] {
       const filePath = path.join(postsDirectory, fileName)
       // gray-matter: robust YAML frontmatter (arrays, nested, multiline) — replaces
       // the previous hand-rolled flat string:value parser.
-      const { content, data } = matter(readFileSync(filePath, 'utf8'))
-      const frontmatter = data as Frontmatter
+      const { content, data: frontmatter } = matter(readFileSync(filePath, 'utf8'))
       const slug = fileName.replace(/\.mdx$/, '')
 
       return {

@@ -6,6 +6,9 @@ const studioPackage = JSON.parse(readFileSync('apps/studio/package.json', 'utf8'
 const studioVercel = JSON.parse(readFileSync('apps/studio/vercel.json', 'utf8'))
 const studioHome = readFileSync('apps/studio/app/page.tsx', 'utf8')
 const studioContent = readFileSync('apps/studio/content/index.ts', 'utf8')
+const sharedContent = readFileSync('packages/content/src/index.ts', 'utf8')
+const sharedProjects = readFileSync('packages/content/src/projects.ts', 'utf8')
+const landingProjects = readFileSync('apps/landing/src/data/projects.ts', 'utf8')
 const studioMdx = readFileSync('apps/studio/content/mdx.ts', 'utf8')
 const studioBlogDetail = readFileSync('apps/studio/app/blog/[slug]/page.tsx', 'utf8')
 const studioLayout = readFileSync('apps/studio/app/layout.tsx', 'utf8')
@@ -76,6 +79,15 @@ if (!studioHome.includes('without importing GSAP, R3F, or Lenis') || !studioCont
 
 if (!studioContent.includes('readPosts()') || !studioMdx.includes('readdirSync(postsDirectory)')) {
   throw new Error('Studio posts must be read from repository MDX files, not hardcoded page data.')
+}
+
+if (
+  !sharedContent.includes('portfolioProjects') ||
+  !sharedProjects.includes('export const portfolioProjects') ||
+  !studioContent.includes('portfolioProjects') ||
+  !landingProjects.includes("portfolioProjects as projects")
+) {
+  throw new Error('Work content must stay single-sourced from packages/content portfolioProjects for both landing and studio.')
 }
 
 if (!studioBlogDetail.includes('MdxContent') || !studioBlogDetail.includes('post.body')) {

@@ -26,6 +26,7 @@
 const MAIN_ORIGIN = process.env.CROSS_ZONE_MAIN_ORIGIN ?? 'https://ttt-i-m.vercel.app'
 const HTML_PATHS = ['/blog', '/work', '/dashboard']
 const FETCH_TIMEOUT_MS = 15_000
+const FETCH_RETRIES = 2
 const MAX_ASSETS_PER_PAGE = 25
 
 const failures = []
@@ -39,12 +40,27 @@ function ok(message) {
   console.log(`  ✓ ${message}`)
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 async function fetchWithTimeout(url) {
-  return fetch(url, {
-    redirect: 'follow',
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { 'user-agent': 'ttt-i-m-cross-zone-smoke' },
-  })
+  let lastError
+  for (let attempt = 0; attempt <= FETCH_RETRIES; attempt += 1) {
+    try {
+      return await fetch(url, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        headers: { 'user-agent': 'ttt-i-m-cross-zone-smoke' },
+      })
+    } catch (error) {
+      lastError = error
+      if (attempt < FETCH_RETRIES) {
+        await wait(250 * (attempt + 1))
+      }
+    }
+  }
+  throw lastError
 }
 
 /** Extract /_next/static asset URLs (css/js) from raw HTML. */

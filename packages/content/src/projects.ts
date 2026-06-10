@@ -1,0 +1,240 @@
+/**
+ * 项目媒体展示形态枚举。
+ * - `cinematic`: 整幅照片级展示，带 4 角标记与 caption
+ * - `ui`: 带浏览器 Chrome 框（地址栏 + 红绿灯圆点）的界面截图
+ * - `terminal`: 终端风格 Chrome 框，标签显示 `zsh — {project-id}`
+ * - `data`: 数据看板风格 Chrome 框，标签显示 `DATA READOUT`
+ */
+type MediaKind = 'cinematic' | 'ui' | 'terminal' | 'data'
+
+/** 项目截图的单帧定义。多帧时通过缩略图切换器浏览。 */
+interface ProjectShot {
+  /** 图片路径（public 下的相对路径）。 */
+  src: string
+  /** 图片描述标签，用作 caption 和缩略图 alt。 */
+  label: string
+}
+
+/**
+ * 项目条目定义 —— Projects 组件的完整数据契约。
+ * 每个项目在内容区展示为卡片：左侧文本信息 + 右侧媒体展示。
+ * @dependencies Projects 组件直接消费此类型数组；`content/index.ts` 重导出供 UI 使用
+ */
+interface Project {
+  /** 唯一标识，用于 key 和 URL hash 定位。 */
+  id: string
+  /** 排序序号，显示为 `01` / `02` 等。 */
+  index: string
+  /** 项目英文名称。 */
+  name: string
+  /** 项目中文名称。 */
+  cnTitle: string
+  /** 项目一句话标语。 */
+  tagline: string
+  /** 项目详细简介，支持内联 HTML（如 `<span class="...">` 高亮词）。 */
+  description: string
+  /** 技术栈标签列表。 */
+  stack: string[]
+  /** 项目亮点列表，每项一行。 */
+  highlights: string[]
+  /** 项目年份，显示在卡片右上角。 */
+  year: string
+  /** GitHub 仓库链接。 */
+  github: string
+  /** 在线演示链接，可选。 */
+  live?: string
+  /** 卡片的主题色（HEX），通过 CSS 变量 `--accent` 注入。 */
+  accent: string
+  /** 媒体展示配置。不存在时显示 'in the lab' 占位态。 */
+  media?: {
+    kind: MediaKind
+    shots: ProjectShot[]
+  }
+}
+
+const landingProjects: Project[] = [
+  {
+    id: 'bdi',
+    index: '01',
+    name: 'BDI · Infra Scan',
+    cnTitle: '桥梁巡检 AI 系统',
+    tagline: '无人机桥梁病害识别工作站',
+    description:
+      '面向无人机桥梁巡检场景的 AI 识别系统原型，把图像输入到病害识别、结果展示、结构化导出、历史回看做成可演进的产品，更是我们项目组的 ““ 国三 ”” 作品。',
+    stack: ['Next.js 16', 'FastAPI', 'YOLOv8-seg', 'Tailwind', 'Python 3.12'],
+    highlights: [
+      '支持裂缝、破损、梳齿、孔洞、钢筋外露、渗水六类病害分割',
+      '前端首屏 < 1s · 玻璃态 UI · 多模型对比 · 一键导出',
+      'CLI 包装脚本统一前后端 / mock / 真实推理流程',
+    ],
+    year: '2026',
+    github: 'https://github.com/Timcai06/BDI',
+    accent: '#e0623a',
+    media: {
+      kind: 'cinematic',
+      shots: [
+        { src: '/projects/bdi/corrosion.webp', label: '钢筋锈蚀' },
+        { src: '/projects/bdi/seepage.webp', label: '渗水监测' },
+        { src: '/projects/bdi/spalling.webp', label: '混凝土剥落' },
+      ],
+    },
+  },
+  {
+    id: 'doc-for-agent',
+    index: '02',
+    name: 'doc-for-agent',
+    cnTitle: '多代理仓库文档技能包',
+    tagline: 'docagent · 代理长期记忆基线',
+    description:
+      '面向 Claude Code / Codex / Continue / Copilot 的多代理仓库文档技能包，输出模式覆盖 agent / human / dual / quad，把生成的文档当作可维护的知识基线。',
+    stack: ['Node CLI', 'pipx', 'Codex', 'Claude Code', 'i18n'],
+    highlights: [
+      '四视图目录契约：AGENTS / AGENTS.zh / handbook / handbook.zh',
+      'Memory-first：agent 执行上下文与 maintainer 手册并行同步',
+      '一行 init 启动仓库内工作流，refresh 重写文档',
+    ],
+    year: '2026',
+    github: 'https://github.com/Timcai06/Doc-For-Agent-skill',
+    accent: '#d6c5a8',
+    media: {
+      kind: 'ui',
+      shots: [
+        { src: '/projects/doc-for-agent/overview.webp', label: 'docagent · 文档总览' },
+        { src: '/projects/doc-for-agent/terminal.webp', label: 'docagent init --mode=quad' },
+      ],
+    },
+  },
+  {
+    id: 'earnlytics',
+    index: '03',
+    name: 'Earnlytics',
+    cnTitle: '美股财报 AI 分析平台',
+    tagline: 'AI-driven earnings analysis · 中文摘要',
+    description:
+      'AI 驱动的美股科技公司财报分析平台，提供中文摘要与 RAG 多轮对话。覆盖 30 家公司、109 份财报，AI 全量覆盖，月度成本 < ¥1。',
+    stack: ['Next.js 16', 'Supabase', 'pgvector', 'DeepSeek', 'Cohere', 'Vercel'],
+    highlights: [
+      'RAG 助手：1024 维 Cohere 向量 · 多轮对话 · 动态建议',
+      '23 份财报到 109 份的全自动扩展 · GitHub Actions 每 4 小时同步',
+      '实时组合 + 玻璃态 UI + Web Vitals 闭环',
+    ],
+    year: '2026',
+    github: 'https://github.com/Timcai06/Earnlytics',
+    live: 'https://earnlytics-ebon.vercel.app',
+    accent: '#9ab5d6',
+    media: {
+      kind: 'ui',
+      shots: [
+        { src: '/projects/earnlytics/landing.webp', label: 'AI 驱动的财报分析' },
+      ],
+    },
+  },
+  {
+    id: 'formula-lab',
+    index: '04',
+    name: 'Formula Lab',
+    cnTitle: '公式识别 Mission Control',
+    tagline: '航天控制中心风 · 异步 OCR 工作站',
+    description:
+      'Linux 系统与编程实践大实验。航天单色调 UI · 异步公式识别工作台，上传图片转 LaTeX，可在论文项目工作区审校并导出 .tex / .md。',
+    stack: ['Django', 'Celery', 'Redis', 'PostgreSQL', 'PaddleOCR', 'KaTeX', 'Docker'],
+    highlights: [
+      'PaddleOCR Formula Recognition 为默认引擎 · pix2tex 为对照',
+      'Mission Progress 任务追踪 · 失败自动重试 · 持久化日志',
+      'Project Workspace：识别 → 审校 → 确认 → 导出闭环',
+    ],
+    year: '2026',
+    github: 'https://github.com/Timcai06/LinuxWeek11-Django-FormulaLab',
+    accent: '#a8b5b8',
+    media: {
+      kind: 'ui',
+      shots: [
+        { src: '/projects/formula-lab/console.webp', label: 'LaTeX 控制台' },
+        { src: '/projects/formula-lab/timeline.webp', label: '识别任务时间线' },
+        { src: '/projects/formula-lab/workbench.webp', label: '论文工作区' },
+      ],
+    },
+  },
+  {
+    id: 'a-modeling',
+    index: '05',
+    name: '霍尔木兹封锁油价模型',
+    cnTitle: '数学建模 A 题',
+    tagline: '短期冲击 + 中长期油价调节',
+    description:
+      '省 2026 数学建模 A 题。解释为什么霍尔木兹封锁巨大供应缺口下，油价并未冲到 278-337 美元/桶的反事实基准，而是在 110-120 美元/桶形成平台。',
+    stack: ['Python', 'R', 'LaTeX', 'Ridge', 'ARIMA', 'GARCH', '蒙特卡洛'],
+    highlights: [
+      '短期模型 RMSE 3.38 / MAE 2.76 / MAPE 2.76%，优于 ARIMA 基准',
+      '中长期接入 EIA / JODI / OPEC / OVX 官方外生约束',
+      '蒙特卡洛 + 16 项敏感性分析 + DM 检验 + Newey-West 校准',
+    ],
+    year: '2026',
+    github: 'https://github.com/Timcai06/-A-',
+    accent: '#1fb6c4',
+    media: {
+      kind: 'data',
+      shots: [
+        { src: '/projects/a-modeling/monte-carlo-tree.webp', label: '蒙特卡洛情景树' },
+        { src: '/projects/a-modeling/path-cloud.webp', label: '价格路径云图' },
+        { src: '/projects/a-modeling/sensitivity-tornado.webp', label: '参数敏感性龙卷风' },
+        { src: '/projects/a-modeling/fitted-vs-actual.webp', label: '精修模型 vs 实际' },
+        { src: '/projects/a-modeling/lagged-gpr.webp', label: 'GPR 滞后散点' },
+        { src: '/projects/a-modeling/ovx-volatility.webp', label: 'OVX 隐含波动率' },
+        { src: '/projects/a-modeling/return-volatility.webp', label: '收益率波动率' },
+        { src: '/projects/a-modeling/residual-correction.webp', label: '短期残差校正' },
+      ],
+    },
+  },
+  {
+    id: 'spm',
+    index: '06',
+    name: 'SPM',
+    cnTitle: '——',
+    tagline: '正在打磨中',
+    description:
+      '一个还在私下打磨的 Python 项目，等到我觉得它值得展示的时候，再把它的故事写在这里。',
+    stack: ['Python'],
+    highlights: ['Coming soon'],
+    year: '2026',
+    github: 'https://github.com/Timcai06/SPM',
+    accent: '#5e6470',
+  },
+]
+
+export type { MediaKind, ProjectShot, Project }
+
+export interface PortfolioProject extends Project {
+  slug: string
+  title: string
+  summary: string
+  tags: string[]
+  href: string
+  meta: {
+    author: 'tim'
+    publishState: 'published'
+    publishedAt: string
+  }
+  repository: string
+  liveUrl?: string
+  status: string
+  notes: string[]
+}
+
+export const portfolioProjects: PortfolioProject[] = landingProjects.map((project) => ({
+  ...project,
+  slug: project.id,
+  title: project.name,
+  summary: project.tagline,
+  tags: project.stack.slice(0, 4),
+  href: `/work/${project.id}`,
+  meta: {
+    author: 'tim',
+    publishState: 'published',
+    publishedAt: `${project.year}-01-01`,
+  },
+  repository: project.github,
+  liveUrl: project.live,
+  status: project.highlights.includes('Coming soon') ? 'In the lab' : 'Shipped system',
+  notes: project.highlights,
+}))
