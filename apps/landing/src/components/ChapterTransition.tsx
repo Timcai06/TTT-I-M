@@ -7,6 +7,7 @@ import {
   type ChapterTransitionRequest,
 } from '../lib/chapterTransition'
 import { scrollToChapter } from '../lib/chapterScroll'
+import { getChapterTheme } from '../lib/chapterTheme'
 import { getStage, setStage } from '../lib/stage'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { createTransitionTimeline } from '../lib/timelines/transitionTimeline'
@@ -123,6 +124,10 @@ export default function ChapterTransition() {
       // up mirrors it. Fallback 'up' when the target isn't mounted yet.
       const targetEl = document.getElementById(request.id)
       const direction = targetEl && targetEl.getBoundingClientRect().top < 0 ? 'down' : 'up'
+
+      // The cover takes the TARGET chapter's theme color — the wave's color
+      // announces the destination before the page gets there.
+      root.style.setProperty('--transition-cover', getChapterTheme(request.id).cover)
 
       await new Promise<void>((resolve) => {
         createTransitionTimeline(root, direction, {

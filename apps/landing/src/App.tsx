@@ -13,6 +13,7 @@ import Nav from './components/Nav'
 import PerfHud from './components/PerfHud'
 import ChapterBoundary from './components/ChapterBoundary'
 import ChapterStateProvider from './components/ChapterStateProvider'
+import ChapterThemeDriver from './components/ChapterThemeDriver'
 import ChapterTransition from './components/ChapterTransition'
 import { chapters } from './chapters/registry'
 import './styles/app.css'
@@ -65,6 +66,7 @@ export default function App() {
       <ChapterStateProvider>
         <ScrollIndicator />
         <Nav />
+        <ChapterThemeDriver />
       </ChapterStateProvider>
       <ChapterTransition />
       <main>
