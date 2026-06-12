@@ -11,6 +11,7 @@ import Cursor from './components/Cursor'
 import ScrollIndicator from './components/ScrollIndicator'
 import Nav from './components/Nav'
 import PerfHud from './components/PerfHud'
+import ChapterBoundary from './components/ChapterBoundary'
 import ChapterStateProvider from './components/ChapterStateProvider'
 import ChapterTransition from './components/ChapterTransition'
 import { chapters } from './chapters/registry'
@@ -68,11 +69,15 @@ export default function App() {
       <ChapterTransition />
       <main>
         {chapters.map(({ id, Component }) => (
-          // One boundary per chapter so a still-loading section can't suspend
-          // (blank out) its already-painted neighbours — notably the eager Hero.
-          <Suspense key={id} fallback={null}>
-            <Component />
-          </Suspense>
+          // One boundary pair per chapter: Suspense so a still-loading section
+          // can't suspend (blank out) its already-painted neighbours — notably
+          // the eager Hero — and ChapterBoundary so a render error or a failed
+          // lazy-chunk fetch collapses only this chapter, not the whole tree.
+          <ChapterBoundary key={id} chapterId={id}>
+            <Suspense fallback={null}>
+              <Component />
+            </Suspense>
+          </ChapterBoundary>
         ))}
       </main>
       <div className="grain" aria-hidden="true" />
