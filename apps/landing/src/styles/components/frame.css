@@ -39,9 +39,21 @@
   line-height: 0.8;
   letter-spacing: 0;
   color: var(--fg);
-  opacity: 0.035;
+  /* --word-reveal 由 useArchiveThemeScroll scrub 写入（0→1）：
+     水印随滚动从左到右被「擦亮」并轻微右移，替代原先的静态 0.035。 */
+  opacity: calc(0.012 + var(--word-reveal, 1) * 0.05);
+  clip-path: inset(-5% calc((1 - var(--word-reveal, 1)) * 100%) -5% 0);
+  transform: translateX(calc((1 - var(--word-reveal, 1)) * -1.5%));
   pointer-events: none;
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-theme-section::before {
+    opacity: 0.035;
+    clip-path: none;
+    transform: none;
+  }
 }
 
 .archive-theme-section::after {

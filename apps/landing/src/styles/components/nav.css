@@ -54,6 +54,44 @@
   width: 100%;
 }
 
+/* 字符翻转 hover：真实字符与 ::after 副本（attr(data-ch)）堆叠在 1.5em 视窗里，
+   hover 整列上移一字高，per-char 16ms 级联延迟出波浪感。副本提亮到 --fg，
+   翻转自带「点亮」；伪元素不进 innerText，语义/断言不受影响。 */
+.nav__link-roll {
+  display: inline-flex;
+  overflow: hidden;
+  height: 1.5em;
+  line-height: 1.5em;
+  vertical-align: bottom;
+}
+
+.nav__link-ch {
+  display: inline-flex;
+  flex-direction: column;
+  white-space: pre;
+  transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--ch-i) * 16ms);
+}
+
+.nav__link-ch::after {
+  content: attr(data-ch);
+  display: block;
+  height: 1.5em;
+  line-height: 1.5em;
+  color: var(--fg);
+}
+
+/* 注意：ch 作为 flex item 被拉伸到 1.5em 高，百分比位移会按拉伸后高度算半行；
+   必须用显式行高位移整行。 */
+.nav__link:is(:hover, :focus-visible) .nav__link-ch {
+  transform: translateY(-1.5em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav__link-ch {
+    transition: none;
+  }
+}
+
 .nav__counter {
   font-feature-settings: 'tnum';
 }

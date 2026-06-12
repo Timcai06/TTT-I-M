@@ -97,6 +97,24 @@ export default function useArchiveThemeScroll({
       revealWordsOnce(sectionEl, '.archive-theme-marker__title', { trigger: sectionEl, start: 'top 76%' })
       revealWordsOnce(sectionEl, '.archive-theme-marker__body', { trigger: sectionEl, start: 'top 72%' })
 
+      // 巨型水印（::before 的 attr(data-theme-word)）随滚动从左到右被「擦亮」：
+      // 这里只 scrub 一个 CSS 变量，clip-path/透明度的映射在 frame.css，
+      // 伪元素继承 section 上的 --word-reveal。pin 与否（移动端文档流）都适用。
+      gsap.fromTo(
+        sectionEl,
+        { '--word-reveal': 0 },
+        {
+          '--word-reveal': 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionEl,
+            start: 'top 82%',
+            end: 'top -35%',
+            scrub: true,
+          },
+        }
+      )
+
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
         const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)
         const scrollEndDistance = () => Math.ceil(scrollDistance() + window.innerHeight * 0.8)

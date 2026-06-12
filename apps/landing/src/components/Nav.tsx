@@ -1,7 +1,33 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { navChapters } from '../chapters/registry'
 import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
+
+/**
+ * 字符翻转 hover（lukebaffait 滚动门模式）：每个字符与它的 ::after 副本
+ * （content: attr(data-ch)）上下堆叠，hover 时整列上移一字高，
+ * transition-delay 按 --ch-i 级联出波浪感。第二份用伪元素而非真实节点，
+ * 让 innerText 保持单份语义 —— 复制、a11y、e2e 文本断言都不受影响。
+ */
+function rollChars(label: string) {
+  return (
+    <span className="nav__link-roll">
+      {label.split('').map((ch, i) => {
+        const display = ch === ' ' ? ' ' : ch
+        return (
+          <span
+            className="nav__link-ch"
+            key={`${ch}-${i}`}
+            data-ch={display}
+            style={{ '--ch-i': i } as CSSProperties}
+          >
+            {display}
+          </span>
+        )
+      })}
+    </span>
+  )
+}
 
 const links = navChapters.map((c) => ({ id: c.id, label: c.nav.label }))
 // In prod the blog is served same-origin at /blog (vercel.json proxies it to the
@@ -35,8 +61,9 @@ export default function Nav() {
                 <button
                   className={`nav__link${activeId === l.id ? ' is-active' : ''}`}
                   onClick={() => handleChapterClick(l.id)}
+                  aria-label={l.label}
                 >
-                  {l.label}
+                  {rollChars(l.label)}
                 </button>
               </li>
             ))}
