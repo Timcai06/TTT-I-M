@@ -127,11 +127,27 @@ if (!studioLayout.includes("@timcai/tokens/css") || !landingGlobal.includes("@ti
   throw new Error('Landing and Studio must share packages/tokens CSS.')
 }
 
-// Cross-document View Transitions opt-in lives in shared tokens so BOTH documents
-// enable it (the requirement for cross-document VT on same-origin navigation).
-const tokensCss = readFileSync('packages/tokens/src/tokens.css', 'utf8')
-if (!tokensCss.includes('@view-transition')) {
-  throw new Error('Shared tokens.css must opt both apps into cross-document View Transitions (@view-transition).')
+// tokens.css must stay the single source of truth: landing's global.css used to
+// redeclare every shared variable in its own :root, silently overriding the
+// package. Any `--bg:`/`--fg:`/`--accent:`/`--font-`/`--ease-` declaration in
+// landing global.css is that drift coming back.
+if (/--(bg|fg|accent|line|font-(sans|serif|mono)|ease-(out|inout))\s*:/.test(landingGlobal)) {
+  throw new Error('Landing global.css must not redeclare shared @timcai/tokens variables — edit packages/tokens/src/tokens.css instead.')
+}
+
+if (!landingPackage.dependencies?.['@timcai/tokens']) {
+  throw new Error('Landing must declare @timcai/tokens as a dependency (it imports its CSS).')
+}
+
+// Cross-document View Transitions opt-in lives in the shared tokens package
+// (separate view-transitions.css export) and BOTH documents must import it —
+// the requirement for cross-document VT on same-origin navigation.
+const viewTransitionsCss = readFileSync('packages/tokens/src/view-transitions.css', 'utf8')
+if (!viewTransitionsCss.includes('@view-transition')) {
+  throw new Error('packages/tokens view-transitions.css must contain the @view-transition opt-in.')
+}
+if (!studioLayout.includes('@timcai/tokens/view-transitions.css') || !landingGlobal.includes('@timcai/tokens/view-transitions.css')) {
+  throw new Error('Landing and Studio must both import @timcai/tokens/view-transitions.css (cross-document VT needs both documents).')
 }
 
 if (!vercelSource.includes('apps/landing/dist') || !vercelSource.includes('npm run build:landing')) {

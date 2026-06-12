@@ -1,29 +1,13 @@
 @import '@timcai/tokens/css';
+@import '@timcai/tokens/view-transitions.css';
 
+/* Shared palette/typography/motion tokens come ONLY from @timcai/tokens —
+   never redeclare them here, or the package silently stops being the source
+   of truth (that drift is exactly what this file used to have). */
 :root {
-  /* ── Color tokens ── */
-  --bg: #0a0a0a;
-  --bg-elev: #121212;
-  --bg-soft: #181818;
-  --line: rgba(255, 255, 255, 0.04);
-  --line-strong: rgba(255, 255, 255, 0.12);
-  --fg: #f0f0f0;
-  --fg-soft: rgba(240, 240, 240, 0.82);
-  --fg-mute: rgba(240, 240, 240, 0.60);
-  --fg-dim: rgba(240, 240, 240, 0.38);
-  --accent: #7890a8;
-  --accent-warm: #d6c5a8;
+  /* ── Landing-only tokens ── */
   --noise: 0.015;
   --grain-static-opacity: 0.028;
-
-  /* ── Typography ── */
-  --font-sans: 'Inter', system-ui, -apple-system, 'PingFang SC', sans-serif;
-  --font-serif: 'Playfair Display', 'Noto Serif SC', 'Songti SC', serif;
-  --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
-
-  /* ── Motion ── */
-  --ease-out: cubic-bezier(0.87, 0, 0.13, 1);
-  --ease-inout: cubic-bezier(0.87, 0, 0.13, 1);
 
   color-scheme: dark;
 }

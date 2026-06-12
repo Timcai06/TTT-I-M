@@ -17,8 +17,9 @@
     "test:build:frame": "node tests/build/frame-architecture-guards.mjs",
     "test:build:loader": "node tests/build/loader-preload-guards.mjs",
     "test:build:content": "node tests/build/content-layer-guards.mjs",
+    "test:unit": "node --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "test:e2e:gates": "playwright test tests/e2e/degradation.spec.ts",
+    "test:e2e:gates": "playwright test tests/e2e/degradation.spec.ts tests/e2e/chrome-ui.spec.ts tests/e2e/hero-pretext.spec.ts",
     "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
     "preview": "vite preview"
   },
@@ -31,6 +32,7 @@
     "@gsap/react": "^2.1.2",
     "@react-three/fiber": "^9.6.1",
     "@timcai/content": "0.0.0",
+    "@timcai/tokens": "0.0.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "gsap": "^3.15.0",

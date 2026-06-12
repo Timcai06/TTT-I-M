@@ -1,0 +1,29 @@
+/* ── Cross-document View Transitions ──
+   Smooth the landing ↔ studio navigation instead of a hard white cut. Both apps
+   import this file, so both documents opt in — which cross-document VT requires.
+   Same-origin only: works when the blog is reached via the relative /blog path
+   (proxied through the landing domain by vercel.json), not the absolute studio
+   URL. Progressive enhancement — Chrome 126+; other browsers ignore it and
+   hard-cut exactly as before.
+   Kept separate from tokens.css: tokens are design *values*, this is navigation
+   *behavior* — apps opt into each independently. */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.5s;
+    animation-timing-function: var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+}
+
+/* Honour reduced motion: skip the cross-fade entirely (instant cut). */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

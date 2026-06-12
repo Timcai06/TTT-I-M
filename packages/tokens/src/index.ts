@@ -1,6 +1,7 @@
 export const colors = {
   accent: '#7890a8',
   accentWarm: '#d6c5a8',
+  accentPop: '#ff4a33',
   background: '#0a0a0a',
   backgroundElevated: '#121212',
   foreground: '#f0f0f0',
