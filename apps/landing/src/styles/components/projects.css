@@ -19,6 +19,168 @@
   line-height: 1.8;
 }
 
+/* ── Bento 速览格（zentry bento 模式：不等宽瓦片 + clip-path 图片揭示）──
+   闲置态 = 深底 + 编号/名称；hover/focus = 首图从底部 clip 展开 + scrim 压暗保证文字可读。
+   仅 CSS transition（clip-path/transform/opacity），无逐帧 JS。 */
+.projects__bento {
+  margin-top: 72px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: clamp(170px, 21vw, 250px);
+  gap: 10px;
+}
+
+.bento-tile {
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--tile-i) * 70ms),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--tile-i) * 70ms),
+    border-color 0.4s ease;
+}
+
+.projects__bento.is-visible .bento-tile {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 不等宽节奏：第 1、5 块横向加倍（4 列 → [2,1,1] / [1,2,1]） */
+.bento-tile:nth-child(1),
+.bento-tile:nth-child(5) {
+  grid-column: span 2;
+}
+
+.bento-tile__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  clip-path: inset(100% 0 0 0);
+  transform: scale(1.06);
+  transition:
+    clip-path 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bento-tile__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 5, 6, 0) 30%, rgba(5, 5, 6, 0.82) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.bento-tile:is(:hover, :focus-visible) .bento-tile__img {
+  clip-path: inset(0 0 0 0);
+  transform: scale(1);
+}
+
+.bento-tile:is(:hover, :focus-visible) .bento-tile__scrim {
+  opacity: 1;
+}
+
+.bento-tile:is(:hover, :focus-visible) {
+  border-color: color-mix(in srgb, var(--tile-accent) 55%, var(--line));
+}
+
+.bento-tile__top {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--fg-mute);
+  z-index: 1;
+}
+
+.bento-tile__name {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 1.9vw, 26px);
+  line-height: 1.1;
+  color: var(--fg);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bento-tile:is(:hover, :focus-visible) .bento-tile__name {
+  transform: translateY(-4px);
+}
+
+.bento-tile__tag {
+  position: relative;
+  z-index: 1;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--fg-soft);
+  opacity: 0.7;
+  transition: opacity 0.5s ease;
+}
+
+.bento-tile:is(:hover, :focus-visible) .bento-tile__tag {
+  opacity: 1;
+}
+
+.bento-tile__line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--tile-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
+}
+
+.bento-tile:is(:hover, :focus-visible) .bento-tile__line {
+  transform: scaleX(1);
+}
+
+.bento-tile--soon {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 14px, rgba(255, 255, 255, 0.018) 14px 15px),
+    var(--bg-elev);
+}
+
+@media (max-width: 900px) {
+  .projects__bento {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: clamp(150px, 26vw, 210px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-tile,
+  .bento-tile__img,
+  .bento-tile__name,
+  .bento-tile__line {
+    transition: none;
+  }
+
+  .bento-tile {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .projects__list {
   margin-top: 80px;
   display: flex;

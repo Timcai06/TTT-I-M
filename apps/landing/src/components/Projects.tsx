@@ -1,8 +1,62 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
+import { getLenis } from '../lib/lenis'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
 import { projects, type Project } from '../content'
+
+/**
+ * @description Bento 速览格 —— 六个项目的不等宽导航瓦片（zentry bento 模式）。
+ *   闲置态只显示编号/名称/年份；hover/focus 时项目首图从底部 clip-path 展开，
+ *   点击经 Lenis 平滑滚动到对应的详情卡片。填补 Work 章节头部的密度洼地，
+ *   同时充当章节内目录。
+ * @performance 图片 lazy 加载且初始被 clip 隐藏，不增加首屏解码；
+ *   reveal 全部走 CSS transition（clip-path/transform/opacity），无逐帧 JS。
+ */
+function ProjectsBento() {
+  const scrollToCard = (id: string) => {
+    const card = document.querySelector<HTMLElement>(`[data-project-id="${id}"]`)
+    if (!card) return
+    const lenis = getLenis()
+    if (lenis) {
+      lenis.scrollTo(card, { offset: -72 })
+    } else {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  return (
+    <div className="projects__bento" role="list" aria-label="项目速览">
+      {projects.map((p, i) => {
+        const shot = p.media?.shots[0]
+        return (
+          <button
+            type="button"
+            role="listitem"
+            className={`bento-tile${shot ? '' : ' bento-tile--soon'}`}
+            key={p.id}
+            style={{ '--tile-accent': p.accent, '--tile-i': i } as CSSProperties}
+            onClick={() => scrollToCard(p.id)}
+            aria-label={`跳到项目 ${p.name} — ${p.tagline}`}
+            data-cursor="hover"
+          >
+            {shot && <img className="bento-tile__img" src={shot.src} alt="" loading="lazy" />}
+            <span className="bento-tile__scrim" aria-hidden="true" />
+            <span className="bento-tile__top" aria-hidden="true">
+              <span className="bento-tile__index">{p.index}</span>
+              <span className="bento-tile__year">{p.year}</span>
+            </span>
+            <span className="bento-tile__name" aria-hidden="true">{p.name}</span>
+            <span className="bento-tile__tag" aria-hidden="true">
+              {shot ? p.tagline : 'in the lab / / /'}
+            </span>
+            <span className="bento-tile__line" aria-hidden="true" />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 /**
  * @description 项目卡片右侧媒体展示器。根据 `Project.media.kind` 切换 cinematic / ui / terminal / data 四种外观，
@@ -148,6 +202,17 @@ export default function Projects() {
         }
       )
 
+      // Bento tiles cascade in once (per-tile delay lives in CSS via --tile-i).
+      const bento = root.current?.querySelector<HTMLElement>('.projects__bento')
+      if (bento) {
+        ScrollTrigger.create({
+          trigger: bento,
+          start: 'top 86%',
+          onEnter: () => bento.classList.add('is-visible'),
+          onLeaveBack: () => bento.classList.remove('is-visible'),
+        })
+      }
+
       gsap.utils.toArray<HTMLElement>('.project-card').forEach((card) => {
         ScrollTrigger.create({
           trigger: card,
@@ -193,6 +258,8 @@ export default function Projects() {
           它们大多是阶段性的，但每一个我都在工程化上花过功夫。
         </p>
       </div>
+
+      <ProjectsBento />
 
       <div className="projects__list">
         {projects.map((p) => (
