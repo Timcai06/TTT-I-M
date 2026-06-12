@@ -15,7 +15,7 @@ test('Hero name hover interaction is ready as soon as the loader clears', async 
   expect(box).not.toBeNull()
 
   await page.mouse.move((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + (box?.height ?? 0) / 2)
-  await page.waitForTimeout(180)
 
+  // No fixed wait needed: toHaveCSS polls until the hover transform lands.
   await expect(firstGlyph).toHaveCSS('transform', /matrix/)
 })

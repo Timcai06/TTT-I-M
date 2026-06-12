@@ -20,6 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run test:unit # node --test over landing pure-logic modules
       - run: npm run build:studio
       - run: npm run test:build # builds landing + 5 landing guards + platform guard
 
@@ -32,8 +33,11 @@ jobs:
   # (verified 16/16). So CI runs them for VISIBILITY but does not block on them; the
   # hard gate is `verify` (typecheck/lint/build/studio + 6 build guards). Run
   # `npm run test:e2e` locally before merging UI/scroll changes.
-  # TODO: replace remaining fixed waitForTimeout()s with condition waits, then
-  # promote the deterministic subset back to blocking.
+  # 2026-06-11: the deterministic load-time subset (chrome-ui, hero-pretext) was
+  # promoted into the blocking `e2e-gates` job below. What remains advisory here
+  # is the scroll-scrub/perf set (frame, mobile, performance) whose remaining
+  # waitForTimeout()s pace scrub animations — converting those changes test
+  # semantics, so they stay local-authoritative for now.
   e2e:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -73,9 +77,11 @@ jobs:
           node-version: 24
       - run: node tests/runtime/cross-zone-smoke.mjs
 
-  # Degradation gates: BLOCKING. Deterministic (no scroll dependency) — reduced
-  # motion, no WebGL, a 404 asset (A1). Load-time only, the stable part of CI, so
-  # unlike the scroll-driven `e2e` job these are a hard gate.
+  # Deterministic e2e gates: BLOCKING. Degradation (reduced motion, no WebGL,
+  # 404 asset — load-time only) plus the promoted deterministic subset:
+  # chrome-ui (nav/scroll-indicator via condition waits only) and hero-pretext
+  # (load-time hover, no fixed waits). No fixed-wait scroll scrubbing here, so
+  # these are stable on shared runners — unlike the advisory `e2e` job above.
   e2e-gates:
     runs-on: ubuntu-latest
     steps:
