@@ -209,3 +209,37 @@
     max-width: 260px;
   }
 }
+
+/* ── 签名手势 ──
+   swash（钢笔甩笔，渐变描边渐轻）+ 末端按笔顺写出的「蔡」。
+   绝对定位：left/top 由 Hero 运行时测量句点位置写入（offset 链，免疫 transform），
+   起笔点像素级贴住 "Cai." 的句点。这里只给兜底初值。 */
+.hero__signature {
+  position: absolute;
+  left: 24%;
+  top: 60%;
+  width: clamp(200px, 19vw, 280px);
+  pointer-events: none;
+}
+
+.hero__signature svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.hero__signature-stroke {
+  /* 朱砂墨：纯 accent-pop 太跳，向深红幕布色混入 44% 压成印泥红 */
+  stroke: color-mix(in srgb, var(--accent-pop) 56%, var(--transition-cover));
+  stroke-width: 2.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .hero__signature {
+    width: clamp(220px, 58vw, 330px);
+  }
+}
