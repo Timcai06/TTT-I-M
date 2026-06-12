@@ -36,6 +36,10 @@
     {
       "source": "/rss.xml",
       "destination": "https://ttt-i-m-studio.vercel.app/rss.xml"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://ttt-i-m-studio.vercel.app/sitemap.xml"
     }
   ],
   "headers": [
@@ -45,6 +49,35 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=604800, stale-while-revalidate=31536000"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=()"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com; worker-src 'self' blob:; frame-ancestors 'none'"
         }
       ]
     }

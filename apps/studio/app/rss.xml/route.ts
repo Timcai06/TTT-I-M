@@ -1,6 +1,5 @@
 import { posts } from '../../content'
-
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://timcai.example'
+import { siteUrl as baseUrl } from '../../lib/site'
 
 function escapeXml(value: string) {
   return value

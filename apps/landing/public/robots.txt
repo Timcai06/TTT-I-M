@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://ttt-i-m.vercel.app/sitemap.xml

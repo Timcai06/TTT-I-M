@@ -1,11 +1,13 @@
 import '@timcai/tokens/css'
+import '@timcai/tokens/view-transitions.css'
 import './studio.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { siteUrl } from '../lib/site'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://timcai.example'),
+  metadataBase: new URL(siteUrl),
   title: {
     default: 'Tim Cai Studio',
     template: '%s · Tim Cai Studio',
