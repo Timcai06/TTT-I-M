@@ -69,8 +69,18 @@ if (transitionTimelineSource.includes("document.querySelector('main')") || trans
   throw new Error('Chapter transition timeline must not animate the global main layout.')
 }
 
-if (!transitionApiSource.includes('portfolio:chapter-transition') || !transitionApiSource.includes('portfolio:chapter-arrived')) {
-  throw new Error('Chapter transition requests must use the shared chapter transition event.')
+// All chapter jumps flow through the one typed bus (transitionToChapter →
+// onChapterTransitionRequest, dispatchChapterArrived → onChapterArrived).
+// The transport is module-internal listener sets (same pattern as lib/stage.ts);
+// reintroducing window CustomEvents would bring back the stringly-typed global
+// channel this replaced (2026-06-12).
+for (const member of ['transitionToChapter', 'onChapterTransitionRequest', 'dispatchChapterArrived', 'onChapterArrived']) {
+  if (!transitionApiSource.includes(member)) {
+    throw new Error(`Chapter transition bus must keep its ${member} surface.`)
+  }
+}
+if (transitionApiSource.includes('CustomEvent') || transitionApiSource.includes('dispatchEvent')) {
+  throw new Error('Chapter transition bus must stay a typed in-module emitter, not window CustomEvents.')
 }
 
 if (!scrollSource.includes('immediate?: boolean')) {

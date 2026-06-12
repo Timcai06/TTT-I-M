@@ -10,38 +10,40 @@ export interface ChapterTransitionRequest {
   updateHash: boolean
 }
 
-const CHAPTER_TRANSITION_EVENT = 'portfolio:chapter-transition'
-export const CHAPTER_ARRIVED_EVENT = 'portfolio:chapter-arrived'
+// Typed in-module emitter — the same pattern as lib/stage.ts. Previously this
+// rode two stringly-named window events ('portfolio:chapter-*') with detail
+// casts at every listener; the typed listener sets remove that global channel
+// while keeping the exact same public API for every caller. The chapter-state
+// build guard pins this transport choice.
+const transitionListeners = new Set<(request: ChapterTransitionRequest) => void>()
+const arrivedListeners = new Set<(id: string) => void>()
 
 /**
  * @description 发起一次章节跳转请求。
- *   这里只派发事件，不直接滚动；真正的快门动画、Lenis 冻结和 scrollToChapter 由 `ChapterTransition` 组件协调。
- * @dependencies 浏览器 CustomEvent、`ChapterTransition` 组件中的事件监听器
+ *   这里只通知订阅者，不直接滚动；真正的快门动画、Lenis 冻结和 scrollToChapter 由 `ChapterTransition` 组件协调。
+ * @dependencies `onChapterTransitionRequest` 注册的 listener 集合
  * @performance / @caveats 保持事件总线薄层，避免 Nav/Footer 等入口各自复制转场逻辑。
  */
 export function transitionToChapter(id: string, options: ChapterTransitionOptions = {}) {
-  window.dispatchEvent(new CustomEvent<ChapterTransitionRequest>(CHAPTER_TRANSITION_EVENT, {
-    detail: {
-      id,
-      updateHash: options.updateHash ?? false,
-    },
-  }))
+  const request: ChapterTransitionRequest = {
+    id,
+    updateHash: options.updateHash ?? false,
+  }
+  transitionListeners.forEach((listener) => listener(request))
 }
 
 /**
- * @description 订阅章节转场请求事件。
+ * @description 订阅章节转场请求。
  * @dependencies `transitionToChapter`
  * @performance / @caveats 返回 unsubscribe，React effect cleanup 必须调用，避免热更新/重挂载重复触发转场。
  */
 export function onChapterTransitionRequest(
   callback: (request: ChapterTransitionRequest) => void
 ) {
-  const listener = (event: Event) => {
-    callback((event as CustomEvent<ChapterTransitionRequest>).detail)
+  transitionListeners.add(callback)
+  return () => {
+    transitionListeners.delete(callback)
   }
-
-  window.addEventListener(CHAPTER_TRANSITION_EVENT, listener)
-  return () => window.removeEventListener(CHAPTER_TRANSITION_EVENT, listener)
 }
 
 /**
@@ -50,19 +52,17 @@ export function onChapterTransitionRequest(
  * @dependencies `ChapterTransition` 的 onLand 回调
  */
 export function dispatchChapterArrived(id: string) {
-  window.dispatchEvent(new CustomEvent<string>(CHAPTER_ARRIVED_EVENT, { detail: id }))
+  arrivedListeners.forEach((listener) => listener(id))
 }
 
 /**
- * @description 订阅章节到达事件。
+ * @description 订阅章节到达通知。
  * @dependencies `dispatchChapterArrived`
- * @performance / @caveats 事件只表达“到达”，不表达动画进行中状态；进行中状态请读取 `stage`。
+ * @performance / @caveats 通知只表达“到达”，不表达动画进行中状态；进行中状态请读取 `stage`。
  */
 export function onChapterArrived(callback: (id: string) => void) {
-  const listener = (event: Event) => {
-    callback((event as CustomEvent<string>).detail)
+  arrivedListeners.add(callback)
+  return () => {
+    arrivedListeners.delete(callback)
   }
-
-  window.addEventListener(CHAPTER_ARRIVED_EVENT, listener)
-  return () => window.removeEventListener(CHAPTER_ARRIVED_EVENT, listener)
 }
