@@ -9,11 +9,16 @@ export interface ContentMeta {
   author: string
   /** 发布状态；前台通常只展示 published/approved 内容 */
   publishState: PublishState
+  /** 创建时间，建议使用 ISO-8601 字符串 */
+  createdAt?: string
   /** 发布时间，建议使用 ISO-8601 字符串 */
   publishedAt?: string
   /** 最近更新时间，建议使用 ISO-8601 字符串 */
   updatedAt?: string
 }
+
+/** 将 ContentMeta 附加到任意条目类型上，作为带元数据的完整内容条目。 */
+export type WithMeta<T> = T & ContentMeta
 
 /**
  * @description Studio 博文内容结构，当前由 apps/studio/content/posts/*.mdx 解析生成
@@ -92,6 +97,44 @@ export function createStaticRepository<T extends { slug: string }>(items: T[]): 
     all: () => items,
     get: (slug) => bySlug.get(slug),
     list: async () => items,
+  }
+}
+
+/**
+ * @description 按自定义 id 取键的内容仓储契约 —— landing 的集合（photos 用 src、
+ *   facts 用 label 等）没有统一的 slug 字段，因此与上面 slug 取键的
+ *   CollectionRepository 并列。`all()` 同步返回打包数据（landing 首帧无 loading 态）；
+ *   `list()` / `get()` 为异步契约，未来 MDX/DB 适配器按此实现并附带 ContentMeta。
+ * @caveats 同步 `all()` 仅静态适配器可用 —— 迁移到异步数据源时 landing 需引入
+ *   Suspense 或预取策略以避免首帧空白
+ */
+export interface KeyedCollectionRepository<T> {
+  /** 同步获取全量集合（原始数据，不附带 ContentMeta）。 */
+  all(): T[]
+  /** 异步获取全量集合，每项附带 ContentMeta。 */
+  list(): Promise<WithMeta<T>[]>
+  /** 按 id 获取单条目（id 由工厂函数的 getId 提取）。 */
+  get(id: string): Promise<WithMeta<T> | undefined>
+}
+
+/**
+ * @description 把手写静态数组包装成 KeyedCollectionRepository（landing 当前的唯一适配器）
+ * @performance all() 零拷贝返回原数组；list/get 仅为未来适配器保持异步形态
+ * @caveats 返回原始数组引用，调用方不要修改条目对象
+ */
+export function createKeyedStaticRepository<T>(
+  items: T[],
+  getId: (item: T) => string,
+): KeyedCollectionRepository<T> {
+  const withMeta = (item: T): WithMeta<T> => ({ ...item, ...defaultMeta })
+
+  return {
+    all: () => items,
+    list: () => Promise.resolve(items.map(withMeta)),
+    get: (id) => {
+      const found = items.find((item) => getId(item) === id)
+      return Promise.resolve(found ? withMeta(found) : undefined)
+    },
   }
 }
 
