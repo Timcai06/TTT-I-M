@@ -6,9 +6,10 @@ on:
     branches: [main]
 
 jobs:
-  # Deterministic gates: typecheck + lint (both workspaces), build both apps,
-  # and run all 6 build guards (chunk budget, chapter-state, frame, loader-preload,
-  # content-layer, platform). These must always pass.
+  # Deterministic gates: typecheck + lint (both workspaces), unit tests, build
+  # both apps, and run all 7 build guards (chunk budget, chapter-state, frame,
+  # loader-preload, content-layer, deferred-image bytes, platform). These must
+  # always pass.
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +23,7 @@ jobs:
       - run: npm run lint
       - run: npm run test:unit # node --test over landing pure-logic modules
       - run: npm run build:studio
-      - run: npm run test:build # builds landing + 5 landing guards + platform guard
+      - run: npm run test:build # builds landing + 6 landing guards + platform guard
 
   # Runtime gates: real-browser Playwright (frame structure + Plan 05 perf budgets).
   #
@@ -50,6 +51,10 @@ jobs:
       PERF_HEAP_MB: '110'
       PERF_LOAD_LONGTASK_MS: '700'
       PERF_SCROLL_LONGTASK_MS: '300'
+      # INP/FPS gates (2026-06-12): 2-core headless runners jank far above any
+      # real device; budgets are wide so only severe regressions trip them.
+      PERF_INP_MS: '500'
+      PERF_FRAME_P95_MS: '120'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

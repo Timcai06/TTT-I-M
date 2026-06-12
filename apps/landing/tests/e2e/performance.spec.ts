@@ -24,6 +24,8 @@ const LCP_BUDGET_MS = budget('PERF_LCP_MS', 2800)
 const HEAP_BUDGET_MB = budget('PERF_HEAP_MB', 80)
 const LOAD_LONGTASK_MS = budget('PERF_LOAD_LONGTASK_MS', 200)
 const SCROLL_LONGTASK_MS = budget('PERF_SCROLL_LONGTASK_MS', 100)
+const INP_BUDGET_MS = budget('PERF_INP_MS', 200)
+const FRAME_P95_BUDGET_MS = budget('PERF_FRAME_P95_MS', 34)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -189,6 +191,101 @@ test('hero scroll scrub produces no long tasks', async ({ page }) => {
     violations,
     `Long tasks during scroll: ${JSON.stringify(violations)}`,
   ).toHaveLength(0)
+})
+
+// ── INP: interaction latency ──────────────────────────────────────────────────
+
+test('interaction latency stays within the INP budget', async ({ page }) => {
+  await openHome(page)
+
+  // Event Timing API: each entry's duration spans input delay → handlers →
+  // next paint, which is exactly what INP scores. We drive the heaviest real
+  // interactions (a chapter-jump click starts the GSAP shutter transition)
+  // and assert the worst observed interaction stays under budget — with so few
+  // interactions, worst-case IS the INP.
+  await page.evaluate(() => {
+    (window as unknown as Record<string, unknown>).__interactionDurations = []
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        (window as unknown as Record<string, { name: string; duration: number }[]>).__interactionDurations.push({
+          name: entry.name,
+          duration: Math.round(entry.duration),
+        })
+      }
+    })
+    observer.observe({ type: 'event', durationThreshold: 16 } as PerformanceObserverInit)
+  })
+
+  const aboutLink = page.locator('.nav__link', { hasText: 'About' })
+  if (await aboutLink.isVisible()) {
+    await aboutLink.click()
+  }
+  // Let the click's full effect (transition start) present, then a second
+  // interaction while the page is busiest: mid-transition pointer activity.
+  await page.waitForTimeout(700)
+  await page.mouse.wheel(0, 300)
+  await page.waitForTimeout(500)
+
+  const interactions = await page.evaluate(() =>
+    (window as unknown as Record<string, { name: string; duration: number }[]>).__interactionDurations ?? [],
+  )
+
+  const worst = interactions.reduce((max, entry) => Math.max(max, entry.duration), 0)
+  expect(
+    worst,
+    `Worst interaction ${worst}ms exceeds INP budget ${INP_BUDGET_MS}ms: ${JSON.stringify(interactions)}`,
+  ).toBeLessThan(INP_BUDGET_MS)
+})
+
+// ── FPS: p95 frame time during scroll scrub ───────────────────────────────────
+
+test('scroll scrub frame time p95 stays within budget', async ({ page }) => {
+  await openHome(page)
+
+  // Long-task gates catch single >100ms stalls; this catches sustained jank —
+  // many 40-80ms frames feel terrible yet never trip the long-task observer.
+  // Sample rAF deltas while scrubbing through the hero/about pin range and
+  // assert the 95th percentile frame interval (≈ p95 frame time, the inverse
+  // of FPS-p95) stays under budget. 34ms local ≈ one dropped 60Hz frame.
+  await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    w.__frameDeltas = []
+    let last = performance.now()
+    let stopped = false
+    w.__stopFrameSampler = () => {
+      stopped = true
+    }
+    const loop = (t: number) => {
+      (w.__frameDeltas as number[]).push(t - last)
+      last = t
+      if (!stopped) requestAnimationFrame(loop)
+    }
+    requestAnimationFrame(loop)
+  })
+
+  await page.mouse.wheel(0, 900)
+  await page.waitForTimeout(250)
+  await page.mouse.wheel(0, 900)
+  await page.waitForTimeout(250)
+  await page.mouse.wheel(0, -1800)
+  await page.waitForTimeout(400)
+
+  const deltas = await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    ;(w.__stopFrameSampler as () => void)()
+    return w.__frameDeltas as number[]
+  })
+
+  // Drop the first few frames (sampler warm-up) before ranking.
+  const samples = deltas.slice(3)
+  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThan(30)
+  const sorted = [...samples].sort((a, b) => a - b)
+  const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0
+
+  expect(
+    p95,
+    `p95 frame time ${p95.toFixed(1)}ms exceeds ${FRAME_P95_BUDGET_MS}ms (≈${(1000 / p95).toFixed(0)}fps p95)`,
+  ).toBeLessThan(FRAME_P95_BUDGET_MS)
 })
 
 // ── Stage machine: no stale intro after load ───────────────────────────────────
