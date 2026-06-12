@@ -75,6 +75,7 @@ export default function Loader() {
 
       /* ── init ── */
       gsap.set(charEls, { opacity: 0, yPercent: 120 })
+      gsap.set('.intro__scan-line', { opacity: 0, scaleX: 0 })
 
       /* ── baffle scramble (kept) ── */
       charEls.forEach((el) => {
@@ -102,9 +103,25 @@ export default function Loader() {
         opacity: 1,
         yPercent: 0,
         duration: 1.25,
-        stagger: 0.075,
+        stagger: (index, target) => {
+          const group = Number((target as HTMLElement).dataset.introGroup ?? index)
+          return group * 0.16 + index * 0.018
+        },
         ease: 'expo.out',
       }, 0.1)
+
+      tl.to('.intro__scan-line', {
+        opacity: 0.9,
+        scaleX: 1,
+        duration: 0.42,
+        ease: 'power3.out',
+      }, '>-0.28')
+
+      tl.to('.intro__scan-line', {
+        opacity: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+      }, '>-0.08')
 
       tl.call(() => {
         setStage('intro')
@@ -158,26 +175,55 @@ export default function Loader() {
     const ctx = gsap.context(() => {
       const charEls = textRef.current?.querySelectorAll<HTMLElement>('.intro__char')
       if (!charEls?.length) return
+      const titleChars = textRef.current?.querySelectorAll<HTMLElement>('.intro__char:not(.intro__dot)')
+      const dot = textRef.current?.querySelector<HTMLElement>('.intro__dot')
 
       const tl = gsap.timeline()
 
       /* ── hold a beat ── */
       tl.to({}, { duration: 0.35 })
 
+      tl.to('.intro', {
+        filter: 'brightness(0.82) contrast(1.08)',
+        duration: 0.42,
+        ease: 'power2.out',
+      }, '<')
+
       /* ── detail (counter + hairline) recede ── */
-      tl.to('.intro__counter, .intro__bar-track', {
+      tl.to('.intro__counter, .intro__bar-track, .intro__status', {
         opacity: 0,
         duration: 0.5,
         ease: 'power2.in',
       }, '>-0.1')
 
       /* ── name lifts away behind the mask ── */
-      tl.to(charEls, {
+      tl.to(titleChars ?? charEls, {
         yPercent: -120,
         duration: 0.8,
         stagger: 0.04,
         ease: 'power3.in',
       }, '<')
+
+      if (dot) {
+        // GSAP color tweens need concrete values — resolve the design tokens
+        // (@timcai/tokens) at exit time instead of hardcoding the accent.
+        const rootStyles = getComputedStyle(document.documentElement)
+        const popColor = rootStyles.getPropertyValue('--accent-pop').trim() || '#ff4a33'
+        const popGlow = rootStyles.getPropertyValue('--accent-pop-glow').trim() || 'rgba(255, 74, 51, 0.72)'
+        tl.to(dot, {
+          color: popColor,
+          textShadow: `0 0 28px ${popGlow}`,
+          yPercent: -70,
+          duration: 0.52,
+          ease: 'power2.in',
+        }, '<0.18')
+
+        tl.to(dot, {
+          opacity: 0,
+          duration: 0.24,
+          ease: 'power2.in',
+        }, '>-0.08')
+      }
 
       /* ── hand off to hero just before the panel clears ── */
       tl.call(dispatchIntroExit, [], '>-0.15')
@@ -198,6 +244,12 @@ export default function Loader() {
   if (done) return null
 
   const text = 'Tim Cai.'
+  const introGroup = (index: number) => {
+    if (index === 0) return 0
+    if (index >= 1 && index <= 3) return 1
+    if (index >= 4 && index <= 6) return 2
+    return 3
+  }
   const charClassName = (ch: string) => {
     if (ch.toLowerCase() === 'i') return 'intro__char intro__char--narrow'
     if (ch.toLowerCase() === 'm') return 'intro__char intro__char--wide'
@@ -207,20 +259,20 @@ export default function Loader() {
   const chars = text.split('').map((ch, i) => {
     if (ch === ' ') {
       return (
-        <span key={i} className="intro__char intro__space">
+        <span key={i} className="intro__char intro__space" data-intro-group={introGroup(i)}>
           <span className="intro__char-glyph" data-final=" ">&nbsp;</span>
         </span>
       )
     }
     if (ch === '.') {
       return (
-        <span key={i} className="intro__char intro__dot">
+        <span key={i} className="intro__char intro__dot" data-intro-group={introGroup(i)}>
           <span className="intro__char-glyph" data-final=".">.</span>
         </span>
       )
     }
     return (
-      <span key={i} className={charClassName(ch)}>
+      <span key={i} className={charClassName(ch)} data-intro-group={introGroup(i)}>
         <span className="intro__char-glyph" data-final={ch}>{ch}</span>
       </span>
     )
@@ -233,7 +285,12 @@ export default function Loader() {
       <div className={`intro__text-wrap${introReady && !exiting ? ' intro__text-wrap--interactive' : ''}`}>
         <div className="intro__text" ref={textRef}>{chars}</div>
       </div>
+      <div className="intro__scan-line" aria-hidden="true" />
 
+      <div className="intro__status" aria-hidden="true">
+        <span>Runtime gate</span>
+        <span>Critical resources</span>
+      </div>
       <div className="intro__counter">
         <span ref={countRef}>00</span>
         <span className="intro__counter-sep">/ 100</span>
