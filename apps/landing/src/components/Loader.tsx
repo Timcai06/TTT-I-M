@@ -4,6 +4,12 @@ import { dispatchIntroExit } from '../lib/intro'
 import { setStage } from '../lib/stage'
 import { useIntroPretextInteraction } from '../lib/pretextIntroText'
 import { useWholeSitePreload } from '../lib/resources/preloadController'
+import {
+  displayedProgressValue,
+  introCharGroup,
+  introRiseStagger,
+  stepDisplayedProgress,
+} from '../lib/loaderTiming'
 
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
 
@@ -105,7 +111,7 @@ export default function Loader() {
         duration: 1.25,
         stagger: (index, target) => {
           const group = Number((target as HTMLElement).dataset.introGroup ?? index)
-          return group * 0.16 + index * 0.018
+          return introRiseStagger(group, index)
         },
         ease: 'expo.out',
       }, 0.1)
@@ -149,11 +155,9 @@ export default function Loader() {
       const actualProgress = current.criticalTotal > 0 ? current.criticalCompleted / current.criticalTotal : 0
       const target = current.criticalReady ? 1 : actualProgress
 
-      displayedProgress += (target - displayedProgress) * (current.criticalReady ? 0.18 : 0.075)
+      displayedProgress = stepDisplayedProgress(displayedProgress, target, current.criticalReady)
 
-      const displayValue = current.criticalReady
-        ? Math.min(100, Math.ceil(displayedProgress * 100))
-        : Math.min(99, Math.floor(displayedProgress * 100))
+      const displayValue = displayedProgressValue(displayedProgress, current.criticalReady)
 
       if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
@@ -244,12 +248,6 @@ export default function Loader() {
   if (done) return null
 
   const text = 'Tim Cai.'
-  const introGroup = (index: number) => {
-    if (index === 0) return 0
-    if (index >= 1 && index <= 3) return 1
-    if (index >= 4 && index <= 6) return 2
-    return 3
-  }
   const charClassName = (ch: string) => {
     if (ch.toLowerCase() === 'i') return 'intro__char intro__char--narrow'
     if (ch.toLowerCase() === 'm') return 'intro__char intro__char--wide'
@@ -259,20 +257,20 @@ export default function Loader() {
   const chars = text.split('').map((ch, i) => {
     if (ch === ' ') {
       return (
-        <span key={i} className="intro__char intro__space" data-intro-group={introGroup(i)}>
+        <span key={i} className="intro__char intro__space" data-intro-group={introCharGroup(i)}>
           <span className="intro__char-glyph" data-final=" ">&nbsp;</span>
         </span>
       )
     }
     if (ch === '.') {
       return (
-        <span key={i} className="intro__char intro__dot" data-intro-group={introGroup(i)}>
+        <span key={i} className="intro__char intro__dot" data-intro-group={introCharGroup(i)}>
           <span className="intro__char-glyph" data-final=".">.</span>
         </span>
       )
     }
     return (
-      <span key={i} className={charClassName(ch)} data-intro-group={introGroup(i)}>
+      <span key={i} className={charClassName(ch)} data-intro-group={introCharGroup(i)}>
         <span className="intro__char-glyph" data-final={ch}>{ch}</span>
       </span>
     )
