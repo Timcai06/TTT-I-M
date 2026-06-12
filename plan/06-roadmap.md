@@ -49,18 +49,18 @@
 > `/blog/[slug]`、RSS、sitemap。Landing 同步接入 Vercel Analytics 与 Speed Insights，
 > 挂在 `App` 最外层 fragment 内，不改变章节运行时结构。
 >
-> **代码级审计（2026-06-05，已跑通验证）** — typecheck（landing+studio）✅、landing build + 6
+> **代码级审计（2026-06-05，历史快照）** — typecheck（landing+studio）✅、landing build + 6
 > guard ✅（JS 393.7KB/460）、studio Next build ✅（12 路由 SSG）。plan 01/02/02.5/04/03/03-A
 > 在代码层**真实落地**，且 02.5 的 `webgl/quality`、`chapterScrollMetrics`、`imageDecodeQueue`
-> 是有质量的实现而非占位。审计同时确认/修复：
+> 是有质量的实现而非占位。该审计暴露的问题后续已闭环：
 > - ✅ **bug 修复在树**：`intro.ts` FIX 1（footer blob 提前 + pretext 消失）已落地；pretext 已修。
 > - ✅ **控制台噪音已修**：`loaders.ts` 清理 fonts 6000ms 误报定时器、静默 idle decode best-effort 噪音。
-> - 🔴 **线上未兑现（最高优先）**：主域 `/blog` HTML 代理成功（200）但 `/_next/*` 资源 **404**
->   （curl 实证：main /_next css=404、studio=200）→ 博客在主域无样式/未 hydrate。根因：跨 zone
->   rewrite 缺 `/_next/:path*` + studio 无 `assetPrefix`/`basePath`。guard 是源码字符串断言，抓不到。
-> - 🟡 **名不副实**：studio "MDX" 实为手写 markdown 子集（`MdxContent.tsx` + 扁平 frontmatter），
->   非真 `@mdx-js`（不能嵌组件）。
-> - 🟡 **守卫盲区**：全部 guard 为静态断言，无运行时 e2e（跨 zone 资源、plan05 性能预算均未覆盖）。
+> - ✅ **跨 zone 资源路由已修复**：`/_next/:path*` rewrite 位于 root `vercel.json` 第一项，
+>   `platform-guards.mjs` 锁顺序，`tests/runtime/cross-zone-smoke.mjs` 做线上 `/blog`/`/work`/`/dashboard`
+>   HTML + `/_next` 资产 200 运行时复验。
+> - ✅ **真 MDX 已落地**：studio 改用 `next-mdx-remote/rsc` + `gray-matter`，不再是手写 markdown 子集。
+> - ✅ **守卫盲区已缩小**：跨 zone smoke、降级 e2e、INP/FPS-p95、deferred-image byte guard 已补；
+>   剩余缺口是重复章节跳转后的 WebGL context 泄漏门。
 > - 🟡 **Frame cuisine/scenery**：合法 webp 但背景 `decode()` 偶发拒绝（非致命，DOM 仍显示）；
 >   建议用 sharp 重编码消除非对称噪音（buildings 不报）。
 
@@ -136,8 +136,8 @@
 ## 守卫升级（贯穿，每梯队完成即补对应守卫）
 
 - [x] build guard：chunk 体积 / content scope / platform / loader-preload（05）
-- [~] Playwright：long-task / LCP / CLS / heap / scroll / stage / overlay 已做；
-  **INP / FPS p95 / context 泄漏门未做**（05）
+- [~] Playwright：long-task / LCP / CLS / heap / scroll / stage / overlay / INP / FPS p95 已做；
+  **context 泄漏门未做**（05）
 - [x] 降级路径 e2e：reduced-motion / WebGL 失败 / 404 图（`degradation.spec.ts`，**CI 阻塞**）
 - [x] **CI 强制**：verify 阻塞（两 app typecheck/lint + studio build + 6 guard）
   + e2e-gates 阻塞（degradation 确定性子集）+ e2e 顾问（scroll/perf 全量）
@@ -166,7 +166,7 @@
 按价值排序，剩余未做：
 1. **Studio 视觉**：blog/work 仍是基础文本版，与 landing 气质脱节（用户可见差距最大）
 2. **跨边界转场**：landing→blog 硬切加 View Transitions（电影感连续性）
-3. **05 守卫补全**：降级路径 e2e（reduced-motion / WebGL 失败 / 404）+ INP / context 泄漏门；
-   把确定性 e2e 子集从「CI 顾问」提回「CI 阻塞」
+3. **05 守卫补全**：补 repeated chapter jump 的 WebGL context 泄漏门；
+   继续把确定性 e2e 子集从「CI 顾问」提回「CI 阻塞」
 4. **LATER-1 起步**：Auth + Postgres（为 UGC 铺路）
 5. **01 收尾**：ChapterTransition 拆 `useTransitionConductor`（低价值）

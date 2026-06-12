@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 /**
- * Prepares public/ assets from the untracked workspace-level ../sources/ input dir:
- *   1. Copies Tim's portrait into public/portrait/tim.jpg for the WebGL hero.
- *   2. Encodes the life-gallery photos (multi-MB PNGs) into lean public/life
- *      WebP. The PNG originals live in ../sources/life and never ship.
- * Idempotent — safe to run on every dev/build (skips up-to-date outputs).
+ * @description Landing 构建前的资产准备脚本。它把仓库外 `sources/` 中的大图
+ *   转成可部署的 public WebP/JPG，并生成 Frame 响应式图片 manifest。
+ * @dependencies Node fs/path、sharp；由 apps/landing 的 predev/prebuild 调用
+ * @performance / @caveats 通过 node_modules/.cache 中的 encode signature + source mtime
+ *   跳过未变化图片；修改尺寸/quality 常量会自动换签名并触发重编码。`sources/`
+ *   不进 git，脚本必须允许缺源并给出 warning，而不是让本地 dev 直接失败。
+ * @steps
+ * step1: 复制 Hero portrait 到 public/portrait/tim.jpg
+ * step2: 编码 Life、Frame building/cuisine/scenery 原图到 public WebP
+ * step3: 为 Frame 图片生成 720/1080w responsive variants
+ * step4: 扫描 public/frame/* 写入 frameImageSources.generated.ts
  */
 
 import {
@@ -83,6 +89,12 @@ const frameCuisineCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-as
 const frameSceneryCacheFile = resolve(projectRoot, 'node_modules/.cache/setup-assets-frame-scenery.json')
 const frameImageSourcesFile = resolve(projectRoot, 'src/data/frameImageSources.generated.ts')
 
+/**
+ * @description 为单张 Frame 原图生成固定宽度的响应式 WebP 候选。
+ * @dependencies sharp、FRAME_RESPONSIVE_WIDTHS、调用方传入的 cache/files mtime 表
+ * @performance / @caveats 只按宽度缩小且 `withoutEnlargement=true`，避免把小图放大；
+ *   cacheKey 必须稳定，否则同一源图会被重复编码并污染 manifest。
+ */
 async function encodeFrameResponsiveVariants({
   src,
   outDir,
@@ -114,6 +126,16 @@ function toPublicPath(file) {
   return `/${file.replace(`${resolve(projectRoot, 'public')}/`, '')}`
 }
 
+/**
+ * @description 从 public/frame 下的原图与响应式变体生成运行时代码可消费的 srcSet manifest。
+ * @dependencies sharp metadata 读取真实宽度；输出文件为 src/data/frameImageSources.generated.ts
+ * @performance / @caveats manifest 只记录已经存在的候选文件；缺失某个 responsive variant
+ *   不会阻塞构建，Frame 数据层会回退到原始 src，避免本地源图缺失导致整站不可运行。
+ * @steps
+ * step1: 遍历 building/cuisine/scenery 输出目录，排除 -720/-1080 变体作为主键
+ * step2: 用 sharp 读取候选宽度并按宽度排序
+ * step3: 写出 `as const` TypeScript manifest，供 frames.ts 拼接 srcSet
+ */
 async function writeFrameImageSourcesManifest() {
   const { default: sharp } = await import('sharp')
   const frameDirs = [frameBuildingsOutDir, frameCuisineOutDir, frameSceneryOutDir]
@@ -156,6 +178,11 @@ async function writeFrameImageSourcesManifest() {
   console.log(`[setup-assets] ${frameImageSourcesFile.replace(`${projectRoot}/`, '')}`)
 }
 
+/**
+ * @description 读取某类资产编码缓存，并用签名判断缓存是否仍适用于当前参数。
+ * @dependencies JSON cache file；sig 由 max edge、quality、responsive widths 等参数组成
+ * @caveats 读取失败或签名不一致时返回空缓存，这是有意的安全重建路径。
+ */
 function readCache(file, sig) {
   try {
     const c = JSON.parse(readFileSync(file, 'utf8'))
@@ -170,6 +197,12 @@ function hasSourceImages(srcDir, extensions = ['.jpg', '.jpeg', '.png']) {
     && readdirSync(srcDir).some((file) => extensions.some((ext) => file.toLowerCase().endsWith(ext)))
 }
 
+/**
+ * @description 编码一个普通图片目录到 Frame archive WebP，并同步生成 responsive variants。
+ * @dependencies sharp、readCache、encodeFrameResponsiveVariants
+ * @performance / @caveats cuisine/building 这类目录可直接按文件名映射；scenery 需要编号配对，
+ *   因此走 encodeFrameSceneryDir 的专用路径，避免 beautified/raw 文件名漂移。
+ */
 async function encodeImageDir({ label, srcDir, outDir, cacheFile, extensions = ['.jpg', '.jpeg', '.png'] }) {
   if (!existsSync(srcDir)) {
     console.warn(`[setup-assets] No ${label} dir at ${srcDir}. Assets not generated.`)
@@ -214,6 +247,12 @@ async function encodeImageDir({ label, srcDir, outDir, cacheFile, extensions = [
   writeFileSync(cacheFile, JSON.stringify(cache, null, 2))
 }
 
+/**
+ * @description 为 scenery 建立“原始编号 → beautified 优先 → raw 兜底”的源图列表。
+ * @dependencies 文件名中的数字编号；beautified 与 raw 通过相同编号配对
+ * @caveats scenery 历史源图命名不稳定，不能直接按文件名排序映射；这里用编号对齐，
+ *   是为了保证 Frame 文案、图片顺序和生成文件名长期一致。
+ */
 function numberedFrameImageEntries({ beautifiedDir, rawDir, rawPrefix }) {
   if (!existsSync(rawDir)) {
     console.warn(`[setup-assets] No raw frame scenery dir at ${rawDir}. Assets not generated.`)
@@ -248,6 +287,12 @@ function numberedFrameImageEntries({ beautifiedDir, rawDir, rawPrefix }) {
   })
 }
 
+/**
+ * @description 编码 scenery 专用目录，优先使用 beautified 图，缺失时按编号回退 raw 图。
+ * @dependencies numberedFrameImageEntries、sharp、encodeFrameResponsiveVariants
+ * @performance / @caveats cacheKey 同时包含 outName 和真实 src 路径，避免 beautified/raw
+ *   切换后复用错误缓存，导致视觉上仍显示旧来源。
+ */
 async function encodeFrameSceneryDir() {
   const { default: sharp } = await import('sharp')
   mkdirSync(frameSceneryOutDir, { recursive: true })

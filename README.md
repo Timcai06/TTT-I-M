@@ -20,13 +20,16 @@ npm run build:studio
 npm run typecheck
 npm run lint
 npm run test:build
+npm run test:smoke
+npm run test:unit
 ```
 
 `npm run dev` and `npm run build` intentionally target the landing app for Vercel compatibility.
+`npm run test:build` runs the static architecture guards; `npm run test:smoke` verifies the deployed same-domain Studio rewrites and their `/_next` assets.
 
 ## Cross-App Links
 
-- Landing brand link: set `VITE_STUDIO_URL` to the deployed Studio origin if `/blog` is not yet wired as a Vercel multi-zone rewrite.
+- Landing brand link: production uses same-origin `/blog` so the public domain stays canonical; local dev can set `VITE_STUDIO_URL` for `landing:5173 → studio:5174/blog`.
 - Studio brand link: set `NEXT_PUBLIC_LANDING_URL` to the deployed Landing origin so `Tim Cai Studio` returns to the cinematic landing.
 - Local defaults already point `landing:5173 → studio:5174/blog` and `studio:5174 → landing:5173`; run `npm run dev:landing` and `npm run dev:studio` in two terminals for local cross-app navigation. The landing dev server uses a strict `5173` port so Studio's return link cannot drift to the wrong app.
 

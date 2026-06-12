@@ -19,7 +19,8 @@
 ## Build & Deployment (Vercel)
 - Vercel handles edge caching for static assets.
 - **Chunking Strategy**: `vite.config.ts` explicitly splits `react-vendor`, `gsap-vendor`, and `three-vendor` to prevent content updates from busting the long-term cache of heavy dependencies. Keep these boundaries clean.
-- **Chunk budget guard** (`chunk-guards.mjs`): gzip ceilings per chunk (three 260 / react 72 / gsap 66 / index 40 / layout 24) + total JS ≤ 460 KB (currently ~394 KB). A dependency bump or an accidental eager `three`/`gsap` import fails CI.
+- **Chunk budget guard** (`chunk-guards.mjs`): gzip ceilings per chunk (three 260 / react 72 / gsap 66 / index 40 / layout 24) + total JS ≤ 460 KB. A dependency bump or an accidental eager `three`/`gsap` import fails CI.
+- **Deferred image byte guard** (`deferred-image-budget-guards.mjs`): audits the bounded landing preload manifest so Frame/Life/Work assets cannot silently grow beyond the agreed background-preload budget.
 
 ## Runtime budget hardening (plan 02.5)
 - **Preload tiers (B2, gate split 2026-06-10)**: the intro-exit gate is the *critical* tier only (`criticalReady`: hero texture, fonts, chunks, About particles) — the loader bar shows critical progress and 100% = runtime ready. Deferred images keep eager-fetching through the concurrency queue (6-wide) *after* the panel exits (the Loader stays mounted, so the run is never cancelled), with idle decode via `lib/resources/imageDecodeQueue.ts`. Same total download as the whole-site gate, smaller black-screen window (00-principles preheat fix ②). Frame DOM images stay eager as the pop-in second line of defense. Failures are non-fatal (per-task timeout — a single 404/slow image can never strand the loader). Background `decode()` rejections are swallowed silently (some valid WebP rejects background decode in Chrome; the DOM `<img>` still paints).
@@ -28,6 +29,6 @@
 - **Grain (B4)**: desktop keeps the idle `mix-blend` overlay; under scroll pressure (`.disable-hover`) and on mobile/coarse-pointer it switches to a static PNG + normal blend to avoid full-screen re-compositing in the hot window.
 - **Scroll throttle (A4)**: `.disable-hover` relies on `pointer-events` inheritance (body-only), not a `.disable-hover *` wildcard, so toggling it per scroll burst doesn't trigger a full-tree style recalc.
 
-## Known performance/deploy gaps
+## Runtime verification status
 - ~~Studio `/_next` assets 404 on the main domain~~ **Fixed 2026-06-06**: `/_next/:path*` rewrite added as the first entry in root `vercel.json`; `platform-guards.mjs` pins the entry and its ordering. Runtime verification: `tests/runtime/cross-zone-smoke.mjs` fetches the main-domain `/blog` and asserts its referenced `/_next` assets all 200 (the failure mode string guards can't see).
-- Runtime perf gates partially implemented: `apps/landing/tests/e2e/performance.spec.ts` covers LCP / long-task / CLS / heap / scroll-scrub / stage / overlay (advisory in CI, authoritative locally). **Still missing: INP, FPS p95, WebGL context-leak after repeated chapter jumps** (plan 05).
+- Runtime perf gates now cover LCP / long-task / CLS / heap / scroll-scrub / stage / overlay, plus INP and FPS-p95 budgets in `apps/landing/tests/e2e/performance.spec.ts`. CI can relax budgets through env vars on constrained runners; local runs remain the authoritative visual/perf check. Remaining gap: repeated chapter-jump WebGL context-leak verification.

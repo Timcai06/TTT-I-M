@@ -12,6 +12,7 @@ Located in `tests/build/`, these scripts analyze the codebase to enforce structu
 - **Architecture Guards** (`chapter-state-guards.mjs`): Ensures Chapter state management is unbroken.
 - **Frame Architecture Guards** (`frame-architecture-guards.mjs`): Enforces rules specific to the horizontal scroll Frame section.
 - **Loader/Preload Guards** (`loader-preload-guards.mjs`): Validates that all necessary assets are correctly registered in the preload manifest.
+- **Deferred Image Budget Guards** (`deferred-image-budget-guards.mjs`): Keeps the deferred landing manifest inside the agreed byte budget so background preloading does not become an invisible LCP/CPU tax.
 - **Platform Guards** (`platform-guards.mjs`): Enforces workspace split, Studio runtime isolation, MDX-backed posts, shared tokens, and Vercel observability wiring.
 
 ## End-to-End Testing (`Playwright`)
@@ -20,6 +21,7 @@ Critical paths verified:
 - Lenis scroll hijacking functions without locking the page.
 - Chapter transitions execute without throwing errors or causing memory leaks.
 - `tests/e2e/frame.spec.ts` specifically guards the horizontal scroll behaviors.
+- `tests/e2e/performance.spec.ts` covers LCP, long tasks, CLS, heap, scroll-scrub, stage/overlay cleanup, INP, and FPS-p95. CI uses relaxed env budgets where 2-core headless runners are noisy; local browser runs are the stricter signal.
 
 ## Content-layer guard
 - `content-layer-guards.mjs`: asserts no `apps/landing/src/components/**` file imports `data/*` directly (everything goes through `src/content`), and that the repository (`all()`/`list()`/`get()`) + schema (`ContentMeta`/`PublishState`) contracts exist.
@@ -27,5 +29,5 @@ Critical paths verified:
 ## Guard coverage gaps (important — "build green" ≠ "works in prod")
 Build guards are **static source-string assertions**. They do NOT exercise runtime, so they cannot catch deploy/integration failures on their own. Runtime complements:
 - **Cross-zone smoke (implemented 2026-06-10)**: `tests/runtime/cross-zone-smoke.mjs` (`npm run test:smoke`, CI job `cross-zone-smoke` on pushes to main) fetches the deployed main domain and asserts `/blog`,`/work`,`/dashboard` HTML **and** their referenced `/_next/*.css|js` all return 200 — the unstyled-blog failure mode the string guards missed in 2026-06-05.
-- **Perf gates (partial)**: `performance.spec.ts` covers LCP / long-task / CLS / heap / scroll-scrub / stage / overlay. **Still missing: INP, FPS p95, WebGL context-leak after repeated chapter jumps.**
+- **Perf gates (expanded 2026-06-12)**: `performance.spec.ts` now includes INP and FPS-p95 gates in addition to LCP / long-task / CLS / heap / scroll-scrub / stage / overlay. **Still missing: WebGL context-leak after repeated chapter jumps.**
 - **Degradation e2e (implemented)**: `degradation.spec.ts` — reduced-motion / simulated WebGL failure / a 404 image must not strand the loader; CI-blocking (`e2e-gates`).

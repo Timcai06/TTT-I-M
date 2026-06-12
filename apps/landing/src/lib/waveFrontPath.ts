@@ -8,8 +8,17 @@
  *   其中 A 与 tilt 都乘 envelope = sin(π·progress) —— 浪只在屏幕中段最大，
  *   贴近上下边缘时衰减归零，因此「满屏时刻全覆盖」是解析保证而非调参巧合。
  *
+ * @dependencies 无运行时依赖；由 transitionTimeline 在 GSAP onUpdate 中调用，
+ *   单测通过 tests/waveFrontPath.test.ts 锁定方向镜像、满屏覆盖和 pad 边界。
+ * @performance 只做固定 27 个采样点的数值计算和字符串拼接，不读取 DOM、不触发布局；
+ *   每次转场每帧调用两次，成本必须低于一帧 overlay path 更新预算。
  * @caveats AMPLITUDE/TILT 比例与转场的视觉性格强耦合；调整后需目测中段浪头的
  *   卷曲感并重跑 e2e（INP / overlay-clears 门）
+ * @steps
+ * step1: 将 progress 钳制到 0–1，并按视口高度计算屏外 pad 与整段行程
+ * step2: 用 sin(π·progress) 作为 envelope，让波幅和倾斜只在中段出现
+ * step3: 先计算 up 方向采样点，再通过垂直镜像得到 down 方向
+ * step4: 用两条前缘闭合为幕布带，保证 full-cover 时刻完整遮住真实页面跳转
  */
 
 /** 波幅占视口高度的比例。参考视频约 0.30；默认略收敛，避免高视口上浪头过凶。 */
@@ -99,8 +108,11 @@ export interface WaveBandFrame {
 }
 
 /**
- * 幕布带 = 两条波浪前缘围成的闭合填充区。
- * frontProgress=1 且 backProgress=0 时，两条边都在屏外、整带盖满视口（解析保证）。
+ * @description 把领先边和殿后边组合成一个闭合 SVG 填充路径，供转场幕布直接渲染。
+ * @dependencies waveFrontPoints、curveThrough；调用方负责把返回值写入 `<path d>`
+ * @performance 固定采样点数，不读取布局；可安全放在 GSAP timeline 的 onUpdate 中
+ * @caveats frontProgress=1 且 backProgress=0 是满屏定格关键帧，两条边都在屏外，
+ *   真实滚动跳转必须发生在这个窗口内，避免用户看到页面瞬移。
  */
 export function waveBandPath(frame: WaveBandFrame): string {
   const { width, height, phase, direction, curl, amplitudeRatio } = frame
