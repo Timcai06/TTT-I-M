@@ -39,13 +39,14 @@ function splitText(text: string, className: string) {
 }
 
 /**
- * @description 章节过渡动画层 —— 点击导航时的全屏快门式过渡效果。
- *   由上/下半快门 (shutter) + grain 噪点层 + aura 光晕层组成。
- *   显示目标章节的 SEC 编号和名称，名称字符绑定 pretext 互动（指针漂浮）。
+ * @description 章节过渡动画层 —— 点击导航时的全屏「液体幕布」过渡效果。
+ *   一块带波浪前缘的双层填充带（奶白前导边 + 深红主体）沿跳转方向洗过视口，
+ *   满屏定格时显示目标章节的 SEC 编号和名称（字符绑定 pretext 漂浮），
+ *   殿后边再沿同一方向抽走。方向感知：向下跳章时幕布自下而上（与内容运动同向）。
  *
- *   流程：导航点击 → `setStage('transitioning')` → 快门合拢 → 显示目标章节名
- *   → 快门打开 → scrollToChapter (immediate) → ScrollTrigger.refresh → dispatchChapterArrived
- *   → `setStage('live')`。
+ *   流程：导航点击 → `setStage('transitioning')` → 波浪前缘漫过 → 显示目标章节名
+ *   → 满屏定格 scrollToChapter (immediate) → ScrollTrigger.refresh → dispatchChapterArrived
+ *   → 殿后边抽离 → `setStage('live')`。
  *
  *   如果过渡中又收到新请求，排队到 `queuedRef`，当前过渡完成后立即执行。
  *
@@ -58,16 +59,16 @@ function splitText(text: string, className: string) {
  *   - `prefersReducedMotion` (降动时跳过过渡，直接 immediate scroll)
  *
  * @performance / @caveats
- *   - 降动 (reduced-motion) 下完全跳过快门动画，直接 immediate scroll — 避免触发任何基于 transform 的着色器
+ *   - 降动 (reduced-motion) 下完全跳过幕布动画，直接 immediate scroll — 避免触发任何基于 transform 的着色器
  *   - `setPretextReady` 由 transitionTimeline 的 onRevealTarget 回调触发 ——
  *     保证 pretext glyph 在快门打开/目标名可见时才初始化，不会在隐藏时计算 DOM 尺寸
  *   - 过渡过程中 Lenis 被 stage→transitioning 冻结 (`lenis.stop()`)，过渡完成后恢复 (`lenis.start()`)
  *
  * @steps
  *   step1: onChapterTransitionRequest 监听事件 → 若为 transitioning 则排队
- *   step2: setStage('transitioning') → setActive(true) → 快门动画入场
+ *   step2: setStage('transitioning') → setActive(true) → 按目标位置算方向 → 波浪前缘入场
  *   step3: onRevealTarget → setPretextReady → 激活 glyph 漂浮交互
- *   step4: onLand → scrollToChapter + ScrollTrigger.refresh + dispatchChapterArrived
+ *   step4: onLand（满屏定格）→ scrollToChapter + ScrollTrigger.refresh + dispatchChapterArrived
  *   step5: onComplete → setStage('live') → 如果有排队请求则递归执行
  */
 export default function ChapterTransition() {
@@ -117,8 +118,14 @@ export default function ChapterTransition() {
         return
       }
 
+      // Direction-aware wash: jumping DOWN the page means content sweeps up,
+      // so the wave travels up with it (the reference-video direction); jumping
+      // up mirrors it. Fallback 'up' when the target isn't mounted yet.
+      const targetEl = document.getElementById(request.id)
+      const direction = targetEl && targetEl.getBoundingClientRect().top < 0 ? 'down' : 'up'
+
       await new Promise<void>((resolve) => {
-        createTransitionTimeline(root, null, {
+        createTransitionTimeline(root, direction, {
           onRevealTarget: () => {
             setPretextReady(true)
             setPretextRefreshKey((key) => key + 1)
@@ -157,11 +164,11 @@ export default function ChapterTransition() {
       ref={rootRef}
       aria-hidden={!active}
     >
-      <div className="chapter-transition__shutter chapter-transition__shutter--top" />
-      <div className="chapter-transition__shutter chapter-transition__shutter--bottom" />
+      <svg className="chapter-transition__wave" aria-hidden="true" preserveAspectRatio="none">
+        <path className="chapter-transition__wave-lead" />
+        <path className="chapter-transition__wave-main" />
+      </svg>
       <div className="chapter-transition__grain" aria-hidden="true" />
-      <div className="chapter-transition__aura" aria-hidden="true" />
-      <div className="chapter-transition__seam" aria-hidden="true" />
 
       <div className="chapter-transition__content">
         <div className="chapter-transition__target">

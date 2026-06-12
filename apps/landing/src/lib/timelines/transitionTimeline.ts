@@ -1,4 +1,5 @@
 import { gsap } from '../gsap'
+import { waveBandPath, type WaveDirection } from '../waveFrontPath'
 
 /**
  * @description 章节转场 timeline 在关键帧上回调 React/滚动状态的桥接函数集合
@@ -6,44 +7,77 @@ import { gsap } from '../gsap'
 export interface TransitionTimelineCallbacks {
   /** 目标章节名已经可见，可以启用 Pretext glyph 测量和指针扰动 */
   onRevealTarget: () => void
-  /** 快门闭合到黑场，可以执行立即跳转、刷新 ScrollTrigger、派发 arrived 事件 */
+  /** 幕布满屏的定格时刻，可以执行立即跳转、刷新 ScrollTrigger、派发 arrived 事件 */
   onLand: () => void
-  /** 快门打开且视觉层退场完成，可以把 stage 恢复为 live */
+  /** 幕布抽离且视觉层退场完成，可以把 stage 恢复为 live */
   onComplete: () => void
 }
 
 /**
- * @description 创建章节点击后的电影感快门转场 timeline，保持页面布局稳定，只动画 overlay 元素
- * @dependencies GSAP timeline、ChapterTransition DOM 结构和 TransitionTimelineCallbacks
- * @performance 只动画 transform、opacity、filter、clipPath 和 textShadow；不移动页面主体，避免破坏 ScrollTrigger 测量
- * @caveats `_rail` 参数保留给旧签名兼容，当前不使用；调用方负责 reduced-motion 分支和 stage 状态切换
+ * @description 「液体幕布」章节转场 —— 一块带波浪前缘的双层填充带洗过视口
+ *   （奶白前导边 + 深红主体），满屏定格时显示目标章节名并完成真实跳转，
+ *   然后幕布殿后边沿同一方向继续抽走（一股浪洗过去，不回头）。
+ *   几何全部来自 lib/waveFrontPath 纯函数；timeline 只 tween 标量
+ *   （front/back 行程 + 波相位），每帧重建两条 path d。
+ * @dependencies GSAP timeline、ChapterTransition 的 SVG/grain/标题 DOM、waveBandPath
+ * @performance 每帧成本 = 2 条路径 × 27 个采样点的字符串拼接 + 2 次 setAttribute，
+ *   无 layout、无全屏 filter（旧快门皮的 blur aura 已随重构移除）。
+ * @caveats 方向语义：direction='up' 表示幕布自下而上洗过（用于向下跳章 ——
+ *   覆盖运动与内容运动同向）；调用方负责 reduced-motion 分支和 stage 状态切换
  * @steps
- * step1: 初始化快门、grain、aura、seam 和目标字符状态
- * step2: 0–0.35s 快门闭合覆盖当前章节
- * step3: 0.18–0.55s 展示目标章节名、编号、光晕和噪点
- * step4: 0.5s 触发 onLand，在黑场中执行真实章节跳转
- * step5: 0.65–1.0s 快门打开并淡出转场视觉层
+ * step1: 0 – 1.1s 前缘漫过视口（波幅中段最大、贴边收平 → 满屏为解析保证）
+ * step2: 0.65 – 1.0s grain/编号/章节名在主体上浮现
+ * step3: 1.1 – 1.25s 色差闪；1.2s onLand 在满屏定格中执行真实跳转
+ * step4: 1.6 – 2.4s 殿后边同向抽离，文字/grain 先行淡出
  */
 export function createTransitionTimeline(
   root: HTMLElement,
-  _rail: HTMLElement | null,
+  direction: WaveDirection,
   cb: TransitionTimelineCallbacks,
 ): gsap.core.Timeline {
-  const topShutter = root.querySelector<HTMLElement>('.chapter-transition__shutter--top')
-  const bottomShutter = root.querySelector<HTMLElement>('.chapter-transition__shutter--bottom')
+  const svg = root.querySelector<SVGSVGElement>('.chapter-transition__wave')
+  const leadPath = root.querySelector<SVGPathElement>('.chapter-transition__wave-lead')
+  const mainPath = root.querySelector<SVGPathElement>('.chapter-transition__wave-main')
   const targetName = root.querySelector<HTMLElement>('.chapter-transition__target-name')
   const targetChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__target-glyph'))
   const grain = root.querySelector<HTMLElement>('.chapter-transition__grain')
   const index = root.querySelector<HTMLElement>('.chapter-transition__target-index')
-  const aura = root.querySelector<HTMLElement>('.chapter-transition__aura')
-  const seam = root.querySelector<HTMLElement>('.chapter-transition__seam')
+
+  const width = root.clientWidth || window.innerWidth
+  const height = root.clientHeight || window.innerHeight
+  svg?.setAttribute('viewBox', `0 0 ${width} ${height}`)
+
+  // The tweened scalars. phase keeps advancing the whole ride so the crests
+  // roll sideways while the band travels — that rolling is the liquid feel.
+  const wave = { front: 0, back: 0, phase: Math.random() * Math.PI * 2 }
+
+  const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
+
+  const render = () => {
+    if (!leadPath || !mainPath) return
+    // The cream lead edge runs ~5% ahead while covering and ~5% behind while
+    // leaving, so a warm liquid rim sweeps both page edges. Envelope-scaled:
+    // the rim converges with the main band exactly when both park off-screen.
+    const leadFront = clamp01(wave.front + 0.05 * Math.sin(Math.PI * clamp01(wave.front)))
+    const leadBack = Math.max(0, wave.back - 0.05 * Math.sin(Math.PI * clamp01(wave.back)))
+    leadPath.setAttribute('d', waveBandPath({
+      width, height, direction,
+      frontProgress: leadFront,
+      backProgress: leadBack,
+      phase: wave.phase + 0.9,
+      curl: -1,
+    }))
+    mainPath.setAttribute('d', waveBandPath({
+      width, height, direction,
+      frontProgress: wave.front,
+      backProgress: wave.back,
+      phase: wave.phase,
+      curl: 1,
+    }))
+  }
 
   gsap.set(root, { autoAlpha: 1, pointerEvents: 'auto' })
-  gsap.set(topShutter, { yPercent: -100 })
-  gsap.set(bottomShutter, { yPercent: 100 })
   gsap.set(grain, { opacity: 0 })
-  gsap.set(aura, { opacity: 0, scale: 0.96, filter: 'blur(16px) saturate(1.04)' })
-  gsap.set(seam, { opacity: 0, scaleX: 0.18 })
   gsap.set(targetChars, {
     opacity: 0,
     filter: 'blur(8px)',
@@ -52,80 +86,59 @@ export function createTransitionTimeline(
   })
   gsap.set(targetName, { textShadow: 'none', x: 0 })
   gsap.set(index, { opacity: 0, y: 10 })
+  render()
 
   const tl = gsap.timeline({ onComplete: cb.onComplete })
 
-  // 1. 0 - 0.35s: Shutters cover the current chapter. The page itself is not
-  // transformed here; ScrollTrigger and image visibility depend on stable layout.
-  tl.to([topShutter, bottomShutter], {
-    yPercent: 0,
-    duration: 0.35,
-    ease: 'expo.inOut',
-  }, 0)
+  // 1. 0 - 1.1s: the wavy front washes across the viewport. Only overlay
+  // paths are animated; the page keeps stable layout for ScrollTrigger.
+  tl.to(wave, { front: 1, duration: 1.1, ease: 'power3.inOut', onUpdate: render }, 0)
+  // The crests roll for the full ride (linear — easing lives in front/back).
+  tl.to(wave, { phase: `+=${Math.PI * 2.2}`, duration: 2.4, ease: 'none', onUpdate: render }, 0)
 
-  // 2. 0.18 - 0.55s: Grain, aura, and central target flash in.
-  tl.to(aura, { opacity: 1, scale: 1, filter: 'blur(12px) saturate(1.18)', duration: 0.42, ease: 'power2.out' }, 0.12)
-  tl.to(seam, { opacity: 1, scaleX: 1, duration: 0.34, ease: 'expo.out' }, 0.16)
-  tl.to(grain, { opacity: 0.85, duration: 0.15 }, 0.2)
-  tl.to(index, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }, 0.2)
+  // 2. 0.65 - 1.0s: grain, index and the target name surface on the band.
+  tl.to(grain, { opacity: 0.85, duration: 0.18 }, 0.65)
+  tl.to(index, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' }, 0.7)
   tl.to(targetChars, {
     opacity: 1,
     filter: 'blur(0px)',
     scale: 1,
     clipPath: 'inset(-20% -20% -20% -20%)',
-    duration: 0.3,
-    stagger: 0.02,
+    duration: 0.34,
+    stagger: 0.022,
     ease: 'power3.out',
-  }, 0.2)
-    .call(cb.onRevealTarget, undefined, 0.25)
+  }, 0.7)
+    .call(cb.onRevealTarget, undefined, 0.8)
 
-  // 3. 0.45s - 0.65s: Chromatic Aberration Flash right before/during the land
+  // 3. 1.1s - 1.25s: chromatic aberration flash as the cover completes.
   tl.to(targetName, {
     textShadow: '-5px 0px 0px rgba(255, 0, 0, 0.8), 5px 0px 0px rgba(0, 255, 255, 0.8)',
     x: -2,
     duration: 0.05,
     ease: 'power4.inOut',
-  }, 0.45)
+  }, 1.1)
   tl.to(targetName, {
     textShadow: '3px 0px 0px rgba(255, 0, 0, 0.5), -3px 0px 0px rgba(0, 255, 255, 0.5)',
     x: 2,
     duration: 0.05,
     ease: 'power4.inOut',
-  }, 0.5)
+  }, 1.15)
   tl.to(targetName, {
     textShadow: '0px 0px 0px rgba(0, 0, 0, 0)',
     x: 0,
     duration: 0.1,
     ease: 'power2.out',
-  }, 0.55)
+  }, 1.2)
 
-  // 4. 0.50s: The Landing Moment (Black screen hold)
-  tl.call(cb.onLand, undefined, 0.5)
+  // 4. 1.2s: the landing moment — inside the full-cover hold (front parked
+  // past one edge at 1.1s, back parked past the other until 1.6s).
+  tl.call(cb.onLand, undefined, 1.2)
 
-  // 5. 0.65 - 1.00s: Shutters snap open & background pulls focus back
-  tl.to(topShutter, {
-    yPercent: -100,
-    duration: 0.35,
-    ease: 'expo.inOut',
-  }, 0.65)
-  tl.to(bottomShutter, {
-    yPercent: 100,
-    duration: 0.35,
-    ease: 'expo.inOut',
-  }, 0.65)
-
-  // 6. Fade out text and grain as shutters open
-  tl.to([index, ...targetChars], {
-    opacity: 0,
-    duration: 0.2,
-    ease: 'power2.in',
-  }, 0.65)
-  tl.to([grain, aura], {
-    opacity: 0,
-    duration: 0.35,
-    ease: 'power2.inOut',
-  }, 0.65)
-  tl.to(seam, { opacity: 0, scaleX: 0.34, duration: 0.24, ease: 'power2.inOut' }, 0.68)
+  // 5. 1.5s+: text and grain recede, then the trailing edge pulls away in the
+  // SAME direction — one wave washing through, never doubling back.
+  tl.to([index, ...targetChars], { opacity: 0, duration: 0.22, ease: 'power2.in' }, 1.5)
+  tl.to(grain, { opacity: 0, duration: 0.32, ease: 'power2.inOut' }, 1.5)
+  tl.to(wave, { back: 1, duration: 0.8, ease: 'power2.inOut', onUpdate: render }, 1.6)
 
   return tl
 }

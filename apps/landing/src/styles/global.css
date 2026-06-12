@@ -8,6 +8,8 @@
   /* ── Landing-only tokens ── */
   --noise: 0.015;
   --grain-static-opacity: 0.028;
+  /* 章节转场液体幕布的主体色 —— intro 深红黑家族；前导边用共享的 --accent-warm */
+  --transition-cover: #4a130d;
 
   color-scheme: dark;
 }

@@ -47,12 +47,12 @@ if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSourc
 }
 
 const transitionLayerInputs = [
-  'chapter-transition__shutter--top',
-  'chapter-transition__shutter--bottom',
+  'chapter-transition__wave-lead',
+  'chapter-transition__wave-main',
   'chapter-transition__grain',
-  'chapter-transition__aura',
   'chapter-transition__target-glyph',
   'usePretextTextInteraction',
+  'waveBandPath',
 ]
 
 const transitionContractSource = `${transitionSource}\n${transitionTimelineSource}`
@@ -62,7 +62,13 @@ if (missingTransitionLayerInputs.length > 0) {
 }
 
 if (transitionSource.includes('chapter-transition__nav') || navStyleSource.includes('chapter-transition__item-char')) {
-  throw new Error('ChapterTransition must stay shutter-only and not reintroduce the chapter menu overlay.')
+  throw new Error('ChapterTransition must stay cover-only and not reintroduce the chapter menu overlay.')
+}
+
+// The old shutter skin carried a full-screen blur aura — the single most
+// expensive layer in the transition. The wave skin removed it; keep it out.
+if (transitionContractSource.includes('__aura') || transitionContractSource.includes('__shutter')) {
+  throw new Error('ChapterTransition must not reintroduce the shutter/aura layers (replaced by the wave cover, 2026-06-12).')
 }
 
 if (transitionTimelineSource.includes("document.querySelector('main')") || transitionTimelineSource.includes('document.querySelector(\"main\")')) {
