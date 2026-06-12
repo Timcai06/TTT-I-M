@@ -23,7 +23,10 @@
  * Exit code 0 = healthy, 1 = at least one check failed.
  */
 
-const MAIN_ORIGIN = process.env.CROSS_ZONE_MAIN_ORIGIN ?? 'https://ttt-i-m.vercel.app'
+// Canonical production domain (www.crt-dsg.com; the apex 307s to www). The
+// ttt-i-m.vercel.app project domain serves the same deploy but is not what
+// users hit, so the smoke must exercise the real domain's DNS + rewrites.
+const MAIN_ORIGIN = process.env.CROSS_ZONE_MAIN_ORIGIN ?? 'https://www.crt-dsg.com'
 const HTML_PATHS = ['/blog', '/work', '/dashboard']
 const FETCH_TIMEOUT_MS = 15_000
 const FETCH_RETRIES = 2
