@@ -9,7 +9,7 @@ packages/
   tokens/    @timcai/tokens  — shared design tokens (CSS variables)
   content/   @timcai/content — content schema + repository interface + adapters
 tests/build/ — cross-workspace platform-guards.mjs
-plan/        — upgrade blueprint + phased roadmap (00–06)
+plan/        — next-phase blueprint: Particle Continuum (00–06); shipped platform frozen in 06
 docs/        — these docs
 ```
 Root `package.json` orchestrates via workspace scripts (`build`, `build:studio`, `typecheck`, `test:build`).

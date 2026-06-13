@@ -39,6 +39,8 @@ The studio must never import the landing runtime stack: GSAP, Lenis, Three, R3F,
 
 ## Documentation
 
-- `plan/03-platform-direction-a.md` — platform architecture and phasing.
-- `plan/06-roadmap.md` — current execution status.
-- `docs/` — landing architecture and visual/runtime docs.
+- `plan/README.md` — next-phase blueprint: the Particle Continuum (one persistent
+  GPGPU particle system morphing across chapters). Shipped platform architecture is
+  frozen in `plan/06-roadmap.md` → "已交付架构（冻结）".
+- `plan/01-continuum-architecture.md` — continuum core architecture.
+- `docs/` — landing architecture and visual/runtime docs (mirrors current source).

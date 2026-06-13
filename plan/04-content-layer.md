@@ -1,93 +1,39 @@
-# 04 · 内容层：端口-适配器（现在就做，最便宜的未来保险）
+# 04 · 内容层：端口-适配器（已交付 · 稳定参考）
 
-> 不碰任何后端、不依赖方向 A 是否落地，**今天就能做**，成本几乎为零，回报巨大。
-> 核心：组件永远不直接 import 静态数据数组；改为依赖 repository 接口。
-> 切后端 = 换一个 adapter，UI 零改动。
+> **状态：已落地、稳定。** 本文从「待办蓝图」降级为「架构参考」——`src/content/` 与
+> `packages/content/` 已按本模式实现，代码注释（`content/index.ts`、
+> `tests/build/content-layer-guards.mjs`）仍指向本文作为设计依据，故保留。
+> 连续体不触碰内容层；本文仅作维护者参考。
 
-## 现状的接缝
+## 已实现的接缝
 
-内容现在是硬编码 TS 模块：
-- [`src/data/projects.ts`](../src/data/projects.ts)
-- [`src/data/frames.ts`](../src/data/frames.ts)
-- [`src/data/life.ts`](../src/data/life.ts)
-- [`src/data/about.ts`](../src/data/about.ts) / [`skills.ts`](../src/data/skills.ts)
-
-组件直接 import 这些数组。一旦内容要「不重新部署就能改」或「别人产出」，全得改。
-
-## 目标结构
+组件**永远不直接 import 静态数据数组**，改为依赖 repository 接口。切后端 = 换 adapter，
+UI 零改动。
 
 ```
-src/content/                  （将来平移到 packages/content/）
-  schema.ts                   ← 强类型内容模型，策展 + UGC 共用
-  repositories/
-    projects.ts               ← interface ProjectsRepo { list(); get(slug); }
-    posts.ts                  ← 博客（SOON）
-    frames.ts
-  adapters/
-    static.ts                 ← 今天：包当前硬编码数组
-    mdx.ts                    ← SOON：MDX-in-repo（博客）
-    api.ts                    ← LATER：fetch / DB / CMS
-  index.ts                    ← 根据环境选 adapter，导出 repository 实例
+packages/content/（landing 的 src/content/ 为薄再导出）
+  schema.ts / index.ts        ← 强类型内容模型，策展 + UGC 共用
+  PublishState                ← draft|submitted|in-review|approved|published|rejected（6 态）
+  WithMeta<T>                 ← 内容元数据泛型（author / publishState / 时间戳）
+  createKeyedStaticRepository ← repository 工厂（同步 all() 给 landing 防异步空帧 +
+                                异步 list()/get() 作未来 MDX/DB 契约）
+  adapters/static             ← 今天：包当前数据数组
 ```
 
-## Schema：现在就为 UGC 预留字段
+## 仍然有效的约束（守卫在管）
 
-每个内容类型的 schema 在策展内容（你）与 UGC（别人）之间只差几个字段。现在就加上，
-哪怕当前全是你、全 `published`：
+- **组件零 `data/*` 直连**：`content-layer-guards.mjs` 断言组件层 `from '.*data/'` == 0。
+- **landing 走同步数据**：`all()` 同步返回，避免异步空帧；`list()/get()` 异步作未来契约。
+- **manifest 仍 scope=landing**：preload 从 repository 取 URL，但只覆盖 landing 策展内容，
+  博客/UGC 不进 manifest（见 [00 原则](./00-principles.md)）。
+- **schema 预留 UGC 字段**：`authorId`（现 = "tim"）、`publishState`（现 = 'published'）、
+  时间戳——UGC 不另起炉灶，是同一模型 + 发布状态机。
 
-```
-共用基础字段（示意，非最终代码）：
-  id            string
-  slug          string
-  title         string
-  ...类型专属字段...
+## 为什么保留这份参考
 
-  // ── 为 UGC / 平台化预留（现在填默认值）──
-  authorId      string      // 现在 = "tim"
-  publishState  'draft' | 'submitted' | 'in-review' | 'published' | 'rejected'
-                            // 现在 = 'published'
-  createdAt     string
-  updatedAt     string
-```
+- `content/index.ts` 与 `content-layer-guards.mjs` 的注释引用本文解释「为什么组件不直连
+  data」；删了会留下悬空引用。
+- 未来接 MDX/DB adapter（LATER 阶段）时，本文是端口-适配器契约的依据。
 
-这样 UGC 不是另起炉灶，而是同一模型 + 一个发布状态机（见 03）。
-
-## Repository 接口（端口）
-
-```
-interface ProjectsRepo {
-  list(opts?): Promise<Project[]>     // 列表/分页/过滤
-  get(slug): Promise<Project | null>  // 详情
-}
-```
-
-- 组件只认 `useProjects()` / `getProject(slug)`，**永远不知道**数据从静态数组、MDX
-  还是 Postgres 来。
-- 注意：landing 当前是同步 import 数组；接口用 Promise 以兼容未来异步源。
-  landing 内部可用一个同步 static adapter + 顶层 await/预解析，保持现有体验不变。
-
-## Adapter
-
-- **static.ts（今天）**：直接返回现有 `data/*` 数组，包成 Promise。零行为变化。
-- **mdx.ts（SOON）**：读 `content/posts/*.mdx`，front-matter → schema。
-- **api.ts（LATER）**：fetch studio 的 API / 直连 DB。
-
-## 迁移步骤（landing 内部，零风险）
-
-1. 建 `src/content/schema.ts`，把 `data/*` 的现有类型升级为带预留字段的 schema。
-2. 建 `repositories/*.ts` 接口 + `adapters/static.ts` 包住现有数组。
-3. 组件改为从 repository 取数（先一个组件试点，如 Projects）。
-4. `data/*` 降级为 `adapters/static.ts` 的内部数据源（或直接并入）。
-5. 全量切换后，`grep "from '.*data/"` 在组件层应为 0。
-
-## 验收
-
-- 组件不再直接 import `data/*`。
-- 把某个 repository 的 adapter 从 static 换成一个假的 async mock，UI 行为不变（证明解耦）。
-- 现有 build guard（`tests/build/frame-architecture-guards.mjs` 等）全绿。
-
-## 与 sitePreload 的关系
-
-- preload manifest（01·4）从 repository 取 URL 列表，而非散落 import。
-- 但 manifest 仍 **scope=landing**：只预热 landing 用到的策展内容，
-  博客/UGC 内容不进 manifest（00 原则）。
+> 平台层（多 zone、studio、MDX 博客）的完整交付记录见
+> [`06-roadmap.md` 的「已交付架构（冻结）」](./06-roadmap.md)。

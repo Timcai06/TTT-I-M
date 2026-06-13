@@ -33,7 +33,7 @@ apps/
 packages/
   tokens/    @timcai/tokens  — 共享设计 token（CSS 变量）
   content/   @timcai/content — 内容 schema + repository 接口 + adapters
-plan/        升级蓝图与分期路线（00–06 + README）
+plan/        下一阶段蓝图：粒子连续体（00–06 + README）；已交付平台架构冻结于 06
 tests/build/ platform-guards.mjs（跨 workspace 守卫）
 ```
 
