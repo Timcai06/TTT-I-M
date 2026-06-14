@@ -16,6 +16,7 @@ export interface ContinuumPoints {
   setPositionTexture(texture: THREE.Texture): void
   setTint(color: THREE.Color): void
   setOpacity(value: number): void
+  setPointSize(value: number): void
   dispose(): void
 }
 
@@ -77,6 +78,9 @@ export function buildContinuumPoints(opts: RenderPointsOptions): ContinuumPoints
     },
     setOpacity(value) {
       uniforms.uOpacity.value = value
+    },
+    setPointSize(value) {
+      uniforms.uPointSize.value = value
     },
     dispose() {
       geometry.dispose()

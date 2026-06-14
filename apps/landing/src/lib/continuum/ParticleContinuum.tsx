@@ -5,7 +5,7 @@ import { acquireContext, releaseContext } from '../webgl/contextRegistry'
 import { createContinuumSimulation, type ContinuumSimulation } from './simulation'
 import { buildContinuumPoints, type ContinuumPoints } from './renderPoints'
 import { getContinuumQuality, shouldMountContinuum } from './continuumRuntime'
-import { loadPortraitTargetTexture } from './forms/portrait'
+import { loadContinuumTargetTexture } from './forms/proceduralTargets'
 import { getContinuumForm } from './forms/registry'
 import { useContinuumScroll } from './useContinuumScroll'
 import type { ContinuumScrollState } from './continuumScrollState'
@@ -57,6 +57,8 @@ function ContinuumScene({
   const tint = useMemo(() => new THREE.Color(scrollState.tint), [scrollState.tint])
   const renderedTint = useRef(new THREE.Color(scrollState.tint))
   const renderedOpacity = useRef(0)
+  const renderedPointScale = useRef(scrollState.pointScale)
+  const basePointSize = quality.pointSize * quality.dprMax
 
   const bundle = useMemo<ContinuumBundle | null>(() => {
     try {
@@ -67,7 +69,7 @@ function ContinuumScene({
       })
       const points = buildContinuumPoints({
         texSize: quality.particleTexSize,
-        pointSize: quality.pointSize * quality.dprMax,
+        pointSize: basePointSize,
         tint: portrait.tint,
         blending: THREE.NormalBlending,
       })
@@ -79,7 +81,7 @@ function ContinuumScene({
       console.warn('[ParticleContinuum] simulation init failed:', error)
       return null
     }
-  }, [gl, quality.dprMax, quality.particleTexSize, quality.pointSize, portrait.tint])
+  }, [basePointSize, gl, quality.particleTexSize, portrait.tint])
 
   useEffect(() => {
     return () => {
@@ -93,8 +95,10 @@ function ContinuumScene({
     const transitionAlpha = 1 - Math.exp(-delta * 3.6)
     renderedTint.current.lerp(tint, transitionAlpha)
     renderedOpacity.current += (scrollState.opacity - renderedOpacity.current) * transitionAlpha
+    renderedPointScale.current += (scrollState.pointScale - renderedPointScale.current) * transitionAlpha
     bundle.points.setTint(renderedTint.current)
     bundle.points.setOpacity(renderedOpacity.current)
+    bundle.points.setPointSize(basePointSize * renderedPointScale.current)
 
     const positionTexture = bundle.simulation.compute(delta, scrollState.behavior)
     bundle.points.setPositionTexture(positionTexture)
@@ -109,7 +113,7 @@ function ContinuumScene({
     if (!bundle) return
     let cancelled = false
 
-    loadPortraitTargetTexture('/portrait/tim.jpg', quality.particleTexSize)
+    loadContinuumTargetTexture(scrollState.formId, quality.particleTexSize)
       .then((texture) => {
         if (cancelled) {
           texture.dispose()
@@ -118,13 +122,13 @@ function ContinuumScene({
         bundle.simulation.setTarget(texture)
       })
       .catch((error) => {
-        console.warn('[ParticleContinuum] portrait target failed:', error)
+        console.warn('[ParticleContinuum] target failed:', error)
       })
 
     return () => {
       cancelled = true
     }
-  }, [bundle, quality.particleTexSize])
+  }, [bundle, quality.particleTexSize, scrollState.formId])
 
   if (!bundle) return null
   return <primitive object={bundle.points.points} />

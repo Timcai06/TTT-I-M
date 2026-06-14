@@ -5,6 +5,7 @@ uniform vec3 uTint;       // 章节色温（landingScrollNarrative 注入）
 uniform float uOpacity;   // 全局不透明度（密度调节 / 形态淡入）
 
 varying float vFade;
+varying float vSparkle;
 
 void main() {
   // 圆形遮罩 + 柔边
@@ -13,5 +14,8 @@ void main() {
   if (d > 0.25) discard;
 
   float soft = smoothstep(0.25, 0.02, d);
-  gl_FragColor = vec4(uTint, soft * vFade * uOpacity);
+  float star = smoothstep(0.965, 1.0, vSparkle);
+  float dust = 0.22 + pow(vSparkle, 3.0) * 0.42;
+  float alpha = soft * vFade * uOpacity * (dust + star * 2.4);
+  gl_FragColor = vec4(uTint, alpha);
 }

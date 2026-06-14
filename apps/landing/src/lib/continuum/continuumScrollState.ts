@@ -7,6 +7,7 @@ export interface ContinuumScrollState {
   formId: ContinuumFormId
   morph: number
   opacity: number
+  pointScale: number
   tint: string
   behavior: SimBehavior
   xOffsetRatio: number
@@ -14,18 +15,27 @@ export interface ContinuumScrollState {
 }
 
 const ambientOpacity: Record<string, number> = {
-  about: 0.08,
-  frame: 0.1,
-  skills: 0.05,
-  projects: 0.065,
-  contact: 0.08,
+  about: 0.16,
+  life: 0.16,
+  frame: 0.17,
+  skills: 0.07,
+  projects: 0.085,
+  contact: 0.09,
 }
 
-const ambientBehavior: SimBehavior = {
-  stiffness: 1.15,
-  turbulence: 0.32,
-  damping: 0.935,
-  noiseScale: 0.88,
+const pointScaleByForm: Record<ContinuumFormId, number> = {
+  portrait: 1,
+  disintegrate: 1.36,
+  stardust: 1.38,
+}
+
+const formByChapter: Record<string, ContinuumFormId> = {
+  about: 'disintegrate',
+  life: 'stardust',
+  frame: 'stardust',
+  skills: 'stardust',
+  projects: 'stardust',
+  contact: 'portrait',
 }
 
 function getAmbientOpacity(id: string) {
@@ -36,6 +46,33 @@ function resolveNarrativeOpacity(narrative: LandingScrollNarrative) {
   const fromOpacity = narrative.fromId === 'hero' ? 0 : getAmbientOpacity(narrative.fromId)
   const toOpacity = narrative.toId === 'hero' ? 0 : getAmbientOpacity(narrative.toId)
   return fromOpacity + (toOpacity - fromOpacity) * narrative.blend
+}
+
+function resolveNarrativePointScale(narrative: LandingScrollNarrative) {
+  const fromScale = pointScaleByForm[getChapterFormId(narrative.fromId)]
+  const toScale = pointScaleByForm[getChapterFormId(narrative.toId)]
+  return fromScale + (toScale - fromScale) * narrative.blend
+}
+
+function getChapterFormId(id: string): ContinuumFormId {
+  return formByChapter[id] ?? 'portrait'
+}
+
+function toHexChannel(value: number) {
+  return Math.round(Math.min(255, Math.max(0, value))).toString(16).padStart(2, '0')
+}
+
+export function getContinuumTintForCover(cover: string) {
+  const match = /^#?([0-9a-f]{6})$/i.exec(cover)
+  if (!match) return cover
+
+  const value = match[1] ?? ''
+  const lift = 0.24
+  const r = Number.parseInt(value.slice(0, 2), 16)
+  const g = Number.parseInt(value.slice(2, 4), 16)
+  const b = Number.parseInt(value.slice(4, 6), 16)
+
+  return `#${toHexChannel(r + (255 - r) * lift)}${toHexChannel(g + (255 - g) * lift)}${toHexChannel(b + (255 - b) * lift)}`
 }
 
 /**
@@ -57,12 +94,17 @@ export function resolveContinuumScrollState(activeIdOrNarrative: string | Landin
 
   if (typeof activeIdOrNarrative !== 'string') {
     const opacity = resolveNarrativeOpacity(activeIdOrNarrative)
+    const formId = activeIdOrNarrative.activeId === 'hero'
+      ? 'portrait'
+      : getChapterFormId(activeIdOrNarrative.activeId)
+    const form = getContinuumForm(formId)
     return {
-      formId: 'portrait',
+      formId,
       morph: 0,
       opacity,
-      tint: opacity <= 0 ? portrait.tint : activeIdOrNarrative.theme.cover,
-      behavior: opacity <= 0 ? portrait.behavior : ambientBehavior,
+      pointScale: opacity <= 0 ? pointScaleByForm.portrait : resolveNarrativePointScale(activeIdOrNarrative),
+      tint: opacity <= 0 ? portrait.tint : getContinuumTintForCover(activeIdOrNarrative.theme.cover),
+      behavior: opacity <= 0 ? portrait.behavior : form.behavior,
       xOffsetRatio: opacity <= 0 ? 0.22 : 0.28,
       yOffset: opacity <= 0 ? 0.02 : 0.04,
     }
@@ -73,6 +115,7 @@ export function resolveContinuumScrollState(activeIdOrNarrative: string | Landin
       formId: 'portrait',
       morph: 0,
       opacity: 0,
+      pointScale: pointScaleByForm.portrait,
       tint: portrait.tint,
       behavior: portrait.behavior,
       xOffsetRatio: 0.22,
@@ -80,12 +123,16 @@ export function resolveContinuumScrollState(activeIdOrNarrative: string | Landin
     }
   }
 
+  const formId = getChapterFormId(activeId)
+  const form = getContinuumForm(formId)
+
   return {
-    formId: 'portrait',
+    formId,
     morph: 0,
     opacity: getAmbientOpacity(activeId),
-    tint: getChapterTheme(activeId).cover,
-    behavior: ambientBehavior,
+    pointScale: pointScaleByForm[formId],
+    tint: getContinuumTintForCover(getChapterTheme(activeId).cover),
+    behavior: form.behavior,
     xOffsetRatio: 0.28,
     yOffset: 0.04,
   }

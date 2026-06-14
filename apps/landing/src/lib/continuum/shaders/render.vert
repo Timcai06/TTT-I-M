@@ -8,6 +8,7 @@ uniform float uSizeAtten;     // 透视衰减系数（按相机距离调）
 attribute vec2 reference;     // 该粒子在位置纹理里的 uv
 
 varying float vFade;          // 远处粒子淡出
+varying float vSparkle;       // 稳定伪随机亮度，让星尘有可辨认的颗粒高光
 
 void main() {
   vec3 pos = texture2D(uPosition, reference).xyz;
@@ -18,4 +19,5 @@ void main() {
   float dist = max(-mv.z, 0.1);
   gl_PointSize = uPointSize * (uSizeAtten / dist);
   vFade = clamp(1.0 - dist * 0.03, 0.2, 1.0);
+  vSparkle = fract(sin(dot(reference, vec2(127.1, 311.7))) * 43758.5453123);
 }

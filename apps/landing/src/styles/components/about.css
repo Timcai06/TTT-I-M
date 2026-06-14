@@ -1,6 +1,6 @@
 /* ── About ── */
 .about {
-  background: var(--bg);
+  background: transparent;
 }
 
 .about__grid {

@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { resolveContinuumScrollState } from '../src/lib/continuum/continuumScrollState.ts'
+import {
+  getContinuumTintForCover,
+  resolveContinuumScrollState,
+} from '../src/lib/continuum/continuumScrollState.ts'
 import { getChapterTheme } from '../src/lib/chapterThemeTokens.ts'
 import { resolveLandingScrollNarrative } from '../src/lib/landingScrollNarrative.ts'
 
@@ -15,10 +18,11 @@ void test('hero keeps the original portrait particle subject without an extra co
 void test('later chapters tint the continuum from the chapter transition theme color', () => {
   const state = resolveContinuumScrollState('frame')
 
-  assert.equal(state.formId, 'portrait')
-  assert.equal(state.tint.toLowerCase(), getChapterTheme('frame').cover.toLowerCase())
+  assert.equal(state.formId, 'stardust')
+  assert.equal(state.tint.toLowerCase(), getContinuumTintForCover(getChapterTheme('frame').cover).toLowerCase())
   assert.ok(state.opacity > 0)
-  assert.ok(state.opacity <= 0.12)
+  assert.ok(state.opacity <= 0.18)
+  assert.ok(state.pointScale >= 1.15)
 })
 
 void test('continuum fades in during the hero to about scroll blend without replacing the hero subject', () => {
@@ -30,6 +34,6 @@ void test('continuum fades in during the hero to about scroll blend without repl
 
   assert.equal(state.formId, 'portrait')
   assert.ok(state.opacity > 0)
-  assert.ok(state.opacity < 0.08)
+  assert.ok(state.opacity < 0.12)
   assert.notEqual(state.tint.toLowerCase(), getChapterTheme('hero').cover.toLowerCase())
 })

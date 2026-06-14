@@ -1,6 +1,8 @@
 import type { SimBehavior } from '../simulation'
+import { disintegrateForm } from './disintegrate.ts'
+import { stardustForm } from './stardust.ts'
 
-export type ContinuumFormId = 'portrait'
+export type ContinuumFormId = 'portrait' | 'disintegrate' | 'stardust'
 
 export interface FormDescriptor {
   id: ContinuumFormId
@@ -21,6 +23,8 @@ export const continuumForms = {
       noiseScale: 0.72,
     },
   },
+  disintegrate: disintegrateForm,
+  stardust: stardustForm,
 } satisfies Record<ContinuumFormId, FormDescriptor>
 
 export function getContinuumForm(id: ContinuumFormId): FormDescriptor {
