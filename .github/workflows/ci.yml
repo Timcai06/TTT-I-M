@@ -55,6 +55,7 @@ jobs:
       # real device; budgets are wide so only severe regressions trip them.
       PERF_INP_MS: '500'
       PERF_FRAME_P95_MS: '160'
+      PERF_FRAME_MIN_SAMPLES: '20'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

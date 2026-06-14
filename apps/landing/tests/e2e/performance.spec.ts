@@ -26,6 +26,7 @@ const LOAD_LONGTASK_MS = budget('PERF_LOAD_LONGTASK_MS', 200)
 const SCROLL_LONGTASK_MS = budget('PERF_SCROLL_LONGTASK_MS', 100)
 const INP_BUDGET_MS = budget('PERF_INP_MS', 200)
 const FRAME_P95_BUDGET_MS = budget('PERF_FRAME_P95_MS', 34)
+const FRAME_MIN_SAMPLES = budget('PERF_FRAME_MIN_SAMPLES', 30)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -278,7 +279,7 @@ test('scroll scrub frame time p95 stays within budget', async ({ page }) => {
 
   // Drop the first few frames (sampler warm-up) before ranking.
   const samples = deltas.slice(3)
-  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThan(30)
+  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThan(FRAME_MIN_SAMPLES)
   const sorted = [...samples].sort((a, b) => a - b)
   const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0
 
