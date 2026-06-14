@@ -41,7 +41,7 @@ void test('computes scroll rail fills from progress chapter top boundaries', () 
 
   assert.deepEqual(
     computeChapterProgressFills(rects, 720).map((value) => Number(value.toFixed(2))),
-    [1, 0.37, 0]
+    [1, 0, 0]
   )
 })
 
@@ -51,10 +51,10 @@ void test('keeps progress continuous across hidden interstitial sections', () =>
     { id: 'frame', top: 720, bottom: 1800 },
   ]
 
-  assert.equal(Number(computeChapterProgressFills(rects, 720)[0]?.toFixed(2)), 0.75)
+  assert.equal(Number(computeChapterProgressFills(rects, 720)[0]?.toFixed(2)), 0.5)
 })
 
-void test('continues filling the previous rail segment while viewport center is between sections', () => {
+void test('continues filling the previous rail segment by actual scrolled pixels', () => {
   const rects: ChapterRectSnapshot[] = [
     { id: 'frame', top: -900, bottom: 120 },
     { id: 'skills', top: 520, bottom: 1080 },
@@ -62,6 +62,26 @@ void test('continues filling the previous rail segment while viewport center is 
 
   assert.deepEqual(
     computeChapterProgressFills(rects, 720).map((value) => Number(value.toFixed(2))),
-    [0.89, 0]
+    [0.71, 0]
+  )
+})
+
+void test('fills the final rail segment until the document bottom reaches the viewport bottom', () => {
+  const rects: ChapterRectSnapshot[] = [
+    { id: 'contact', top: -200, bottom: 1000 },
+  ]
+
+  assert.equal(Number(computeChapterProgressFills(rects, 720)[0]?.toFixed(2)), 0.42)
+})
+
+void test('completes the previous segment when the next short chapter reaches the viewport bottom', () => {
+  const rects: ChapterRectSnapshot[] = [
+    { id: 'projects', top: -5899, bottom: 329 },
+    { id: 'contact', top: 329, bottom: 1000 },
+  ]
+
+  assert.deepEqual(
+    computeChapterProgressFills(rects, 1000).map((value) => Number(value.toFixed(2))),
+    [1, 1]
   )
 })

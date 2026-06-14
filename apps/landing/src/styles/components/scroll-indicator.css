@@ -141,7 +141,7 @@
   border-radius: 4px;
   transform-origin: top; /* Changed to TOP so progress flows downwards naturally */
   transform: scaleY(0);
-  transition: transform 0.1s linear; /* Fast response to scroll */
+  transition: none;
   will-change: transform;
 }
 

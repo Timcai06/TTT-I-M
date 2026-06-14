@@ -1,41 +1,79 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const appSource = readFileSync('src/App.tsx', 'utf8')
 const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const providerSource = readFileSync('src/components/ChapterStateProvider.tsx', 'utf8')
 const navSource = readFileSync('src/components/Nav.tsx', 'utf8')
 const navStyleSource = readFileSync('src/styles/components/nav.css', 'utf8')
+const scrollIndicatorStyleSource = readFileSync('src/styles/components/scroll-indicator.css', 'utf8')
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
+const themeDriverSource = readFileSync('src/components/ChapterThemeDriver.tsx', 'utf8')
 const transitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const transitionTimelineSource = readFileSync('src/lib/timelines/transitionTimeline.ts', 'utf8')
 const transitionApiSource = readFileSync('src/lib/chapterTransition.ts', 'utf8')
 const scrollSource = readFileSync('src/lib/chapterScroll.ts', 'utf8')
-const activeChapterSource = readFileSync('src/lib/useActiveChapter.ts', 'utf8')
 const chapterScrollMetricsSource = readFileSync('src/lib/chapterScrollMetrics.ts', 'utf8')
+const landingNarrativeSource = readFileSync('src/lib/landingScrollNarrative.ts', 'utf8')
+const scrollFrameSchedulerSource = readFileSync('src/lib/scrollFrameScheduler.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
-  ['src/components/ScrollIndicator.tsx', scrollIndicatorSource],
 ]
 
 if (!appSource.includes('<ChapterStateProvider>')) {
   throw new Error('App must wrap navigation UI in ChapterStateProvider.')
 }
 
-if (!providerSource.includes('useActiveChapter')) {
-  throw new Error('ChapterStateProvider must own the active chapter subscription.')
+if (!providerSource.includes('useLandingScrollNarrative')) {
+  throw new Error('ChapterStateProvider must derive activeId from the landing narrative subscription.')
 }
 
-if (!activeChapterSource.includes('useChapterScrollMetrics') || !scrollIndicatorSource.includes('useChapterScrollMetrics')) {
-  throw new Error('Active chapter and scroll indicator must share the same chapter scroll metrics source.')
+if (existsSync('src/lib/useActiveChapter.ts')) {
+  throw new Error('Legacy useActiveChapter hook must be removed; activeId now comes from landing narrative.')
 }
 
-if (activeChapterSource.includes('getBoundingClientRect') || scrollIndicatorSource.includes('getBoundingClientRect')) {
+if (existsSync('src/lib/chapterTheme.ts')) {
+  throw new Error('Legacy chapterTheme facade must be removed; use pure chapterThemeTokens directly.')
+}
+
+if (!scrollIndicatorSource.includes('useLandingScrollNarrative')) {
+  throw new Error('ScrollIndicator must consume the landing narrative state, not recompute scroll progress independently.')
+}
+
+if (scrollIndicatorSource.includes('useChapterState') || scrollIndicatorSource.includes('computeChapterProgressFills')) {
+  throw new Error('ScrollIndicator must derive its active rail segment from landing narrative progress fills.')
+}
+
+if (!scrollIndicatorSource.includes('fills.findIndex((fill) => fill < 1)')) {
+  throw new Error('ScrollIndicator must choose the active segment from per-pixel progress fills.')
+}
+
+if (!scrollIndicatorStyleSource.includes('transition: none;') || scrollIndicatorStyleSource.includes('transition: transform 0.1s')) {
+  throw new Error('ScrollIndicator fill transform must not be CSS-transitioned; it should track scroll pixels directly.')
+}
+
+if (scrollIndicatorSource.includes('getBoundingClientRect')) {
   throw new Error('Active chapter consumers must not each read layout independently.')
 }
 
 if (!chapterScrollMetricsSource.includes('useSyncExternalStore') || !chapterScrollMetricsSource.includes('ScrollTrigger.create')) {
   throw new Error('Chapter scroll metrics must be a shared external store backed by one ScrollTrigger.')
+}
+
+if (!chapterScrollMetricsSource.includes('createScrollFrameScheduler') || !scrollFrameSchedulerSource.includes('if (frame !== 0) return')) {
+  throw new Error('Chapter scroll metrics must keep one pending rAF during scroll instead of cancel/requeueing until scroll stops.')
+}
+
+if (!chapterScrollMetricsSource.includes('registeredIdSets') || !chapterScrollMetricsSource.includes('syncRegisteredIds')) {
+  throw new Error('Chapter scroll metrics must union all subscriber chapter ids instead of letting consumers overwrite each other.')
+}
+
+if (!landingNarrativeSource.includes('pickActiveChapterId') || !landingNarrativeSource.includes('computeChapterProgressFills') || !landingNarrativeSource.includes('getChapterTheme')) {
+  throw new Error('Landing narrative must derive active chapter, rail progress, and theme mix from the same rect snapshot.')
+}
+
+if (!themeDriverSource.includes('useLandingScrollNarrative') || themeDriverSource.includes('useChapterState') || themeDriverSource.includes('applyChapterTheme')) {
+  throw new Error('ChapterThemeDriver must scrub --bg from landing narrative state instead of tweening after activeId changes.')
 }
 
 if (!appSource.includes('<ChapterTransition />')) {

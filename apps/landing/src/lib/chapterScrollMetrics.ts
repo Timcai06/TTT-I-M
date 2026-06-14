@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useSyncExternalStore } from 'react'
+import { useEffect, useId, useMemo, useSyncExternalStore } from 'react'
 import { ScrollTrigger } from './gsap'
 import { onChaptersReady } from './chaptersReady'
 import type { ChapterRectSnapshot } from './activeChapter'
+import { createScrollFrameScheduler } from './scrollFrameScheduler'
 
 interface ChapterLike {
   /** 章节 DOM id；必须能通过 document.getElementById 找到真实 section/footer */
@@ -24,12 +25,16 @@ const emptySnapshot: ChapterScrollSnapshot = {
 }
 
 let chapterIds: string[] = []
-let frame = 0
 let snapshot = emptySnapshot
 let trigger: ScrollTrigger | null = null
 let cancelReady: (() => void) | null = null
 
 const subscribers = new Set<() => void>()
+const registeredIdSets = new Map<string, string[]>()
+
+function syncRegisteredIds() {
+  chapterIds = [...new Set([...registeredIdSets.values()].flat())]
+}
 
 /**
  * @description 读取当前注册章节的 DOMRect，形成单一滚动布局快照
@@ -61,7 +66,6 @@ function emit() {
  * @performance 只在 ScrollTrigger update/refresh 或 resize 后执行，集中承担 B5 滚动单源测量成本
  */
 function updateSnapshot() {
-  frame = 0
   snapshot = {
     rects: readRects(),
     viewportHeight: window.innerHeight,
@@ -71,10 +75,17 @@ function updateSnapshot() {
 
 /**
  * @description 合并同一帧内的滚动/刷新/resize 请求，避免重复布局读取
+ * @caveats 不能在每次 schedule 时 cancel 已排队帧；Lenis/GSAP ticker 高频调用会导致
+ *   帧被不断推迟，表现为右侧进度条需要滚动停止后才更新。
  */
+const scheduler = createScrollFrameScheduler({
+  request: (callback) => window.requestAnimationFrame(callback),
+  cancel: (id) => window.cancelAnimationFrame(id),
+  flush: updateSnapshot,
+})
+
 function scheduleUpdate() {
-  window.cancelAnimationFrame(frame)
-  frame = window.requestAnimationFrame(updateSnapshot)
+  scheduler.schedule()
 }
 
 /**
@@ -105,8 +116,7 @@ function ensureTrigger() {
 function teardownIfIdle() {
   if (subscribers.size > 0) return
 
-  window.cancelAnimationFrame(frame)
-  frame = 0
+  scheduler.cancel()
   trigger?.kill()
   trigger = null
   cancelReady?.()
@@ -143,12 +153,31 @@ function getServerSnapshot() {
  * @caveats chapters 中的 id 必须和真实 DOM id 一致，否则快照会返回 Infinity 边界并影响章节判断
  */
 export function useChapterScrollMetrics(chapters: ChapterLike[]) {
+  const registrationId = useId()
   const ids = useMemo(() => chapters.map((chapter) => chapter.id), [chapters])
+  const baseSnapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   useEffect(() => {
-    chapterIds = ids
+    registeredIdSets.set(registrationId, ids)
+    syncRegisteredIds()
     scheduleUpdate()
-  }, [ids])
 
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+    return () => {
+      registeredIdSets.delete(registrationId)
+      syncRegisteredIds()
+      scheduleUpdate()
+    }
+  }, [ids, registrationId])
+
+  return useMemo<ChapterScrollSnapshot>(() => {
+    const rectById = new Map(baseSnapshot.rects.map((rect) => [rect.id, rect]))
+    return {
+      rects: ids.map((id) => rectById.get(id) ?? {
+        id,
+        top: Number.POSITIVE_INFINITY,
+        bottom: Number.POSITIVE_INFINITY,
+      }),
+      viewportHeight: baseSnapshot.viewportHeight,
+    }
+  }, [baseSnapshot, ids])
 }

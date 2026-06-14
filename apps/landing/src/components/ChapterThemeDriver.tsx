@@ -1,20 +1,23 @@
-import { useEffect } from 'react'
-import { useChapterState } from '../lib/chapterState'
-import { applyChapterTheme } from '../lib/chapterTheme'
+import { useLayoutEffect } from 'react'
+import { progressChapters } from '../chapters/registry'
+import { useLandingScrollNarrative } from '../lib/useLandingScrollNarrative'
+
+const sections = progressChapters.map((chapter) => ({ id: chapter.id }))
+const fallbackId = sections[0]?.id ?? 'hero'
 
 /**
- * @description 章节色温驱动器 —— 订阅共享章节状态，激活章节变化时把对应色温
- *   插值到页面底色。渲染为 null：它只是把「章节状态 → 主题」的桥接放进
- *   ChapterStateProvider 的订阅树里，复用唯一的 ScrollTrigger 度量源，
- *   不新建任何滚动监听。
- * @dependencies useChapterState（共享章节状态）、applyChapterTheme（GSAP 颜色插值）
+ * @description 章节色温驱动器 —— 订阅 landing narrative，把滚轮所在章节段的
+ *   混合色直接写入 `--bg`。它不再等 activeId 变化后补 tween，因此背景会跟随
+ *   真实滚动像素连续变化。
+ * @dependencies `useLandingScrollNarrative`、章节 registry、CSS token `--bg`
+ * @performance / @caveats 不创建 ScrollTrigger；每次写 CSS 变量都来自共享快照。
  */
 export default function ChapterThemeDriver() {
-  const { activeId } = useChapterState()
+  const { theme } = useLandingScrollNarrative(sections, fallbackId)
 
-  useEffect(() => {
-    applyChapterTheme(activeId)
-  }, [activeId])
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty('--bg', theme.bg)
+  }, [theme.bg])
 
   return null
 }

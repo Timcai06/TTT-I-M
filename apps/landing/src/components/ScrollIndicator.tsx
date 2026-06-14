@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
 import { progressChapters } from '../chapters/registry'
-import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
-import { computeChapterProgressFills } from '../lib/chapterProgress'
-import { useChapterScrollMetrics } from '../lib/chapterScrollMetrics'
+import { useLandingScrollNarrative } from '../lib/useLandingScrollNarrative'
 
 const sections = progressChapters.map((c) => ({
   id: c.id,
@@ -13,15 +11,12 @@ const sections = progressChapters.map((c) => ({
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
 export default function ScrollIndicator() {
-  const { activeId } = useChapterState()
-  const { rects, viewportHeight } = useChapterScrollMetrics(sections)
-  const fills = useMemo(() => (
-    rects.length === 0 || viewportHeight <= 0
-      ? sections.map(() => 0)
-      : computeChapterProgressFills(rects, viewportHeight)
-  ), [rects, viewportHeight])
+  const { progressFills: fills } = useLandingScrollNarrative(sections, firstSection.id)
 
-  const activeIdx = sections.findIndex((s) => s.id === activeId)
+  const activeIdx = useMemo(() => {
+    const nextIncomplete = fills.findIndex((fill) => fill < 1)
+    return nextIncomplete === -1 ? sections.length - 1 : nextIncomplete
+  }, [fills])
   const activeSection = sections[activeIdx] ?? firstSection
 
   const handleSegmentClick = (id: string) => {

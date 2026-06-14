@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { navChapters, progressChapters } from '../chapters/registry'
 import { ChapterStateContext } from '../lib/chapterState'
-import { useActiveChapter } from '../lib/useActiveChapter'
+import { useLandingScrollNarrative } from '../lib/useLandingScrollNarrative'
 
 const trackedChapters = [...new Map(
   [...navChapters, ...progressChapters].map((chapter) => [chapter.id, chapter])
@@ -9,7 +9,7 @@ const trackedChapters = [...new Map(
 const fallbackChapterId = trackedChapters[0]?.id ?? 'hero'
 
 export default function ChapterStateProvider({ children }: { children: ReactNode }) {
-  const activeId = useActiveChapter(trackedChapters, fallbackChapterId)
+  const { activeId } = useLandingScrollNarrative(trackedChapters, fallbackChapterId)
 
   return (
     <ChapterStateContext.Provider value={{ activeId }}>

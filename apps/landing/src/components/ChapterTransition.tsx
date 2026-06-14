@@ -7,7 +7,7 @@ import {
   type ChapterTransitionRequest,
 } from '../lib/chapterTransition'
 import { scrollToChapter } from '../lib/chapterScroll'
-import { getChapterTheme } from '../lib/chapterTheme'
+import { getChapterTheme } from '../lib/chapterThemeTokens'
 import { getStage, setStage } from '../lib/stage'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { createTransitionTimeline } from '../lib/timelines/transitionTimeline'
