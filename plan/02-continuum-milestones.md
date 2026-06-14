@@ -6,10 +6,12 @@
 
 ---
 
-## M0 · 脊柱（持久 canvas + GPGPU + 肖像迁移）
+## M0 · 脊柱（持久 canvas + GPGPU + 后续章节连续体）
 
-> 地基。做完后全站表现与现在**无差异**（这就是验收线），但底下已是一个可变形的
-> 持久粒子系统。最难的一步——之后的形态都是往这根脊柱上挂。
+> 地基。做完后 Index/Hero 的既有肖像粒子主体**不回退、不被替换**；App 级连续体先在
+> 后续章节作为低亮星团/光场出现，并使用同一套章节主题色平滑过渡。之后的形态都往这根
+> 脊柱上挂。旧版“移除 ParticlePortrait、Hero 完全迁入 Continuum”改为后续可选迁移，
+> 只有在视觉身份能 1:1 保住时再执行。
 
 ### 步骤
 
@@ -25,20 +27,26 @@
   （亮度阈值发射点 + z 微位移保景深）；注册表先只有 `portrait` 一项 + 其 fallback=幽灵照片。
 - [ ] **`ParticleContinuum.tsx`**：App 级 fixed canvas；reduced-motion / particleTexSize===0
   时不挂载；`contextRegistry.acquire()`。
-- [ ] **迁移 Hero**：移除 `<ParticlePortrait>` 自带 canvas 与其 `contextRegistry` 占用；
-  Hero 形态改由连续体渲染。Hero 的 pretext 指针交互、滚动 scrub 不受影响（它们作用于
-  DOM 标题层，与粒子层解耦）。
-- [ ] **`useContinuumScroll.ts`** 骨架：先只处理 hero 单形态（morph 恒 0），打通
-  chapterScrollMetrics → uniform 链路。
-- [ ] **单 context 门**（见 [05](./05-guards-and-budgets.md)）：补 e2e，连续跳转 N 次后
-  常驻 GL context == 1。关掉积压的「重复章节跳转 context 泄漏门」。
+- [ ] **保留 Hero 主体**：Index 继续使用已确认的 `<ParticlePortrait>` 与背景肖像；
+  Continuum 在 hero 阶段视觉 opacity=0，避免额外红色星团破坏首屏。
+- [ ] **`landingScrollNarrative.ts` + `useLandingScrollNarrative.ts`**：全 landing 的滚动叙事层；
+  从 `chapterScrollMetrics` 的单一 rect 快照派生 activeId / progress fills / from→to blend / theme mix。
+- [ ] **`useContinuumScroll.ts`** 骨架：消费 landing narrative → opacity/tint/behavior，
+  morph 恒 0；颜色读取混合后的 `theme.cover`，与章节转场同源。
+- [ ] **丝滑颜色门**：背景 `--bg` 由 landing narrative 跟随滚轮 scrub；Continuum 的
+  tint/opacity 在 `useFrame` 中继续插值，不允许章节切换时直接跳色。
+- [ ] **全站像素进度条**：右侧 rail 用真实滚动像素和章节 top/bottom 边界计算填充；
+  不再用视口中心线近似进度，且多个消费者不能覆盖 `chapterScrollMetrics` 的测量 id。
+- [ ] **context 策略门**（见 [05](./05-guards-and-budgets.md)）：M0 当前允许 Hero 原肖像
+  canvas + 后续章节 Continuum 并存；严格单 context 作为“Hero 视觉迁移完成后”的 M0b/M1
+  守卫，不以牺牲已确认首屏视觉为代价。
 
 ### 验收
 
-- Hero 肖像**读起来是同一张肖像**、保留「粒子肖像」质感（注：技术从位移平面换成点云
-  采样，不追像素级一致，追**视觉身份一致**——诚实标准）。
+- Hero 肖像保留当前已确认主体，不叠加红色星团；后续章节星团跟随对应章节主题色。
 - reduced-motion / 无 WebGL2 下 Hero 显示现有幽灵照片，零回归。
-- 现有全套 e2e 绿；常驻 context 从最多 3 → 恒 1（除转场期）。
+- 右侧进度条是全站像素级丝滑指示器，章节段填充与真实滚动距离对应。
+- 章节切换时 Continuum tint/opacity 平滑过渡，不突变。
 - typecheck / lint / build / 全部 build guard 绿。
 
 ### 风险
@@ -68,7 +76,7 @@
 - [ ] **Skills 不介入**：粒子在此章保持星尘/低存在感，把舞台让给红色蛇形线。
 - [ ] **morph 编排**：`useContinuumScroll` 处理 hero→about→life→frame→skills 的形态序列
   与混合，per-particle seed 错峰。
-- [ ] **色温联动**：About 暖纸 tint，随 `chapterTheme` 走。
+- [ ] **色温联动**：About 暖纸 tint，随 `landingScrollNarrative.theme` 走。
 
 ### 验收
 

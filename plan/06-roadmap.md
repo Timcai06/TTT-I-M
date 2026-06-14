@@ -17,10 +17,13 @@
 - [ ] `continuumQuality.ts`：扩展 `getGLQualityProfile()` 加 continuum 4 档
 - [ ] `forms/registry.ts` + `forms/portrait.ts`（肖像采样从 ParticlePortrait 抽出）
 - [ ] `ParticleContinuum.tsx`：App 级 fixed canvas + reduced-motion/低端不挂载
-- [ ] 迁移 Hero：移除 ParticlePortrait canvas 与其 context 占用
-- [ ] `useContinuumScroll.ts` 骨架（hero 单形态打通链路）
-- [ ] 守卫：单 context 门 + debug 不进 prod + 着色器编译冒烟（[05](./05-guards-and-budgets.md)）
-- [ ] 验收：Hero 视觉身份一致、兜底零回归、常驻 context 恒 1、全套门绿
+- [ ] 保留 Hero：Index 继续使用已确认的 ParticlePortrait 主体；Continuum 在 hero 阶段不显示红色星团
+- [ ] `landingScrollNarrative.ts`：全页单源叙事状态（activeId / progress fills / from→to blend / theme mix）
+- [ ] `useContinuumScroll.ts` 骨架（landing narrative → opacity/tint/behavior；morph 恒 0）
+- [ ] 章节主题色：背景 `--bg` 随滚轮 scrub；Continuum tint 读取混合后的 `theme.cover` 并在帧循环中平滑 lerp
+- [ ] 右侧进度条：全站像素级填充，按真实章节 top/bottom 边界推进；修复多消费者覆盖测量 id
+- [ ] 守卫：debug 不进 prod + 着色器编译冒烟 + 进度/主题色契约（[05](./05-guards-and-budgets.md)）
+- [ ] 验收：Hero 主体零回退、后续章节星团符合主题色、进度条像素级丝滑、全套门绿
 
 ### M1 · About 解体 + 吸收 TextParticles
 - [ ] `forms/disintegrate.ts`（刚度→0、湍流拉满）

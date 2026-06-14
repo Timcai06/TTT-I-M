@@ -7,19 +7,21 @@
 
 ## 设计意图（先读）
 
-**一个生命体，六种形态。** 全站只有一个粒子系统，滚动让它变成每一章需要的样子：
+**一个滚动叙事底座，多种视觉消费方。** M0 先统一 landing 的滚动事实源：
+同一批章节 rect 派生 activeId、右侧进度、背景色温与 Continuum tint。Hero 的原
+ParticlePortrait 仍是 Index 身份主体；Continuum 先在后续章节作为氛围层浮现。
 
 | 章节 | 形态 | 说明 | 里程碑 |
 |---|---|---|---|
-| Hero | **肖像** | 现有 ParticlePortrait 迁入，成为形态 #1 | M0 |
+| Hero | **肖像** | 保留现有 ParticlePortrait 主体；Continuum 不抢 Index 视觉中心 | M0 |
 | About | **解体成尘** | 肖像溃散为 curl-noise 流场，再聚成 manifesto 文字 | M1 |
 | Life / Frame | **稀薄星尘** | 照片是主角，粒子退为近不可见的背景微尘（密度极低） | M1 |
 | Skills | （不介入） | 红色蛇形线已是主角，粒子只路过 | M1 |
 | Work | **数学曲面** | 凝成参数曲面/吸引子，六卡参数演化 | **M2 延后** |
 | Contact | **水面 → 散尽** | Gerstner 波浪水面，米白 footer 揭开时散点退场 | M3 |
 
-评委看到的不是「粒子 + 数学图 + 水」三个效果，而是「这团东西一直在变成这一章需要的
-样子」。连续性即叙事——这是做旗舰的全部理由。
+评委看到的不是「粒子 + 数学图 + 水」三个效果，而是「滚动坐标、章节色温与视觉层都在
+同一条叙事线上变化」。连续性即叙事——这是做旗舰的全部理由。
 
 ---
 
@@ -40,9 +42,10 @@ App
 - z-index：内容（z≥1）之上能看到粒子时用通透形态（星尘），需要粒子当主角时（Hero/
   Contact）粒子层在内容视觉重心区。具体分层在 M0 调。
 
-**它吞掉谁**：M0 移除 Hero 内部的 `<ParticlePortrait>` canvas；M1 移除 About 的
-`<TextParticles>` canvas。常驻 context 从「最多 3」收敛为「恒 1」。这是性能净收益，
-也顺带关掉了积压的 context 泄漏门。
+**它暂不吞掉谁**：M0 保留 Hero 内部的 `<ParticlePortrait>` canvas，这是当前站点的
+身份主体；Continuum 先作为 App 级氛围层服务后续章节。严格单 context 合并作为 M0b/M1
+的候选前置，前提是能无损保留 Index 肖像观感。目标不是新增一层，而是先建立可迁移的
+单滚动叙事底座。
 
 ---
 
@@ -118,10 +121,12 @@ interface FormDescriptor {
 
 ### `useContinuumScroll.ts`
 
-- **复用 `chapterScrollMetrics`**（已有的唯一布局快照源，单 ScrollTrigger）——不新建
-  任何滚动监听。
-- 输出 `{ formA, formB, morph }`：当前章与下一章的形态 + 0→1 混合进度。
-- 写进 sim 的 uniform。章节间的过渡区（章节边界附近）就是 morph 发生区。
+- **复用 `chapterScrollMetrics` + `landingScrollNarrative`**：`chapterScrollMetrics` 是唯一
+  布局快照源，`landingScrollNarrative` 从同一批 rect 派生 activeId / progress fills /
+  from→to blend / theme mix。
+- M0 输出 `{ activeId, fromId, toId, blend, theme }`：右侧进度条、背景色温、
+  Continuum tint 共用同一滚动事实；后续形态 morph 再挂到同一 blend 上。
+- 写进 sim 的 uniform。章节间的过渡区（真实滚动像素段）就是 tint / opacity / morph 发生区。
 
 ### stage 订阅
 
@@ -131,7 +136,7 @@ interface FormDescriptor {
 
 ### 颜色联动
 
-- 读 `chapterTheme.ts` 当前主题 → 写 `uTint` uniform。整站色温叙事延伸进粒子空间。
+- 读 `landingScrollNarrative.theme.cover` 的混合色 → 写 `uTint` uniform。整站色温叙事延伸进粒子空间。
   这是别的站没有的系统级细节（因为别人没有色温基建）。
 
 ---
@@ -155,7 +160,7 @@ continuum: {
 ### context 预算
 
 - 连续体启动时 `contextRegistry.acquire()`，是**唯一**常驻 context。
-- M0 移除 ParticlePortrait 的 `acquire`，M1 移除 TextParticles 的——净减 1~2。
+- M0 暂保留 ParticlePortrait 的 `acquire`；M0b/M1 在肖像观感可完全保留后再合并为单 context。
 - 守卫：连续跳转 N 次后常驻 context == 1（见 05，关掉积压的泄漏门）。
 
 ### 降级阶梯（每个形态都必须有）
@@ -192,7 +197,9 @@ src/lib/continuum/
     disintegrate.ts         ← 解体参数
     stardust.ts             ← 星尘参数
     gerstner.ts             ← 水面 form（薄封装，几何在 lib/gerstner.ts）
-  useContinuumScroll.ts     ← chapterScrollMetrics → { formA, formB, morph }
+  landingScrollNarrative.ts ← rects → activeId / progressFills / from→to blend / theme
+  useLandingScrollNarrative.ts ← chapterScrollMetrics → landing narrative hook
+  useContinuumScroll.ts     ← landing narrative → Continuum tint / opacity / form state
   continuumQuality.ts       ← getGLQualityProfile 的 continuum 扩展
   shaders/
     sim-position.glsl       ← 位置积分（#include lygia curl/noise）
@@ -205,10 +212,11 @@ src/lib/mathSurface.ts      ← 数学曲面/吸引子纯函数 + 单测（M2 �
 ### 依赖方向（避免环）
 
 ```
-chapters/registry.ts ──┐
-chapterScrollMetrics ──┼─▶ useContinuumScroll ─▶ ParticleContinuum ─▶ simulation
-chapterTheme.ts ───────┘                                  │
-stage.ts ─────────────────────────────────────────────────┘（订阅，单向）
+chapters/registry.ts ───────────────────────┐
+chapterScrollMetrics ─▶ landingScrollNarrative ─┬─▶ ChapterStateProvider / Nav
+chapterThemeTokens.ts ───────────────────────┘  ├─▶ ScrollIndicator / ChapterThemeDriver
+                                                └─▶ useContinuumScroll ─▶ ParticleContinuum ─▶ simulation
+stage.ts ───────────────────────────────────────────────────────────────────────────────┘（订阅，单向）
 webgl/{quality,contextRegistry} ◀── ParticleContinuum（复用，不反向依赖）
 ```
 
@@ -225,7 +233,7 @@ webgl/{quality,contextRegistry} ◀── ParticleContinuum（复用，不反向
 | `lib/webgl/textureCache.ts`（引用计数） | 肖像源图、噪声纹理走共享缓存，避免重复上传 |
 | `lib/webgl/useGLSurface.ts`（生命周期契约） | 连续体的 mount/pause/resume/dispose 继承此契约 |
 | `lib/chapterScrollMetrics.ts`（单布局快照源） | morph 进度的唯一滚动来源，零新监听 |
-| `lib/chapterTheme.ts`（章节色温） | 粒子 tint 的颜色来源 |
+| `lib/chapterThemeTokens.ts` + `lib/landingScrollNarrative.ts` | 粒子 tint / 页面背景的颜色来源 |
 | `lib/stage.ts`（阶段状态机） | 转场搅动、reduced-motion 不挂载的判定来源 |
 | 各章静态视觉（ghost/serif/排版） | 直接作为形态 fallback，零新增兜底资产 |
 

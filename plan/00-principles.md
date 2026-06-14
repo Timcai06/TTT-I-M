@@ -69,7 +69,7 @@
    不改形态、颜色、行为——低端档是「稀疏版同一个生命体」，不是另一种效果。
 
 4. **颜色是 token 派生**
-   粒子着色读章节色温（`chapterTheme.ts` 的当前主题），tint 必须来自 token 体系，
+   粒子着色读章节色温（`chapterThemeTokens.ts` + `landingScrollNarrative` 的当前混合主题），tint 必须来自 token 体系，
    不得在着色器里硬编码十六进制。亮底章节（Contact 米白）的粒子色必须保证可读性。
 
 5. **GPGPU 成本被预算守住**
