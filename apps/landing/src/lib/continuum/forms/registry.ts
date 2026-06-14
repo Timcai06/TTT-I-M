@@ -13,7 +13,7 @@ export const continuumForms = {
   portrait: {
     id: 'portrait',
     fallback: '#hero .hero__portrait-ghost',
-    tint: '#b77a62',
+    tint: '#d8d2c5',
     behavior: {
       stiffness: 3.4,
       turbulence: 0.18,

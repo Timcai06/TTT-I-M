@@ -3,6 +3,9 @@ import { GPUComputationRenderer, type Variable } from 'three/examples/jsm/misc/G
 import simPositionShader from './shaders/sim-position.glsl'
 import simVelocityShader from './shaders/sim-velocity.glsl'
 
+const positionShaderSource = String(simPositionShader)
+const velocityShaderSource = String(simVelocityShader)
+
 /**
  * @description 连续体的 GPGPU 仿真核心 —— position / velocity 两张浮点纹理的
  *   ping-pong 积分（朝形态目标的弹簧力 + curl 湍流）。一粒子一 texel。
@@ -97,8 +100,8 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
   ;(posTex.image.data as Float32Array).set(seedScatter(texSize, radius * 1.6))
   // velocity 初始为 0（createTexture 已清零）
 
-  const posVar: Variable = gpu.addVariable('texturePosition', simPositionShader, posTex)
-  const velVar: Variable = gpu.addVariable('textureVelocity', simVelocityShader, velTex)
+  const posVar: Variable = gpu.addVariable('texturePosition', positionShaderSource, posTex)
+  const velVar: Variable = gpu.addVariable('textureVelocity', velocityShaderSource, velTex)
   gpu.setVariableDependencies(posVar, [posVar, velVar])
   gpu.setVariableDependencies(velVar, [posVar, velVar])
 

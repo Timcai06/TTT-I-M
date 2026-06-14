@@ -1,7 +1,7 @@
 // 点云渲染片元着色器 — 柔边圆精灵，颜色 = 章节色温 tint，远处淡出。
 precision highp float;
 
-uniform vec3 uTint;       // 章节色温（chapterTheme 注入）
+uniform vec3 uTint;       // 章节色温（landingScrollNarrative 注入）
 uniform float uOpacity;   // 全局不透明度（密度调节 / 形态淡入）
 
 varying float vFade;

@@ -64,8 +64,8 @@ export default function App() {
     <>
       <Loader />
       <Cursor />
-      <ParticleContinuum />
       <ChapterStateProvider>
+        <ParticleContinuum />
         <ScrollIndicator />
         <Nav />
         <ChapterThemeDriver />

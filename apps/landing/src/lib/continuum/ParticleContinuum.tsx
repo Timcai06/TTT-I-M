@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { acquireContext, releaseContext } from '../webgl/contextRegistry'
@@ -7,6 +7,8 @@ import { buildContinuumPoints, type ContinuumPoints } from './renderPoints'
 import { getContinuumQuality, shouldMountContinuum } from './continuumRuntime'
 import { loadPortraitTargetTexture } from './forms/portrait'
 import { getContinuumForm } from './forms/registry'
+import { useContinuumScroll } from './useContinuumScroll'
+import type { ContinuumScrollState } from './continuumScrollState'
 
 interface ContinuumBundle {
   simulation: ContinuumSimulation
@@ -43,9 +45,18 @@ function ContinuumContextRegistration() {
   return null
 }
 
-function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQuality> }) {
-  const { gl } = useThree()
+function ContinuumScene({
+  quality,
+  scrollState,
+}: {
+  quality: ReturnType<typeof getContinuumQuality>
+  scrollState: ContinuumScrollState
+}) {
+  const { gl, viewport } = useThree()
   const portrait = getContinuumForm('portrait')
+  const tint = useMemo(() => new THREE.Color(scrollState.tint), [scrollState.tint])
+  const renderedTint = useRef(new THREE.Color(scrollState.tint))
+  const renderedOpacity = useRef(0)
 
   const bundle = useMemo<ContinuumBundle | null>(() => {
     try {
@@ -58,17 +69,17 @@ function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQu
         texSize: quality.particleTexSize,
         pointSize: quality.pointSize * quality.dprMax,
         tint: portrait.tint,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
       })
 
       points.setPositionTexture(simulation.positionTexture)
-      points.setOpacity(0.32)
+      points.setOpacity(0)
       return { simulation, points }
     } catch (error) {
       console.warn('[ParticleContinuum] simulation init failed:', error)
       return null
     }
-  }, [gl, quality, portrait.tint])
+  }, [gl, quality.dprMax, quality.particleTexSize, quality.pointSize, portrait.tint])
 
   useEffect(() => {
     return () => {
@@ -79,8 +90,19 @@ function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQu
 
   useFrame((_, delta) => {
     if (!bundle) return
-    const positionTexture = bundle.simulation.compute(delta, portrait.behavior)
+    const transitionAlpha = 1 - Math.exp(-delta * 3.6)
+    renderedTint.current.lerp(tint, transitionAlpha)
+    renderedOpacity.current += (scrollState.opacity - renderedOpacity.current) * transitionAlpha
+    bundle.points.setTint(renderedTint.current)
+    bundle.points.setOpacity(renderedOpacity.current)
+
+    const positionTexture = bundle.simulation.compute(delta, scrollState.behavior)
     bundle.points.setPositionTexture(positionTexture)
+    bundle.points.points.position.set(
+      viewport.width * scrollState.xOffsetRatio,
+      scrollState.yOffset,
+      0,
+    )
   })
 
   useEffect(() => {
@@ -112,6 +134,7 @@ export default function ParticleContinuum() {
   const [enabled] = useState(() => shouldMountContinuum())
   const [failed, setFailed] = useState(false)
   const quality = useMemo(() => getContinuumQuality(), [])
+  const scrollState = useContinuumScroll()
 
   if (!enabled || failed) return null
 
@@ -124,7 +147,7 @@ export default function ParticleContinuum() {
           gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
         >
           <ContinuumContextRegistration />
-          <ContinuumScene quality={quality} />
+          <ContinuumScene quality={quality} scrollState={scrollState} />
         </Canvas>
       </ContinuumErrorBoundary>
     </div>

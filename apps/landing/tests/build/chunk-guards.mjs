@@ -24,8 +24,12 @@ if (requiredHeroPreloads.length > 0) {
   throw new Error(`Hero WebGL assets are not preloaded from index.html: ${requiredHeroPreloads.join(', ')}`)
 }
 
+if (!indexSource.includes('ParticleContinuum')) {
+  throw new Error(`Entry chunk ${indexChunk} does not contain the App-level Particle Continuum layer.`)
+}
+
 if (!indexSource.includes('ParticlePortrait')) {
-  throw new Error(`Entry chunk ${indexChunk} does not contain the eager Hero particle layer.`)
+  throw new Error(`Entry chunk ${indexChunk} must keep the accepted original Hero ParticlePortrait subject.`)
 }
 
 const runtimePreloadedAssets = ['TextParticles']

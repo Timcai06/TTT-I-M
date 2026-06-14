@@ -54,7 +54,6 @@ export default function Hero() {
     if (typeof window === 'undefined') return false
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   })
-
   /**
    * Effect 1: 入场动画 + 滚动 scrubbing 动画。
    * 在 gsap.context 内运行，组件卸载时 ctx.revert() 一次性清理所有 ScrollTrigger。
@@ -289,7 +288,7 @@ export default function Hero() {
     <section className="hero" id="hero" ref={root}>
       {/* Canvas 层：幽灵照片 → 粒子肖像 (条件渲染) → 扫描线光泽，三层堆叠 */}
       <div className="hero__canvas">
-        <img className="hero__ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
+        <img className="hero__ghost hero__portrait-ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
         {showParticleLayer && (
           <ParticlePortrait />
         )}
