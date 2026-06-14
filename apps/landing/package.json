@@ -59,6 +59,7 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
+    "vite-plugin-glsl": "^1.6.0",
     "vite-plugin-image-optimizer": "^2.0.3"
   }
 }
