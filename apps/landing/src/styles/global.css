@@ -32,11 +32,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'ss01', 'cv11';
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 body {
   min-height: 100vh;
   line-height: 1.7;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 p {

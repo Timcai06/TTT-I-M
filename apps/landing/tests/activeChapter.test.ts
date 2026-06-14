@@ -32,7 +32,7 @@ void test('keeps the previous chapter active while the center is between section
   assert.equal(pickActiveChapterId(rects, 720, 'frame'), 'frame')
 })
 
-void test('computes scroll rail fills from the same viewport center boundary as active chapters', () => {
+void test('computes scroll rail fills from progress chapter top boundaries', () => {
   const rects: ChapterRectSnapshot[] = [
     { id: 'hero', top: -900, bottom: -80 },
     { id: 'about', top: 0, bottom: 720 },
@@ -41,15 +41,27 @@ void test('computes scroll rail fills from the same viewport center boundary as 
 
   assert.deepEqual(
     computeChapterProgressFills(rects, 720).map((value) => Number(value.toFixed(2))),
-    [1, 0.5, 0]
+    [1, 0.37, 0]
   )
 })
 
-void test('keeps rail fill on the previous chapter while viewport center is between sections', () => {
+void test('keeps progress continuous across hidden interstitial sections', () => {
+  const rects: ChapterRectSnapshot[] = [
+    { id: 'about', top: -720, bottom: -120 },
+    { id: 'frame', top: 720, bottom: 1800 },
+  ]
+
+  assert.equal(Number(computeChapterProgressFills(rects, 720)[0]?.toFixed(2)), 0.75)
+})
+
+void test('continues filling the previous rail segment while viewport center is between sections', () => {
   const rects: ChapterRectSnapshot[] = [
     { id: 'frame', top: -900, bottom: 120 },
     { id: 'skills', top: 520, bottom: 1080 },
   ]
 
-  assert.deepEqual(computeChapterProgressFills(rects, 720), [1, 0])
+  assert.deepEqual(
+    computeChapterProgressFills(rects, 720).map((value) => Number(value.toFixed(2))),
+    [0.89, 0]
+  )
 })

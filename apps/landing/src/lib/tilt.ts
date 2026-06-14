@@ -44,7 +44,10 @@ export function attachTilt(el: HTMLElement, opts: TiltOptions = {}): () => void 
     targetRY = px * maxRY
     targetRX = -py * maxRX
   }
-  const onEnter = () => { active = true }
+  const onEnter = (e: MouseEvent) => {
+    active = true
+    onMove(e)
+  }
   const onLeave = () => {
     active = false
     targetRX = 0

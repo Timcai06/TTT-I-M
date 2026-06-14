@@ -235,7 +235,7 @@ export default function Projects() {
     // and is torn down explicitly below.
     const tiltDisposers = gsap.utils
       .toArray<HTMLElement>(root.current.querySelectorAll('.media-frame'))
-      .map((frame) => attachTilt(frame))
+      .map((frame) => attachTilt(frame, { damp: 0.22 }))
 
     return () => {
       tiltDisposers.forEach((dispose) => dispose())
