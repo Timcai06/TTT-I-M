@@ -153,6 +153,7 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
       return gpu.getCurrentRenderTarget(posVar).texture
     },
     setTarget(texture) {
+      if (targetTexture !== texture) targetTexture.dispose()
       targetTexture = texture
       uTarget.value = texture
     },

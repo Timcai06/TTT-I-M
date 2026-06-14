@@ -187,7 +187,7 @@ export default function Loader() {
       /* ── hold a beat ── */
       tl.to({}, { duration: 0.35 })
 
-      tl.to('.intro', {
+      tl.to(panelRef.current, {
         filter: 'brightness(0.82) contrast(1.08)',
         duration: 0.42,
         ease: 'power2.out',

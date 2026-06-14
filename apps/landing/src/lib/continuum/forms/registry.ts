@@ -1,0 +1,28 @@
+import type { SimBehavior } from '../simulation'
+
+export type ContinuumFormId = 'portrait'
+
+export interface FormDescriptor {
+  id: ContinuumFormId
+  fallback: string
+  behavior: SimBehavior
+  tint: string
+}
+
+export const continuumForms = {
+  portrait: {
+    id: 'portrait',
+    fallback: '#hero .hero__portrait-ghost',
+    tint: '#b77a62',
+    behavior: {
+      stiffness: 3.4,
+      turbulence: 0.18,
+      damping: 0.91,
+      noiseScale: 0.72,
+    },
+  },
+} satisfies Record<ContinuumFormId, FormDescriptor>
+
+export function getContinuumForm(id: ContinuumFormId): FormDescriptor {
+  return continuumForms[id]
+}

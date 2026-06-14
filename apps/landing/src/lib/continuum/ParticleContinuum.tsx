@@ -5,6 +5,8 @@ import { acquireContext, releaseContext } from '../webgl/contextRegistry'
 import { createContinuumSimulation, type ContinuumSimulation } from './simulation'
 import { buildContinuumPoints, type ContinuumPoints } from './renderPoints'
 import { getContinuumQuality, shouldMountContinuum } from './continuumRuntime'
+import { loadPortraitTargetTexture } from './forms/portrait'
+import { getContinuumForm } from './forms/registry'
 
 interface ContinuumBundle {
   simulation: ContinuumSimulation
@@ -43,6 +45,7 @@ function ContinuumContextRegistration() {
 
 function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQuality> }) {
   const { gl } = useThree()
+  const portrait = getContinuumForm('portrait')
 
   const bundle = useMemo<ContinuumBundle | null>(() => {
     try {
@@ -54,7 +57,7 @@ function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQu
       const points = buildContinuumPoints({
         texSize: quality.particleTexSize,
         pointSize: quality.pointSize * quality.dprMax,
-        tint: '#b77a62',
+        tint: portrait.tint,
         blending: THREE.AdditiveBlending,
       })
 
@@ -65,7 +68,7 @@ function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQu
       console.warn('[ParticleContinuum] simulation init failed:', error)
       return null
     }
-  }, [gl, quality])
+  }, [gl, quality, portrait.tint])
 
   useEffect(() => {
     return () => {
@@ -76,14 +79,30 @@ function ContinuumScene({ quality }: { quality: ReturnType<typeof getContinuumQu
 
   useFrame((_, delta) => {
     if (!bundle) return
-    const positionTexture = bundle.simulation.compute(delta, {
-      stiffness: 2.2,
-      turbulence: 0.32,
-      damping: 0.925,
-      noiseScale: 0.82,
-    })
+    const positionTexture = bundle.simulation.compute(delta, portrait.behavior)
     bundle.points.setPositionTexture(positionTexture)
   })
+
+  useEffect(() => {
+    if (!bundle) return
+    let cancelled = false
+
+    loadPortraitTargetTexture('/portrait/tim.jpg', quality.particleTexSize)
+      .then((texture) => {
+        if (cancelled) {
+          texture.dispose()
+          return
+        }
+        bundle.simulation.setTarget(texture)
+      })
+      .catch((error) => {
+        console.warn('[ParticleContinuum] portrait target failed:', error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [bundle, quality.particleTexSize])
 
   if (!bundle) return null
   return <primitive object={bundle.points.points} />

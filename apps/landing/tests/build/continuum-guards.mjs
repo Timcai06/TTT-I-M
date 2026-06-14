@@ -11,6 +11,12 @@ const app = read('src/App.tsx')
 if (!exists('src/lib/continuum/ParticleContinuum.tsx')) {
   throw new Error('M0 requires src/lib/continuum/ParticleContinuum.tsx')
 }
+if (!exists('src/lib/continuum/forms/registry.ts')) {
+  throw new Error('M0 requires a continuum forms registry')
+}
+if (!exists('src/lib/continuum/forms/portrait.ts')) {
+  throw new Error('M0 requires a portrait target form')
+}
 
 if (!/import\s+ParticleContinuum\s+from\s+['"]\.\/lib\/continuum\/ParticleContinuum['"]/.test(app)) {
   throw new Error('App must import the App-level ParticleContinuum')
@@ -26,11 +32,18 @@ const requiredPatterns = [
   [/shouldMountContinuum\(/, 'ParticleContinuum must honor reduced-motion/WebGL2 mount gating'],
   [/createContinuumSimulation\(/, 'ParticleContinuum must run through the GPGPU simulation core'],
   [/buildContinuumPoints\(/, 'ParticleContinuum must render through the shared point renderer'],
+  [/loadPortraitTargetTexture\(/, 'ParticleContinuum must load the portrait target into the simulation'],
+  [/getContinuumForm\('portrait'\)/, 'ParticleContinuum must read the portrait descriptor from the forms registry'],
   [/className=['"]particle-continuum['"]/, 'ParticleContinuum root must expose the fixed-layer CSS class'],
 ]
 
 for (const [pattern, message] of requiredPatterns) {
   if (!pattern.test(continuum)) throw new Error(message)
+}
+
+const registry = read('src/lib/continuum/forms/registry.ts')
+if (!registry.includes("fallback: '#hero .hero__portrait-ghost'")) {
+  throw new Error('Portrait form must declare the existing Hero fallback selector')
 }
 
 console.log('[continuum-guards] Particle Continuum M0 mount contract OK')
