@@ -7,13 +7,35 @@ async function openMobileHome(page: Page) {
   await page.locator('.intro').waitFor({ state: 'detached', timeout: 8000 }).catch(async () => {
     await page.addStyleTag({ content: '.intro { display: none !important; pointer-events: none !important; }' })
   })
+  await waitForMobileChaptersReady(page)
+}
+
+async function waitForMobileChaptersReady(page: Page) {
+  await page.waitForFunction(() => {
+    const requiredIds = ['hero', 'about', 'life', 'frame', 'skills', 'projects', 'contact']
+    const sectionsReady = requiredIds.every((id) => {
+      const el = document.getElementById(id)
+      return el && el.getBoundingClientRect().height > 0
+    })
+
+    return sectionsReady
+      && document.querySelectorAll('#skills .skill-row').length === 6
+      && document.querySelectorAll('#projects .project-card').length > 0
+      && document.querySelectorAll('#frame img').length > 0
+  }, { timeout: 12_000 })
 }
 
 async function scrollChapterToTop(page: Page, id: string) {
+  await waitForMobileChaptersReady(page)
   await page.evaluate((chapterId) => {
     document.getElementById(chapterId)?.scrollIntoView({ block: 'start' })
   }, id)
-  await page.waitForTimeout(700)
+  await page.waitForFunction((chapterId) => {
+    const el = document.getElementById(chapterId)
+    if (!el) return false
+    const rect = el.getBoundingClientRect()
+    return Math.abs(rect.top) < 24 || (rect.top < 0 && rect.bottom > window.innerHeight * 0.5)
+  }, id, { timeout: 3000 })
 }
 
 test('Mobile Hero presents title and portrait in the first viewport', async ({ page }) => {

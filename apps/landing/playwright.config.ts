@@ -41,6 +41,11 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
+  // The landing page owns several WebGL surfaces. Letting Playwright default to
+  // one worker per CPU core can create more concurrent browser contexts than
+  // headless Chromium/GitHub runners can reliably allocate, which shows up as
+  // unrelated "Error creating WebGL context" noise and advisory e2e flakes.
+  workers: process.env.CI ? 2 : 3,
   reporter: [['list']],
   use: {
     baseURL: 'http://127.0.0.1:5173',
