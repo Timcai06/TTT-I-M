@@ -102,6 +102,21 @@ main {
   z-index: 1;
 }
 
+.particle-continuum {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  contain: layout paint size;
+}
+
+.particle-continuum canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .container {
   width: min(1280px, calc(100% - 64px));
   margin-inline: auto;

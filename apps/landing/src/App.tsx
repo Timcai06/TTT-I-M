@@ -16,6 +16,7 @@ import ChapterStateProvider from './components/ChapterStateProvider'
 import ChapterThemeDriver from './components/ChapterThemeDriver'
 import ChapterTransition from './components/ChapterTransition'
 import { chapters } from './chapters/registry'
+import ParticleContinuum from './lib/continuum/ParticleContinuum'
 import './styles/app.css'
 
 export default function App() {
@@ -63,6 +64,7 @@ export default function App() {
     <>
       <Loader />
       <Cursor />
+      <ParticleContinuum />
       <ChapterStateProvider>
         <ScrollIndicator />
         <Nav />
