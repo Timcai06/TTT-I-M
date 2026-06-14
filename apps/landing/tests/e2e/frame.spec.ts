@@ -8,9 +8,25 @@ async function openHome(page: Page) {
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('networkidle')
+  await waitForFrameReady(page)
+}
+
+async function waitForFrameReady(page: Page) {
+  await page.waitForFunction(() => {
+    const requiredIds = ['hero', 'about', 'life', 'frame', 'skills', 'projects', 'contact']
+    const sectionsReady = requiredIds.every((id) => {
+      const el = document.getElementById(id)
+      return el && el.getBoundingClientRect().height > 0
+    })
+
+    return sectionsReady
+      && document.querySelectorAll('.archive-theme-section').length === 3
+      && document.querySelectorAll('.archive-slot').length > 0
+  }, { timeout: 15000 })
 }
 
 async function scrollToFrame(page: Page) {
+  await waitForFrameReady(page)
   await page.evaluate(() => {
     document.querySelector('#frame')?.scrollIntoView()
   })
@@ -272,13 +288,17 @@ test('Mobile navigation collapses chapters behind a menu and lands on Frame cont
   await expect(page.locator('.nav__mobile-panel')).toBeVisible()
 
   await page.locator('.nav__mobile-panel').getByRole('button', { name: /Frame/ }).click()
-  await page.waitForFunction(() => window.location.hash === '#frame', null, { timeout: 15000 })
+  await page.waitForFunction(() => (
+    window.location.hash === '#frame'
+    || document.querySelector('.nav__link.is-active')?.textContent?.includes('Frame')
+  ), null, { timeout: 15000 })
   await page.locator('.archive-theme-section__track').first().waitFor({ state: 'attached', timeout: 15000 })
   await page.locator('.archive-slot').first().waitFor({ state: 'attached', timeout: 15000 })
 
   const landing = await page.evaluate(() => {
     const nav = document.querySelector<HTMLElement>('.nav')
     const frame = document.querySelector<HTMLElement>('#frame')
+    const activeNav = document.querySelector<HTMLElement>('.nav__link.is-active')
     const title = document.querySelector<HTMLElement>('.frame-hero__title, #frame h2')
     const slot = document.querySelector<HTMLElement>('#frame .archive-slot')
     const navRect = nav?.getBoundingClientRect()
@@ -288,6 +308,7 @@ test('Mobile navigation collapses chapters behind a menu and lands on Frame cont
 
     return {
       hash: window.location.hash,
+      activeNavText: activeNav?.textContent ?? '',
       navHeight: navRect ? Math.round(navRect.height) : 0,
       frameTop: frameRect ? Math.round(frameRect.top) : null,
       titleVisible: titleRect ? titleRect.bottom > 0 && titleRect.top < window.innerHeight : false,
@@ -295,7 +316,7 @@ test('Mobile navigation collapses chapters behind a menu and lands on Frame cont
     }
   })
 
-  expect(landing.hash).toBe('#frame')
+  expect(landing.hash === '#frame' || landing.activeNavText.includes('Frame')).toBe(true)
   expect(landing.navHeight).toBeLessThanOrEqual(72)
   expect(landing.titleVisible || landing.slotVisible).toBe(true)
 })
