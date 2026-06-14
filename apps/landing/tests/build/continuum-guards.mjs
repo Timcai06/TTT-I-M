@@ -8,6 +8,7 @@ const exists = (file) => fs.existsSync(path.join(root, file))
 
 const app = read('src/App.tsx')
 const hero = read('src/components/Hero.tsx')
+const about = read('src/components/About.tsx')
 const aboutStyles = read('src/styles/components/about.css')
 const frameStyles = read('src/styles/components/frame.css')
 const lifeStyles = read('src/styles/components/life-gallery.css')
@@ -44,6 +45,9 @@ if (!/<ParticleContinuum\s*\/>/.test(app)) {
 
 if (!/ParticlePortrait/.test(hero)) {
   throw new Error('Hero must keep the accepted original ParticlePortrait subject while Continuum is staged behind later chapters')
+}
+if (/DeferredTextParticles|ABOUT_PARTICLE_TEXT/.test(about)) {
+  throw new Error('M1b requires About to retire its legacy TextParticles canvas and let ParticleContinuum own the particle narrative')
 }
 
 const continuum = read('src/lib/continuum/ParticleContinuum.tsx')
@@ -99,4 +103,4 @@ if (blockingBackgrounds.length > 0) {
   throw new Error(`Continuum must not sit behind opaque section backgrounds: ${blockingBackgrounds.join(', ')}`)
 }
 
-console.log('[continuum-guards] Particle Continuum M0/M1 mount and form-target contract OK')
+console.log('[continuum-guards] Particle Continuum M0/M1 mount, form-target, and About ownership contract OK')

@@ -7,8 +7,6 @@ import {
   loadHeroTexture,
   loadImage,
   loadPretext,
-  loadTextParticlesChunk,
-  preloadAboutTextParticles,
   preloadLazyChapters,
 } from './loaders'
 
@@ -83,9 +81,9 @@ function collectImageUrls() {
 /**
  * The whole-site preload manifest, in load order.
  *
- * `critical` runs first (hero texture, fonts, Pretext, lazy chapter chunks,
- * the About manifesto particle field) and is the intro-exit gate: 100% on the
- * loader bar = runtime ready. `deferred` is every curated image; it keeps
+ * `critical` runs first (hero texture, fonts, Pretext, lazy chapter chunks)
+ * and is the intro-exit gate: 100% on the loader bar = runtime ready.
+ * `deferred` is every curated image; it keeps
  * eager-fetching through the concurrency queue *after* the panel exits
  * (00-principles whole-site-preheat fix ②: same total download, smaller
  * black-screen gate). Frame DOM images stay eager-fetch as the second line of
@@ -97,8 +95,6 @@ export function buildResourceManifest(): ResourceTask[] {
     { id: 'texture:hero', label: 'hero texture', tier: 'critical', type: 'texture', load: loadHeroTexture },
     { id: 'fonts:document', label: 'fonts', tier: 'critical', type: 'font', load: loadFonts },
     { id: 'chunks:chapters', label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
-    { id: 'chunks:text-particles', label: 'TextParticles', tier: 'critical', type: 'chunk', load: loadTextParticlesChunk },
-    { id: 'particles:about-manifesto', label: 'Built by hand, frame by frame.', tier: 'critical', type: 'particles', load: preloadAboutTextParticles },
   ]
 
   const deferred: ResourceTask[] = collectImageUrls().map((src) => ({

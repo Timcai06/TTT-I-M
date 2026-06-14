@@ -30,7 +30,7 @@ export function canAcquireOptionalSurface(): boolean {
 
 /**
  * @description 登记一个已挂载的 WebGL context，保证可选 surface 能看到真实并发压力
- * @dependencies 由 Hero、TextParticles、ChapterTransition 等 WebGL surface 在挂载时调用
+ * @dependencies 由 Hero、ParticleContinuum 等 WebGL surface 在挂载时调用
  * @caveats 必须和 releaseContext 成对出现，否则后续可选 surface 会被错误跳过
  */
 export function acquireContext(): void {

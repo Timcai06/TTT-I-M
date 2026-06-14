@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs'
 
 const loaderSource = readFileSync('src/components/Loader.tsx', 'utf8')
 const aboutSource = readFileSync('src/components/About.tsx', 'utf8')
-const deferredTextParticlesSource = readFileSync('src/components/DeferredTextParticles.tsx', 'utf8')
 const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
@@ -27,11 +26,9 @@ const loadersSource = readFileSync(resourceFiles.loaders, 'utf8')
 const controllerSource = readFileSync(resourceFiles.controller, 'utf8')
 const imageDecodeQueueSource = readFileSync(resourceFiles.imageDecodeQueue, 'utf8')
 const particlePortraitSource = readFileSync('src/components/ParticlePortrait.tsx', 'utf8')
-const textParticlesSource = readFileSync('src/components/TextParticles.tsx', 'utf8')
 const chapterTransitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const contextRegistrySource = readFileSync('src/lib/webgl/contextRegistry.ts', 'utf8')
 const glQualitySource = readFileSync('src/lib/webgl/quality.ts', 'utf8')
-const aboutTextParticlesSource = readFileSync('src/lib/aboutTextParticles.ts', 'utf8')
 const registrySource = readFileSync('src/chapters/registry.ts', 'utf8')
 const packageSource = readFileSync('package.json', 'utf8')
 const introPretextPath = 'src/lib/pretextIntroText.ts'
@@ -58,16 +55,12 @@ if (!loaderSource.includes('useIntroPretextInteraction')) {
   throw new Error('Loader must attach the Pretext-powered intro text interaction hook.')
 }
 
-if (!manifestSource.includes('preloadAboutTextParticles') || !manifestSource.includes('particles:about-manifesto')) {
-  throw new Error('Preload manifest must include the About manifesto particle text, not wait for scroll.')
+if (/preloadAboutTextParticles|particles:about-manifesto|chunks:text-particles/.test(manifestSource)) {
+  throw new Error('Preload manifest must not keep the retired About TextParticles surface in the critical gate.')
 }
 
-if (!aboutSource.includes('ABOUT_PARTICLE_TEXT') || !aboutTextParticlesSource.includes('Built by hand, frame by frame.')) {
-  throw new Error('About manifesto particle text must be shared with the preload manifest.')
-}
-
-if (deferredTextParticlesSource.includes('IntersectionObserver')) {
-  throw new Error('DeferredTextParticles must not wait for scroll intersection before loading.')
+if (/ABOUT_PARTICLE_TEXT|DeferredTextParticles/.test(aboutSource)) {
+  throw new Error('About must not mount the legacy TextParticles canvas after ParticleContinuum owns the About particle layer.')
 }
 
 if (!loaderSource.includes('introReady && !done && !exiting')) {
@@ -99,7 +92,6 @@ const requiredManifestInputs = [
   'srcSet',
   'chunks:pretext',
   'texture:hero',
-  'particles:about-manifesto',
   "tier: 'critical'",
   "tier: 'deferred'",
 ]
@@ -114,7 +106,6 @@ const requiredLoaderInputs = [
   'document.fonts.ready',
   'decode',
   '@chenglou/pretext',
-  'TextParticles',
   'FONT_READY_DEV_TIMEOUT_MS',
 ]
 const missingLoaders = requiredLoaderInputs.filter((needle) => !loadersSource.includes(needle))
@@ -186,8 +177,6 @@ if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueue
 const requiredGLQualityInputs = [
   'getGLQualityProfile',
   'portraitSegments',
-  'textMaxTargets',
-  'transitionParticles',
   'optionalContextLimit',
 ]
 const missingGLQualityInputs = requiredGLQualityInputs.filter((needle) => !glQualitySource.includes(needle))
@@ -201,10 +190,6 @@ if (!contextRegistrySource.includes('optionalContextLimit') || !contextRegistryS
 
 if (!particlePortraitSource.includes('quality.portraitSegments') || particlePortraitSource.includes('isMobile ? 180 : 280')) {
   throw new Error('ParticlePortrait must use the WebGL quality profile instead of fixed high-density geometry.')
-}
-
-if (!textParticlesSource.includes('quality.textMaxTargets') || !textParticlesSource.includes('quality.textSampleGap')) {
-  throw new Error('TextParticles must build its point cloud from the WebGL quality profile.')
 }
 
 if (chapterTransitionSource.includes('quality.transitionParticles') || chapterTransitionSource.includes('canAcquireOptionalSurface') || chapterTransitionSource.includes("import('three')")) {

@@ -14,12 +14,6 @@ export interface GLQualityProfile {
   optionalContextLimit: number
   /** Hero portrait 球面分段数，直接影响顶点数量和 GPU 几何成本 */
   portraitSegments: number
-  /** TextParticles 像素采样间距，数值越小粒子越密、CPU/GPU 成本越高 */
-  textSampleGap: number
-  /** TextParticles 最大目标点数，用来截断超长文本或低配设备的粒子规模 */
-  textMaxTargets: number
-  /** ChapterTransition 可使用的背景粒子数量，低配档为 0 以避免转场叠加压力 */
-  transitionParticles: number
 }
 
 interface NavigatorWithDeviceHints extends Navigator {
@@ -59,9 +53,6 @@ export function getGLQualityProfile(): GLQualityProfile {
       dprMax: 1.15,
       optionalContextLimit: 1,
       portraitSegments: 150,
-      textSampleGap: 8,
-      textMaxTargets: 2400,
-      transitionParticles: 0,
     }
   }
 
@@ -71,9 +62,6 @@ export function getGLQualityProfile(): GLQualityProfile {
       dprMax: 1.35,
       optionalContextLimit: 2,
       portraitSegments: 220,
-      textSampleGap: 6,
-      textMaxTargets: 4200,
-      transitionParticles: 160,
     }
   }
 
@@ -82,8 +70,5 @@ export function getGLQualityProfile(): GLQualityProfile {
     dprMax: 1.5,
     optionalContextLimit: 3,
     portraitSegments: 260,
-    textSampleGap: 5,
-    textMaxTargets: 6000,
-    transitionParticles: 260,
   }
 }

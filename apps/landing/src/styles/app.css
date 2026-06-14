@@ -9,7 +9,6 @@
 @import './components/projects.css';
 @import './components/footer.css';
 @import './components/scroll-indicator.css';
-@import './components/text-particles.css';
 
 @media (max-width: 768px) {
   @supports (animation-timeline: view()) {

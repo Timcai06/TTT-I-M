@@ -144,16 +144,6 @@
     line-height: 1.18;
   }
 
-  .about__manifesto-fx.text-particles {
-    margin: 28px 0 30px;
-  }
-
-  .about__manifesto-fx.text-particles--static .text-particles__sr {
-    font-size: clamp(28px, 8vw, 38px);
-    line-height: 1.08;
-    letter-spacing: -0.02em;
-  }
-
   .about__content-flow {
     margin-top: 0;
     gap: 24px;

@@ -39,8 +39,8 @@ if (runtimePreloadedAssets.length > 0) {
 }
 
 const textParticleChunk = readdirSync(distDir).find((file) => /^TextParticles-.*\.js$/.test(file))
-if (!textParticleChunk) {
-  throw new Error('Could not find the split TextParticles chunk for loader-time preloading.')
+if (textParticleChunk) {
+  throw new Error(`Retired About TextParticles chunk should not be emitted after M1b: ${textParticleChunk}`)
 }
 
 const pretextChunk = readdirSync(distDir).find((file) => /^layout-.*\.js$/.test(file))
@@ -87,5 +87,5 @@ if (budgetFailures.length > 0) {
   throw new Error(`Chunk size budget exceeded:\n  - ${budgetFailures.join('\n  - ')}`)
 }
 
-console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL and keeps ${textParticleChunk} plus ${pretextChunk} available for loader-time preloading.`)
+console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL and keeps ${pretextChunk} available for loader-time preloading.`)
 console.log(`[chunk-guards] total JS ${totalKb.toFixed(1)} KB gzip within ${TOTAL_JS_BUDGET_KB} KB budget.`)

@@ -78,7 +78,7 @@ test('Mobile narrative chapters expose stable scroll anchors', async ({ page }) 
   expect(anchors.filter((anchor) => anchor.height <= 0), JSON.stringify(anchors)).toHaveLength(0)
 })
 
-test('Mobile About leads with text and avoids a WebGL particle gap', async ({ page }) => {
+test('Mobile About leads with text and avoids legacy About particle canvas', async ({ page }) => {
   await openMobileHome(page)
   await scrollChapterToTop(page, 'about')
 
@@ -98,8 +98,7 @@ test('Mobile About leads with text and avoids a WebGL particle gap', async ({ pa
       nav: rectOf('.nav'),
       lead: rectOf('.about__lead'),
       portrait: rectOf('.about__portrait-frame'),
-      manifesto: rectOf('.about__manifesto-fx'),
-      hasAboutCanvas: Boolean(document.querySelector('.about__manifesto-fx canvas')),
+      hasLegacyAboutCanvas: Boolean(document.querySelector('.about__manifesto-fx canvas')),
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
     }
@@ -108,8 +107,7 @@ test('Mobile About leads with text and avoids a WebGL particle gap', async ({ pa
   expect(aboutLayout.lead?.top).toBeGreaterThanOrEqual((aboutLayout.nav?.height ?? 0) + 20)
   expect(aboutLayout.lead?.top).toBeLessThan(220)
   expect(aboutLayout.portrait?.top).toBeGreaterThan(aboutLayout.lead?.bottom ?? 0)
-  expect(aboutLayout.hasAboutCanvas).toBe(false)
-  expect(aboutLayout.manifesto?.height).toBeLessThanOrEqual(150)
+  expect(aboutLayout.hasLegacyAboutCanvas).toBe(false)
   expect(aboutLayout.scrollWidth).toBe(aboutLayout.viewportWidth)
 })
 

@@ -4,7 +4,7 @@ import { ScrollTrigger } from '../gsap'
  * Single coordinator for `ScrollTrigger.refresh()`.
  *
  * refresh() is a global O(n) layout-reading pass over every trigger. It used to
- * be fired uncoordinated from App, lenis, ChapterTransition and TextParticles,
+ * be fired uncoordinated from App, lenis and ChapterTransition,
  * so an intro hand-off or a chapter jump could trigger a burst of redundant
  * refreshes in the same tick → layout thrash. This coalesces same-frame bursts
  * into one refresh, while keeping an `immediate` bypass for the few moments that

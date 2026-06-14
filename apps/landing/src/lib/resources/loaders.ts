@@ -1,5 +1,4 @@
 import { preloadLazyChapters } from '../../chapters/registry'
-import { preloadAboutTextParticles } from '../aboutTextParticles'
 import { enqueueImageDecode } from './imageDecodeQueue'
 
 // 资源类型加载器集中在这里；未来 KTX2、Draco、Meshopt GLTF 只需新增 loader 和 manifest entry。
@@ -139,13 +138,4 @@ export function loadPretext(): Promise<void> {
   return import('@chenglou/pretext').then(() => undefined)
 }
 
-/**
- * @description 预加载 About 文本粒子组件 chunk。
- * @dependencies 动态 import `../../components/TextParticles`
- * @performance / @caveats 仅预取 JS chunk，不创建 Canvas；实际 WebGL/Canvas 成本由 DeferredTextParticles 的可见性门控承担。
- */
-export function loadTextParticlesChunk(): Promise<void> {
-  return import('../../components/TextParticles').then(() => undefined)
-}
-
-export { preloadLazyChapters, preloadAboutTextParticles }
+export { preloadLazyChapters }
