@@ -11,12 +11,12 @@ const sections = progressChapters.map((c) => ({
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
 export default function ScrollIndicator() {
-  const { progressFills: fills } = useLandingScrollNarrative(sections, firstSection.id)
+  const { activeId, progressFills: fills } = useLandingScrollNarrative(sections, firstSection.id)
 
   const activeIdx = useMemo(() => {
-    const nextIncomplete = fills.findIndex((fill) => fill < 1)
-    return nextIncomplete === -1 ? sections.length - 1 : nextIncomplete
-  }, [fills])
+    const index = sections.findIndex((section) => section.id === activeId)
+    return index === -1 ? 0 : index
+  }, [activeId])
   const activeSection = sections[activeIdx] ?? firstSection
 
   const handleSegmentClick = (id: string) => {

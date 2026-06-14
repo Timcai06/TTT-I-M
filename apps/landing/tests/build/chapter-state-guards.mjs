@@ -41,11 +41,11 @@ if (!scrollIndicatorSource.includes('useLandingScrollNarrative')) {
 }
 
 if (scrollIndicatorSource.includes('useChapterState') || scrollIndicatorSource.includes('computeChapterProgressFills')) {
-  throw new Error('ScrollIndicator must derive its active rail segment from landing narrative progress fills.')
+  throw new Error('ScrollIndicator must derive activeId and progress fills from landing narrative state.')
 }
 
-if (!scrollIndicatorSource.includes('fills.findIndex((fill) => fill < 1)')) {
-  throw new Error('ScrollIndicator must choose the active segment from per-pixel progress fills.')
+if (!scrollIndicatorSource.includes('activeId') || !scrollIndicatorSource.includes('section.id === activeId')) {
+  throw new Error('ScrollIndicator must choose the active segment from narrative activeId so it stays aligned with Nav.')
 }
 
 if (!scrollIndicatorStyleSource.includes('transition: none;') || scrollIndicatorStyleSource.includes('transition: transform 0.1s')) {
