@@ -54,8 +54,27 @@ function resolveNarrativePointScale(narrative: LandingScrollNarrative) {
   return fromScale + (toScale - fromScale) * narrative.blend
 }
 
+function mixBehavior(fromId: string, toId: string, blend: number): SimBehavior {
+  const amount = Math.min(1, Math.max(0, blend))
+  const from = getContinuumForm(getChapterFormId(fromId)).behavior
+  const to = getContinuumForm(getChapterFormId(toId)).behavior
+
+  return {
+    stiffness: from.stiffness + (to.stiffness - from.stiffness) * amount,
+    turbulence: from.turbulence + (to.turbulence - from.turbulence) * amount,
+    damping: from.damping + (to.damping - from.damping) * amount,
+    noiseScale: from.noiseScale + (to.noiseScale - from.noiseScale) * amount,
+    anchorStrength: from.anchorStrength + (to.anchorStrength - from.anchorStrength) * amount,
+  }
+}
+
 function getChapterFormId(id: string): ContinuumFormId {
   return formByChapter[id] ?? 'portrait'
+}
+
+function resolveDominantFormId(narrative: LandingScrollNarrative): ContinuumFormId {
+  if (narrative.activeId === 'hero' || narrative.fromId === 'hero') return 'portrait'
+  return getChapterFormId(narrative.blend > 0.82 ? narrative.toId : narrative.fromId)
 }
 
 function toHexChannel(value: number) {
@@ -77,14 +96,15 @@ export function getContinuumTintForCover(cover: string) {
 
 /**
  * @description M0 连续体滚动状态解析器。当前保留 Hero 原 `ParticlePortrait` 为主视觉，
- *   因此 Continuum 在 hero 阶段 opacity=0；后续章节只作为低亮红/暖色氛围层。
+ *   因此 Continuum 在 hero 阶段 opacity=0；后续章节按同一滚动段混合透明度、色温、
+ *   点大小和仿真行为，避免星云只在 activeId 翻转时突变。
  * @dependencies 读取 `forms/registry.ts` 的 portrait 参数；章节主题来自 landing narrative。
  * @performance / @caveats 这里不新增布局读取，不调用 getBoundingClientRect；
  *   只消费共享滚动叙事状态，避免干扰右侧进度条和章节判定。
  * @steps
- * step1: 固定 portrait 单形态，M0 morph 恒为 0
- * step2: hero 关闭 Continuum，保留原肖像粒子主体
- * step3: 非 hero 章节按当前滚动段混合透明度和主题 tint
+ * step1: hero 固定 portrait 且 opacity=0，保留首页原肖像粒子主体
+ * step2: 非 hero 章节按当前滚动段混合透明度、主题 tint、点大小和仿真行为
+ * step3: 目标形态在滚动段后半程预切到下一章节，减少“停一下才变形”的感觉
  */
 export function resolveContinuumScrollState(activeIdOrNarrative: string | LandingScrollNarrative): ContinuumScrollState {
   const portrait = getContinuumForm('portrait')
@@ -94,17 +114,14 @@ export function resolveContinuumScrollState(activeIdOrNarrative: string | Landin
 
   if (typeof activeIdOrNarrative !== 'string') {
     const opacity = resolveNarrativeOpacity(activeIdOrNarrative)
-    const formId = activeIdOrNarrative.activeId === 'hero'
-      ? 'portrait'
-      : getChapterFormId(activeIdOrNarrative.activeId)
-    const form = getContinuumForm(formId)
+    const formId = opacity <= 0 ? 'portrait' : resolveDominantFormId(activeIdOrNarrative)
     return {
       formId,
       morph: 0,
       opacity,
       pointScale: opacity <= 0 ? pointScaleByForm.portrait : resolveNarrativePointScale(activeIdOrNarrative),
       tint: opacity <= 0 ? portrait.tint : getContinuumTintForCover(activeIdOrNarrative.theme.cover),
-      behavior: opacity <= 0 ? portrait.behavior : form.behavior,
+      behavior: opacity <= 0 ? portrait.behavior : mixBehavior(activeIdOrNarrative.fromId, activeIdOrNarrative.toId, activeIdOrNarrative.blend),
       xOffsetRatio: opacity <= 0 ? 0.22 : 0.28,
       yOffset: opacity <= 0 ? 0.02 : 0.04,
     }

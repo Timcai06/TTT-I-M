@@ -62,20 +62,44 @@ export function createStardustTargetTexture(texSize: number): THREE.DataTexture 
   const data = new Float32Array(count * 4)
 
   for (let i = 0; i < count; i += 1) {
-    const t = count <= 1 ? 0 : i / (count - 1)
-    const seed = hash01(i * 29 + 11)
-    const arm = i % 2 === 0 ? 0 : Math.PI
-    const coreBias = Math.pow(t, 0.72)
-    const radius = 0.08 + 1.18 * coreBias
-    const angle = coreBias * Math.PI * 4.7 + arm + (seed - 0.5) * 0.55
-    const scatter = (hash01(i * 31 + 5) - 0.5) * (0.05 + radius * 0.09)
-    const squash = 0.58
+    const zone = hash01(i * 13 + 3)
     const offset = i * 4
 
-    data[offset] = Math.cos(angle) * radius * 1.38 + scatter
-    data[offset + 1] = Math.sin(angle) * radius * squash + scatter * 0.45
-    data[offset + 2] = (hash01(i * 37 + 13) - 0.5) * (0.24 + radius * 0.28)
-    data[offset + 3] = 1 - Math.min(0.6, radius * 0.28)
+    if (zone < 0.24) {
+      const angle = hash01(i * 17 + 5) * Math.PI * 2
+      const radius = Math.pow(hash01(i * 19 + 7), 1.9) * 0.28
+
+      data[offset] = Math.cos(angle) * radius * 1.18
+      data[offset + 1] = Math.sin(angle) * radius * 0.72
+      data[offset + 2] = (hash01(i * 23 + 11) - 0.5) * 0.12
+      data[offset + 3] = 0.92 + hash01(i * 29 + 13) * 0.08
+      continue
+    }
+
+    if (zone < 0.8) {
+      const progress = Math.pow(hash01(i * 31 + 17), 0.82)
+      const arm = i % 2 === 0 ? 0 : Math.PI
+      const radius = 0.24 + progress * 1.46
+      const angle = progress * Math.PI * 5.8 + arm + (hash01(i * 37 + 19) - 0.5) * 0.28
+      const width = 0.018 + progress * 0.075
+      const scatterX = (hash01(i * 41 + 23) - 0.5) * width
+      const scatterY = (hash01(i * 43 + 29) - 0.5) * width * 1.45
+
+      data[offset] = Math.cos(angle) * radius * 1.36 + scatterX
+      data[offset + 1] = Math.sin(angle) * radius * 0.54 + scatterY
+      data[offset + 2] = (hash01(i * 47 + 31) - 0.5) * (0.16 + progress * 0.28)
+      data[offset + 3] = 0.56 + (1 - progress) * 0.24 + hash01(i * 53 + 37) * 0.12
+      continue
+    }
+
+    const angle = hash01(i * 59 + 41) * Math.PI * 2
+    const radius = 0.92 + Math.pow(hash01(i * 61 + 43), 0.72) * 0.98
+    const dustScatter = (hash01(i * 67 + 47) - 0.5) * 0.22
+
+    data[offset] = Math.cos(angle) * radius * 1.42 + dustScatter
+    data[offset + 1] = Math.sin(angle) * radius * 0.62 + dustScatter * 0.35
+    data[offset + 2] = (hash01(i * 71 + 53) - 0.5) * 0.72
+    data[offset + 3] = 0.2 + hash01(i * 73 + 59) * 0.22
   }
 
   return createTexture(data, texSize)

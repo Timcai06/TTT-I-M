@@ -14,6 +14,7 @@ export interface ContinuumPoints {
   material: THREE.ShaderMaterial
   /** 把当前帧的位置纹理喂给渲染。 */
   setPositionTexture(texture: THREE.Texture): void
+  setTargetTexture(texture: THREE.Texture): void
   setTint(color: THREE.Color): void
   setOpacity(value: number): void
   setPointSize(value: number): void
@@ -48,6 +49,7 @@ export function buildContinuumPoints(opts: RenderPointsOptions): ContinuumPoints
   // 类型化的 uniform 引用，直接 mutate（绕开索引访问的 possibly-undefined）。
   const uniforms = {
     uPosition: { value: null as THREE.Texture | null },
+    uTarget: { value: null as THREE.Texture | null },
     uPointSize: { value: pointSize },
     uSizeAtten: { value: 12 },
     uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) },
@@ -72,6 +74,9 @@ export function buildContinuumPoints(opts: RenderPointsOptions): ContinuumPoints
     material,
     setPositionTexture(texture) {
       uniforms.uPosition.value = texture
+    },
+    setTargetTexture(texture: THREE.Texture) {
+      uniforms.uTarget.value = texture
     },
     setTint(color) {
       uniforms.uTint.value.copy(color)

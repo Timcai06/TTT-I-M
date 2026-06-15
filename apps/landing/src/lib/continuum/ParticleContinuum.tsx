@@ -71,10 +71,11 @@ function ContinuumScene({
         texSize: quality.particleTexSize,
         pointSize: basePointSize,
         tint: portrait.tint,
-        blending: THREE.NormalBlending,
+        blending: THREE.AdditiveBlending,
       })
 
       points.setPositionTexture(simulation.positionTexture)
+      points.setTargetTexture(simulation.targetTexture)
       points.setOpacity(0)
       return { simulation, points }
     } catch (error) {
@@ -92,7 +93,7 @@ function ContinuumScene({
 
   useFrame((_, delta) => {
     if (!bundle) return
-    const transitionAlpha = 1 - Math.exp(-delta * 3.6)
+    const transitionAlpha = 1 - Math.exp(-delta * 1.65)
     renderedTint.current.lerp(tint, transitionAlpha)
     renderedOpacity.current += (scrollState.opacity - renderedOpacity.current) * transitionAlpha
     renderedPointScale.current += (scrollState.pointScale - renderedPointScale.current) * transitionAlpha
@@ -120,6 +121,7 @@ function ContinuumScene({
           return
         }
         bundle.simulation.setTarget(texture)
+        bundle.points.setTargetTexture(texture)
       })
       .catch((error) => {
         console.warn('[ParticleContinuum] target failed:', error)

@@ -23,6 +23,7 @@ export interface SimBehavior {
   turbulence: number
   damping: number
   noiseScale: number
+  anchorStrength: number
 }
 
 export interface ContinuumSimulation {
@@ -30,31 +31,39 @@ export interface ContinuumSimulation {
   compute(dt: number, behavior: SimBehavior): THREE.Texture
   /** 当前位置纹理（compute 后有效）。 */
   readonly positionTexture: THREE.Texture
+  /** 当前目标纹理，w 通道供渲染层读取亮度权重。 */
+  readonly targetTexture: THREE.Texture
   /** 设置当前形态的目标位置纹理（forms 注入）。 */
   setTarget(texture: THREE.Texture): void
   dispose(): void
 }
 
-/** 在 [-r, r]³ 的球内随机播种初始位置，w 存每粒子 seed（0..1）。 */
+function hash01(seed: number) {
+  const x = Math.sin(seed * 12.9898) * 43758.5453
+  return x - Math.floor(x)
+}
+
+/** 在 [-r, r]³ 的球内确定性播种初始位置，w 存每粒子 seed（0..1）。 */
 function seedScatter(texSize: number, radius: number): Float32Array {
   const data = new Float32Array(texSize * texSize * 4)
   for (let i = 0; i < texSize * texSize; i += 1) {
-    // 球内均匀采样
     let x = 0
     let y = 0
     let z = 0
     let d2 = 2
+    let attempt = 0
     while (d2 > 1) {
-      x = Math.random() * 2 - 1
-      y = Math.random() * 2 - 1
-      z = Math.random() * 2 - 1
+      x = hash01(i * 17 + attempt * 3 + 1) * 2 - 1
+      y = hash01(i * 19 + attempt * 5 + 2) * 2 - 1
+      z = hash01(i * 23 + attempt * 7 + 3) * 2 - 1
       d2 = x * x + y * y + z * z
+      attempt += 1
     }
     const o = i * 4
     data[o] = x * radius
     data[o + 1] = y * radius
     data[o + 2] = z * radius
-    data[o + 3] = Math.random() // seed
+    data[o + 3] = hash01(i * 29 + 5)
   }
   return data
 }
@@ -63,8 +72,8 @@ function seedScatter(texSize: number, radius: number): Float32Array {
 function seedSphereShell(texSize: number, radius: number): Float32Array {
   const data = new Float32Array(texSize * texSize * 4)
   for (let i = 0; i < texSize * texSize; i += 1) {
-    const u = Math.random()
-    const v = Math.random()
+    const u = hash01(i * 31 + 7)
+    const v = hash01(i * 37 + 11)
     const theta = 2 * Math.PI * u
     const phi = Math.acos(2 * v - 1)
     const o = i * 4
@@ -116,9 +125,10 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
   const uTurbulence = { value: 0.6 }
   const uDamping = { value: 0.9 }
   const uNoiseScale = { value: 0.6 }
+  const uAnchorStrength = { value: 0.8 }
   const uTarget: { value: THREE.Texture } = { value: targetTexture }
 
-  Object.assign(posVar.material.uniforms, { uDelta: uPosDelta })
+  Object.assign(posVar.material.uniforms, { uDelta: uPosDelta, uAnchorStrength, uTarget })
   Object.assign(velVar.material.uniforms, {
     uTime,
     uDelta: uVelDelta,
@@ -149,11 +159,15 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
       uTurbulence.value = behavior.turbulence
       uDamping.value = behavior.damping
       uNoiseScale.value = behavior.noiseScale
+      uAnchorStrength.value = behavior.anchorStrength
       gpu.compute()
       return gpu.getCurrentRenderTarget(posVar).texture
     },
     get positionTexture() {
       return gpu.getCurrentRenderTarget(posVar).texture
+    },
+    get targetTexture() {
+      return targetTexture
     },
     setTarget(texture) {
       if (targetTexture !== texture) targetTexture.dispose()

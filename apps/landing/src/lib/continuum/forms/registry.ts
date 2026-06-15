@@ -21,6 +21,7 @@ export const continuumForms = {
       turbulence: 0.18,
       damping: 0.91,
       noiseScale: 0.72,
+      anchorStrength: 0.95,
     },
   },
   disintegrate: disintegrateForm,

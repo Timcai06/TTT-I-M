@@ -13,5 +13,6 @@ export const stardustForm = {
     turbulence: 0.18,
     damping: 0.91,
     noiseScale: 0.58,
+    anchorStrength: 0.82,
   },
 }

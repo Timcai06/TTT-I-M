@@ -17,6 +17,16 @@ void test('registers M1 disintegrate and stardust forms with distinct motion beh
   assert.ok(stardust.behavior.turbulence < disintegrate.behavior.turbulence)
 })
 
+void test('continuum forms expose a target anchor so scroll positions converge to a stable silhouette', () => {
+  const portrait = getContinuumForm('portrait')
+  const disintegrate = getContinuumForm('disintegrate')
+  const stardust = getContinuumForm('stardust')
+
+  assert.ok(portrait.behavior.anchorStrength > 0)
+  assert.ok(disintegrate.behavior.anchorStrength > 0)
+  assert.ok(stardust.behavior.anchorStrength > disintegrate.behavior.anchorStrength)
+})
+
 void test('maps about to disintegrate without enabling continuum over the hero identity', () => {
   const aboutState = resolveContinuumScrollState('about')
   const heroState = resolveContinuumScrollState('hero')

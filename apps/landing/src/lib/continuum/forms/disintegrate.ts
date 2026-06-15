@@ -14,5 +14,6 @@ export const disintegrateForm = {
     turbulence: 1,
     damping: 0.91,
     noiseScale: 1.34,
+    anchorStrength: 0.54,
   },
 }

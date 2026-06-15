@@ -37,3 +37,37 @@ void test('continuum fades in during the hero to about scroll blend without repl
   assert.ok(state.opacity < 0.12)
   assert.notEqual(state.tint.toLowerCase(), getChapterTheme('hero').cover.toLowerCase())
 })
+
+void test('continuum form follows the dominant scroll segment instead of waiting for activeId to flip', () => {
+  const aboutTheme = getChapterTheme('about')
+  const narrative = {
+    activeId: 'about',
+    fromId: 'about',
+    toId: 'frame',
+    blend: 0.88,
+    progressFills: [1, 0.75, 0],
+    theme: aboutTheme,
+  }
+
+  const state = resolveContinuumScrollState(narrative)
+
+  assert.equal(state.formId, 'stardust')
+  assert.ok(state.behavior.turbulence < 1)
+  assert.ok(state.behavior.turbulence > 0.18)
+})
+
+void test('continuum keeps the current silhouette through most of a scroll segment for slower visual morphing', () => {
+  const aboutTheme = getChapterTheme('about')
+  const narrative = {
+    activeId: 'about',
+    fromId: 'about',
+    toId: 'frame',
+    blend: 0.72,
+    progressFills: [1, 0.72, 0],
+    theme: aboutTheme,
+  }
+
+  const state = resolveContinuumScrollState(narrative)
+
+  assert.equal(state.formId, 'disintegrate')
+})
