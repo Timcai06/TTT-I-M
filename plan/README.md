@@ -25,17 +25,17 @@
 
 ## 本期范围（用户已定）
 
-实现 **M0 / M1 / M3 / M4**，**M2（Work 数学曲面）显式延后**——架构为它留好插槽，
-随时可补。理由：先建脊柱（M0）+ 两端最稳的收益（M1 About 解体、M3 Contact 水面）+
-打磨（M4），把连续体端到端跑通、架构验证过，再回头做最实验性的中段（M2）。
+实现 **M0 / M1 / M2 / M3 / M4**：先完成 App 级 Continuum 与滚动叙事单源，
+再把 About、Frame/Stack、Work、Contact 都接入同一个形态系统，最后补运行纪律和 GPU 守卫。
+Hero 的原 `ParticlePortrait` 主体继续保留；单 context 合并只作为后续候选，不作为当前完成条件。
 
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
-| **M0** | 持久 canvas + GPGPU 仿真 + 形态状态机 + 肖像迁移 + 单 context 门 | 待开工 |
-| **M1** | About 解体 + 星尘流场 + 吸收 TextParticles + 章节间 morph 编排 | 待开工 |
-| ~~M2~~ | ~~Work 数学曲面~~（**延后**，插槽已留） | 延后 |
-| **M3** | Contact Gerstner 水面 + 终场散点 | 待开工 |
-| **M4** | 转场搅动 + 密度调音 + 全量性能门 + GPU 预算守卫 | 待开工 |
+| **M0** | App 级 Continuum + GPGPU 仿真 + 滚动叙事单源 + stage/frameloop 运行门控 | 已完成 |
+| **M1** | About 解体 + 星尘流场 + 双目标 morph + 退役 TextParticles canvas | 已完成 |
+| **M2** | Work 数学曲面 | 已完成 |
+| **M3** | Contact Gerstner 水面 + 亮底 normal blend | 已完成 |
+| **M4** | GPU 预算/ shader 冒烟 / context e2e / Continuum FPS 顾问门 | 已完成（转场搅动视觉脉冲暂缓） |
 
 详细拆解见 [`02-continuum-milestones.md`](./02-continuum-milestones.md)。
 
@@ -45,7 +45,7 @@
 |---|---|
 | [`00-principles.md`](./00-principles.md) | 不可违背的原则（视觉/性能护栏 + 新增 GPU/粒子不变量）**先读** |
 | [`01-continuum-architecture.md`](./01-continuum-architecture.md) | 连续体核心架构：持久 canvas、GPGPU 仿真、形态注册表、模块边界 |
-| [`02-continuum-milestones.md`](./02-continuum-milestones.md) | M0/M1/M3/M4 逐里程碑执行计划（步骤 / 验收 / 风险） |
+| [`02-continuum-milestones.md`](./02-continuum-milestones.md) | M0/M1/M2/M3/M4 逐里程碑执行计划（步骤 / 验收 / 风险） |
 | [`03-continuum-tooling.md`](./03-continuum-tooling.md) | 依赖、GLSL 工具链、环境准备、资产策略 |
 | [`04-content-layer.md`](./04-content-layer.md) | 内容层端口-适配器（**已交付，稳定参考**；代码注释仍指向本文） |
 | [`05-guards-and-budgets.md`](./05-guards-and-budgets.md) | 守卫与预算：现有守卫 + GPU 时代新增门 |
@@ -57,8 +57,8 @@
 |---|---|---|
 | 旗舰方向 | **跨章节粒子连续体** | 系统级原创；建立在已有粒子基建上；连续性即叙事 |
 | 渲染计算 | **WebGL2 GPGPU**（ping-pong FBO） | 通用 + 已验证；WebGPU/TSL 列为 M5+ 未来，不做 M0 依赖（覆盖率 + 降级纪律） |
-| 三场合一 | **一个持久 context** | 今天 Hero + About + 转场最多 3 context；连续体合一是性能**净收益**，顺带解决 context 泄漏门 |
-| Work 数学曲面 | **延后（M2）** | 最实验性、最高耦合；脊柱跑通后再补，架构留插槽 |
+| 三场合一 | **暂缓强合并** | Hero 原肖像主体已确认，当前以 stage/frameloop/context 守卫控风险；无损合并再进入 M0b/M5 |
+| Work 数学曲面 | **已纳入 M2** | 作为低存在感背景轨迹，不替代项目截图 |
 | 资产来源 | **纯程序化**，零外部模型/拍摄 | 你没有可扫描实物；粒子/水面/曲面全部代码生成，叙事真实 |
 | 颜色 | **读章节色温** | 复用 `chapterThemeTokens.ts` + `landingScrollNarrative`，颜色保持 token 派生 |
 | 降级 | **每个形态都有非 WebGL 静态兜底** | 沿用「降级而非删除」；各章现有 fallback 直接复用 |

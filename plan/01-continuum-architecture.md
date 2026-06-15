@@ -17,8 +17,8 @@ ParticlePortrait 仍是 Index 身份主体；Continuum 先在后续章节作为�
 | About | **解体成尘** | 肖像溃散为 curl-noise 流场，再聚成 manifesto 文字 | M1 |
 | Life / Frame | **稀薄星尘** | 照片是主角，粒子退为近不可见的背景微尘（密度极低） | M1 |
 | Skills | （不介入） | 红色蛇形线已是主角，粒子只路过 | M1 |
-| Work | **数学曲面** | 凝成参数曲面/吸引子，六卡参数演化 | **M2 延后** |
-| Contact | **水面 → 散尽** | Gerstner 波浪水面，米白 footer 揭开时散点退场 | M3 |
+| Work | **数学曲面** | 低存在感参数曲面，衬托项目图像而不替代内容 | M2 |
+| Contact | **水面** | Gerstner 水面低透明收束，米白 footer 使用 normal blend 保持可读 | M3 |
 
 评委看到的不是「粒子 + 数学图 + 水」三个效果，而是「滚动坐标、章节色温与视觉层都在
 同一条叙事线上变化」。连续性即叙事——这是做旗舰的全部理由。
@@ -51,8 +51,8 @@ App
 
 ## 2. 计算管线：WebGL2 GPGPU（ping-pong FBO）
 
-现有粒子（ParticlePortrait 位移平面、TextParticles 预计算目标）是 **CPU 定位**的——
-几万粒子平滑 morph 必须把位置积分搬上 GPU。采用经典 GPGPU：
+现有 Hero 肖像粒子保留为独立身份主体；后续章节的 Continuum 需要几万粒子平滑 morph，
+因此把位置积分搬上 GPU。采用经典 GPGPU：
 
 ### 数据
 
@@ -88,8 +88,8 @@ pos   += vel * dt
 | 肖像 | 启动时采样 `/portrait/tim.jpg`：按亮度阈值发射 N 个点，z 按亮度微位移保留景深 | `forms/portrait.ts`（采样 → 目标纹理） |
 | 解体 | **无显式目标**：刚度→0，湍流主导，粒子自由漂移 | `forms/disintegrate.ts`（仅参数） |
 | 星尘 | 稀疏随机分布 + 极缓流场，密度压到背景级 | `forms/stardust.ts` |
-| 水面 | **解析**：网格 + 三组 Gerstner 波在 shader 内计算，无需纹理 | `forms/gerstner.ts` + `lib/gerstner.ts`（纯函数 + 单测） |
-| 数学曲面（M2） | **解析/积分**：洛伦兹吸引子或参数曲面采样 | `lib/mathSurface.ts`（纯函数 + 单测，延后） |
+| 水面 | **程序化目标**：网格 + 多波叠加，生成确定性目标纹理 | `forms/gerstner.ts` + `forms/proceduralTargets.ts` |
+| 数学曲面（M2） | **程序化目标**：倾斜参数带 + z 轴起伏，确定性采样 | `forms/mathSurface.ts` + `forms/proceduralTargets.ts` |
 
 ### 渲染（vertex + fragment）
 
@@ -130,8 +130,8 @@ interface FormDescriptor {
 
 ### stage 订阅
 
-- `stage === 'transitioning'`（液体波转场触发）时，连续体注入一次**湍流搅动**
-  （`uTurbulence` 脉冲）——粒子被波「搅动」一下，转场和粒子产生关联（M4）。
+- `stage === 'transitioning'`（液体波转场触发）时，Continuum 暂停推进，避免与 ChapterTransition 抢帧；
+  转场搅动视觉脉冲保留为后续打磨项。
 - reduced-motion：连续体根本不挂载（见 §4）。
 
 ### 颜色联动
@@ -159,9 +159,9 @@ continuum: {
 
 ### context 预算
 
-- 连续体启动时 `contextRegistry.acquire()`，是**唯一**常驻 context。
-- M0 暂保留 ParticlePortrait 的 `acquire`；M0b/M1 在肖像观感可完全保留后再合并为单 context。
-- 守卫：连续跳转 N 次后常驻 context == 1（见 05，关掉积压的泄漏门）。
+- 连续体启动时 `contextRegistry.acquire()`，Hero 的 `ParticlePortrait` 继续独立保留。
+- 当前预算是 Hero + Continuum ≤2；只有在能无损保留 Index 肖像观感时，再推进单 context 合并。
+- 守卫：连续跳转 N 次后 canvas/context 数量不增长（见 05，关掉积压的泄漏门）。
 
 ### 降级阶梯（每个形态都必须有）
 
@@ -196,7 +196,8 @@ src/lib/continuum/
     portrait.ts             ← 肖像采样（从 ParticlePortrait 抽出）
     disintegrate.ts         ← 解体参数
     stardust.ts             ← 星尘参数
-    gerstner.ts             ← 水面 form（薄封装，几何在 lib/gerstner.ts）
+    gerstner.ts             ← 水面 form（行为参数 + fallback/blendMode）
+    mathSurface.ts          ← Work 数学曲面 form（行为参数 + fallback/blendMode）
   landingScrollNarrative.ts ← rects → activeId / progressFills / from→to blend / theme
   useLandingScrollNarrative.ts ← chapterScrollMetrics → landing narrative hook
   useContinuumScroll.ts     ← landing narrative → Continuum tint / opacity / form state
@@ -205,8 +206,7 @@ src/lib/continuum/
     sim-position.glsl       ← 位置积分（#include lygia curl/noise）
     sim-velocity.glsl       ← 速度积分
     render.vert / .frag     ← 点云渲染
-src/lib/gerstner.ts         ← Gerstner 波场纯函数 + 单测（M3）
-src/lib/mathSurface.ts      ← 数学曲面/吸引子纯函数 + 单测（M2 延后）
+src/lib/continuum/forms/proceduralTargets.ts ← disintegrate / stardust / mathSurface / gerstner 目标纹理
 ```
 
 ### 依赖方向（避免环）
@@ -229,7 +229,7 @@ webgl/{quality,contextRegistry} ◀── ParticleContinuum（复用，不反向
 | 既有 | 连续体怎么用 |
 |---|---|
 | `lib/webgl/quality.ts`（`getGLQualityProfile`） | 扩展 `continuum` 字段，粒子数/DPR/噪声层随档缩 |
-| `lib/webgl/contextRegistry.ts` | 连续体是唯一常驻 context；移除旧两处 acquire |
+| `lib/webgl/contextRegistry.ts` | 连续体登记常驻 context；当前预算为 Hero + Continuum ≤2，守住跳转后不增长 |
 | `lib/webgl/textureCache.ts`（引用计数） | 肖像源图、噪声纹理走共享缓存，避免重复上传 |
 | `lib/webgl/useGLSurface.ts`（生命周期契约） | 连续体的 mount/pause/resume/dispose 继承此契约 |
 | `lib/chapterScrollMetrics.ts`（单布局快照源） | morph 进度的唯一滚动来源，零新监听 |

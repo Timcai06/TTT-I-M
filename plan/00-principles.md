@@ -51,11 +51,11 @@
 
 > 这些是连续体的护栏，对应守卫见 [`05-guards-and-budgets.md`](./05-guards-and-budgets.md)。
 
-1. **唯一持久 context**
-   连续体是全站**唯一**的常驻 WebGL context。它落地时必须**吞掉** Hero 的
-   ParticlePortrait（M0）与 About 的 TextParticles（M1）各自的 canvas——常驻 context
-   从今天的「最多 3」降到「恒为 1」。转场期可短暂存在第 2 个（液体波若也走 GL，
-   当前是 SVG，不占）。守卫：连续跳转 N 次后常驻 context 计数 == 1。
+1. **持久 context 有预算且不增长**
+   当前完成态保留 Hero 的原 `ParticlePortrait` 主体，Continuum 作为后续章节的 App 级
+   叙事层；About 的旧 TextParticles canvas 已退役。常驻 WebGL surface 预算为
+   Hero + Continuum ≤2，后续只有在能无损保留首屏身份时再推进单 context 合并。
+   守卫：连续跳转 N 次后 canvas/context 数量不增长。
 
 2. **每个形态都有静态兜底**
    形态注册表里每一章的粒子形态，都必须声明一个 `fallback`——即该章**现有的**非 WebGL

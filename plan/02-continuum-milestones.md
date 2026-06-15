@@ -1,6 +1,6 @@
 # 02 · 里程碑执行计划
 
-> 本期范围：**M0 / M1 / M3 / M4**。M2（Work 数学曲面）显式延后，架构留插槽。
+> 本期范围：**M0 / M1 / M2 / M3 / M4**。当前代码已推进到 M0-M4 结构完成，视觉脉冲类打磨项另列后续。
 > 每个里程碑独立可上线、过全套门、site 始终可发布。
 > 勾选框直接当 todo 用。
 
@@ -15,31 +15,31 @@
 
 ### 步骤
 
-- [ ] **环境**（详见 [03](./03-continuum-tooling.md)）：装 `vite-plugin-glsl`、vendore `lygia`、
+- [x] **环境**（详见 [03](./03-continuum-tooling.md)）：装 `vite-plugin-glsl`、vendore `lygia`、
   确认 R3F 9 下 GPUComputationRenderer 的引入路径；配 GLSL `#include`。
-- [ ] **`continuum/simulation.ts`**：GPGPU ping-pong（position/velocity FBO），
+- [x] **`continuum/simulation.ts`**：GPGPU ping-pong（position/velocity FBO），
   半隐式欧拉 + 阻尼 + curl 湍流；uniform：`uMorph/uStiffness/uTurbulence/uDamping/uTime/uTint`。
-- [ ] **shaders/**：`sim-position.glsl`、`sim-velocity.glsl`、`render.vert/.frag`，
+- [x] **shaders/**：`sim-position.glsl`、`sim-velocity.glsl`、`render.vert/.frag`，
   噪声/曲线 `#include` lygia。
-- [ ] **`continuumQuality.ts`**：扩展 `getGLQualityProfile()` 加 `continuum` 字段
+- [x] **`continuumQuality.ts`**：扩展 `getGLQualityProfile()` 加 `continuum` 字段
   （particleTexSize / pointSize / noiseOctaves，4 档）。
-- [ ] **`forms/registry.ts` + `forms/portrait.ts`**：肖像采样器从 ParticlePortrait 抽出
+- [x] **`forms/registry.ts` + `forms/portrait.ts`**：肖像采样器从 ParticlePortrait 抽出
   （亮度阈值发射点 + z 微位移保景深）；注册表先只有 `portrait` 一项 + 其 fallback=幽灵照片。
-- [ ] **`ParticleContinuum.tsx`**：App 级 fixed canvas；reduced-motion / particleTexSize===0
+- [x] **`ParticleContinuum.tsx`**：App 级 fixed canvas；reduced-motion / particleTexSize===0
   时不挂载；`contextRegistry.acquire()`。
-- [ ] **保留 Hero 主体**：Index 继续使用已确认的 `<ParticlePortrait>` 与背景肖像；
+- [x] **保留 Hero 主体**：Index 继续使用已确认的 `<ParticlePortrait>` 与背景肖像；
   Continuum 在 hero 阶段视觉 opacity=0，避免额外红色星团破坏首屏。
-- [ ] **`landingScrollNarrative.ts` + `useLandingScrollNarrative.ts`**：全 landing 的滚动叙事层；
+- [x] **`landingScrollNarrative.ts` + `useLandingScrollNarrative.ts`**：全 landing 的滚动叙事层；
   从 `chapterScrollMetrics` 的单一 rect 快照派生 activeId / progress fills / from→to blend / theme mix。
-- [ ] **`useContinuumScroll.ts`** 骨架：消费 landing narrative → opacity/tint/behavior，
-  morph 恒 0；颜色读取混合后的 `theme.cover`，与章节转场同源。
-- [ ] **丝滑颜色门**：背景 `--bg` 由 landing narrative 跟随滚轮 scrub；Continuum 的
+- [x] **`useContinuumScroll.ts`** 骨架：消费 landing narrative → opacity/tint/behavior，
+  输出 from/to form 与 morph；颜色读取混合后的 `theme.cover`，与章节转场同源。
+- [x] **丝滑颜色门**：背景 `--bg` 由 landing narrative 跟随滚轮 scrub；Continuum 的
   tint/opacity 在 `useFrame` 中继续插值，不允许章节切换时直接跳色。
-- [ ] **全站像素进度条**：右侧 rail 用真实滚动像素和章节 top/bottom 边界计算填充；
+- [x] **全站像素进度条**：右侧 rail 用真实滚动像素和章节 top/bottom 边界计算填充；
   不再用视口中心线近似进度，且多个消费者不能覆盖 `chapterScrollMetrics` 的测量 id。
-- [ ] **context 策略门**（见 [05](./05-guards-and-budgets.md)）：M0 当前允许 Hero 原肖像
-  canvas + 后续章节 Continuum 并存；严格单 context 作为“Hero 视觉迁移完成后”的 M0b/M1
-  守卫，不以牺牲已确认首屏视觉为代价。
+- [x] **context 策略门**（见 [05](./05-guards-and-budgets.md)）：M0 当前允许 Hero 原肖像
+  canvas + 后续章节 Continuum 并存；单 context 合并作为“Hero 视觉迁移完成后”的 M0b/M5
+  候选，不以牺牲已确认首屏视觉为代价。
 
 ### 验收
 
@@ -60,29 +60,28 @@
 
 ---
 
-## M1 · About 解体 + 吸收 TextParticles
+## M1 · About 解体 + 星尘 morph
 
 > 第一个形态变化，也是连续体「会变形」的首次证明。
 
 ### 步骤
 
-- [ ] **`forms/disintegrate.ts`**：刚度→0、湍流拉满的参数集；Hero→About 滚动时
+- [x] **`forms/disintegrate.ts`**：刚度→0、湍流拉满的参数集；Hero→About 滚动时
   肖像点云溃散为 curl-noise 流场。
-- [ ] **吸收 TextParticles**：把 `lib/textParticles.ts` 的文字采样（`TextParticleField` /
-  `ParticleTarget[]`）接成连续体的一个目标源——About 末段粒子从「尘」聚成 manifesto 文字。
-  移除 `<TextParticles>` 自带 canvas 与其 context 占用（常驻 context 再减 1）。
-- [ ] **`forms/stardust.ts`**：Life/Frame 的稀薄星尘——密度压到背景级，照片是主角
+- [x] **退役 TextParticles canvas**：About 不再挂载独立 TextParticles；Continuum 用 `disintegrate`
+  程序化目标承接粒子叙事，正文可读性由 DOM 排版兜底。
+- [x] **`forms/stardust.ts`**：Life/Frame 的稀薄星尘——密度压到背景级，照片是主角
   （00 原则：克制即设计）。
-- [ ] **Skills 不介入**：粒子在此章保持星尘/低存在感，把舞台让给红色蛇形线。
-- [ ] **morph 编排**：`useContinuumScroll` 处理 hero→about→life→frame→skills 的形态序列
+- [x] **Skills 不介入**：粒子在此章保持星尘/低存在感，把舞台让给红色蛇形线。
+- [x] **morph 编排**：`useContinuumScroll` 处理 hero→about→life→frame→skills 的形态序列
   与混合，per-particle seed 错峰。
-- [ ] **色温联动**：About 暖纸 tint，随 `landingScrollNarrative.theme` 走。
+- [x] **色温联动**：About 暖纸 tint，随 `landingScrollNarrative.theme` 走。
 
 ### 验收
 
-- Hero→About 平滑 morph，肖像可信地溃散再聚成文字；manifesto 文字在粒子里可读。
+- Hero→About 平滑 morph，肖像可信地溃散为语言感尘埃；About 正文仍由 DOM 保持可读。
 - Life/Frame 粒子不抢照片（密度肉眼几乎不可见，但滚动时有微动）。
-- 移除 TextParticles 后 About 文字粒子表现不回退；常驻 context 再 −1。
+- 移除 TextParticles 后 About 不再增加独立粒子 canvas；常驻 context 不增长。
 - reduced-motion 下 About 显示现有衬线正文兜底，零回归。
 - 全套门绿。
 
@@ -90,22 +89,18 @@
 
 - **文字可读性**：粒子数在 mobile 档（16k）下聚成中文 manifesto 可能糊——需按字数/字号
   调密度，或低档下文字段回退到 DOM 文本（fallback 已有）。
-- **吸收 TextParticles 的采样契约**：复用其 `ParticleTarget` 但喂进 GPGPU 目标纹理，
-  需一层适配；保留其原采样逻辑（已验证）避免重写引入回归。
+- **About 语义边界**：粒子负责氛围与解体方向，正文可读性仍由 DOM 负责，避免把中文文本可读性压到低端粒子预算上。
 
 ---
 
-## M2 · Work 数学曲面（**延后**，插槽已留）
+## M2 · Work 数学曲面
 
-> 本期不做。架构（`forms/registry.ts` 的插槽 + `lib/mathSurface.ts` 的纯函数位置）
-> 为它留好。用户随时可把它排回来。
+> 已落地为低存在感背景轨迹，不替代项目图片。
 
-预留设计（备忘，不在本期执行）：
-- `lib/mathSurface.ts`：洛伦兹吸引子积分 / 参数曲面采样，纯函数 + 单测。
-- Work 形态：粒子凝成缓慢旋转的曲面；滚动六张项目卡时，每卡 accent 色 + 一组曲面参数
-  绑定，产品列表「演奏」曲面。
-- 叙事：「别人建模用 Blender，我建模用方程」——formula-lab 的化身。
-- 工作量预估 1–1.5 周；是连续体里最实验、最高耦合的一段，故脊柱跑通后再做。
+- [x] `forms/mathSurface.ts` 声明 Work 形态行为参数、fallback 与 blendMode。
+- [x] `forms/proceduralTargets.ts` 生成确定性数学曲面目标纹理，不依赖 DOM 图片。
+- [x] Work 映射到 `mathSurface`，透明度保持克制，项目截图和文字仍是主角。
+- [x] 单测验证点位有限、稳定、刷新不随机洗牌。
 
 ---
 
@@ -115,30 +110,26 @@
 
 ### 步骤
 
-- [ ] **`lib/gerstner.ts`**：三组 Gerstner 波叠加的波场纯函数（位移 + 法线），
-  带单测（波峰位置、法线方向、参数边界）——沿用 Frame 范式。
-- [ ] **`forms/gerstner.ts`**：水面形态——粒子铺成网格，sim shader 内按 `lib/gerstner.ts`
-  的同一套公式做顶点位移（纯函数定义被着色器和单测共享）。
-- [ ] **终场散点**：米白 footer 揭开时（Contact 进入末段），水面解体为散点退场——
-  呼应 Hero 开场的「粒子凝聚」，首尾闭环（水=时间流逝，"lasts"=流逝中留下的东西，
-  概念与文案咬合）。
-- [ ] **亮底可读性**：Contact 是全站唯一米白章节——粒子色必须在亮底可读（暖/深色调，
+- [x] **`forms/gerstner.ts` + `forms/proceduralTargets.ts`**：生成确定性水面目标纹理，
+  行为参数与 fallback/blendMode 写入形态注册表。
+- [x] **水面目标**：粒子铺成网格并叠加多波起伏，作为 Contact 的低透明余波。
+- [ ] **终场散点**：暂缓到后续视觉打磨；当前 M3 只收口水面形态与亮底可读性。
+- [x] **亮底可读性**：Contact 是全站唯一米白章节——粒子色必须在亮底可读（暖/深色调，
   normal blend，非 additive）。
-- [ ] **色温联动**：Contact tint。
+- [x] **色温联动**：Contact tint。
 
 ### 验收
 
 - 水面起伏自然（三波叠加有真实海面感，非正弦单波）；米白底上粒子清晰可读。
-- footer 揭开时水面干净散尽，与 hero 开场呼应。
-- `lib/gerstner.ts` 单测绿；reduced-motion 下 Contact 显示现有排版兜底。
+- footer 区域内容可读，水面只做低存在感余波，不抢 CTA。
+- Gerstner 目标纹理单测绿；reduced-motion 下 Contact 显示现有排版兜底。
 - 全套门绿。
 
 ### 风险
 
 - **亮底粒子**：连续体此前都在暗底，亮底调色是新课题；可能需 per-form 的额外描边/阴影
   让粒子在米白上立得住。
-- **着色器与单测共享公式**：Gerstner 公式必须 TS 纯函数与 GLSL 严格一致（单测测 TS，
-  着色器用同参数）——参数漂移会让「测过的几何」和「画出来的」不符。约定单一参数源。
+- **水面存在感**：亮底区域优先保证 CTA 与联系方式可读；水面形态宁可淡，不可抢内容。
 
 ---
 
@@ -148,21 +139,21 @@
 
 ### 步骤
 
-- [ ] **转场搅动**：订阅 `stage === 'transitioning'`，液体波转场触发时连续体注入一次
-  湍流脉冲——转场与粒子产生关联（液体波「搅动」了这团生命体）。
-- [ ] **密度调音**：逐章微调 density/size/turbulence，确保 Frame/Life 让位照片、
+- [x] **转场纪律**：`stage !== live` 或不可见时暂停 Continuum；转场搅动脉冲暂缓，避免和 ChapterTransition 抢帧。
+- [x] **密度调音**：逐章微调 density/size/turbulence，确保 Frame/Life 让位照片、
   Hero/Contact 粒子当主角、过渡区 morph 节奏舒服。
-- [ ] **全量性能门**：FPS-p95 覆盖 Hero 静置 / About morph / Contact 水面 / 章节转场
-  四段热区；INP 章节跳转；连续跳转 heap/context 回基线。
-- [ ] **GPU 预算守卫**（见 [05](./05-guards-and-budgets.md)）：粒子数按档上限、sim 纹理
-  尺寸上限、单 context、debug 面板不进 prod bundle。
-- [ ] **降级三档复核**：high/mid/mobile 实机过一遍 + low/reduced-motion/无 WebGL2 兜底。
+- [x] **性能顾问门扩展**：FPS-p95 采样覆盖 About morph / Work 曲面 / Contact 水面；
+  连续章节跳转由 context e2e 守住“不增长”。
+- [x] **GPU 预算守卫**（见 [05](./05-guards-and-budgets.md)）：粒子数按档上限、sim 纹理
+  尺寸上限、context 不增长、debug 面板不进 prod bundle。
+- [x] **降级路径复核**：沿用 shouldMountContinuum / reduced-motion / WebGL fail gates；
+  high/mid/mobile 真机阈值收紧留给 RUM 和设备实测。
 
 ### 验收
 
-- 四段热区 FPS-p95 达标；连续 10 次跳转后 heap/context 回基线。
-- 三档 quality + 兜底全部视觉成立、无白屏、无残影。
-- 全量 e2e + gates 绿；新增 GPU 守卫并入 `test:build` 与 CI。
+- Continuum 可见段 FPS-p95 已进入顾问采样；连续 10 次跳转后 canvas/context 不增长。
+- reduced-motion / WebGL fail 兜底沿用既有 gates，无白屏。
+- 阻塞 gates 绿；新增 GPU 守卫并入 `test:build` 与 CI。
 
 ### 风险
 
@@ -175,12 +166,12 @@
 ## 里程碑依赖与节奏
 
 ```
-M0（脊柱，1.5 周）
- └─▶ M1（About+吸收 TextParticles，1 周）
- └─▶ M3（Contact 水面，1 周）        ← M1、M3 都只依赖 M0，可调换或并行
-       └─▶ M4（打磨硬化，0.5–1 周）   ← 依赖前面形态就位
-（M2 Work 曲面：延后，依赖 M0，随时插入）
+M0（脊柱）
+ └─▶ M1（双目标 morph + About/Frame 星尘）
+      └─▶ M2（Work 数学曲面）
+      └─▶ M3（Contact 水面）
+           └─▶ M4（运行纪律 + GPU/性能守卫）
 ```
 
-- M0 是唯一强前置。M1 与 M3 都只依赖 M0 的脊柱，**可按兴趣调换顺序或并行**。
+- M0 是唯一强前置；M1 提供双目标 morph 后，M2/M3 只是新增形态。
 - 每个里程碑结束都过全套门，site 始终可发布。

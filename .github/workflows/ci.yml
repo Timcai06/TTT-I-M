@@ -7,8 +7,8 @@ on:
 
 jobs:
   # Deterministic gates: typecheck + lint (both workspaces), unit tests, build
-  # both apps, and run all 7 build guards (chunk budget, chapter-state, frame,
-  # loader-preload, content-layer, deferred-image bytes, platform). These must
+  # both apps, and run all deterministic build guards (chunk budget, chapter-state, frame,
+  # loader-preload, content-layer, deferred-image bytes, Continuum GPU, platform). These must
   # always pass.
   verify:
     runs-on: ubuntu-latest
@@ -23,7 +23,7 @@ jobs:
       - run: npm run lint
       - run: npm run test:unit # node --test over landing pure-logic modules
       - run: npm run build:studio
-      - run: npm run test:build # builds landing + 6 landing guards + platform guard
+      - run: npm run test:build # builds landing + landing build guards + platform guard
 
   # Runtime gates: real-browser Playwright (frame structure + Plan 05 perf budgets).
   #
@@ -32,7 +32,7 @@ jobs:
   # settling timing is hardware-variant on shared 2-core CI runners — the same test
   # passes one run and flakes the next. They run reliably on a real local machine
   # (verified 16/16). So CI runs them for VISIBILITY but does not block on them; the
-  # hard gate is `verify` (typecheck/lint/build/studio + 6 build guards). Run
+  # hard gate is `verify` (typecheck/lint/build/studio + deterministic build guards). Run
   # `npm run test:e2e` locally before merging UI/scroll changes.
   # 2026-06-11: the deterministic load-time subset (chrome-ui, hero-pretext) was
   # promoted into the blocking `e2e-gates` job below. What remains advisory here
