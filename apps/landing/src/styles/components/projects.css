@@ -19,8 +19,8 @@
   line-height: 1.8;
 }
 
-/* ── Bento 速览格（zentry bento 模式：不等宽瓦片 + clip-path 图片揭示）──
-   闲置态 = 深底 + 编号/名称；hover/focus = 首图从底部 clip 展开 + scrim 压暗保证文字可读。
+/* ── Bento 速览格（zentry bento 模式：不等宽瓦片 + 低曝光作品预览）──
+   闲置态 = 暗场图片 + 编号/名称；hover/focus = 亮度聚焦 + scrim 压暗保证文字可读。
    仅 CSS transition（clip-path/transform/opacity），无逐帧 JS。 */
 .projects__bento {
   margin-top: 72px;
@@ -34,7 +34,10 @@
   position: relative;
   overflow: hidden;
   text-align: left;
-  background: var(--bg-elev);
+  background:
+    radial-gradient(circle at 72% 18%, color-mix(in srgb, var(--tile-accent) 18%, transparent) 0 24%, transparent 58%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 38%),
+    var(--bg-elev);
   border: 1px solid var(--line);
   padding: 18px 20px;
   display: flex;
@@ -45,7 +48,8 @@
   transition:
     opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--tile-i) * 70ms),
     transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--tile-i) * 70ms),
-    border-color 0.4s ease;
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
 }
 
 .projects__bento.is-visible .bento-tile {
@@ -65,32 +69,38 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  clip-path: inset(100% 0 0 0);
-  transform: scale(1.06);
+  opacity: 0.28;
+  filter: grayscale(0.78) brightness(0.48) contrast(1.12);
+  transform: scale(1.08);
   transition:
-    clip-path 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.38s ease,
+    filter 0.46s ease,
+    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .bento-tile__scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(5, 5, 6, 0) 30%, rgba(5, 5, 6, 0.82) 100%);
-  opacity: 0;
-  transition: opacity 0.5s ease;
+  background:
+    linear-gradient(180deg, rgba(5, 5, 6, 0.18) 0%, rgba(5, 5, 6, 0.58) 54%, rgba(5, 5, 6, 0.9) 100%),
+    radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--tile-accent) 20%, transparent), transparent 52%);
+  opacity: 0.72;
+  transition: opacity 0.42s ease;
 }
 
 .bento-tile:is(:hover, :focus-visible) .bento-tile__img {
-  clip-path: inset(0 0 0 0);
-  transform: scale(1);
+  opacity: 0.88;
+  filter: grayscale(0.08) brightness(0.84) contrast(1.05);
+  transform: scale(1.01);
 }
 
 .bento-tile:is(:hover, :focus-visible) .bento-tile__scrim {
-  opacity: 1;
+  opacity: 0.88;
 }
 
 .bento-tile:is(:hover, :focus-visible) {
   border-color: color-mix(in srgb, var(--tile-accent) 55%, var(--line));
+  box-shadow: 0 22px 70px color-mix(in srgb, var(--tile-accent) 16%, transparent);
 }
 
 .bento-tile__top {
@@ -114,6 +124,7 @@
   font-size: clamp(20px, 1.9vw, 26px);
   line-height: 1.1;
   color: var(--fg);
+  text-shadow: 0 12px 32px rgba(0, 0, 0, 0.54);
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -130,6 +141,7 @@
   letter-spacing: 0.1em;
   color: var(--fg-soft);
   opacity: 0.7;
+  text-shadow: 0 10px 26px rgba(0, 0, 0, 0.52);
   transition: opacity 0.5s ease;
 }
 
@@ -164,6 +176,11 @@
   .projects__bento {
     grid-template-columns: repeat(2, 1fr);
     grid-auto-rows: clamp(150px, 26vw, 210px);
+  }
+
+  .bento-tile__img {
+    opacity: 0.46;
+    filter: grayscale(0.48) brightness(0.58) contrast(1.08);
   }
 }
 

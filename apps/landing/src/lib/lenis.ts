@@ -40,7 +40,7 @@ export function useLenis() {
       clearTimeout(hoverTimeout)
       hoverTimeout = window.setTimeout(() => {
         body.classList.remove('disable-hover')
-      }, 150)
+      }, 80)
     }
     lenis.on('scroll', onScroll)
 
