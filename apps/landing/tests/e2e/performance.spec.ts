@@ -169,6 +169,14 @@ test('CLS is below 0.05 after loader exits', async ({ page }) => {
 test('JS heap stays under 80 MB after full load', async ({ page }) => {
   await openHome(page)
   await page.waitForLoadState('networkidle')
+  try {
+    const client = await page.context().newCDPSession(page)
+    await client.send('HeapProfiler.collectGarbage')
+    await client.detach()
+  } catch {
+    // Non-Chromium browsers may not expose CDP. The test falls back to the
+    // browser's current memory sample below.
+  }
 
   const heapMB = await page.evaluate(() => {
     const perf = performance as unknown as {

@@ -47,20 +47,25 @@ export function loadImage(src: string, {
     const complete = async () => {
       if (settled) return
       settled = true
-      if (decode === 'eager' && typeof image.decode === 'function') {
-        try {
-          await image.decode()
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.warn(`[resources] eager image decode rejected for ${src}`, error)
+      try {
+        if (decode === 'eager' && typeof image.decode === 'function') {
+          try {
+            await image.decode()
+          } catch (error) {
+            if (import.meta.env.DEV) {
+              console.warn(`[resources] eager image decode rejected for ${src}`, error)
+            }
           }
+        } else if (decode === 'idle') {
+          // Warm-decode during idle and wait for that attempt before counting the
+          // task complete. Decode rejection is still non-fatal: onload already
+          // fired, so the DOM <img> can paint and the global timeout prevents a
+          // single problematic image from stranding the intro.
+          await enqueueImageDecode(image).catch(() => {})
         }
-      } else if (decode === 'idle') {
-        // Warm-decode during idle and wait for that attempt before counting the
-        // task complete. Decode rejection is still non-fatal: onload already
-        // fired, so the DOM <img> can paint and the global timeout prevents a
-        // single problematic image from stranding the intro.
-        await enqueueImageDecode(image).catch(() => {})
+      } finally {
+        image.onload = null
+        image.onerror = null
       }
       resolve()
     }

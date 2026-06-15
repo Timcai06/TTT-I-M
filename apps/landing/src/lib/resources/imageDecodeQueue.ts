@@ -12,6 +12,10 @@ interface IdleCallbackWindow {
 
 const MIN_IDLE_BUDGET_MS = 6
 const DEFAULT_IDLE_TIMEOUT_MS = 1800
+const INTERACTION_QUIET_MS = 420
+
+let lastInteractionAt = 0
+let activityListenersAttached = false
 
 /**
  * 等待 idle decode 的图片队列。
@@ -24,6 +28,28 @@ const queue: Array<{
 }> = []
 
 let scheduled = false
+
+function markInteraction() {
+  lastInteractionAt = performance.now()
+}
+
+function ensureActivityListeners() {
+  if (activityListenersAttached || typeof window === 'undefined') return
+  activityListenersAttached = true
+  window.addEventListener('wheel', markInteraction, { passive: true })
+  window.addEventListener('scroll', markInteraction, { passive: true })
+  window.addEventListener('touchmove', markInteraction, { passive: true })
+  window.addEventListener('pointerdown', markInteraction, { passive: true })
+}
+
+function isInteractionWindowBusy() {
+  return performance.now() - lastInteractionAt < INTERACTION_QUIET_MS
+}
+
+function scheduleAfterFrame() {
+  scheduled = true
+  window.requestAnimationFrame(() => schedule(runQueue))
+}
 
 /**
  * @description 调度一次空闲任务。优先使用 `requestIdleCallback`，不支持时回退到 32ms timeout。
@@ -57,6 +83,12 @@ function schedule(callback: (deadline: IdleDeadlineLike) => void) {
  */
 function runQueue(deadline: IdleDeadlineLike) {
   scheduled = false
+  ensureActivityListeners()
+
+  if (deadline.didTimeout && isInteractionWindowBusy()) {
+    scheduleAfterFrame()
+    return
+  }
 
   const item = queue.shift()
   if (!item) return
@@ -68,14 +100,13 @@ function runQueue(deadline: IdleDeadlineLike) {
   void decode.then(item.resolve, item.reject).finally(() => {
     if (queue.length === 0) return
 
-    if (deadline.didTimeout || deadline.timeRemaining() >= MIN_IDLE_BUDGET_MS) {
+    if (!isInteractionWindowBusy() && (deadline.didTimeout || deadline.timeRemaining() >= MIN_IDLE_BUDGET_MS)) {
       scheduled = true
       schedule(runQueue)
       return
     }
 
-    scheduled = true
-    window.requestAnimationFrame(() => schedule(runQueue))
+    scheduleAfterFrame()
   })
 }
 
@@ -89,6 +120,7 @@ function runQueue(deadline: IdleDeadlineLike) {
 export function enqueueImageDecode(image: HTMLImageElement): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
   if (!image.complete || image.naturalWidth <= 0) return Promise.resolve()
+  ensureActivityListeners()
 
   return new Promise<void>((resolve, reject) => {
     queue.push({ image, reject, resolve })
