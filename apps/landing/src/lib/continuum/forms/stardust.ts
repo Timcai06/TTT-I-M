@@ -7,6 +7,7 @@
 export const stardustForm = {
   id: 'stardust' as const,
   fallback: '#frame',
+  blendMode: 'additive' as const,
   tint: '#b8d5c2',
   behavior: {
     stiffness: 0.58,

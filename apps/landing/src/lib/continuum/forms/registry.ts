@@ -1,14 +1,17 @@
 import type { SimBehavior } from '../simulation'
 import { disintegrateForm } from './disintegrate.ts'
 import { stardustForm } from './stardust.ts'
+import { mathSurfaceForm } from './mathSurface.ts'
+import { gerstnerForm } from './gerstner.ts'
 
-export type ContinuumFormId = 'portrait' | 'disintegrate' | 'stardust'
+export type ContinuumFormId = 'portrait' | 'disintegrate' | 'stardust' | 'mathSurface' | 'gerstner'
 
 export interface FormDescriptor {
   id: ContinuumFormId
   fallback: string
   behavior: SimBehavior
   tint: string
+  blendMode: 'additive' | 'normal'
 }
 
 export const continuumForms = {
@@ -23,9 +26,12 @@ export const continuumForms = {
       noiseScale: 0.72,
       anchorStrength: 0.95,
     },
+    blendMode: 'normal',
   },
   disintegrate: disintegrateForm,
   stardust: stardustForm,
+  mathSurface: mathSurfaceForm,
+  gerstner: gerstnerForm,
 } satisfies Record<ContinuumFormId, FormDescriptor>
 
 export function getContinuumForm(id: ContinuumFormId): FormDescriptor {

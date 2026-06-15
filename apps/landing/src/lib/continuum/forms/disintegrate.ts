@@ -8,6 +8,7 @@
 export const disintegrateForm = {
   id: 'disintegrate' as const,
   fallback: '#about .about__block--manifesto',
+  blendMode: 'additive' as const,
   tint: '#d7c0a4',
   behavior: {
     stiffness: 0.68,

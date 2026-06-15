@@ -15,9 +15,11 @@ export interface ContinuumPoints {
   /** 把当前帧的位置纹理喂给渲染。 */
   setPositionTexture(texture: THREE.Texture): void
   setTargetTexture(texture: THREE.Texture): void
+  setTargetTextures(fromTexture: THREE.Texture, toTexture: THREE.Texture, morph: number): void
   setTint(color: THREE.Color): void
   setOpacity(value: number): void
   setPointSize(value: number): void
+  setBlending(blending: THREE.Blending): void
   dispose(): void
 }
 
@@ -49,7 +51,10 @@ export function buildContinuumPoints(opts: RenderPointsOptions): ContinuumPoints
   // 类型化的 uniform 引用，直接 mutate（绕开索引访问的 possibly-undefined）。
   const uniforms = {
     uPosition: { value: null as THREE.Texture | null },
-    uTarget: { value: null as THREE.Texture | null },
+    uFromTarget: { value: null as THREE.Texture | null },
+    uToTarget: { value: null as THREE.Texture | null },
+    uMorph: { value: 0 },
+    uMorphSpread: { value: 0.18 },
     uPointSize: { value: pointSize },
     uSizeAtten: { value: 12 },
     uTint: { value: new THREE.Color(opts.tint ?? 0xffffff) },
@@ -76,7 +81,14 @@ export function buildContinuumPoints(opts: RenderPointsOptions): ContinuumPoints
       uniforms.uPosition.value = texture
     },
     setTargetTexture(texture: THREE.Texture) {
-      uniforms.uTarget.value = texture
+      uniforms.uFromTarget.value = texture
+      uniforms.uToTarget.value = texture
+      uniforms.uMorph.value = 0
+    },
+    setTargetTextures(fromTexture, toTexture, morph) {
+      uniforms.uFromTarget.value = fromTexture
+      uniforms.uToTarget.value = toTexture
+      uniforms.uMorph.value = Math.min(1, Math.max(0, morph))
     },
     setTint(color) {
       uniforms.uTint.value.copy(color)
@@ -86,6 +98,11 @@ export function buildContinuumPoints(opts: RenderPointsOptions): ContinuumPoints
     },
     setPointSize(value) {
       uniforms.uPointSize.value = value
+    },
+    setBlending(blending) {
+      if (material.blending === blending) return
+      material.blending = blending
+      material.needsUpdate = true
     },
     dispose() {
       geometry.dispose()

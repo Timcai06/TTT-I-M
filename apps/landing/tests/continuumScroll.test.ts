@@ -8,7 +8,14 @@ import { getChapterTheme } from '../src/lib/chapterThemeTokens.ts'
 import { resolveLandingScrollNarrative } from '../src/lib/landingScrollNarrative.ts'
 
 void test('hero keeps the original portrait particle subject without an extra continuum nebula', () => {
-  const state = resolveContinuumScrollState('hero')
+  const state = resolveContinuumScrollState({
+    activeId: 'hero',
+    fromId: 'hero',
+    toId: 'hero',
+    blend: 0,
+    progressFills: [],
+    theme: getChapterTheme('hero'),
+  })
 
   assert.equal(state.formId, 'portrait')
   assert.equal(state.morph, 0)
@@ -16,7 +23,14 @@ void test('hero keeps the original portrait particle subject without an extra co
 })
 
 void test('later chapters tint the continuum from the chapter transition theme color', () => {
-  const state = resolveContinuumScrollState('frame')
+  const state = resolveContinuumScrollState({
+    activeId: 'frame',
+    fromId: 'frame',
+    toId: 'frame',
+    blend: 0,
+    progressFills: [],
+    theme: getChapterTheme('frame'),
+  })
 
   assert.equal(state.formId, 'stardust')
   assert.equal(state.tint.toLowerCase(), getContinuumTintForCover(getChapterTheme('frame').cover).toLowerCase())
@@ -52,6 +66,9 @@ void test('continuum form follows the dominant scroll segment instead of waiting
   const state = resolveContinuumScrollState(narrative)
 
   assert.equal(state.formId, 'stardust')
+  assert.equal(state.fromFormId, 'disintegrate')
+  assert.equal(state.toFormId, 'stardust')
+  assert.equal(state.morph, 0.88)
   assert.ok(state.behavior.turbulence < 1)
   assert.ok(state.behavior.turbulence > 0.18)
 })
@@ -70,4 +87,7 @@ void test('continuum keeps the current silhouette through most of a scroll segme
   const state = resolveContinuumScrollState(narrative)
 
   assert.equal(state.formId, 'disintegrate')
+  assert.equal(state.fromFormId, 'disintegrate')
+  assert.equal(state.toFormId, 'stardust')
+  assert.equal(state.morph, 0.72)
 })

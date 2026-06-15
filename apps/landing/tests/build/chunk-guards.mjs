@@ -32,6 +32,13 @@ if (!indexSource.includes('ParticlePortrait')) {
   throw new Error(`Entry chunk ${indexChunk} must keep the accepted original Hero ParticlePortrait subject.`)
 }
 
+
+const forbiddenDebugNeedles = ['leva', '__CONTINUUM_DEBUG__']
+const debugLeaks = forbiddenDebugNeedles.filter((needle) => indexSource.includes(needle))
+if (debugLeaks.length > 0) {
+  throw new Error(`Production entry chunk contains debug-only Continuum tooling: ${debugLeaks.join(', ')}`)
+}
+
 const runtimePreloadedAssets = ['TextParticles']
   .filter((needle) => htmlSource.includes(needle))
 if (runtimePreloadedAssets.length > 0) {

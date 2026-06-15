@@ -59,6 +59,11 @@ const requiredPatterns = [
   [/loadContinuumTargetTexture\(/, 'ParticleContinuum must load form-specific targets into the simulation'],
   [/getContinuumForm\('portrait'\)/, 'ParticleContinuum must read the portrait descriptor from the forms registry'],
   [/useContinuumScroll\(/, 'ParticleContinuum must consume the M0 chapter-state/uniform chain'],
+  [/useStage\(/, 'ParticleContinuum must subscribe to the runtime stage machine'],
+  [/getContinuumFrameloop\(stage,\s*scrollState\.opacity\)/, 'ParticleContinuum Canvas frameloop must be gated by stage and opacity'],
+  [/shouldRunContinuumFrame\(stage,\s*scrollState\.opacity\)/, 'ParticleContinuum frame compute must be gated by stage and opacity'],
+  [/frameloop=\{frameloop\}/, 'ParticleContinuum Canvas must not use the default always frameloop'],
+  [/if \(!bundle \|\| !shouldRun\) return/, 'ParticleContinuum useFrame must stop compute when hidden or transitioning'],
   [/\.lerp\(tint, transitionAlpha\)/, 'ParticleContinuum must smoothly interpolate tint instead of jumping colors'],
   [/className=['"]particle-continuum['"]/, 'ParticleContinuum root must expose the fixed-layer CSS class'],
 ]
@@ -71,8 +76,19 @@ const registry = read('src/lib/continuum/forms/registry.ts')
 if (!registry.includes("fallback: '#hero .hero__portrait-ghost'")) {
   throw new Error('Portrait form must declare the existing Hero fallback selector')
 }
-if (!registry.includes("export type ContinuumFormId = 'portrait' | 'disintegrate' | 'stardust'")) {
-  throw new Error('Continuum form registry must expose portrait, disintegrate, and stardust ids')
+for (const formId of ['portrait', 'disintegrate', 'stardust', 'mathSurface', 'gerstner']) {
+  if (!registry.includes(formId)) {
+    throw new Error(`Continuum form registry must expose ${formId}`)
+  }
+}
+if (!registry.includes('blendMode')) {
+  throw new Error('Continuum form registry must expose blendMode for bright-section safety')
+}
+if (!registry.includes("blendMode: 'normal'")) {
+  throw new Error('Portrait/bright-safe forms must be able to use normal blending')
+}
+if (!exists('src/lib/continuum/forms/mathSurface.ts') || !exists('src/lib/continuum/forms/gerstner.ts')) {
+  throw new Error('M2/M3 require mathSurface and gerstner form descriptors')
 }
 
 const scrollState = read('src/lib/continuum/continuumScrollState.ts')
@@ -84,11 +100,33 @@ if (!scrollHook.includes('useLandingScrollNarrative')) {
 if (!scrollState.includes('activeIdOrNarrative.theme.cover')) {
   throw new Error('Continuum chapter tint must derive from the same mixed cover color used by landing narrative')
 }
-if (!scrollState.includes("about: 'disintegrate'") || !scrollState.includes("frame: 'stardust'")) {
-  throw new Error('Continuum scroll state must map About to disintegrate and archive chapters to stardust')
+if (scrollState.includes('string | LandingScrollNarrative')) {
+  throw new Error('Continuum scroll state must not keep a test-only string path; production consumes landing narrative')
 }
-if (!proceduralTargets.includes('loadPortraitTargetTexture') || !proceduralTargets.includes('createStardustTargetTexture')) {
-  throw new Error('Continuum target loader must preserve portrait target and add stardust target generation')
+if (!scrollState.includes('fromFormId') || !scrollState.includes('toFormId') || !scrollState.includes('morph: fromFormId === toFormId')) {
+  throw new Error('M1 requires Continuum scroll state to expose from/to form ids and a narrative-driven morph')
+}
+if (!scrollState.includes("about: 'disintegrate'") || !scrollState.includes("frame: 'stardust'") || !scrollState.includes("projects: 'mathSurface'") || !scrollState.includes("contact: 'gerstner'")) {
+  throw new Error('Continuum scroll state must map About/Frame/Work/Contact to their planned forms')
+}
+for (const targetFactory of ['loadPortraitTargetTexture', 'createStardustTargetTexture', 'createMathSurfaceTargetTexture', 'createGerstnerTargetTexture']) {
+  if (!proceduralTargets.includes(targetFactory)) {
+    throw new Error(`Continuum target loader must include ${targetFactory}`)
+  }
+}
+const simulation = read('src/lib/continuum/simulation.ts')
+const velocityShader = read('src/lib/continuum/shaders/sim-velocity.glsl')
+const positionShader = read('src/lib/continuum/shaders/sim-position.glsl')
+const renderShader = read('src/lib/continuum/shaders/render.vert')
+for (const [file, source] of [
+  ['simulation.ts', simulation],
+  ['sim-velocity.glsl', velocityShader],
+  ['sim-position.glsl', positionShader],
+  ['render.vert', renderShader],
+]) {
+  if (!source.includes('uFromTarget') || !source.includes('uToTarget') || !source.includes('uMorph')) {
+    throw new Error(`${file} must support M1 dual-target morph uniforms`)
+  }
 }
 
 const opaqueSectionBackgrounds = [

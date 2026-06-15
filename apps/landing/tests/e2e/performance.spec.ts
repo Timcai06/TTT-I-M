@@ -49,6 +49,36 @@ async function openHome(page: Page) {
   await page.waitForTimeout(400)
 }
 
+async function sampleFrameP95(page: Page, drive: () => Promise<void>) {
+  await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    w.__frameDeltas = []
+    let last = performance.now()
+    let stopped = false
+    w.__stopFrameSampler = () => {
+      stopped = true
+    }
+    const loop = (t: number) => {
+      (w.__frameDeltas as number[]).push(t - last)
+      last = t
+      if (!stopped) requestAnimationFrame(loop)
+    }
+    requestAnimationFrame(loop)
+  })
+
+  await drive()
+
+  const deltas = await page.evaluate(() => {
+    const w = window as unknown as Record<string, unknown>
+    ;(w.__stopFrameSampler as () => void)()
+    return w.__frameDeltas as number[]
+  })
+  const samples = deltas.slice(3)
+  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThan(FRAME_MIN_SAMPLES)
+  const sorted = [...samples].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length * 0.95)] ?? 0
+}
+
 // ── LCP ──────────────────────────────────────────────────────────────────────
 
 test('LCP is within budget', async ({ page }) => {
@@ -248,45 +278,45 @@ test('scroll scrub frame time p95 stays within budget', async ({ page }) => {
   // Sample rAF deltas while scrubbing through the hero/about pin range and
   // assert the 95th percentile frame interval (≈ p95 frame time, the inverse
   // of FPS-p95) stays under budget. 34ms local ≈ one dropped 60Hz frame.
-  await page.evaluate(() => {
-    const w = window as unknown as Record<string, unknown>
-    w.__frameDeltas = []
-    let last = performance.now()
-    let stopped = false
-    w.__stopFrameSampler = () => {
-      stopped = true
-    }
-    const loop = (t: number) => {
-      (w.__frameDeltas as number[]).push(t - last)
-      last = t
-      if (!stopped) requestAnimationFrame(loop)
-    }
-    requestAnimationFrame(loop)
+  const p95 = await sampleFrameP95(page, async () => {
+    await page.mouse.wheel(0, 900)
+    await page.waitForTimeout(250)
+    await page.mouse.wheel(0, 900)
+    await page.waitForTimeout(250)
+    await page.mouse.wheel(0, -1800)
+    await page.waitForTimeout(400)
   })
-
-  await page.mouse.wheel(0, 900)
-  await page.waitForTimeout(250)
-  await page.mouse.wheel(0, 900)
-  await page.waitForTimeout(250)
-  await page.mouse.wheel(0, -1800)
-  await page.waitForTimeout(400)
-
-  const deltas = await page.evaluate(() => {
-    const w = window as unknown as Record<string, unknown>
-    ;(w.__stopFrameSampler as () => void)()
-    return w.__frameDeltas as number[]
-  })
-
-  // Drop the first few frames (sampler warm-up) before ranking.
-  const samples = deltas.slice(3)
-  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThan(FRAME_MIN_SAMPLES)
-  const sorted = [...samples].sort((a, b) => a - b)
-  const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0
 
   expect(
     p95,
     `p95 frame time ${p95.toFixed(1)}ms exceeds ${FRAME_P95_BUDGET_MS}ms (≈${(1000 / p95).toFixed(0)}fps p95)`,
   ).toBeLessThan(FRAME_P95_BUDGET_MS)
+})
+
+test('Continuum visible forms keep p95 frame time within budget', async ({ page }) => {
+  await openHome(page)
+
+  const sections = [
+    { nav: 'About', label: 'About/disintegrate' },
+    { nav: 'Work', label: 'Work/mathSurface' },
+    { nav: 'Contact', label: 'Contact/gerstner' },
+  ]
+
+  for (const section of sections) {
+    await page.locator('.nav__link', { hasText: section.nav }).click()
+    await page.waitForTimeout(1000)
+    const p95 = await sampleFrameP95(page, async () => {
+      await page.mouse.wheel(0, 220)
+      await page.waitForTimeout(250)
+      await page.mouse.wheel(0, -220)
+      await page.waitForTimeout(350)
+    })
+
+    expect(
+      p95,
+      `${section.label} p95 frame time ${p95.toFixed(1)}ms exceeds ${FRAME_P95_BUDGET_MS}ms`,
+    ).toBeLessThan(FRAME_P95_BUDGET_MS)
+  }
 })
 
 // ── Stage machine: no stale intro after load ───────────────────────────────────

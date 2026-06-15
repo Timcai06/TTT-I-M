@@ -1,6 +1,7 @@
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Component, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useStage } from '../stage'
 import { acquireContext, releaseContext } from '../webgl/contextRegistry'
 import { createContinuumSimulation, type ContinuumSimulation } from './simulation'
 import { buildContinuumPoints, type ContinuumPoints } from './renderPoints'
@@ -9,6 +10,7 @@ import { loadContinuumTargetTexture } from './forms/proceduralTargets'
 import { getContinuumForm } from './forms/registry'
 import { useContinuumScroll } from './useContinuumScroll'
 import type { ContinuumScrollState } from './continuumScrollState'
+import { getContinuumFrameloop, shouldRunContinuumFrame } from './continuumRuntimeMode'
 
 interface ContinuumBundle {
   simulation: ContinuumSimulation
@@ -48,9 +50,11 @@ function ContinuumContextRegistration() {
 function ContinuumScene({
   quality,
   scrollState,
+  shouldRun,
 }: {
   quality: ReturnType<typeof getContinuumQuality>
   scrollState: ContinuumScrollState
+  shouldRun: boolean
 }) {
   const { gl, viewport } = useThree()
   const portrait = getContinuumForm('portrait')
@@ -75,7 +79,7 @@ function ContinuumScene({
       })
 
       points.setPositionTexture(simulation.positionTexture)
-      points.setTargetTexture(simulation.targetTexture)
+      points.setTargetTextures(simulation.fromTargetTexture, simulation.toTargetTexture, 0)
       points.setOpacity(0)
       return { simulation, points }
     } catch (error) {
@@ -92,7 +96,7 @@ function ContinuumScene({
   }, [bundle])
 
   useFrame((_, delta) => {
-    if (!bundle) return
+    if (!bundle || !shouldRun) return
     const transitionAlpha = 1 - Math.exp(-delta * 1.65)
     renderedTint.current.lerp(tint, transitionAlpha)
     renderedOpacity.current += (scrollState.opacity - renderedOpacity.current) * transitionAlpha
@@ -100,8 +104,10 @@ function ContinuumScene({
     bundle.points.setTint(renderedTint.current)
     bundle.points.setOpacity(renderedOpacity.current)
     bundle.points.setPointSize(basePointSize * renderedPointScale.current)
+    bundle.points.setBlending(scrollState.blendMode === 'normal' ? THREE.NormalBlending : THREE.AdditiveBlending)
 
-    const positionTexture = bundle.simulation.compute(delta, scrollState.behavior)
+    bundle.points.setTargetTextures(bundle.simulation.fromTargetTexture, bundle.simulation.toTargetTexture, scrollState.morph)
+    const positionTexture = bundle.simulation.compute(delta, scrollState.behavior, scrollState.morph)
     bundle.points.setPositionTexture(positionTexture)
     bundle.points.points.position.set(
       viewport.width * scrollState.xOffsetRatio,
@@ -114,14 +120,28 @@ function ContinuumScene({
     if (!bundle) return
     let cancelled = false
 
-    loadContinuumTargetTexture(scrollState.formId, quality.particleTexSize)
-      .then((texture) => {
+    const loadTargets = async () => {
+      if (scrollState.fromFormId === scrollState.toFormId) {
+        const texture = await loadContinuumTargetTexture(scrollState.fromFormId, quality.particleTexSize)
+        return { fromTexture: texture, toTexture: texture }
+      }
+
+      const [fromTexture, toTexture] = await Promise.all([
+        loadContinuumTargetTexture(scrollState.fromFormId, quality.particleTexSize),
+        loadContinuumTargetTexture(scrollState.toFormId, quality.particleTexSize),
+      ])
+      return { fromTexture, toTexture }
+    }
+
+    loadTargets()
+      .then(({ fromTexture, toTexture }) => {
         if (cancelled) {
-          texture.dispose()
+          fromTexture.dispose()
+          if (toTexture !== fromTexture) toTexture.dispose()
           return
         }
-        bundle.simulation.setTarget(texture)
-        bundle.points.setTargetTexture(texture)
+        bundle.simulation.setTargets(fromTexture, toTexture)
+        bundle.points.setTargetTextures(fromTexture, toTexture, 0)
       })
       .catch((error) => {
         console.warn('[ParticleContinuum] target failed:', error)
@@ -130,7 +150,7 @@ function ContinuumScene({
     return () => {
       cancelled = true
     }
-  }, [bundle, quality.particleTexSize, scrollState.formId])
+  }, [bundle, quality.particleTexSize, scrollState.fromFormId, scrollState.toFormId])
 
   if (!bundle) return null
   return <primitive object={bundle.points.points} />
@@ -141,19 +161,24 @@ export default function ParticleContinuum() {
   const [failed, setFailed] = useState(false)
   const quality = useMemo(() => getContinuumQuality(), [])
   const scrollState = useContinuumScroll()
+  const stage = useStage()
+  const frameloop = getContinuumFrameloop(stage, scrollState.opacity)
+  const shouldRun = shouldRunContinuumFrame(stage, scrollState.opacity)
+  const rootStyle = { opacity: shouldRun ? 1 : 0 } satisfies CSSProperties
 
   if (!enabled || failed) return null
 
   return (
-    <div className="particle-continuum" aria-hidden="true">
+    <div className="particle-continuum" style={rootStyle} aria-hidden="true">
       <ContinuumErrorBoundary onError={() => setFailed(true)}>
         <Canvas
           camera={{ position: [0, 0, 5.2], fov: 42, near: 0.1, far: 100 }}
           dpr={[1, quality.dprMax]}
+          frameloop={frameloop}
           gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
         >
           <ContinuumContextRegistration />
-          <ContinuumScene quality={quality} scrollState={scrollState} />
+          <ContinuumScene quality={quality} scrollState={scrollState} shouldRun={shouldRun} />
         </Canvas>
       </ContinuumErrorBoundary>
     </div>

@@ -15,7 +15,7 @@ function createTexture(data: Float32Array, texSize: number): THREE.DataTexture {
 
 /**
  * @description 生成 About 解体形态的目标纹理，让粒子从肖像语义过渡为“被拆开的文字尘埃”。
- * @dependencies Three.js DataTexture；与 `simulation.ts` 的 uTarget RGBA 浮点纹理格式一致。
+ * @dependencies Three.js DataTexture；与 `simulation.ts` 的 from/to target RGBA 浮点纹理格式一致。
  * @performance / @caveats 只在形态切换时生成一次，不能进入逐帧路径；使用确定性 hash，
  *   避免强制刷新后星点布局忽大忽小或重新洗牌。
  * @steps
@@ -105,6 +105,61 @@ export function createStardustTargetTexture(texSize: number): THREE.DataTexture 
   return createTexture(data, texSize)
 }
 
+/**
+ * @description 生成 Work 章节的数学曲面目标纹理：一条倾斜参数带 + 轻微 z 轴起伏，
+ *   表达「工程系统 / 数学建模」而不覆盖作品图像。
+ */
+export function createMathSurfaceTargetTexture(texSize: number): THREE.DataTexture {
+  const count = texSize * texSize
+  const data = new Float32Array(count * 4)
+
+  for (let i = 0; i < count; i += 1) {
+    const row = Math.floor(i / texSize)
+    const col = i % texSize
+    const u = texSize <= 1 ? 0 : col / (texSize - 1)
+    const v = texSize <= 1 ? 0 : row / (texSize - 1)
+    const x = (u - 0.5) * 3.15
+    const wave = Math.sin((u * 2.4 + v * 0.8) * Math.PI * 2)
+    const ridge = Math.cos((u * 0.7 - v * 1.6) * Math.PI * 2)
+    const band = (v - 0.5) * 0.82
+    const offset = i * 4
+
+    data[offset] = x
+    data[offset + 1] = band + wave * 0.18
+    data[offset + 2] = ridge * 0.34 + (v - 0.5) * 0.16
+    data[offset + 3] = 0.38 + Math.abs(wave) * 0.34
+  }
+
+  return createTexture(data, texSize)
+}
+
+/**
+ * @description 生成 Contact 章节的 Gerstner 风格水面目标纹理：浅色网格余波，亮底 normal blend。
+ */
+export function createGerstnerTargetTexture(texSize: number): THREE.DataTexture {
+  const count = texSize * texSize
+  const data = new Float32Array(count * 4)
+
+  for (let i = 0; i < count; i += 1) {
+    const row = Math.floor(i / texSize)
+    const col = i % texSize
+    const u = texSize <= 1 ? 0 : col / (texSize - 1)
+    const v = texSize <= 1 ? 0 : row / (texSize - 1)
+    const x = (u - 0.5) * 3.05
+    const z = (v - 0.5) * 1.16
+    const waveA = Math.sin((u * 2.2 + v * 0.35) * Math.PI * 2) * 0.1
+    const waveB = Math.sin((u * -0.4 + v * 2.8) * Math.PI * 2) * 0.07
+    const offset = i * 4
+
+    data[offset] = x + waveA * 0.28
+    data[offset + 1] = -0.08 + waveA + waveB
+    data[offset + 2] = z + waveB * 0.22
+    data[offset + 3] = 0.24 + (1 - Math.abs(v - 0.5) * 2) * 0.28
+  }
+
+  return createTexture(data, texSize)
+}
+
 export async function loadContinuumTargetTexture(formId: ContinuumFormId, texSize: number): Promise<THREE.DataTexture> {
   if (formId === 'portrait') {
     return loadPortraitTargetTexture('/portrait/tim.jpg', texSize)
@@ -112,6 +167,14 @@ export async function loadContinuumTargetTexture(formId: ContinuumFormId, texSiz
 
   if (formId === 'disintegrate') {
     return createDisintegrateTargetTexture(texSize)
+  }
+
+  if (formId === 'mathSurface') {
+    return createMathSurfaceTargetTexture(texSize)
+  }
+
+  if (formId === 'gerstner') {
+    return createGerstnerTargetTexture(texSize)
   }
 
   return createStardustTargetTexture(texSize)

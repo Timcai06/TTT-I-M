@@ -1,10 +1,12 @@
 import type { SimBehavior } from './simulation.ts'
 import { getContinuumForm, type ContinuumFormId } from './forms/registry.ts'
-import { getChapterTheme } from '../chapterThemeTokens.ts'
 import type { LandingScrollNarrative } from '../landingScrollNarrative.ts'
 
 export interface ContinuumScrollState {
   formId: ContinuumFormId
+  fromFormId: ContinuumFormId
+  toFormId: ContinuumFormId
+  blendMode: 'additive' | 'normal'
   morph: number
   opacity: number
   pointScale: number
@@ -20,13 +22,15 @@ const ambientOpacity: Record<string, number> = {
   frame: 0.17,
   skills: 0.07,
   projects: 0.085,
-  contact: 0.09,
+  contact: 0.055,
 }
 
 const pointScaleByForm: Record<ContinuumFormId, number> = {
   portrait: 1,
   disintegrate: 1.36,
   stardust: 1.38,
+  mathSurface: 1.18,
+  gerstner: 1.08,
 }
 
 const formByChapter: Record<string, ContinuumFormId> = {
@@ -34,8 +38,8 @@ const formByChapter: Record<string, ContinuumFormId> = {
   life: 'stardust',
   frame: 'stardust',
   skills: 'stardust',
-  projects: 'stardust',
-  contact: 'portrait',
+  projects: 'mathSurface',
+  contact: 'gerstner',
 }
 
 function getAmbientOpacity(id: string) {
@@ -106,51 +110,29 @@ export function getContinuumTintForCover(cover: string) {
  * step2: 非 hero 章节按当前滚动段混合透明度、主题 tint、点大小和仿真行为
  * step3: 目标形态在滚动段后半程预切到下一章节，减少“停一下才变形”的感觉
  */
-export function resolveContinuumScrollState(activeIdOrNarrative: string | LandingScrollNarrative): ContinuumScrollState {
+export function resolveContinuumScrollState(activeIdOrNarrative: LandingScrollNarrative): ContinuumScrollState {
   const portrait = getContinuumForm('portrait')
-  const activeId = typeof activeIdOrNarrative === 'string'
-    ? activeIdOrNarrative
-    : activeIdOrNarrative.activeId
 
-  if (typeof activeIdOrNarrative !== 'string') {
-    const opacity = resolveNarrativeOpacity(activeIdOrNarrative)
-    const formId = opacity <= 0 ? 'portrait' : resolveDominantFormId(activeIdOrNarrative)
-    return {
-      formId,
-      morph: 0,
-      opacity,
-      pointScale: opacity <= 0 ? pointScaleByForm.portrait : resolveNarrativePointScale(activeIdOrNarrative),
-      tint: opacity <= 0 ? portrait.tint : getContinuumTintForCover(activeIdOrNarrative.theme.cover),
-      behavior: opacity <= 0 ? portrait.behavior : mixBehavior(activeIdOrNarrative.fromId, activeIdOrNarrative.toId, activeIdOrNarrative.blend),
-      xOffsetRatio: opacity <= 0 ? 0.22 : 0.28,
-      yOffset: opacity <= 0 ? 0.02 : 0.04,
-    }
-  }
-
-  if (activeId === 'hero') {
-    return {
-      formId: 'portrait',
-      morph: 0,
-      opacity: 0,
-      pointScale: pointScaleByForm.portrait,
-      tint: portrait.tint,
-      behavior: portrait.behavior,
-      xOffsetRatio: 0.22,
-      yOffset: 0.02,
-    }
-  }
-
-  const formId = getChapterFormId(activeId)
-  const form = getContinuumForm(formId)
-
+  const opacity = resolveNarrativeOpacity(activeIdOrNarrative)
+  const formId = opacity <= 0 ? 'portrait' : resolveDominantFormId(activeIdOrNarrative)
+  const fromFormId = opacity <= 0 || activeIdOrNarrative.fromId === 'hero'
+    ? 'portrait'
+    : getChapterFormId(activeIdOrNarrative.fromId)
+  const toFormId = opacity <= 0 || activeIdOrNarrative.fromId === 'hero'
+    ? 'portrait'
+    : getChapterFormId(activeIdOrNarrative.toId)
+  const dominantForm = getContinuumForm(formId)
   return {
     formId,
-    morph: 0,
-    opacity: getAmbientOpacity(activeId),
-    pointScale: pointScaleByForm[formId],
-    tint: getContinuumTintForCover(getChapterTheme(activeId).cover),
-    behavior: form.behavior,
-    xOffsetRatio: 0.28,
-    yOffset: 0.04,
+    fromFormId,
+    toFormId,
+    blendMode: dominantForm.blendMode,
+    morph: fromFormId === toFormId ? 0 : activeIdOrNarrative.blend,
+    opacity,
+    pointScale: opacity <= 0 ? pointScaleByForm.portrait : resolveNarrativePointScale(activeIdOrNarrative),
+    tint: opacity <= 0 ? portrait.tint : getContinuumTintForCover(activeIdOrNarrative.theme.cover),
+    behavior: opacity <= 0 ? portrait.behavior : mixBehavior(activeIdOrNarrative.fromId, activeIdOrNarrative.toId, activeIdOrNarrative.blend),
+    xOffsetRatio: opacity <= 0 ? 0.22 : 0.28,
+    yOffset: opacity <= 0 ? 0.02 : 0.04,
   }
 }

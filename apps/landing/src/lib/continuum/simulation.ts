@@ -28,13 +28,17 @@ export interface SimBehavior {
 
 export interface ContinuumSimulation {
   /** 推进一帧；返回当前位置纹理供渲染读取。 */
-  compute(dt: number, behavior: SimBehavior): THREE.Texture
+  compute(dt: number, behavior: SimBehavior, morph: number): THREE.Texture
   /** 当前位置纹理（compute 后有效）。 */
   readonly positionTexture: THREE.Texture
-  /** 当前目标纹理，w 通道供渲染层读取亮度权重。 */
-  readonly targetTexture: THREE.Texture
+  /** 当前起点目标纹理，w 通道供渲染层读取亮度权重。 */
+  readonly fromTargetTexture: THREE.Texture
+  /** 当前终点目标纹理，w 通道供渲染层读取亮度权重。 */
+  readonly toTargetTexture: THREE.Texture
   /** 设置当前形态的目标位置纹理（forms 注入）。 */
   setTarget(texture: THREE.Texture): void
+  /** 设置当前滚动段的形态混合目标纹理（M1 morph）。 */
+  setTargets(fromTexture: THREE.Texture, toTexture: THREE.Texture): void
   dispose(): void
 }
 
@@ -115,7 +119,8 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
   gpu.setVariableDependencies(velVar, [posVar, velVar])
 
   // 默认目标球壳（forms 注入真实目标前的占位 / 烟测目标）
-  let targetTexture: THREE.Texture = dataTexture(seedSphereShell(texSize, radius), texSize)
+  let fromTargetTexture: THREE.Texture = dataTexture(seedSphereShell(texSize, radius), texSize)
+  let toTargetTexture: THREE.Texture = fromTargetTexture
 
   // 持有类型化的 uniform 引用，逐帧 mutate 这些局部（避免索引访问的 possibly-undefined）。
   const uPosDelta = { value: 1 / 60 }
@@ -126,9 +131,12 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
   const uDamping = { value: 0.9 }
   const uNoiseScale = { value: 0.6 }
   const uAnchorStrength = { value: 0.8 }
-  const uTarget: { value: THREE.Texture } = { value: targetTexture }
+  const uMorph = { value: 0 }
+  const uMorphSpread = { value: 0.18 }
+  const uFromTarget: { value: THREE.Texture } = { value: fromTargetTexture }
+  const uToTarget: { value: THREE.Texture } = { value: toTargetTexture }
 
-  Object.assign(posVar.material.uniforms, { uDelta: uPosDelta, uAnchorStrength, uTarget })
+  Object.assign(posVar.material.uniforms, { uDelta: uPosDelta, uAnchorStrength, uMorph, uMorphSpread, uFromTarget, uToTarget })
   Object.assign(velVar.material.uniforms, {
     uTime,
     uDelta: uVelDelta,
@@ -136,19 +144,22 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
     uTurbulence,
     uDamping,
     uNoiseScale,
-    uTarget,
+    uMorph,
+    uMorphSpread,
+    uFromTarget,
+    uToTarget,
   })
 
   const err = gpu.init()
   if (err !== null) {
-    targetTexture.dispose()
+    fromTargetTexture.dispose()
     throw new Error(`Continuum GPGPU init failed: ${err}`)
   }
 
   let time = 0
 
   return {
-    compute(dt, behavior) {
+    compute(dt, behavior, morph) {
       // clamp dt 防卡顿后大步长炸裂
       const d = Math.min(Math.max(dt, 1 / 240), 1 / 30)
       time += d
@@ -160,23 +171,37 @@ export function createContinuumSimulation(opts: SimulationOptions): ContinuumSim
       uDamping.value = behavior.damping
       uNoiseScale.value = behavior.noiseScale
       uAnchorStrength.value = behavior.anchorStrength
+      uMorph.value = Math.min(1, Math.max(0, morph))
       gpu.compute()
       return gpu.getCurrentRenderTarget(posVar).texture
     },
     get positionTexture() {
       return gpu.getCurrentRenderTarget(posVar).texture
     },
-    get targetTexture() {
-      return targetTexture
+    get fromTargetTexture() {
+      return fromTargetTexture
+    },
+    get toTargetTexture() {
+      return toTargetTexture
     },
     setTarget(texture) {
-      if (targetTexture !== texture) targetTexture.dispose()
-      targetTexture = texture
-      uTarget.value = texture
+      this.setTargets(texture, texture)
+    },
+    setTargets(fromTexture, toTexture) {
+      const oldFrom = fromTargetTexture
+      const oldTo = toTargetTexture
+      fromTargetTexture = fromTexture
+      toTargetTexture = toTexture
+      uFromTarget.value = fromTexture
+      uToTarget.value = toTexture
+      for (const oldTexture of new Set([oldFrom, oldTo])) {
+        if (oldTexture !== fromTexture && oldTexture !== toTexture) oldTexture.dispose()
+      }
     },
     dispose() {
       gpu.dispose()
-      targetTexture.dispose()
+      fromTargetTexture.dispose()
+      if (toTargetTexture !== fromTargetTexture) toTargetTexture.dispose()
     },
   }
 }

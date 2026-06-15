@@ -2,7 +2,10 @@
 // 普通 R3F ShaderMaterial（GLSL ES 1.0）：three 注入 modelViewMatrix /
 // projectionMatrix / position 等内建。
 uniform sampler2D uPosition;  // GPGPU 位置纹理（每帧 compute 后的结果）
-uniform sampler2D uTarget;    // 当前形态目标纹理，w 通道承载每粒子的视觉权重
+uniform sampler2D uFromTarget;
+uniform sampler2D uToTarget;
+uniform float uMorph;
+uniform float uMorphSpread;
 uniform float uPointSize;     // 基础点尺寸（已含 DPR）
 uniform float uSizeAtten;     // 透视衰减系数（按相机距离调）
 
@@ -14,7 +17,11 @@ varying float vWeight;        // 形态权重：核心/旋臂/尘埃的亮度层
 
 void main() {
   vec3 pos = texture2D(uPosition, reference).xyz;
-  vec4 target = texture2D(uTarget, reference);
+  float seed = texture2D(uPosition, reference).w;
+  vec4 fromTarget = texture2D(uFromTarget, reference);
+  vec4 toTarget = texture2D(uToTarget, reference);
+  float morph = clamp((uMorph - seed * uMorphSpread) / max(0.001, 1.0 - uMorphSpread), 0.0, 1.0);
+  vec4 target = mix(fromTarget, toTarget, morph);
 
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   gl_Position = projectionMatrix * mv;
