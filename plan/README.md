@@ -1,70 +1,69 @@
-# Plan · 粒子连续体（Particle Continuum）
+# Plan · Builder Graph OS
 
-> 这个目录是**下一阶段的工程蓝图**：把站点从「一组各自为政的视觉效果」推进到
-> 「一个贯穿全站、有生命的粒子系统」——奖项级作品的视觉脊柱。
+> 当前 `plan/` 不再是 Particle Continuum 的执行清单。那一阶段已经完成：Landing 的电影感、滚动叙事、Continuum、性能守卫和多 zone 内容平台都成为新的地基。
 >
-> 上一版 plan（landing → 内容平台的多 zone 迁移）**已全部落地**，其决策记录与
-> 交付清单浓缩保存在 [`06-roadmap.md` 的「已交付架构（冻结）」](./06-roadmap.md)。
-> 本目录从此只向前看。
+> 新阶段的目标是把这个站从「Tim Cai 的作品集」推进为一个产品：帮助任何 builder 连接 GitHub，看见自己做过什么、如何进步、哪些项目构成了自己的能力图谱。
 
 ## 一句话
 
-> 全站只有**一个持久的粒子系统**（App 级、固定全屏、活在所有章节懒加载之外）。
-> 滚动驱动它在章节之间**变形**：Hero 是肖像，About 解体成尘，Work 凝成数学曲面，
-> Contact 化为水面后散尽。不是「这站有三个粒子效果」，而是「这一团东西陪你走完全程，
-> 它一直在变成这一章需要的样子」。**连续性本身就是叙事。**
+> **Turn your GitHub history into a story of growth.**
+>
+> 把用户散落在 GitHub 里的 repo、commit、PR、issue、README、CI、部署记录，转化成一张可以理解、可以展示、可以复盘、可以继续成长的 Project Graph。
 
-## 为什么是它（产品判断）
+## 北极星
 
-参照 `优秀案例拆解` 里六个获奖站的规律：评委打分的是**设计 / 创意 / 体验 / 内容**，
-不是引擎自研度。我们不自研引擎（`three` + R3F 就是获奖栈），把「自研」预算全部投到
-**只属于你的内容**——而连续体恰恰是系统级原创：别的站有粒子、有数学图、有水，但没有
-「一个生命体连续变形贯穿全程」。这是机器和模板复刻不了的一笔。
+Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普通 portfolio 模板。
 
-详见 [`01-continuum-architecture.md` · 设计意图](./01-continuum-architecture.md)。
+它要做的是：
 
-## 本期范围（用户已定）
+- 帮用户从杂乱仓库里看见自己的成长路线。
+- 把真实工程行为翻译成人类可理解的能力证据。
+- 让用户因为自己的提交、修复、重构、文档、部署和实验而获得成就感。
+- 让 AI 基于真实代码资产解释「我做了什么」「我怎么变强」「下一步该补什么」。
+- 让公开主页成为可信的成长档案，而不是手填标签和包装文案。
 
-实现 **M0 / M1 / M2 / M3 / M4**：先完成 App 级 Continuum 与滚动叙事单源，
-再把 About、Frame/Stack、Work、Contact 都接入同一个形态系统，最后补运行纪律和 GPU 守卫。
-Hero 的原 `ParticlePortrait` 主体继续保留；单 context 合并只作为后续候选，不作为当前完成条件。
+## 产品定位
 
-| 里程碑 | 内容 | 状态 |
-|---|---|---|
-| **M0** | App 级 Continuum + GPGPU 仿真 + 滚动叙事单源 + stage/frameloop 运行门控 | 已完成 |
-| **M1** | About 解体 + 星尘流场 + 双目标 morph + 退役 TextParticles canvas | 已完成 |
-| **M2** | Work 数学曲面 | 已完成 |
-| **M3** | Contact Gerstner 水面 + 亮底 normal blend | 已完成 |
-| **M4** | GPU 预算/ shader 冒烟 / context e2e / Continuum FPS 顾问门 | 已完成（转场搅动视觉脉冲暂缓） |
-
-详细拆解见 [`02-continuum-milestones.md`](./02-continuum-milestones.md)。
-
-## 目录导航
-
-| 文件 | 内容 |
+| 不是 | 而是 |
 |---|---|
-| [`00-principles.md`](./00-principles.md) | 不可违背的原则（视觉/性能护栏 + 新增 GPU/粒子不变量）**先读** |
-| [`01-continuum-architecture.md`](./01-continuum-architecture.md) | 连续体核心架构：持久 canvas、GPGPU 仿真、形态注册表、模块边界 |
-| [`02-continuum-milestones.md`](./02-continuum-milestones.md) | M0/M1/M2/M3/M4 逐里程碑执行计划（步骤 / 验收 / 风险） |
-| [`03-continuum-tooling.md`](./03-continuum-tooling.md) | 依赖、GLSL 工具链、环境准备、资产策略 |
-| [`04-content-layer.md`](./04-content-layer.md) | 内容层端口-适配器（**已交付，稳定参考**；代码注释仍指向本文） |
-| [`05-guards-and-budgets.md`](./05-guards-and-budgets.md) | 守卫与预算：现有守卫 + GPU 时代新增门 |
-| [`06-roadmap.md`](./06-roadmap.md) | 执行清单（勾选当 todo）+ 已交付架构冻结档 |
+| 只展示 Tim 的个人 GitHub | 任何用户都能绑定 GitHub 生成自己的图谱 |
+| 静态项目列表 | 自动生长的 Project Graph |
+| 绿色格子统计 | 成长叙事和能力证据 |
+| 简历包装器 | 真实代码历史的解释层 |
+| 普通 dashboard | 有审美、有情绪、有 AI 复盘能力的 builder cockpit |
 
-## 决策记录（Decision Log）
+## 当前地基
+
+- `apps/landing`：电影感入口，保留 Tim Cai 个人品牌和视觉样板。
+- `apps/studio`：Next App Router 内容平台，承接未来用户侧页面、dashboard、公开 graph。
+- `packages/content`：端口-适配器内容层，可扩展到数据库 adapter。
+- `packages/tokens`：跨应用视觉 token。
+- CI / Vercel / Speed Insights / cross-zone smoke：部署与运行守卫已经存在。
+- Particle Continuum：视觉系统阶段已完成，作为 flagship demo 保留，不再是 plan 主线。
+
+## 新阶段文件导航
+
+| 文件 | 作用 |
+|---|---|
+| [`00-principles.md`](./00-principles.md) | 不可违背的产品与工程原则 |
+| [`01-north-star.md`](./01-north-star.md) | 终极愿景、目标用户、产品情绪 |
+| [`02-system-boundaries.md`](./02-system-boundaries.md) | Landing / Studio / GitHub / DB / AI 的职责边界 |
+| [`03-product-pillars.md`](./03-product-pillars.md) | Project Graph、Growth Timeline、Skill Radar、AI Mentor 等产品支柱 |
+| [`04-evidence-and-trust.md`](./04-evidence-and-trust.md) | 真实证据、隐私、授权、可解释性原则 |
+| [`05-guards-and-budgets.md`](./05-guards-and-budgets.md) | 新阶段守卫、性能、数据、AI 安全预算 |
+| [`06-roadmap.md`](./06-roadmap.md) | 阶段方向与已完成历史冻结，不写具体 sprint todo |
+
+## 决策记录
 
 | 决策 | 选择 | 理由 |
 |---|---|---|
-| 旗舰方向 | **跨章节粒子连续体** | 系统级原创；建立在已有粒子基建上；连续性即叙事 |
-| 渲染计算 | **WebGL2 GPGPU**（ping-pong FBO） | 通用 + 已验证；WebGPU/TSL 列为 M5+ 未来，不做 M0 依赖（覆盖率 + 降级纪律） |
-| 三场合一 | **暂缓强合并** | Hero 原肖像主体已确认，当前以 stage/frameloop/context 守卫控风险；无损合并再进入 M0b/M5 |
-| Work 数学曲面 | **已纳入 M2** | 作为低存在感背景轨迹，不替代项目截图 |
-| 资产来源 | **纯程序化**，零外部模型/拍摄 | 你没有可扫描实物；粒子/水面/曲面全部代码生成，叙事真实 |
-| 颜色 | **读章节色温** | 复用 `chapterThemeTokens.ts` + `landingScrollNarrative`，颜色保持 token 派生 |
-| 降级 | **每个形态都有非 WebGL 静态兜底** | 沿用「降级而非删除」；各章现有 fallback 直接复用 |
+| 新产品方向 | **Builder Graph OS** | 从个人展示升级为可服务所有 builder 的成长系统 |
+| 数据来源 | **GitHub-native first** | repo、commit、PR、README、Actions 是最真实的成长证据 |
+| AI 角色 | **解释层，不是事实源** | AI 负责总结、归纳、建议；事实必须能追溯到 GitHub / 用户输入 |
+| 用户价值 | **成就感 + 清晰度** | 让用户看见自己做过什么、如何进步、下一步往哪走 |
+| 视觉关系 | **Landing 是旗舰 demo，产品能力进 Studio** | 不让产品后台污染电影感入口，也不让视觉系统绑死 SaaS 能力 |
+| 路线纪律 | **先方针，后计划** | 当前只定义北极星和边界，不写具体实现任务 |
 
-## 工作流约定（沿用）
+## 完成声明
 
-- 每个里程碑独立可上线、有守卫兜底；site 始终可发布。
-- 评审 → 用户显式批准后才提交 git。
-- 性能验证用真实 Chromium + trace，不依赖 Claude Preview（该项目 Preview 不可靠）。
+Particle Continuum / M0-M4 视觉架构计划可以视为完成并冻结。后续若继续优化它，应作为 Builder Graph OS 的「旗舰样板体验」维护，而不是 plan 主线。

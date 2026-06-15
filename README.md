@@ -39,8 +39,8 @@ The studio must never import the landing runtime stack: GSAP, Lenis, Three, R3F,
 
 ## Documentation
 
-- `plan/README.md` — next-phase blueprint: the Particle Continuum (one persistent
-  GPGPU particle system morphing across chapters). Shipped platform architecture is
-  frozen in `plan/06-roadmap.md` → "已交付架构（冻结）".
-- `plan/01-continuum-architecture.md` — continuum core architecture.
+- `plan/README.md` — next-phase blueprint: Builder Graph OS, a GitHub-native
+  growth graph and narrative system for builders.
+- `plan/01-north-star.md` — product north star, target users, and emotional goals.
+- `plan/02-system-boundaries.md` — Landing / Studio / GitHub / DB / AI boundaries.
 - `docs/` — landing architecture and visual/runtime docs (mirrors current source).
