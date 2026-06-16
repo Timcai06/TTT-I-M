@@ -134,4 +134,31 @@ for (const forbidden of ['accessToken', 'refreshToken', 'installationToken', 'ra
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter contracts present.`)
+const publicPreviewPath = '../../packages/content/src/publicPreview.ts'
+if (!existsSync(publicPreviewPath)) {
+  throw new Error('Missing Public Preview A5 draft model at packages/content/src/publicPreview.ts')
+}
+
+const publicPreviewSource = readFileSync(publicPreviewPath, 'utf8')
+for (const needle of [
+  'PublicPreviewDraft',
+  'PublicPreviewRepositoryChoice',
+  'PublicPreviewProjectDraft',
+  'createPublicPreviewDraft',
+  'handle_lookup',
+  'repo_selection',
+  'draft_ready',
+  'no OAuth',
+]) {
+  if (!publicPreviewSource.includes(needle)) {
+    throw new Error(`Public Preview A5 model must expose ${needle}.`)
+  }
+}
+
+for (const forbidden of ['accessToken', 'refreshToken', 'installationToken', 'rawPayload', 'rawDiff']) {
+  if (publicPreviewSource.includes(forbidden)) {
+    throw new Error(`Public Preview A5 model must not accept token/raw GitHub payload fields: ${forbidden}`)
+  }
+}
+
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview contracts present.`)

@@ -43,6 +43,9 @@ export default async function GraphPage() {
         <div className="studio-graph-hero__note" role="note">
           Demo snapshot · {graph.owner.displayName} · Generated {new Date(graph.generatedAt).toLocaleDateString('en-US')}
         </div>
+        <Link className="studio-preview-link" href="/graph/preview">
+          Try public preview ↗
+        </Link>
       </section>
 
       <section className="studio-graph-stats" aria-label="Builder Graph totals">

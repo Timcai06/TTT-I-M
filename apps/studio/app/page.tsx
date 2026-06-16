@@ -17,6 +17,11 @@ const surfaces = [
     body: 'A demo Builder Graph that turns repository evidence into projects, skills, and growth events.',
   },
   {
+    href: '/graph/preview',
+    title: 'Preview',
+    body: 'A public-first handle and repository selection flow before OAuth or GitHub App authorization.',
+  },
+  {
     href: '/dashboard',
     title: 'Dashboard',
     body: 'Future authenticated publishing surface with explicit publish-state semantics.',

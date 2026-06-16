@@ -199,3 +199,11 @@ export type {
   GitHubProfileSummary,
   GitHubRepositorySummary,
 } from './githubGraphAdapter'
+export { createPublicPreviewDraft } from './publicPreview'
+export type {
+  CreatePublicPreviewDraftOptions,
+  PublicPreviewDraft,
+  PublicPreviewProjectDraft,
+  PublicPreviewRepositoryChoice,
+  PublicPreviewStage,
+} from './publicPreview'

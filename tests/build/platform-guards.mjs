@@ -7,6 +7,7 @@ const studioVercel = JSON.parse(readFileSync('apps/studio/vercel.json', 'utf8'))
 const studioHome = readFileSync('apps/studio/app/page.tsx', 'utf8')
 const studioContent = readFileSync('apps/studio/content/index.ts', 'utf8')
 const studioGraph = readFileSync('apps/studio/app/graph/page.tsx', 'utf8')
+const studioGraphPreview = readFileSync('apps/studio/app/graph/preview/page.tsx', 'utf8')
 const sharedContent = readFileSync('packages/content/src/index.ts', 'utf8')
 const sharedProjects = readFileSync('packages/content/src/projects.ts', 'utf8')
 const landingProjects = readFileSync('apps/landing/src/data/projects.ts', 'utf8')
@@ -28,6 +29,7 @@ const requiredPaths = [
   'apps/studio/app/work/page.tsx',
   'apps/studio/app/work/[slug]/page.tsx',
   'apps/studio/app/graph/page.tsx',
+  'apps/studio/app/graph/preview/page.tsx',
   'apps/studio/app/dashboard/page.tsx',
   'apps/studio/app/rss.xml/route.ts',
   'apps/studio/app/sitemap.ts',
@@ -81,12 +83,25 @@ if (!studioHome.includes('without importing GSAP, R3F, or Lenis') || !studioCont
 
 if (
   !studioHome.includes("href: '/graph'") ||
+  !studioHome.includes("href: '/graph/preview'") ||
   !studioLayout.includes("href: '/graph'") ||
   !studioContent.includes('timPublicDemoBuilderGraphRepository') ||
   !studioGraph.includes('builderGraph.getSnapshot') ||
   !studioGraph.includes('No GitHub login, token')
 ) {
   throw new Error('Studio Graph must expose the A4 demo Builder Graph surface without real GitHub auth.')
+}
+
+if (
+  !sharedContent.includes('createPublicPreviewDraft') ||
+  !studioGraph.includes('href="/graph/preview"') ||
+  !studioGraphPreview.includes('createPublicPreviewDraft') ||
+  !studioGraphPreview.includes('method="get"') ||
+  !studioGraphPreview.includes('name="handle"') ||
+  !studioGraphPreview.includes('name="repo"') ||
+  !studioGraphPreview.includes('no OAuth')
+) {
+  throw new Error('Studio Graph Preview A5 must expose handle input + repo selection before real OAuth.')
 }
 
 if (!studioContent.includes('readPosts()') || !studioMdx.includes('readdirSync(postsDirectory)')) {
