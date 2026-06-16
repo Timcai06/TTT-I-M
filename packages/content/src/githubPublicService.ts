@@ -41,6 +41,9 @@ interface GitHubPublicRepositoryResponse {
   topics?: string[]
   fork: boolean
   archived: boolean
+  stargazers_count: number
+  forks_count: number
+  open_issues_count: number
   pushed_at: string | null
   created_at: string
   updated_at: string
@@ -49,6 +52,8 @@ interface GitHubPublicRepositoryResponse {
 const GITHUB_API_ORIGIN = 'https://api.github.com'
 const GITHUB_API_VERSION = '2026-03-10'
 const DEFAULT_REPOSITORY_LIMIT = 12
+const README_FETCH_LIMIT = 4
+const README_EXCERPT_MAX_CHARS = 180
 
 function normalizeHandle(handle: string): string {
   return handle.trim().replace(/^@/, '') || 'Timcai06'
@@ -91,7 +96,63 @@ function profileFromGitHub(user: GitHubPublicUserResponse): GitHubProfileSummary
   }
 }
 
-function repositoryFromGitHub(repository: GitHubPublicRepositoryResponse): GitHubRepositorySummary {
+function repositoryScore(repository: GitHubPublicRepositoryResponse): number {
+  const pushedAt = new Date(repository.pushed_at ?? repository.updated_at ?? repository.created_at).getTime()
+  const ageBonus = Number.isFinite(pushedAt) ? Math.max(0, pushedAt / 1000 / 60 / 60 / 24 / 365) : 0
+  const qualityBonus = repository.stargazers_count * 4 + repository.forks_count * 3
+  const freshnessBonus = ageBonus * 0.2
+  const ownershipPenalty = repository.fork ? 50 : 0
+  const archivePenalty = repository.archived ? 100 : 0
+  return qualityBonus + freshnessBonus - ownershipPenalty - archivePenalty
+}
+
+function sortRepositoriesForPreview(repositories: GitHubPublicRepositoryResponse[]): GitHubPublicRepositoryResponse[] {
+  return repositories
+    .slice()
+    .sort((left, right) => repositoryScore(right) - repositoryScore(left))
+}
+
+function cleanReadmeExcerpt(readme: string): string | undefined {
+  const cleaned = readme
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]+]\([^)]*\)/g, (match) => match.replace(/^\[|\]\([^)]*\)$/g, ''))
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_`>#-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleaned) return undefined
+  return cleaned.length > README_EXCERPT_MAX_CHARS
+    ? `${cleaned.slice(0, README_EXCERPT_MAX_CHARS).trim()}…`
+    : cleaned
+}
+
+async function fetchReadmeExcerpt(repository: GitHubPublicRepositoryResponse): Promise<string | undefined> {
+  const [owner, repo] = repository.full_name.split('/')
+  if (!owner || !repo) return undefined
+
+  try {
+    const response = await fetch(`${GITHUB_API_ORIGIN}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme`, {
+      headers: {
+        ...publicGitHubHeaders(),
+        Accept: 'application/vnd.github.raw+json',
+      },
+    })
+
+    if (!response.ok) return undefined
+    const text = await response.text()
+    return cleanReadmeExcerpt(text)
+  } catch {
+    return undefined
+  }
+}
+
+function repositoryFromGitHub(
+  repository: GitHubPublicRepositoryResponse,
+  readmeExcerpt?: string,
+): GitHubRepositorySummary {
   return {
     fullName: repository.full_name,
     url: repository.html_url,
@@ -101,6 +162,10 @@ function repositoryFromGitHub(repository: GitHubPublicRepositoryResponse): GitHu
     isFork: repository.fork,
     isArchived: repository.archived,
     pushedAt: repository.pushed_at ?? repository.updated_at ?? repository.created_at,
+    stars: repository.stargazers_count,
+    forks: repository.forks_count,
+    openIssues: repository.open_issues_count,
+    readmeExcerpt,
   }
 }
 
@@ -208,8 +273,20 @@ export async function fetchPublicGitHubPreviewSnapshot(
       return { status: 'invalid_response', handle: safeHandle, message: 'GitHub repositories response was not a list.' }
     }
 
-    const publicRepositories = repositoriesResponse.filter((repository) => !('private' in repository && repository.private))
-    const repositories = publicRepositories.map(repositoryFromGitHub)
+    const publicRepositories = sortRepositoriesForPreview(
+      repositoriesResponse.filter((repository) => !('private' in repository && repository.private)),
+    )
+    const readmeEntries = await Promise.all(
+      publicRepositories.slice(0, README_FETCH_LIMIT).map(async (repository) => [
+        repository.full_name,
+        await fetchReadmeExcerpt(repository),
+      ] as const),
+    )
+    const readmeExcerpts = new Map(readmeEntries)
+    const repositories = publicRepositories.map((repository) => repositoryFromGitHub(
+      repository,
+      readmeExcerpts.get(repository.full_name),
+    ))
     const generatedAt = new Date().toISOString()
     const ownerId = ownerIdFromHandle(user.login)
     const input: GitHubGraphAdapterInput = {

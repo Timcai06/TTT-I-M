@@ -156,6 +156,14 @@ export interface RepositoryNode {
   isArchived: boolean
   /** 最近 push 时间，ISO-8601。 */
   pushedAt?: string
+  /** 公开 star 数；只用于排序/提示，不等同于能力评分。 */
+  stars?: number
+  /** 公开 fork 数；只用于活跃度提示。 */
+  forks?: number
+  /** 公开 issue 数；只用于维护状态提示。 */
+  openIssues?: number
+  /** README 公开内容提取的短摘要；必须经过长度限制。 */
+  readmeExcerpt?: string
   /** 该仓库关联的证据 id。 */
   evidenceIds: string[]
   /** 仓库在 Builder Graph 中的可见性。 */

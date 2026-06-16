@@ -17,6 +17,16 @@ export interface PublicPreviewRepositoryChoice {
   primaryLanguage?: string
   /** 支撑该仓库的证据数量。 */
   evidenceCount: number
+  /** 公开 star 数。 */
+  stars: number
+  /** 公开 fork 数。 */
+  forks: number
+  /** 公开 issue 数。 */
+  openIssues: number
+  /** README 公开摘要。 */
+  readmeExcerpt?: string
+  /** preview 推荐分组。 */
+  group: 'recommended' | 'fresh' | 'forked' | 'archived'
   /** 是否默认进入 draft。 */
   selected: boolean
 }
@@ -75,9 +85,16 @@ function repositoryEvidenceCount(snapshot: BuilderGraphSnapshot, repository: Rep
 
 function defaultSelectedRepositoryIds(repositories: RepositoryNode[]): string[] {
   return repositories
-    .filter((repository) => !repository.isArchived)
+    .filter((repository) => !repository.isArchived && !repository.isFork)
     .slice(0, 4)
     .map((repository) => repository.id)
+}
+
+function previewGroupForRepository(repository: RepositoryNode): PublicPreviewRepositoryChoice['group'] {
+  if (repository.isArchived) return 'archived'
+  if (repository.isFork) return 'forked'
+  if ((repository.stars ?? 0) > 0 || (repository.readmeExcerpt?.length ?? 0) > 0) return 'recommended'
+  return 'fresh'
 }
 
 /**
@@ -108,6 +125,11 @@ export function createPublicPreviewDraft(
     description: repository.description,
     primaryLanguage: repository.primaryLanguage,
     evidenceCount: repositoryEvidenceCount(snapshot, repository),
+    stars: repository.stars ?? 0,
+    forks: repository.forks ?? 0,
+    openIssues: repository.openIssues ?? 0,
+    readmeExcerpt: repository.readmeExcerpt,
+    group: previewGroupForRepository(repository),
     selected: selectedRepositoryIdSet.has(repository.id),
   }))
 
@@ -124,7 +146,9 @@ export function createPublicPreviewDraft(
       return {
         id: project.id,
         title: project.title,
-        summary: project.summary ?? 'Repository evidence is ready; add your own project story before publishing.',
+        summary: repositories.find((repository) => repository.readmeExcerpt)?.readmeExcerpt
+          ?? project.summary
+          ?? 'Repository evidence is ready; add your own project story before publishing.',
         repositories: repositories.map((repository) => repository.fullName),
         signals: signals.map((signal) => signal.name),
         evidenceCount: project.evidenceIds.length,

@@ -58,6 +58,7 @@ Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普�
 | [`10-phase-a-graph-surface.md`](./10-phase-a-graph-surface.md) | Studio `/graph` demo surface 和同域 rewrite / smoke 边界 |
 | [`11-phase-a-public-preview.md`](./11-phase-a-public-preview.md) | 输入 GitHub handle → 选择 repo → graph draft 的公开预览路径 |
 | [`12-phase-a-public-github-service.md`](./12-phase-a-public-github-service.md) | 真实 GitHub public profile/repos service 和 preview 失败态边界 |
+| [`13-phase-a-preview-quality.md`](./13-phase-a-preview-quality.md) | public preview 推荐排序、repo 分组和 README 短摘要质量层 |
 
 ## 决策记录
 

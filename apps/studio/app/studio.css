@@ -894,6 +894,19 @@ a {
   border-top: 1px solid var(--line-strong);
 }
 
+.studio-preview-repo-group {
+  display: grid;
+}
+
+.studio-preview-repo-group__label {
+  padding: 18px 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .studio-preview-repo {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
@@ -930,13 +943,26 @@ a {
 
 .studio-preview-repo small,
 .studio-preview-repo em,
-.studio-preview-project > span {
+.studio-preview-project > span,
+.studio-preview-repo b {
   font-family: var(--font-mono);
   font-size: 10px;
   font-style: normal;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fg-dim);
+}
+
+.studio-preview-repo b {
+  max-width: 56ch;
+  margin-top: 4px;
+  color: var(--fg-mute);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.55;
+  text-transform: none;
 }
 
 .studio-preview-draft {
@@ -960,6 +986,10 @@ a {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.036), rgba(255, 255, 255, 0.01)),
     var(--bg);
+}
+
+.studio-preview-project--empty {
+  grid-column: 1 / -1;
 }
 
 .studio-preview-project h2,

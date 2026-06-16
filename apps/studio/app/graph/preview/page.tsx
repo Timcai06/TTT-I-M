@@ -1,5 +1,9 @@
 import Link from 'next/link'
-import { createPublicPreviewDraft, fetchPublicGitHubPreviewSnapshot } from '@timcai/content'
+import {
+  createPublicPreviewDraft,
+  fetchPublicGitHubPreviewSnapshot,
+  type PublicPreviewRepositoryChoice,
+} from '@timcai/content'
 
 export const metadata = {
   title: 'Graph Preview',
@@ -12,6 +16,13 @@ function valuesFromSearchParam(value: string | string[] | undefined): string[] {
   if (!value) return []
   return Array.isArray(value) ? value : [value]
 }
+
+const repositoryGroups: Array<{ id: PublicPreviewRepositoryChoice['group']; label: string }> = [
+  { id: 'recommended', label: 'Recommended' },
+  { id: 'fresh', label: 'Fresh Signals' },
+  { id: 'forked', label: 'Forked' },
+  { id: 'archived', label: 'Archived' },
+]
 
 export default async function GraphPreviewPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
@@ -66,16 +77,29 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
           <input type="hidden" name="handle" value={draft.handle} />
           <div className="studio-section-label">Choose Repositories</div>
           <div className="studio-preview-repo-list">
-            {draft.repositoryChoices.map((repository) => (
-              <label className="studio-preview-repo" key={repository.id}>
-                <input name="repo" type="checkbox" value={repository.id} defaultChecked={repository.selected} />
-                <span>
-                  <strong>{repository.title}</strong>
-                  <small>{repository.fullName}</small>
-                  <em>{repository.primaryLanguage ?? 'metadata'} · {repository.evidenceCount} evidence</em>
-                </span>
-              </label>
-            ))}
+            {repositoryGroups.map((group) => {
+              const repositories = draft.repositoryChoices.filter((repository) => repository.group === group.id)
+              if (repositories.length === 0) return null
+
+              return (
+                <div className="studio-preview-repo-group" key={group.id}>
+                  <div className="studio-preview-repo-group__label">{group.label}</div>
+                  {repositories.map((repository) => (
+                    <label className="studio-preview-repo" key={repository.id}>
+                      <input name="repo" type="checkbox" value={repository.id} defaultChecked={repository.selected} />
+                      <span>
+                        <strong>{repository.title}</strong>
+                        <small>{repository.fullName}</small>
+                        <em>
+                          {repository.primaryLanguage ?? 'metadata'} · {repository.evidenceCount} evidence · ★ {repository.stars} · forks {repository.forks}
+                        </em>
+                        {repository.readmeExcerpt ? <b>{repository.readmeExcerpt}</b> : null}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )
+            })}
           </div>
           <button className="studio-preview-button" type="submit">Build draft map</button>
         </form>
@@ -102,7 +126,7 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
       <section className="studio-preview-draft" aria-label="Graph draft preview">
         <div className="studio-section-label">Draft Map For @{draft.handle}</div>
         <div className="studio-preview-draft__grid">
-          {draft.projectDrafts.map((project, index) => (
+          {draft.projectDrafts.length > 0 ? draft.projectDrafts.map((project, index) => (
             <article className="studio-preview-project" key={project.id}>
               <span>{String(index + 1).padStart(2, '0')}</span>
               <h2>{project.title}</h2>
@@ -114,7 +138,13 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
                 ))}
               </div>
             </article>
-          ))}
+          )) : (
+            <article className="studio-preview-project studio-preview-project--empty">
+              <span>00</span>
+              <h2>No repositories selected yet.</h2>
+              <p>Choose one or more public repositories, then build a draft map again.</p>
+            </article>
+          )}
         </div>
       </section>
 

@@ -50,6 +50,14 @@ export interface GitHubRepositorySummary {
   isArchived: boolean
   /** 最近 push 时间，ISO-8601。 */
   pushedAt?: string
+  /** 公开 star 数，仅用于 public preview 的推荐排序。 */
+  stars?: number
+  /** 公开 fork 数，仅用于 public preview 的活跃度提示。 */
+  forks?: number
+  /** 公开 issue 数，仅用于 public preview 的维护状态提示。 */
+  openIssues?: number
+  /** README 中提取的短摘要；必须是公开内容且已做长度限制。 */
+  readmeExcerpt?: string
 }
 
 /** GitHub 贡献事件的安全投影，避免把完整 commit diff / patch 放进 graph。 */
@@ -200,6 +208,10 @@ export function createGitHubGraphAdapter(): GitHubGraphAdapter {
           isFork: repository.isFork,
           isArchived: repository.isArchived,
           pushedAt: repository.pushedAt,
+          stars: repository.stars,
+          forks: repository.forks,
+          openIssues: repository.openIssues,
+          readmeExcerpt: repository.readmeExcerpt,
           evidenceIds: [repositoryEvidenceId],
           visibility,
         }

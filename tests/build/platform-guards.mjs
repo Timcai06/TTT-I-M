@@ -102,7 +102,9 @@ if (
   !studioGraphPreview.includes('name="handle"') ||
   !studioGraphPreview.includes('name="repo"') ||
   !studioGraphPreview.includes('no OAuth') ||
-  !studioGraphPreview.includes('public repositories only')
+  !studioGraphPreview.includes('public repositories only') ||
+  !studioGraphPreview.includes('repositoryGroups') ||
+  !studioGraphPreview.includes('readmeExcerpt')
 ) {
   throw new Error('Studio Graph Preview A5/A6 must expose public GitHub fetch + repo selection before real OAuth.')
 }
