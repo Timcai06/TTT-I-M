@@ -207,3 +207,5 @@ export type {
   PublicPreviewRepositoryChoice,
   PublicPreviewStage,
 } from './publicPreview'
+export { fetchPublicGitHubPreviewSnapshot } from './githubPublicService'
+export type { GitHubPublicPreviewResult, GitHubPublicPreviewStatus } from './githubPublicService'

@@ -161,4 +161,33 @@ for (const forbidden of ['accessToken', 'refreshToken', 'installationToken', 'ra
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview contracts present.`)
+const githubPublicServicePath = '../../packages/content/src/githubPublicService.ts'
+if (!existsSync(githubPublicServicePath)) {
+  throw new Error('Missing GitHub Public Service A6 at packages/content/src/githubPublicService.ts')
+}
+
+const githubPublicServiceSource = readFileSync(githubPublicServicePath, 'utf8')
+for (const needle of [
+  'fetchPublicGitHubPreviewSnapshot',
+  'GitHubPublicPreviewResult',
+  'GitHubPublicPreviewStatus',
+  '/users/${encodedHandle}',
+  '/repos?type=owner',
+  'createGitHubGraphAdapter',
+  'public_only',
+  'metadata:read',
+  'rate_limited',
+  'not_found',
+]) {
+  if (!githubPublicServiceSource.includes(needle)) {
+    throw new Error(`GitHub Public Service A6 must expose ${needle}.`)
+  }
+}
+
+for (const forbidden of ['Authorization', 'accessToken', 'refreshToken', 'installationToken', 'rawPayload', 'rawDiff']) {
+  if (githubPublicServiceSource.includes(forbidden)) {
+    throw new Error(`GitHub Public Service A6 must not use auth/token/raw payload fields: ${forbidden}`)
+  }
+}
+
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview + GitHub Public Service contracts present.`)

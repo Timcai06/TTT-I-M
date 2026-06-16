@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { createPublicPreviewDraft } from '@timcai/content'
-import { builderGraph } from '../../../content'
+import { createPublicPreviewDraft, fetchPublicGitHubPreviewSnapshot } from '@timcai/content'
 
 export const metadata = {
   title: 'Graph Preview',
@@ -18,19 +17,30 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
   const params = await searchParams
   const handle = typeof params.handle === 'string' ? params.handle : 'Timcai06'
   const selectedRepositoryIds = valuesFromSearchParam(params.repo)
-  const graph = await builderGraph.getSnapshot('user_tim')
+  const previewResult = await fetchPublicGitHubPreviewSnapshot(handle)
 
-  if (!graph) {
+  if (previewResult.status !== 'ready' || !previewResult.snapshot) {
     return (
-      <section className="studio-hero">
-        <div className="studio-eyebrow">Studio / Graph Preview</div>
-        <h1 className="studio-title">Preview data is not available.</h1>
-        <p className="studio-copy">The public preview flow needs a safe graph snapshot before it can render.</p>
+      <section className="studio-hero studio-hero--editorial studio-preview-hero">
+        <div className="studio-eyebrow">Studio / Public Preview</div>
+        <h1 className="studio-title">GitHub public preview is not ready.</h1>
+        <p className="studio-copy">
+          {previewResult.message ?? 'The public GitHub service could not build a preview right now.'}
+          {previewResult.rateLimitResetAt ? ` Rate limit resets at ${new Date(previewResult.rateLimitResetAt).toLocaleTimeString('en-US')}.` : ''}
+        </p>
+        <form className="studio-preview-form" action="/graph/preview" method="get">
+          <label>
+            <span>GitHub handle</span>
+            <input name="handle" defaultValue={previewResult.handle} placeholder="Timcai06" />
+          </label>
+          <button type="submit">Try another handle</button>
+        </form>
+        <Link className="studio-preview-link" href="/graph">Back to demo graph ↗</Link>
       </section>
     )
   }
 
-  const draft = createPublicPreviewDraft(graph, { handle, selectedRepositoryIds })
+  const draft = createPublicPreviewDraft(previewResult.snapshot, { handle: previewResult.handle, selectedRepositoryIds })
 
   return (
     <>
@@ -38,8 +48,8 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
         <div className="studio-eyebrow">Studio / Public Preview</div>
         <h1 className="studio-title">Try the graph before you connect anything.</h1>
         <p className="studio-copy">
-          Type a GitHub handle, choose repositories, and preview the Builder Graph draft. This page uses demo
-          public evidence only — no OAuth, no token, no private repository access.
+          Type a GitHub handle, choose repositories, and preview the Builder Graph draft. This page reads GitHub
+          public profile and public repositories only — no OAuth, no token, no private repository access.
         </p>
         <form className="studio-preview-form" action="/graph/preview" method="get">
           <label>

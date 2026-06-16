@@ -57,6 +57,7 @@ Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普�
 | [`09-phase-a-graph-adapter.md`](./09-phase-a-graph-adapter.md) | GitHub 安全投影到 Builder Graph demo read model 的 adapter 边界 |
 | [`10-phase-a-graph-surface.md`](./10-phase-a-graph-surface.md) | Studio `/graph` demo surface 和同域 rewrite / smoke 边界 |
 | [`11-phase-a-public-preview.md`](./11-phase-a-public-preview.md) | 输入 GitHub handle → 选择 repo → graph draft 的公开预览路径 |
+| [`12-phase-a-public-github-service.md`](./12-phase-a-public-github-service.md) | 真实 GitHub public profile/repos service 和 preview 失败态边界 |
 
 ## 决策记录
 

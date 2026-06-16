@@ -94,14 +94,17 @@ if (
 
 if (
   !sharedContent.includes('createPublicPreviewDraft') ||
+  !sharedContent.includes('fetchPublicGitHubPreviewSnapshot') ||
   !studioGraph.includes('href="/graph/preview"') ||
   !studioGraphPreview.includes('createPublicPreviewDraft') ||
+  !studioGraphPreview.includes('fetchPublicGitHubPreviewSnapshot') ||
   !studioGraphPreview.includes('method="get"') ||
   !studioGraphPreview.includes('name="handle"') ||
   !studioGraphPreview.includes('name="repo"') ||
-  !studioGraphPreview.includes('no OAuth')
+  !studioGraphPreview.includes('no OAuth') ||
+  !studioGraphPreview.includes('public repositories only')
 ) {
-  throw new Error('Studio Graph Preview A5 must expose handle input + repo selection before real OAuth.')
+  throw new Error('Studio Graph Preview A5/A6 must expose public GitHub fetch + repo selection before real OAuth.')
 }
 
 if (!studioContent.includes('readPosts()') || !studioMdx.includes('readdirSync(postsDirectory)')) {
