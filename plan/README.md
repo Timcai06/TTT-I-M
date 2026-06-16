@@ -54,6 +54,7 @@ Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普�
 | [`06-roadmap.md`](./06-roadmap.md) | 阶段方向与已完成历史冻结，不写具体 sprint todo |
 | [`07-phase-a-foundation.md`](./07-phase-a-foundation.md) | Phase A 的数据信任边界和 Builder Graph 最小 read model |
 | [`08-phase-a-github-boundary.md`](./08-phase-a-github-boundary.md) | GitHub OAuth / GitHub App / 同步 manifest / 删除策略边界 |
+| [`09-phase-a-graph-adapter.md`](./09-phase-a-graph-adapter.md) | GitHub 安全投影到 Builder Graph demo read model 的 adapter 边界 |
 
 ## 决策记录
 

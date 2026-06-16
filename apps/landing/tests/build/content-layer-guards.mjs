@@ -105,4 +105,33 @@ for (const forbidden of ['repo:', 'public_repo', "'repo'", '"repo"']) {
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector contracts present.`)
+const githubGraphAdapterPath = '../../packages/content/src/githubGraphAdapter.ts'
+if (!existsSync(githubGraphAdapterPath)) {
+  throw new Error('Missing GitHub Graph A3 adapter at packages/content/src/githubGraphAdapter.ts')
+}
+
+const githubGraphAdapterSource = readFileSync(githubGraphAdapterPath, 'utf8')
+for (const needle of [
+  'GitHubGraphAdapter',
+  'GitHubGraphAdapterInput',
+  'GitHubProfileSummary',
+  'GitHubRepositorySummary',
+  'GitHubContributionSummary',
+  'createGitHubGraphAdapter',
+  'createTimPublicDemoBuilderGraph',
+  'timPublicDemoBuilderGraphRepository',
+  'BuilderGraphRepository',
+  'GitHubSyncManifest',
+]) {
+  if (!githubGraphAdapterSource.includes(needle)) {
+    throw new Error(`GitHub Graph A3 adapter must expose ${needle}.`)
+  }
+}
+
+for (const forbidden of ['accessToken', 'refreshToken', 'installationToken', 'rawPayload', 'rawDiff']) {
+  if (githubGraphAdapterSource.includes(forbidden)) {
+    throw new Error(`GitHub Graph A3 adapter must not accept token/raw GitHub payload fields: ${forbidden}`)
+  }
+}
+
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter contracts present.`)

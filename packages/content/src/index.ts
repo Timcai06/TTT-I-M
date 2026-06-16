@@ -186,3 +186,16 @@ export type {
   GitHubSyncStatus,
   GitHubSyncTrigger,
 } from './githubConnector'
+export {
+  createGitHubGraphAdapter,
+  createTimPublicDemoBuilderGraph,
+  timPublicDemoBuilderGraph,
+  timPublicDemoBuilderGraphRepository,
+} from './githubGraphAdapter'
+export type {
+  GitHubContributionSummary,
+  GitHubGraphAdapter,
+  GitHubGraphAdapterInput,
+  GitHubProfileSummary,
+  GitHubRepositorySummary,
+} from './githubGraphAdapter'
