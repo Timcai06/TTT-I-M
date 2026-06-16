@@ -15,6 +15,8 @@ import SignatureMark from './SignatureMark'
  *   - `Intl.DateTimeFormat` Asia/Shanghai（本地时间展示）
  * @performance / @caveats
  *   - `.contact__btn` 入场只改 opacity，不改 y；按钮位移由 magnetic 独占，避免两个 transform 写入源互相覆盖。
+ *   - `.contact__blob-wrap` 是 fixed 高层级液态幕布，必须同时通过真实 footer rect 和 ScrollTrigger 进度门控；
+ *     否则 Frame/LifeGallery 的 pin 或图片 relayout 可能让 footer trigger 提前测量，导致白色 blob 穿到前面的章节。
  *   - 磁吸交互在 GSAP context 外创建，必须手动 dispose；否则按钮卸载后 ticker/listener 会泄漏。
  *   - 时钟 30s 更新一次足够表达“本地时间”，避免每秒 setInterval 造成无意义 React/DOM 压力。
  * @steps
@@ -35,6 +37,10 @@ export default function Footer() {
     const rootEl = root.current
 
     const ctx = gsap.context(() => {
+      const wrapEl = wrapRef.current
+      const blobEl = blobRef.current
+      if (!wrapEl || !blobEl) return
+
       // Set initial states for elements that will animate in. The buttons fade
       // in on opacity only (no y) so the magnetic transform below owns x/y
       // without the scrubbed reveal fighting it.
@@ -42,6 +48,13 @@ export default function Footer() {
       gsap.set('.footer__title .split-line__inner', { yPercent: 110, skewY: 6 })
       gsap.set('.contact__btn', { opacity: 0 })
       gsap.set('.footer__meta', { opacity: 0 })
+      gsap.set(wrapEl, { autoAlpha: 0 })
+
+      const updateBlobVisibility = (progress = 0) => {
+        const rect = rootEl.getBoundingClientRect()
+        const isNearContact = rect.top <= window.innerHeight * 1.02 && rect.bottom >= 0
+        gsap.set(wrapEl, { autoAlpha: isNearContact && progress > 0.001 ? 1 : 0 })
+      }
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -49,10 +62,16 @@ export default function Footer() {
           start: 'top bottom',
           end: 'bottom bottom',
           scrub: true,
+          invalidateOnRefresh: true,
+          onRefresh: (self) => updateBlobVisibility(self.progress),
+          onUpdate: (self) => updateBlobVisibility(self.progress),
+          onLeaveBack: () => {
+            gsap.set(wrapEl, { autoAlpha: 0 })
+          },
         },
       })
 
-      tl.fromTo(blobRef.current, { scale: 0 }, { scale: 1, duration: 0.6, ease: 'none' }, 0)
+      tl.fromTo(blobEl, { scale: 0 }, { scale: 1, duration: 0.6, ease: 'none' }, 0)
       tl.to('.footer__inner', { opacity: 1, duration: 0.1, ease: 'none' }, 0.18)
       tl.to('.footer__kicker', { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.18)
       tl.to('.footer__title .split-line__inner', { yPercent: 0, skewY: 0, duration: 0.5, stagger: 0.12, ease: 'power3.out' }, 0.22)
