@@ -3,7 +3,7 @@ import { posts, works } from '../content'
 import { siteUrl as baseUrl } from '../lib/site'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticRoutes = ['', '/blog', '/work', '/dashboard'].map((path) => ({
+  const staticRoutes = ['', '/blog', '/work', '/graph', '/dashboard'].map((path) => ({
     url: `${baseUrl}${path}`,
     lastModified: new Date(),
   }))

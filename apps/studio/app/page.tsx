@@ -12,6 +12,11 @@ const surfaces = [
     body: 'Repository-backed project index and future detail pages for deeper case studies.',
   },
   {
+    href: '/graph',
+    title: 'Graph',
+    body: 'A demo Builder Graph that turns repository evidence into projects, skills, and growth events.',
+  },
+  {
     href: '/dashboard',
     title: 'Dashboard',
     body: 'Future authenticated publishing surface with explicit publish-state semantics.',

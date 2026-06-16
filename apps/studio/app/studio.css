@@ -649,6 +649,177 @@ a {
   line-height: 1;
 }
 
+/* ── Builder Graph ──────────────────────────────────────────────────────── */
+
+.studio-graph-hero {
+  position: relative;
+}
+
+.studio-graph-hero::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: clamp(28px, 5vw, 48px);
+  width: min(320px, 42vw);
+  height: min(320px, 42vw);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(214, 197, 168, 0.16), transparent 18%),
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.10), transparent 2px),
+    radial-gradient(circle at 62% 30%, rgba(255, 255, 255, 0.08), transparent 2px),
+    radial-gradient(circle at 45% 68%, rgba(255, 255, 255, 0.08), transparent 2px);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.studio-graph-hero__note {
+  width: fit-content;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.studio-graph-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: clamp(48px, 8vw, 84px);
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.studio-graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: clamp(24px, 4vw, 52px);
+  align-items: start;
+}
+
+.studio-graph-layout--lower {
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+  margin-top: clamp(48px, 8vw, 84px);
+}
+
+.studio-graph-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.studio-graph-projects,
+.studio-signal-list,
+.studio-repo-list,
+.studio-growth-list {
+  display: grid;
+  border-top: 1px solid var(--line-strong);
+}
+
+.studio-graph-project {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 22px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.studio-graph-project__index,
+.studio-growth-event > span,
+.studio-repo-card span,
+.studio-repo-card small,
+.studio-signal__category {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.studio-graph-project h2,
+.studio-growth-event h2,
+.studio-repo-card strong {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+  color: var(--fg);
+}
+
+.studio-graph-project h2 {
+  font-size: clamp(28px, 4vw, 52px);
+}
+
+.studio-graph-project p,
+.studio-growth-event p {
+  max-width: 640px;
+  margin: 8px 0 14px;
+  color: var(--fg-mute);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.studio-signal {
+  display: grid;
+  gap: 10px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.studio-signal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  line-height: 1;
+  color: var(--fg);
+}
+
+.studio-signal__bar {
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.studio-signal__bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+}
+
+.studio-repo-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.studio-repo-card:hover {
+  border-color: var(--line-strong);
+  transform: translateX(3px);
+}
+
+.studio-repo-card strong {
+  font-size: clamp(22px, 3vw, 34px);
+}
+
+.studio-growth-event {
+  display: grid;
+  gap: 8px;
+  padding: 22px 0 22px 26px;
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid rgba(214, 197, 168, 0.24);
+}
+
+.studio-growth-event h2 {
+  font-size: clamp(24px, 3vw, 40px);
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 760px) {
@@ -668,7 +839,10 @@ a {
   }
 
   .studio-grid,
-  .studio-meta-strip {
+  .studio-meta-strip,
+  .studio-graph-stats,
+  .studio-graph-layout,
+  .studio-graph-layout--lower {
     grid-template-columns: 1fr;
   }
 
@@ -701,6 +875,10 @@ a {
 
   .studio-case-links {
     display: grid;
+  }
+
+  .studio-graph-hero::after {
+    opacity: 0.22;
   }
 }
 

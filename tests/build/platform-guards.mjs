@@ -6,6 +6,7 @@ const studioPackage = JSON.parse(readFileSync('apps/studio/package.json', 'utf8'
 const studioVercel = JSON.parse(readFileSync('apps/studio/vercel.json', 'utf8'))
 const studioHome = readFileSync('apps/studio/app/page.tsx', 'utf8')
 const studioContent = readFileSync('apps/studio/content/index.ts', 'utf8')
+const studioGraph = readFileSync('apps/studio/app/graph/page.tsx', 'utf8')
 const sharedContent = readFileSync('packages/content/src/index.ts', 'utf8')
 const sharedProjects = readFileSync('packages/content/src/projects.ts', 'utf8')
 const landingProjects = readFileSync('apps/landing/src/data/projects.ts', 'utf8')
@@ -26,6 +27,7 @@ const requiredPaths = [
   'apps/studio/app/blog/[slug]/page.tsx',
   'apps/studio/app/work/page.tsx',
   'apps/studio/app/work/[slug]/page.tsx',
+  'apps/studio/app/graph/page.tsx',
   'apps/studio/app/dashboard/page.tsx',
   'apps/studio/app/rss.xml/route.ts',
   'apps/studio/app/sitemap.ts',
@@ -75,6 +77,16 @@ if (badStudioDeps.length > 0) {
 
 if (!studioHome.includes('without importing GSAP, R3F, or Lenis') || !studioContent.includes('createStaticRepository')) {
   throw new Error('Studio must document the runtime split and consume repository-backed content.')
+}
+
+if (
+  !studioHome.includes("href: '/graph'") ||
+  !studioLayout.includes("href: '/graph'") ||
+  !studioContent.includes('timPublicDemoBuilderGraphRepository') ||
+  !studioGraph.includes('builderGraph.getSnapshot') ||
+  !studioGraph.includes('No GitHub login, token')
+) {
+  throw new Error('Studio Graph must expose the A4 demo Builder Graph surface without real GitHub auth.')
 }
 
 if (!studioContent.includes('readPosts()') || !studioMdx.includes('readdirSync(postsDirectory)')) {
@@ -166,6 +178,8 @@ const requiredRewrites = new Map([
   ['/blog/:path*', 'https://ttt-i-m-studio.vercel.app/blog/:path*'],
   ['/work', 'https://ttt-i-m-studio.vercel.app/work'],
   ['/work/:path*', 'https://ttt-i-m-studio.vercel.app/work/:path*'],
+  ['/graph', 'https://ttt-i-m-studio.vercel.app/graph'],
+  ['/graph/:path*', 'https://ttt-i-m-studio.vercel.app/graph/:path*'],
   ['/dashboard', 'https://ttt-i-m-studio.vercel.app/dashboard'],
   ['/dashboard/:path*', 'https://ttt-i-m-studio.vercel.app/dashboard/:path*'],
   ['/rss.xml', 'https://ttt-i-m-studio.vercel.app/rss.xml'],

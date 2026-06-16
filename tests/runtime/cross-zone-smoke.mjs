@@ -8,7 +8,7 @@
  * fixed 2026-06-06 by the /_next/:path* rewrite). This script is the runtime
  * complement: it exercises the deployed main domain the way a browser does.
  *
- * Checks, per content path (/blog, /work, /dashboard):
+ * Checks, per content path (/blog, /work, /graph, /dashboard):
  *   1. main-domain HTML responds 200 with text/html
  *   2. every /_next/static CSS+JS asset referenced by that HTML responds 200
  *      *on the main domain* (the exact failure mode of the incident)
@@ -27,7 +27,7 @@
 // ttt-i-m.vercel.app project domain serves the same deploy but is not what
 // users hit, so the smoke must exercise the real domain's DNS + rewrites.
 const MAIN_ORIGIN = process.env.CROSS_ZONE_MAIN_ORIGIN ?? 'https://www.crt-dsg.com'
-const HTML_PATHS = ['/blog', '/work', '/dashboard']
+const HTML_PATHS = ['/blog', '/work', '/graph', '/dashboard']
 const FETCH_TIMEOUT_MS = 15_000
 const FETCH_RETRIES = 2
 const MAX_ASSETS_PER_PAGE = 25

@@ -26,6 +26,14 @@
       "destination": "https://ttt-i-m-studio.vercel.app/work/:path*"
     },
     {
+      "source": "/graph",
+      "destination": "https://ttt-i-m-studio.vercel.app/graph"
+    },
+    {
+      "source": "/graph/:path*",
+      "destination": "https://ttt-i-m-studio.vercel.app/graph/:path*"
+    },
+    {
       "source": "/dashboard",
       "destination": "https://ttt-i-m-studio.vercel.app/dashboard"
     },
