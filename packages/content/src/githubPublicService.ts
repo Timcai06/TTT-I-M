@@ -101,8 +101,8 @@ function repositoryScore(repository: GitHubPublicRepositoryResponse): number {
   const ageBonus = Number.isFinite(pushedAt) ? Math.max(0, pushedAt / 1000 / 60 / 60 / 24 / 365) : 0
   const qualityBonus = repository.stargazers_count * 4 + repository.forks_count * 3
   const freshnessBonus = ageBonus * 0.2
-  const ownershipPenalty = repository.fork ? 50 : 0
-  const archivePenalty = repository.archived ? 100 : 0
+  const ownershipPenalty = repository.fork ? 500 : 0
+  const archivePenalty = repository.archived ? 1000 : 0
   return qualityBonus + freshnessBonus - ownershipPenalty - archivePenalty
 }
 

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 
 const rootPackage = JSON.parse(readFileSync('package.json', 'utf8'))
+const contentPackage = JSON.parse(readFileSync('packages/content/package.json', 'utf8'))
 const landingPackage = JSON.parse(readFileSync('apps/landing/package.json', 'utf8'))
 const studioPackage = JSON.parse(readFileSync('apps/studio/package.json', 'utf8'))
 const studioVercel = JSON.parse(readFileSync('apps/studio/vercel.json', 'utf8'))
@@ -19,6 +20,7 @@ const landingNav = readFileSync('apps/landing/src/components/Nav.tsx', 'utf8')
 const landingGlobal = readFileSync('apps/landing/src/styles/global.css', 'utf8')
 const vercelSource = readFileSync('vercel.json', 'utf8')
 const vercelConfig = JSON.parse(vercelSource)
+const contentFixtureTest = readFileSync('packages/content/tests/githubPublicService.test.ts', 'utf8')
 
 const requiredPaths = [
   'apps/landing/src/App.tsx',
@@ -39,6 +41,13 @@ const requiredPaths = [
   'apps/studio/content/posts/studio-mdx-system.mdx',
   'packages/tokens/src/tokens.css',
   'packages/content/src/index.ts',
+  'packages/content/src/githubGraphAdapter.ts',
+  'packages/content/src/publicPreview.ts',
+  'packages/content/src/githubPublicService.ts',
+  'packages/content/tests/githubPublicService.test.ts',
+  'packages/content/tests/fixtures/github-public-user.json',
+  'packages/content/tests/fixtures/github-public-repos.json',
+  'packages/content/tests/fixtures/github-public-readme.md',
 ]
 
 const missing = requiredPaths.filter((path) => !existsSync(path))
@@ -48,6 +57,15 @@ if (missing.length > 0) {
 
 if (!rootPackage.workspaces?.includes('apps/*') || !rootPackage.workspaces?.includes('packages/*')) {
   throw new Error('Root package.json must declare apps/* and packages/* workspaces.')
+}
+
+if (
+  !rootPackage.scripts?.['test:content']?.includes('packages/content/tests/*.test.ts') ||
+  !rootPackage.scripts?.['test:unit']?.includes('test:content') ||
+  !rootPackage.scripts?.['test:build']?.includes('test:content') ||
+  !contentFixtureTest.includes('empty public repository lists')
+) {
+  throw new Error('Content fixture tests must be wired into root test:content, test:unit, and test:build.')
 }
 
 if (landingPackage.name !== '@timcai/landing') {
@@ -86,18 +104,44 @@ if (
   !studioHome.includes("href: '/graph/preview'") ||
   !studioLayout.includes("href: '/graph'") ||
   !studioContent.includes('timPublicDemoBuilderGraphRepository') ||
+  !studioContent.includes('@timcai/content/github-graph-adapter') ||
   !studioGraph.includes('builderGraph.getSnapshot') ||
   !studioGraph.includes('No GitHub login, token')
 ) {
   throw new Error('Studio Graph must expose the A4 demo Builder Graph surface without real GitHub auth.')
 }
 
+const contentGraphSubpaths = [
+  './builder-graph',
+  './github-connector',
+  './github-graph-adapter',
+  './public-preview',
+  './github-public-service',
+]
+const missingContentGraphSubpaths = contentGraphSubpaths.filter((subpath) => !contentPackage.exports?.[subpath])
+if (missingContentGraphSubpaths.length > 0) {
+  throw new Error(`@timcai/content must expose Studio-only graph code through explicit subpath exports:\n  - ${missingContentGraphSubpaths.join('\n  - ')}`)
+}
+
+for (const forbiddenMainExport of [
+  'BUILDER_GRAPH_SCHEMA_VERSION',
+  'oauthIdentityPermissionProfile',
+  'createGitHubGraphAdapter',
+  'timPublicDemoBuilderGraphRepository',
+  'createPublicPreviewDraft',
+  'fetchPublicGitHubPreviewSnapshot',
+]) {
+  if (sharedContent.includes(forbiddenMainExport)) {
+    throw new Error(`@timcai/content main export must stay landing-light; move ${forbiddenMainExport} to a subpath export.`)
+  }
+}
+
 if (
-  !sharedContent.includes('createPublicPreviewDraft') ||
-  !sharedContent.includes('fetchPublicGitHubPreviewSnapshot') ||
   !studioGraph.includes('href="/graph/preview"') ||
   !studioGraphPreview.includes('createPublicPreviewDraft') ||
   !studioGraphPreview.includes('fetchPublicGitHubPreviewSnapshot') ||
+  !studioGraphPreview.includes('@timcai/content/public-preview') ||
+  !studioGraphPreview.includes('@timcai/content/github-public-service') ||
   !studioGraphPreview.includes('method="get"') ||
   !studioGraphPreview.includes('name="handle"') ||
   !studioGraphPreview.includes('name="repo"') ||

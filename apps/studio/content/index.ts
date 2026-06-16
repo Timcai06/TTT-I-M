@@ -1,10 +1,10 @@
 import {
   createStaticRepository,
   portfolioProjects,
-  timPublicDemoBuilderGraphRepository,
   type Post,
   type WorkEntry,
 } from '@timcai/content'
+import { timPublicDemoBuilderGraphRepository } from '@timcai/content/github-graph-adapter'
 import { readPosts } from './mdx'
 
 export const posts = createStaticRepository<Post>(readPosts())

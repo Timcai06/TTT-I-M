@@ -21,12 +21,13 @@
     "lint": "npm run lint --workspace @timcai/landing && npm run lint --workspace @timcai/studio",
     "lint:landing": "npm run lint --workspace @timcai/landing",
     "lint:studio": "npm run lint --workspace @timcai/studio",
-    "test:build": "npm run build:landing && npm run test:build --workspace @timcai/landing && node tests/build/platform-guards.mjs",
+    "test:build": "npm run build:landing && npm run test:build --workspace @timcai/landing && npm run test:content && node tests/build/platform-guards.mjs",
     "test:build:landing": "npm run test:build --workspace @timcai/landing",
     "test:smoke": "node tests/runtime/cross-zone-smoke.mjs",
-    "test:unit": "npm run test:unit --workspace @timcai/landing",
+    "test:unit": "npm run test:content && npm run test:unit --workspace @timcai/landing",
     "test:e2e:gates": "npm run test:e2e:gates --workspace @timcai/landing",
-    "test:e2e:frame": "npm run test:e2e:frame --workspace @timcai/landing"
+    "test:e2e:frame": "npm run test:e2e:frame --workspace @timcai/landing",
+    "test:content": "node --import ./packages/content/tests/register-ts-loader.mjs --test packages/content/tests/*.test.ts"
   },
   "devDependencies": {
     "@types/three": "0.182.0",

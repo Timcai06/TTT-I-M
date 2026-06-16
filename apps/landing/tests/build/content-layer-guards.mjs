@@ -166,6 +166,32 @@ if (!existsSync(githubPublicServicePath)) {
   throw new Error('Missing GitHub Public Service A6 at packages/content/src/githubPublicService.ts')
 }
 
+const contentPackagePath = '../../packages/content/package.json'
+const contentIndexPath = '../../packages/content/src/index.ts'
+if (!existsSync(contentPackagePath) || !existsSync(contentIndexPath)) {
+  throw new Error('Missing @timcai/content package metadata or main export.')
+}
+
+const contentPackage = JSON.parse(readFileSync(contentPackagePath, 'utf8'))
+const contentIndexSource = readFileSync(contentIndexPath, 'utf8')
+for (const subpath of ['./builder-graph', './github-connector', './github-graph-adapter', './public-preview', './github-public-service']) {
+  if (!contentPackage.exports?.[subpath]) {
+    throw new Error(`@timcai/content must expose Studio-only graph module ${subpath} as a subpath export.`)
+  }
+}
+
+for (const forbiddenMainExport of [
+  'BUILDER_GRAPH_SCHEMA_VERSION',
+  'createGitHubGraphAdapter',
+  'timPublicDemoBuilderGraphRepository',
+  'createPublicPreviewDraft',
+  'fetchPublicGitHubPreviewSnapshot',
+]) {
+  if (contentIndexSource.includes(forbiddenMainExport)) {
+    throw new Error(`Landing-light @timcai/content main export must not include Studio graph value: ${forbiddenMainExport}`)
+  }
+}
+
 const githubPublicServiceSource = readFileSync(githubPublicServicePath, 'utf8')
 for (const needle of [
   'fetchPublicGitHubPreviewSnapshot',
@@ -194,4 +220,25 @@ for (const forbidden of ['Authorization', 'accessToken', 'refreshToken', 'instal
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview + GitHub Public Service contracts present.`)
+const contentFixtureTestPath = '../../packages/content/tests/githubPublicService.test.ts'
+if (!existsSync(contentFixtureTestPath)) {
+  throw new Error('Missing GitHub Public Service A8 fixture tests at packages/content/tests/githubPublicService.test.ts')
+}
+
+const contentFixtureTestSource = readFileSync(contentFixtureTestPath, 'utf8')
+for (const needle of [
+  'fetchPublicGitHubPreviewSnapshot',
+  'createPublicPreviewDraft',
+  'not_found',
+  'rate_limited',
+  'empty public repository lists',
+  'Authorization',
+  'github-public-repos.json',
+  'github-public-readme.md',
+]) {
+  if (!contentFixtureTestSource.includes(needle)) {
+    throw new Error(`GitHub Public Service A8 fixture tests must cover ${needle}.`)
+  }
+}
+
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview + GitHub Public Service + fixture tests present.`)

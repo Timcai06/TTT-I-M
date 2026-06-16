@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import {
   createPublicPreviewDraft,
-  fetchPublicGitHubPreviewSnapshot,
   type PublicPreviewRepositoryChoice,
-} from '@timcai/content'
+} from '@timcai/content/public-preview'
+import { fetchPublicGitHubPreviewSnapshot } from '@timcai/content/github-public-service'
 
 export const metadata = {
   title: 'Graph Preview',

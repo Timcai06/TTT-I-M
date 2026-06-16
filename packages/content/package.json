@@ -4,6 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./builder-graph": "./src/builderGraph.ts",
+    "./github-connector": "./src/githubConnector.ts",
+    "./github-graph-adapter": "./src/githubGraphAdapter.ts",
+    "./public-preview": "./src/publicPreview.ts",
+    "./github-public-service": "./src/githubPublicService.ts"
   }
 }

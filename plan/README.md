@@ -59,6 +59,7 @@ Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普�
 | [`11-phase-a-public-preview.md`](./11-phase-a-public-preview.md) | 输入 GitHub handle → 选择 repo → graph draft 的公开预览路径 |
 | [`12-phase-a-public-github-service.md`](./12-phase-a-public-github-service.md) | 真实 GitHub public profile/repos service 和 preview 失败态边界 |
 | [`13-phase-a-preview-quality.md`](./13-phase-a-preview-quality.md) | public preview 推荐排序、repo 分组和 README 短摘要质量层 |
+| [`14-phase-a-fixture-tests.md`](./14-phase-a-fixture-tests.md) | GitHub public preview service 的离线 fixture 测试和 Phase A 收口 |
 
 ## 决策记录
 
@@ -70,6 +71,21 @@ Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普�
 | 用户价值 | **成就感 + 清晰度** | 让用户看见自己做过什么、如何进步、下一步往哪走 |
 | 视觉关系 | **Landing 是旗舰 demo，产品能力进 Studio** | 不让产品后台污染电影感入口，也不让视觉系统绑死 SaaS 能力 |
 | 路线纪律 | **先方针，后计划** | 当前只定义北极星和边界，不写具体实现任务 |
+
+## Phase A 收口
+
+Phase A 的最小产品闭环已经完成：
+
+- A1：Builder Graph read model。
+- A2：GitHub 授权和同步边界。
+- A3：GitHub Summary → Builder Graph adapter。
+- A4：Studio `/graph` demo surface。
+- A5：public preview handle + repo selection flow。
+- A6：真实 GitHub public profile/repos service。
+- A7：preview 推荐排序、repo 分组和 README 摘要。
+- A8：离线 fixture tests，覆盖 ready / not_found / rate_limited / empty repo，并把 `@timcai/content` 的 Studio-only 图谱代码收敛到子路径出口，避免 landing bundle 漂移。
+
+后续进入 Phase B：保存 draft、编辑叙事、公开 profile、再考虑 GitHub App / OAuth。
 
 ## 完成声明
 
