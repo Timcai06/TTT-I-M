@@ -30,6 +30,7 @@ export default function Skills() {
   // 标题与技能行的 reveal 时间线
   useEffect(() => {
     if (!root.current) return
+    const revealTimers: number[] = []
     const ctx = gsap.context(() => {
       gsap.fromTo(
         '.section__title .split-line__inner',
@@ -49,9 +50,10 @@ export default function Skills() {
           trigger: '.skills__list',
           start: 'top 85%',
           onEnter: () => {
-            setTimeout(() => {
+            const timer = window.setTimeout(() => {
               row.classList.add('is-visible')
             }, index * 120)
+            revealTimers.push(timer)
           },
           onLeaveBack: () => {
             row.classList.remove('is-visible') // 双向回退触发
@@ -59,7 +61,10 @@ export default function Skills() {
         })
       })
     }, root)
-    return () => ctx.revert()
+    return () => {
+      revealTimers.forEach((timer) => window.clearTimeout(timer))
+      ctx.revert()
+    }
   }, [])
 
   return (

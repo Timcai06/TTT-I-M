@@ -222,7 +222,7 @@ export default function Projects() {
         })
       })
 
-      document.querySelectorAll<HTMLElement>('.project-card').forEach((card) => {
+      root.current?.querySelectorAll<HTMLElement>('.project-card').forEach((card) => {
         const accent = card.dataset.accent || '#6b8fb5'
         card.style.setProperty('--accent', accent)
       })

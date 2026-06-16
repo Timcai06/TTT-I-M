@@ -8,6 +8,11 @@ const navStyleSource = readFileSync('src/styles/components/nav.css', 'utf8')
 const scrollIndicatorStyleSource = readFileSync('src/styles/components/scroll-indicator.css', 'utf8')
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
 const themeDriverSource = readFileSync('src/components/ChapterThemeDriver.tsx', 'utf8')
+const skillsSource = readFileSync('src/components/Skills.tsx', 'utf8')
+const projectsSource = readFileSync('src/components/Projects.tsx', 'utf8')
+const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
+const footerStyleSource = readFileSync('src/styles/components/footer.css', 'utf8')
+const footerSource = readFileSync('src/components/Footer.tsx', 'utf8')
 const transitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const transitionTimelineSource = readFileSync('src/lib/timelines/transitionTimeline.ts', 'utf8')
 const transitionApiSource = readFileSync('src/lib/chapterTransition.ts', 'utf8')
@@ -133,6 +138,34 @@ if (!scrollSource.includes('immediate?: boolean')) {
 
 if (!heroSource.includes('onChapterArrived') || !heroSource.includes('pretextRefreshKey') || !heroSource.includes('heroTitleReady') || !heroSource.includes('heroPretextEnabled')) {
   throw new Error('Hero must recalibrate its title and Pretext interaction after returning to the index chapter.')
+}
+
+if (
+  !footerStyleSource.includes('visibility: hidden') ||
+  !footerStyleSource.includes('opacity: 0') ||
+  !footerSource.includes('updateBlobVisibility') ||
+  !footerSource.includes('getBoundingClientRect') ||
+  !footerSource.includes('progress > 0.001')
+) {
+  throw new Error('Footer liquid blob must keep a real-position visibility gate so it cannot leak into earlier Frame/Life sections.')
+}
+
+if (globalStyleSource.includes('transform: translateZ(0); /* Force GPU composite layer */')) {
+  throw new Error('Global composite helpers must not overwrite component transform baselines; use will-change/backface only.')
+}
+
+if (
+  !skillsSource.includes('const revealTimers: number[] = []') ||
+  !skillsSource.includes('window.clearTimeout(timer)')
+) {
+  throw new Error('Skills reveal timers must be tracked and cleared on cleanup to avoid delayed class writes after unmount/HMR.')
+}
+
+if (
+  projectsSource.includes("document.querySelectorAll<HTMLElement>('.project-card')") ||
+  !projectsSource.includes("root.current?.querySelectorAll<HTMLElement>('.project-card')")
+) {
+  throw new Error('Projects must scope project-card DOM writes to its root section, not document-wide queries.')
 }
 
 const directActiveReaders = consumers
