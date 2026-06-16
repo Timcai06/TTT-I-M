@@ -218,8 +218,9 @@
   position: absolute;
   left: 24%;
   top: 60%;
-  width: clamp(200px, 19vw, 280px);
+  width: clamp(230px, 21vw, 330px);
   pointer-events: none;
+  isolation: isolate;
 }
 
 .hero__signature svg {
@@ -229,17 +230,67 @@
 }
 
 .hero__signature-stroke {
-  /* 朱砂墨：纯 accent-pop 太跳，向深红幕布色混入 44% 压成印泥红 */
-  stroke: color-mix(in srgb, var(--accent-pop) 56%, var(--transition-cover));
-  stroke-width: 2.7;
+  stroke: url('#hero-signature-gradient');
+  stroke-width: 2.85;
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
-  opacity: 0.9;
+  opacity: 0.96;
+  filter:
+    drop-shadow(0 0 3px rgba(255, 86, 44, 0.38))
+    drop-shadow(0 0 16px rgba(255, 43, 31, 0.16));
+}
+
+.hero__signature-glow {
+  stroke: rgba(255, 108, 58, 0.34);
+  stroke-width: 6.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  opacity: 0.54;
+  filter: blur(1.4px);
+}
+
+.hero__signature-hotspot {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, #fff4cd 0 18%, #ff6b2f 34%, rgba(255, 43, 31, 0.3) 60%, transparent 72%);
+  box-shadow:
+    0 0 14px rgba(255, 84, 39, 0.72),
+    0 0 34px rgba(255, 43, 31, 0.32);
+  opacity: 0;
+  transform-origin: center;
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+.hero__signature-mark {
+  position: absolute;
+  left: 55%;
+  top: 75%;
+  display: grid;
+  gap: 0.18em;
+  opacity: 0;
+  color: rgba(255, 241, 222, 0.88);
+  text-shadow:
+    0 0 12px rgba(255, 72, 35, 0.28),
+    0 0 34px rgba(255, 44, 31, 0.12);
+  transform: translateY(6px);
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
   .hero__signature {
-    width: clamp(220px, 58vw, 330px);
+    width: clamp(240px, 62vw, 350px);
+  }
+
+  .hero__signature-mark {
+    left: 52%;
+    top: 78%;
   }
 }

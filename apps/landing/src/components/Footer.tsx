@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 import { transitionToChapter } from '../lib/chapterTransition'
 import { attachMagnetic } from '../lib/magnetic'
+import SignatureMark from './SignatureMark'
 
 /**
  * @description Contact/Footer 章节 —— 最后一屏的联系入口与站点收束。
@@ -130,6 +131,7 @@ export default function Footer() {
               <a href="mailto:cairentian932@gmail.com">Email ↗</a>
               <a href="#hero" onClick={(e) => { e.preventDefault(); transitionToChapter('hero', { updateHash: true }) }}>↑ top</a>
             </div>
+            <SignatureMark tone="light" variant="corner" className="footer__signature" />
           </div>
         </div>
       </div>

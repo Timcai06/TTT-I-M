@@ -1,0 +1,82 @@
+.signature-mark {
+  --signature-fg: rgba(255, 241, 222, 0.88);
+  --signature-accent: rgba(255, 106, 54, 0.76);
+  --signature-line: linear-gradient(90deg, rgba(255, 242, 220, 0.82), rgba(255, 52, 32, 0.22));
+  display: inline-grid;
+  gap: 0.16em;
+  color: var(--signature-fg);
+  text-shadow:
+    0 0 12px rgba(255, 72, 35, 0.22),
+    0 0 30px rgba(255, 44, 31, 0.1);
+  white-space: nowrap;
+}
+
+.signature-mark--light {
+  --signature-fg: rgba(12, 10, 9, 0.72);
+  --signature-accent: rgba(177, 38, 24, 0.78);
+  --signature-line: linear-gradient(90deg, rgba(12, 10, 9, 0.42), rgba(224, 47, 28, 0.4));
+  text-shadow: 0 12px 34px rgba(177, 38, 24, 0.08);
+}
+
+.signature-mark__name {
+  font-family: var(--font-serif);
+  font-size: clamp(13px, 0.92vw, 17px);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  text-transform: none;
+}
+
+.signature-mark__meta {
+  position: relative;
+  padding-left: 28px;
+  font-family: var(--font-mono);
+  font-size: clamp(6px, 0.48vw, 8px);
+  color: var(--signature-accent);
+  letter-spacing: 0.28em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.signature-mark__meta::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  height: 1px;
+  transform: translateY(-50%);
+  background: var(--signature-line);
+}
+
+.signature-mark--seal {
+  place-items: start;
+  opacity: 0.74;
+  transform: translateZ(0);
+}
+
+.signature-mark--seal .signature-mark__name {
+  font-size: clamp(10px, 0.72vw, 13px);
+}
+
+.signature-mark--seal .signature-mark__meta {
+  padding-left: 20px;
+  font-size: clamp(5px, 0.4vw, 7px);
+  letter-spacing: 0.22em;
+}
+
+.signature-mark--seal .signature-mark__meta::before {
+  width: 13px;
+}
+
+.signature-mark--corner {
+  place-items: end;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .signature-mark--seal {
+    display: none;
+  }
+}

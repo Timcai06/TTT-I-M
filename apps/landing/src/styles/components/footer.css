@@ -159,9 +159,9 @@
 
 /* ── Meta ── */
 .footer__meta {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  align-items: end;
   gap: 24px;
   font-family: var(--font-mono);
   font-size: 10px;
@@ -230,6 +230,11 @@
 .footer__links {
   display: flex;
   gap: 40px;
+}
+
+.footer__signature {
+  justify-self: end;
+  padding-right: 2px;
 }
 
 /* ── Responsive ── */
@@ -332,15 +337,19 @@
   }
 
   .footer__meta {
+    grid-template-columns: 1fr;
     gap: 14px;
     padding-top: 24px;
     line-height: 1.65;
+  }
+
+  .footer__signature {
+    justify-self: start;
   }
 }
 
 @media (max-width: 600px) {
   .footer__meta {
-    flex-direction: column;
     gap: 16px;
   }
 }

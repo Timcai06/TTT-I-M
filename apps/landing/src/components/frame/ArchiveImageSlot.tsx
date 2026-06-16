@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { ArchiveClusterSlot, ArchiveImage } from '../../content'
+import SignatureMark from '../SignatureMark'
 
 interface ArchiveSlotStyle extends CSSProperties {
   /** 图片原始宽高比，CSS 用它保留摄影构图比例，避免移动端和桌面端被硬裁切 */
@@ -55,6 +56,7 @@ export default function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot
         <span className="archive-slot__caption-title">{image.title}</span>
         <span>{image.location}</span>
         <span>{image.meta}</span>
+        <SignatureMark variant="seal" className="archive-slot__signature" />
       </figcaption>
     </figure>
   )

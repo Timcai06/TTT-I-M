@@ -82,7 +82,7 @@
   height: 100vh;
   display: flex;
   align-items: center;
-  gap: clamp(54px, 6vw, 120px);
+  gap: clamp(24px, 3.2vw, 64px);
   padding-left: clamp(220px, 25vw, 380px);
   padding-right: clamp(96px, 12vw, 210px);
   transform: translate3d(0, 0, 0);
@@ -98,7 +98,7 @@
 }
 
 .archive-theme-section--scenery .archive-theme-section__track {
-  gap: clamp(48px, 5.8vw, 112px);
+  gap: clamp(24px, 3vw, 60px);
 }
 
 .frame-horizontal__rail {
@@ -210,13 +210,13 @@
 .archive-cluster {
   --cluster-label-x: 0px;
   --cluster-label-y: 0px;
-  width: clamp(1160px, 104vw, 1860px);
-  height: min(92vh, 900px);
-  max-height: calc(100vh - 28px);
+  width: clamp(1280px, 116vw, 2060px);
+  height: min(96vh, 960px);
+  max-height: calc(100vh - 12px);
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: repeat(10, minmax(0, 1fr));
-  gap: clamp(18px, 1.7vw, 32px);
+  gap: clamp(6px, 0.72vw, 14px);
   align-items: stretch;
   flex: 0 0 auto;
   opacity: 1;
@@ -319,7 +319,7 @@
 }
 
 .archive-cluster--panorama {
-  width: clamp(1240px, 112vw, 1960px);
+  width: clamp(1380px, 124vw, 2180px);
   grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-template-rows: repeat(10, minmax(0, 1fr));
 }
@@ -341,31 +341,31 @@
 
 .archive-cluster--mosaic-left,
 .archive-cluster--mosaic-right {
-  width: clamp(2200px, 180vw, 3200px);
+  width: clamp(2380px, 196vw, 3500px);
   grid-template-columns: repeat(22, minmax(0, 1fr));
   grid-template-rows: repeat(10, minmax(0, 1fr));
 }
 
 .archive-cluster--theme-cuisine {
-  width: clamp(1220px, 108vw, 1840px);
-  gap: clamp(18px, 1.7vw, 32px);
+  width: clamp(1360px, 122vw, 2060px);
+  gap: clamp(6px, 0.72vw, 14px);
 }
 
 .archive-cluster--theme-scenery {
-  width: clamp(1120px, 102vw, 1720px);
-  gap: clamp(22px, 2.2vw, 42px);
+  width: clamp(1260px, 114vw, 1940px);
+  gap: clamp(10px, 1vw, 20px);
 }
 
 .archive-cluster--rhythm-dense {
-  gap: clamp(14px, 1.35vw, 24px);
+  gap: clamp(5px, 0.58vw, 12px);
 }
 
 .archive-cluster--rhythm-open {
-  gap: clamp(26px, 2.6vw, 50px);
+  gap: clamp(12px, 1.25vw, 24px);
 }
 
 .archive-cluster--rhythm-architectural {
-  gap: clamp(20px, 1.9vw, 36px);
+  gap: clamp(8px, 0.9vw, 18px);
 }
 
 .archive-slot {
@@ -438,13 +438,13 @@
 }
 
 .archive-cluster--theme-scenery {
-  width: clamp(1180px, 106vw, 1780px);
-  height: min(90vh, 860px);
-  gap: clamp(24px, 2.4vw, 48px);
+  width: clamp(1320px, 120vw, 2020px);
+  height: min(94vh, 920px);
+  gap: clamp(10px, 1.05vw, 22px);
 }
 
 .archive-theme-section--scenery .archive-theme-section__track {
-  gap: clamp(52px, 6vw, 120px);
+  gap: clamp(24px, 3.2vw, 64px);
   padding-left: clamp(220px, 26vw, 420px);
   padding-right: clamp(108px, 13vw, 240px);
 }
@@ -787,6 +787,11 @@
   letter-spacing: 0;
   text-transform: none;
   color: var(--fg);
+}
+
+.archive-slot__signature {
+  justify-self: center;
+  margin-top: 3px;
 }
 
 @media (max-height: 760px) and (min-width: 769px) {
