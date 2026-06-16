@@ -51,4 +51,27 @@ for (const needle of ['publishState', 'PublishState', 'ContentMeta']) {
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema contracts present.`)
+const graphContractPath = '../../packages/content/src/builderGraph.ts'
+if (!existsSync(graphContractPath)) {
+  throw new Error('Missing Builder Graph A1 contract at packages/content/src/builderGraph.ts')
+}
+
+const graphSource = readFileSync(graphContractPath, 'utf8')
+for (const needle of [
+  'BUILDER_GRAPH_SCHEMA_VERSION',
+  'BuilderGraphSnapshot',
+  'EvidencePointer',
+  'GitHubAccountLink',
+  'RepositoryNode',
+  'ProjectNode',
+  'SkillSignal',
+  'BuilderGraphRepository',
+  'visibility: BuilderGraphVisibility',
+  'evidenceIds: string[]',
+]) {
+  if (!graphSource.includes(needle)) {
+    throw new Error(`Builder Graph A1 contract must expose ${needle}.`)
+  }
+}
+
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph contracts present.`)

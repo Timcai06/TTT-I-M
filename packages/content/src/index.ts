@@ -146,3 +146,24 @@ export const defaultMeta: ContentMeta = {
 
 export { portfolioProjects } from './projects'
 export type { MediaKind, PortfolioProject, Project, ProjectShot } from './projects'
+export { BUILDER_GRAPH_SCHEMA_VERSION } from './builderGraph'
+export type {
+  BuilderGraphRepository,
+  BuilderGraphSnapshot,
+  BuilderGraphVisibility,
+  BuilderIdentity,
+  ContributionKind,
+  ContributionNode,
+  EvidenceKind,
+  EvidencePointer,
+  EvidenceProvider,
+  GitHubAccountLink,
+  GitHubConnectionKind,
+  GrowthEvent,
+  GrowthEventKind,
+  ProjectLifecycle,
+  ProjectNode,
+  RepositoryNode,
+  SkillSignal,
+  SkillSignalCategory,
+} from './builderGraph'

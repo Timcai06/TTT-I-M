@@ -61,7 +61,7 @@ if (frameStyleSource.includes('object-fit: cover')) {
   throw new Error('Frame archive images must preserve their source proportions; do not use object-fit: cover.')
 }
 
-if (!frameStyleSource.includes('.archive-cluster--theme-cuisine.archive-cluster--feature-left') || !frameStyleSource.includes('width: clamp(1220px, 108vw, 1840px)')) {
+if (!frameStyleSource.includes('.archive-cluster--theme-cuisine.archive-cluster--feature-left') || !frameStyleSource.includes('width: clamp(1360px, 122vw, 2060px)')) {
   throw new Error('Cuisine archive must keep proportional, staggered table layouts.')
 }
 

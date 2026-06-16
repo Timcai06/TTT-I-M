@@ -52,6 +52,7 @@ Builder Graph OS 不是 GitHub Analytics，不是简历生成器，也不是普�
 | [`04-evidence-and-trust.md`](./04-evidence-and-trust.md) | 真实证据、隐私、授权、可解释性原则 |
 | [`05-guards-and-budgets.md`](./05-guards-and-budgets.md) | 新阶段守卫、性能、数据、AI 安全预算 |
 | [`06-roadmap.md`](./06-roadmap.md) | 阶段方向与已完成历史冻结，不写具体 sprint todo |
+| [`07-phase-a-foundation.md`](./07-phase-a-foundation.md) | Phase A 的数据信任边界和 Builder Graph 最小 read model |
 
 ## 决策记录
 
