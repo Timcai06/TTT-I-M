@@ -74,4 +74,35 @@ for (const needle of [
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph contracts present.`)
+const githubConnectorPath = '../../packages/content/src/githubConnector.ts'
+if (!existsSync(githubConnectorPath)) {
+  throw new Error('Missing GitHub Connector A2 contract at packages/content/src/githubConnector.ts')
+}
+
+const githubConnectorSource = readFileSync(githubConnectorPath, 'utf8')
+for (const needle of [
+  'GitHubPermissionProfile',
+  'GitHubSyncManifest',
+  'GitHubRepositorySelection',
+  'GitHubDisconnectPolicy',
+  'public_only',
+  'oauth_identity',
+  'github_app_installation',
+  'metadata:read',
+  'contents:read',
+  'pull_requests:read',
+  'actions:read',
+  'deployments:read',
+]) {
+  if (!githubConnectorSource.includes(needle)) {
+    throw new Error(`GitHub Connector A2 contract must expose ${needle}.`)
+  }
+}
+
+for (const forbidden of ['repo:', 'public_repo', "'repo'", '"repo"']) {
+  if (githubConnectorSource.includes(forbidden)) {
+    throw new Error(`GitHub Connector A2 must not default to broad OAuth repo scope: ${forbidden}`)
+  }
+}
+
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector contracts present.`)

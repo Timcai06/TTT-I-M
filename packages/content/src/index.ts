@@ -167,3 +167,22 @@ export type {
   SkillSignal,
   SkillSignalCategory,
 } from './builderGraph'
+export {
+  oauthIdentityPermissionProfile,
+  publicOnlyPermissionProfile,
+  repositoryReadPermissionProfile,
+} from './githubConnector'
+export type {
+  GitHubConnectionMode,
+  GitHubDisconnectMode,
+  GitHubDisconnectPolicy,
+  GitHubOAuthScope,
+  GitHubPermissionProfile,
+  GitHubPermissionTier,
+  GitHubRepositoryPermission,
+  GitHubRepositorySelection,
+  GitHubSyncJob,
+  GitHubSyncManifest,
+  GitHubSyncStatus,
+  GitHubSyncTrigger,
+} from './githubConnector'
