@@ -1,56 +1,34 @@
-/* ── Contact Blob ── */
+/* ── Contact iris reveal ── */
 .contact__blob-wrap {
   position: fixed;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
-  height: 0;
+  height: 100%;
   z-index: 10001;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
-.contact__blob {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 300vmax;
-  height: 300vmax;
-  border-radius: 50%;
-  transform: translate(-50%, 50%) scale(0);
-  will-change: transform;
-}
-
-/* Inner morphing fluid bubble */
-.contact__blob-inner {
+.contact__iris {
+  display: block;
   width: 100%;
   height: 100%;
-  background: #f0f0f0;
-  border-radius: 50%;
-  animation: liquid-morph 22s infinite ease-in-out;
-  transform-origin: center center;
-  will-change: border-radius, transform;
 }
 
-/* Liquid morphing animation (border-radius & slow rotation) */
-@keyframes liquid-morph {
-  0% {
-    border-radius: 46% 54% 60% 40% / 46% 46% 54% 54%;
-    transform: rotate(0deg);
-  }
-  33% {
-    border-radius: 60% 40% 50% 50% / 54% 46% 54% 46%;
-    transform: rotate(120deg);
-  }
-  66% {
-    border-radius: 44% 56% 40% 60% / 40% 60% 40% 60%;
-    transform: rotate(240deg);
-  }
-  100% {
-    border-radius: 46% 54% 60% 40% / 46% 46% 54% 54%;
-    transform: rotate(360deg);
-  }
+/* The goo group: a solid cream fill fused into one organic blob by the
+   feGaussianBlur + feColorMatrix threshold in Footer.tsx. */
+.contact__iris-goo {
+  fill: #f0f0f0;
+}
+
+/* Luminous rim sits OUTSIDE the goo filter (un-blurred) so the liquid edge
+   reads as a bright meniscus while the iris opens. Opacity driven in JS. */
+.contact__iris-rim {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 2;
+  opacity: 0;
 }
 
 /* ── Footer ── */
@@ -59,6 +37,17 @@
   z-index: 10000;
   overflow: hidden;
   background: #f0f0f0;
+}
+
+/* Animated path (desktop, no reduced-motion): the footer goes transparent so
+   the iris is the ONLY white — the reveal happens over the previous chapter's
+   dark, high-contrast and edge-free. min-height pins one viewport so the fixed
+   iris always fully covers the section while it's on screen. */
+.footer.is-iris-reveal {
+  background: transparent;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
 }
 
 .footer__content {
@@ -243,17 +232,6 @@
 @media (max-width: 768px) {
   .contact__blob-wrap {
     display: none;
-  }
-
-  .contact__blob {
-    width: 120vmax;
-    height: 120vmax;
-  }
-
-  .contact__blob-inner {
-    background:
-      radial-gradient(circle at 42% 28%, rgba(255, 255, 255, 0.92), rgba(240, 240, 240, 0.98) 46%, #f0f0f0 70%);
-    animation-duration: 28s;
   }
 
   .footer {
