@@ -1,0 +1,99 @@
+/* ── Archive slot — individual image cell ── */
+.archive-slot {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  overflow: hidden;
+  contain: layout paint;
+  /* The horizontal rail holds ~50 image slots; only a few are ever on screen.
+     content-visibility skips layout/paint/decode for the off-screen ones, so
+     fast scrubbing through the rail stops repainting dozens of photos per
+     frame. The cluster grid tracks keep each slot's box size when skipped, and
+     `auto` remembers the last rendered size to avoid any reveal pop. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+  transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0);
+  transform-origin: center;
+}
+
+/* ── Slot media ── */
+.archive-slot__media {
+  position: relative;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: var(--image-aspect, 4 / 3);
+  justify-self: center;
+  align-self: end;
+  overflow: hidden;
+  border-radius: 0;
+  background: transparent;
+}
+
+.archive-slot--portrait .archive-slot__media,
+.archive-slot--tall .archive-slot__media {
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+}
+
+.archive-slot--landscape .archive-slot__media {
+  aspect-ratio: var(--image-aspect, 4 / 3);
+}
+
+.archive-slot--wide .archive-slot__media {
+  aspect-ratio: var(--image-aspect, 16 / 9);
+}
+
+.archive-slot--square .archive-slot__media {
+  aspect-ratio: var(--image-aspect, 1 / 1);
+}
+
+.archive-slot__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+}
+
+/* ── Slot caption ── */
+.archive-slot__caption {
+  display: flex;
+  flex-direction: column;
+  justify-self: center;
+  text-align: center;
+  gap: 3px;
+  width: min(100%, 32ch);
+  max-width: 100%;
+  min-height: 0;
+  margin-top: 9px;
+  opacity: 0.78;
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 0.56vw, 9px);
+  line-height: 1.18;
+  letter-spacing: 0.08em;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  transform: translate3d(0, 0, 0);
+}
+
+.archive-slot__caption-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-serif);
+  font-size: clamp(13px, 0.9vw, 16px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg);
+}
+
+.archive-slot__signature {
+  justify-self: center;
+  margin-top: 3px;
+}

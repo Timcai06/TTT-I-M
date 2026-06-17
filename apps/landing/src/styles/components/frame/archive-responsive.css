@@ -1,0 +1,256 @@
+/* ── Responsive overrides ── */
+
+@media (max-height: 760px) and (min-width: 769px) {
+  .archive-theme-marker__title {
+    font-size: clamp(30px, 3.7vw, 56px);
+  }
+
+  .archive-cluster-marker__title {
+    font-size: clamp(34px, 4.1vw, 62px);
+  }
+
+  .archive-theme-marker__body,
+  .frame-panel__body,
+  .archive-cluster-marker__body {
+    font-size: clamp(15px, 1.15vw, 18px);
+    line-height: 1.36;
+  }
+
+  .archive-cluster {
+    height: min(82vh, 690px);
+    max-height: calc(100vh - 72px);
+  }
+
+  .archive-slot__caption {
+    margin-top: 7px;
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+  .archive-theme-section__track {
+    padding-left: clamp(220px, 28vw, 320px);
+    padding-right: clamp(72px, 10vw, 140px);
+  }
+
+  .archive-cluster,
+  .archive-cluster--mosaic-left,
+  .archive-cluster--mosaic-right,
+  .archive-cluster--panorama,
+  .archive-cluster--theme-building,
+  .archive-cluster--theme-cuisine,
+  .archive-cluster--theme-scenery {
+    width: clamp(760px, 88vw, 980px);
+  }
+}
+
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .frame-horizontal {
+    overflow: visible;
+  }
+
+  .archive-theme-section::before,
+  .archive-theme-section::after,
+  .archive-cluster::before {
+    display: none;
+  }
+
+  .archive-frame-text {
+    min-height: auto;
+    padding: 112px 16px 64px;
+  }
+
+  .archive-frame-text__title,
+  .archive-frame-text h2 {
+    font-size: clamp(42px, 13vw, 64px);
+    line-height: 0.98;
+  }
+
+  .archive-theme-section {
+    min-height: auto;
+    overflow: visible;
+    contain: none;
+    padding-block: 72px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(120, 144, 168, 0.04), transparent 30%),
+      linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.012), transparent);
+  }
+
+  .archive-theme-section__pin {
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .frame-horizontal__rail {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: calc(100% - 32px);
+    margin: 0 auto clamp(32px, 8vw, 56px);
+    mix-blend-mode: normal;
+  }
+
+  .archive-theme-section__track {
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-inline: 16px !important;
+    width: 100%;
+    margin-inline: auto;
+    transform: none !important;
+  }
+
+  .archive-theme-section--building .archive-theme-section__track,
+  .archive-theme-section--cuisine .archive-theme-section__track,
+  .archive-theme-section--scenery .archive-theme-section__track {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .frame-panel,
+  .archive-theme-marker,
+  .archive-cluster-marker,
+  .archive-cluster,
+  .archive-cluster--mosaic-left,
+  .archive-cluster--mosaic-right,
+  .archive-cluster--panorama,
+  .archive-cluster--theme-building,
+  .archive-cluster--theme-building.archive-cluster--mosaic-left,
+  .archive-cluster--theme-building.archive-cluster--mosaic-right,
+  .archive-cluster--theme-building.archive-cluster--panorama,
+  .archive-cluster--theme-cuisine,
+  .archive-cluster--theme-scenery {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding-inline: 0;
+    align-self: auto;
+    opacity: 1;
+    transform: none !important;
+  }
+
+  .archive-cluster,
+  .archive-cluster--feature-left,
+  .archive-cluster--feature-right,
+  .archive-cluster--stack-left,
+  .archive-cluster--stack-right,
+  .archive-cluster--panorama,
+  .archive-cluster--mosaic-left,
+  .archive-cluster--mosaic-right {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(120, 144, 168, 0.08), transparent 42%),
+      rgba(255, 255, 255, 0.018);
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.32);
+  }
+
+  .archive-cluster--theme-cuisine {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(214, 197, 168, 0.13), transparent 42%),
+      rgba(255, 255, 255, 0.02);
+  }
+
+  .archive-cluster--theme-scenery {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(120, 144, 168, 0.15), transparent 44%),
+      rgba(255, 255, 255, 0.018);
+  }
+
+  .archive-cluster--theme-cuisine.archive-cluster--feature-left,
+  .archive-cluster--theme-cuisine.archive-cluster--feature-right,
+  .archive-cluster--theme-cuisine.archive-cluster--stack-left,
+  .archive-cluster--theme-cuisine.archive-cluster--stack-right,
+  .archive-cluster--theme-scenery,
+  .archive-cluster--theme-scenery.archive-cluster--panorama {
+    width: 100% !important;
+    height: auto !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+  }
+
+  .archive-slot,
+  .archive-slot--primary,
+  .archive-slot--secondary,
+  .archive-slot--detail,
+  .archive-slot--support {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    overflow: visible;
+    contain: none;
+    transform: none;
+    width: 100%;
+    justify-self: stretch;
+    align-self: auto;
+    margin: 0 !important;
+  }
+
+  .archive-slot__media {
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: 10px;
+    justify-self: stretch;
+    align-self: auto;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  }
+
+  .archive-slot--portrait .archive-slot__media,
+  .archive-slot--tall .archive-slot__media {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+  }
+
+  .archive-slot__media img {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    transform: none !important;
+  }
+
+  .archive-theme-marker {
+    padding-top: clamp(18px, 5vw, 36px);
+    border-left: 1px solid var(--line-strong);
+    padding-left: 18px;
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03), transparent),
+      transparent;
+  }
+
+  .archive-cluster-marker {
+    max-height: none;
+    padding-right: 0;
+  }
+
+  .archive-theme-marker__title,
+  .archive-cluster-marker__title {
+    max-width: 14ch;
+    font-size: clamp(32px, 10vw, 48px);
+    line-height: 0.98;
+  }
+
+  .archive-slot__caption {
+    font-size: 10px;
+    width: 100%;
+  }
+
+  .archive-slot:nth-child(2n) {
+    transform: translateX(10px) !important;
+    width: calc(100% - 10px);
+  }
+
+  .archive-slot:nth-child(3n) {
+    transform: translateX(-6px) !important;
+    width: calc(100% - 6px);
+  }
+}

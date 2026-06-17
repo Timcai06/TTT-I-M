@@ -1,0 +1,190 @@
+/* ── Archive theme section (fullscreen horizontal-scroll scene) ── */
+.archive-theme-section {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  contain: layout paint;
+}
+
+.archive-theme-section::before {
+  content: attr(data-theme-word);
+  position: absolute;
+  z-index: 0;
+  left: clamp(18px, 4vw, 72px);
+  top: clamp(18px, 4vh, 58px);
+  max-width: 92vw;
+  font-family: var(--font-serif);
+  font-size: clamp(88px, 16vw, 238px);
+  line-height: 0.8;
+  letter-spacing: 0;
+  color: var(--fg);
+  /* --word-reveal 由 useArchiveThemeScroll scrub 写入（0→1）：
+     水印随滚动从左到右被「擦亮」并轻微右移，替代原先的静态 0.035。 */
+  opacity: calc(0.012 + var(--word-reveal, 1) * 0.05);
+  clip-path: inset(-5% calc((1 - var(--word-reveal, 1)) * 100%) -5% 0);
+  transform: translateX(calc((1 - var(--word-reveal, 1)) * -1.5%));
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-theme-section::before {
+    opacity: 0.035;
+    clip-path: none;
+    transform: none;
+  }
+}
+
+.archive-theme-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(115deg, transparent 0 24%, rgba(255, 255, 255, 0.035) 24.1% 24.4%, transparent 24.5% 100%),
+    linear-gradient(155deg, transparent 0 68%, rgba(255, 255, 255, 0.026) 68.1% 68.35%, transparent 68.45% 100%);
+  background-size: 520px 520px, 680px 680px;
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.archive-theme-section__pin {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.archive-theme-section__track {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  gap: clamp(24px, 3.2vw, 64px);
+  padding-left: clamp(220px, 25vw, 380px);
+  padding-right: clamp(96px, 12vw, 210px);
+  transform: translate3d(0, 0, 0);
+}
+
+.archive-theme-section.is-frame-theme-active .archive-theme-section__track {
+  will-change: transform;
+}
+
+.archive-theme-section--cuisine .archive-theme-section__track {
+  padding-left: clamp(96px, 12vw, 210px);
+  padding-right: clamp(220px, 25vw, 380px);
+}
+
+.archive-theme-section--scenery .archive-theme-section__track {
+  gap: clamp(24px, 3vw, 60px);
+}
+
+/* ── Rail HUD (title / count overlay, fixed top-left of each theme section) ── */
+.frame-horizontal__rail {
+  position: absolute;
+  z-index: 4;
+  left: clamp(20px, 3vw, 48px);
+  top: clamp(76px, 9vh, 112px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(250px, 32vw);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+
+.frame-horizontal__rail-title,
+.frame-horizontal__rail-count {
+  color: var(--fg);
+}
+
+.frame-horizontal__rail-subcount {
+  color: var(--fg-dim);
+}
+
+.frame-horizontal__rail-current {
+  margin-top: 12px;
+  color: var(--fg-soft);
+  line-height: 1.5;
+  letter-spacing: 0.1em;
+}
+
+/* ── Panels and editorial markers ── */
+.frame-panel {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.archive-theme-marker {
+  width: min(540px, 58vw);
+  max-height: min(76vh, 640px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.frame-panel__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  margin: 0 0 clamp(18px, 3vh, 28px);
+}
+
+.archive-theme-marker__title {
+  max-width: 12ch;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(34px, 4.4vw, 70px);
+  line-height: 0.98;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--fg);
+}
+
+.archive-theme-marker__body,
+.frame-panel__body {
+  max-width: 440px;
+  margin: clamp(22px, 3.4vh, 34px) 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(16px, 1.25vw, 20px);
+  line-height: 1.45;
+  color: var(--fg-soft);
+}
+
+.archive-cluster-marker {
+  width: clamp(320px, 27vw, 500px);
+  max-height: min(72vh, 620px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: clamp(8px, 1.4vw, 24px);
+}
+
+.archive-cluster-marker__title {
+  max-width: 10ch;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 4.8vw, 76px);
+  line-height: 0.98;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--fg);
+}
+
+.archive-cluster-marker__body {
+  max-width: 380px;
+  margin: clamp(20px, 3vh, 32px) 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(16px, 1.18vw, 19px);
+  line-height: 1.48;
+  color: var(--fg-soft);
+}
