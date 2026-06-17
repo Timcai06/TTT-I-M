@@ -1,0 +1,42 @@
+/* SpotlightCard — cursor-following radial glow on a card surface. */
+.spotlight-card {
+  position: relative;
+  /* Default glow tint; override per context (see .bento-tile.spotlight-card). */
+  --spot-color: rgba(255, 255, 255, 0.12);
+  --spot-size: 320px;
+  --spot-x: 50%;
+  --spot-y: 50%;
+}
+
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    var(--spot-size) circle at var(--spot-x) var(--spot-y),
+    var(--spot-color),
+    transparent 70%
+  );
+}
+
+.spotlight-card:hover::before,
+.spotlight-card:focus-visible::before {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-card::before {
+    display: none;
+  }
+}
+
+/* Bento tile context: tint the glow with the tile's accent. */
+.bento-tile.spotlight-card {
+  --spot-color: color-mix(in srgb, var(--tile-accent, #6b8fb5) 28%, transparent);
+  --spot-size: 240px;
+}

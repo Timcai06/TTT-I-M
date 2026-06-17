@@ -2,6 +2,14 @@ import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 import { revealWords } from '../lib/wordReveal'
 import { facts } from '../content'
+import CountUp from './CountUp'
+
+/** Split a fact value like `'10+'` into its leading number and trailing suffix. */
+function parseFact(value: string): { to: number; suffix: string } {
+  const match = value.match(/^(\d+)(.*)$/)
+  if (!match) return { to: 0, suffix: value }
+  return { to: Number(match[1] ?? 0), suffix: match[2] ?? '' }
+}
 
 /**
  * @description About 章节 —— 自述与工程叙事。内容分为左右两栏：
@@ -221,12 +229,17 @@ export default function About() {
           </div>
 
           <div className="about__facts">
-            {facts.map((f) => (
-              <div className="about__fact" key={f.label}>
-                <span className="about__fact-value">{f.value}</span>
-                {f.label}
-              </div>
-            ))}
+            {facts.map((f) => {
+              const { to, suffix } = parseFact(f.value)
+              return (
+                <div className="about__fact" key={f.label}>
+                  <span className="about__fact-value">
+                    <CountUp to={to} suffix={suffix} duration={1.8} />
+                  </span>
+                  {f.label}
+                </div>
+              )
+            })}
           </div>
         </div>
 

@@ -3,6 +3,7 @@ import { gsap, ScrollTrigger } from '../lib/gsap'
 import { skillRows as rows } from '../content'
 import { useSkillsFlowLine } from './skills/useSkillsFlowLine'
 import SkillRowItem from './skills/SkillRowItem'
+import GradientText from './GradientText'
 
 /**
  * @description Skills 章节 —— 技术栈与工程交付能力矩阵（组合层）。
@@ -100,7 +101,11 @@ export default function Skills() {
         )}
       </svg>
 
-      <div className="section__label">Stack — 技术栈</div>
+      <div className="section__label">
+        <GradientText colors={['#7890a8', '#d6c5a8', '#7890a8']} animationSpeed={10}>
+          Stack — 技术栈
+        </GradientText>
+      </div>
       <h2 className="section__title">
         <span className="split-line"><span className="split-line__inner">Tools <em>I trust to</em></span></span>
         <span className="split-line"><span className="split-line__inner">ship.</span></span>

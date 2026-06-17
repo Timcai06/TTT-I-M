@@ -256,7 +256,7 @@ export default function Footer() {
               <a href="mailto:cairentian932@gmail.com" className="contact__btn contact__btn--email">
                 <ShapeBlur
                   className="contact__btn-shape"
-                  color="#8b1e16"
+                  color="#6f342c"
                   opacity={0.82}
                   shapeWidth={5.75}
                   shapeHeight={1.24}
@@ -271,7 +271,7 @@ export default function Footer() {
               <a href="https://github.com/Timcai06" target="_blank" rel="noopener noreferrer" className="contact__btn contact__btn--github">
                 <ShapeBlur
                   className="contact__btn-shape"
-                  color="#6f4fb1"
+                  color="#6f342c"
                   opacity={0.86}
                   shapeWidth={4.95}
                   shapeHeight={1.24}

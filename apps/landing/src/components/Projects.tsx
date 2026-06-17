@@ -5,6 +5,8 @@ import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
 import { projects, type Project } from '../content'
 import LaserFlow from './LaserFlow'
+import SpotlightCard from './SpotlightCard'
+import ShinyText from './ShinyText'
 
 /**
  * @description Bento 速览格 —— 六个项目的不等宽导航瓦片（zentry bento 模式）。
@@ -63,7 +65,8 @@ function ProjectsBento() {
         {projects.map((p, i) => {
           const shot = p.media?.shots[0]
           return (
-            <button
+            <SpotlightCard
+              as="button"
               type="button"
               role="listitem"
               className={`bento-tile${shot ? '' : ' bento-tile--soon'}`}
@@ -84,7 +87,7 @@ function ProjectsBento() {
                 {shot ? p.tagline : 'in the lab / / /'}
               </span>
               <span className="bento-tile__line" aria-hidden="true" />
-            </button>
+            </SpotlightCard>
           )
         })}
       </div>
@@ -281,7 +284,7 @@ export default function Projects() {
     <section className="section projects container" id="projects" ref={root}>
       <div className="projects__header">
         <div>
-          <div className="section__label">Work — 选作</div>
+          <div className="section__label"><ShinyText text="Work — 选作" speed={6} /></div>
           <h2 className="section__title">
             <span className="split-line"><span className="split-line__inner">Six things <em>I made</em></span></span>
             <span className="split-line"><span className="split-line__inner">in 2026.</span></span>
