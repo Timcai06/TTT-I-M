@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
+import DitherBackground from './DitherBackground'
 import { dispatchIntroExit } from '../lib/intro'
 import { setStage } from '../lib/stage'
 import { useIntroPretextInteraction } from '../lib/pretextIntroText'
@@ -272,6 +273,7 @@ export default function Loader() {
 
   return (
     <div className="intro" ref={panelRef}>
+      <DitherBackground />
       <div className="intro__meta">// Portfolio · 2026</div>
 
       <div className={`intro__text-wrap${introReady && !exiting ? ' intro__text-wrap--interactive' : ''}`}>

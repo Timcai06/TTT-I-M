@@ -23,7 +23,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  /* Grain + vignette ride ABOVE the Dither canvas (z 0) but below the content (z 2). */
+  z-index: 1;
 }
 
 .intro::before {
@@ -45,7 +46,18 @@
 
 .intro > * {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+}
+
+/* Animated Dither background — opaque red-black field that replaces the static
+   gradient's role while the loader runs. Sits behind the grain/vignette. On
+   reduced-motion the canvas never mounts and this stays empty, so the static
+   `.intro` gradient shows through as the fallback. */
+.intro__dither {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* ── Editorial corner kicker ── */
