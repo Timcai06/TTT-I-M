@@ -2,7 +2,7 @@ import { useEffect, Suspense } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useLenis } from './lib/lenis'
-import { subscribeStage } from './lib/stage'
+import { getStage, subscribeStage } from './lib/stage'
 import { requestScrollRefresh } from './lib/scroll/requestRefresh'
 import { onChaptersReady } from './lib/chaptersReady'
 import { scrollToChapter } from './lib/chapterScroll'
@@ -49,14 +49,56 @@ export default function App() {
     const hash = window.location.hash.replace('#', '')
     if (!hash) return
 
-    let timer: number | undefined
+    let done = false
+    const timers: number[] = []
+    let cancelStage: (() => void) | undefined
+
+    const jump = () => {
+      if (done) return
+      const target = document.getElementById(hash)
+      if (!target) return
+
+      done = true
+      requestScrollRefresh(true)
+      scrollToChapter(hash, { immediate: true })
+
+      // Late image decode / pinned section measurement can still shift the page
+      // after the first anchor jump. Re-assert the direct-link landing a couple
+      // of times so /#contact and deep links don't strand the user at the hero.
+      for (const delay of [120, 520, 1100]) {
+        timers.push(window.setTimeout(() => {
+          const el = document.getElementById(hash)
+          if (!el) return
+          const top = Math.round(el.getBoundingClientRect().top)
+          if (Math.abs(top - 40) > 8) {
+            requestScrollRefresh(true)
+            scrollToChapter(hash, { immediate: true })
+          }
+        }, delay))
+      }
+    }
+
+    const jumpWhenLive = () => {
+      if (getStage() === 'live') {
+        jump()
+        return
+      }
+      cancelStage = subscribeStage((stage) => {
+        if (stage !== 'live') return
+        cancelStage?.()
+        cancelStage = undefined
+        jump()
+      })
+    }
+
     const cancel = onChaptersReady(() => {
-      timer = window.setTimeout(() => scrollToChapter(hash), 250)
+      jumpWhenLive()
     })
 
     return () => {
       cancel()
-      if (timer !== undefined) clearTimeout(timer)
+      cancelStage?.()
+      timers.forEach((timer) => window.clearTimeout(timer))
     }
   }, [])
 

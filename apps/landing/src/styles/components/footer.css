@@ -19,15 +19,27 @@
 /* The goo group: a solid cream fill fused into one organic blob by the
    feGaussianBlur + feColorMatrix threshold in Footer.tsx. */
 .contact__iris-goo {
-  fill: #f0f0f0;
+  fill: #f5f2ea;
+}
+
+.contact__iris-aura {
+  fill: none;
+  stroke: rgba(207, 158, 255, 0.64);
+  stroke-width: clamp(18px, 2.3vw, 34px);
+  mix-blend-mode: screen;
+  filter:
+    drop-shadow(0 0 18px rgba(207, 158, 255, 0.48))
+    drop-shadow(0 0 34px rgba(255, 51, 51, 0.24));
+  opacity: 0;
 }
 
 /* Luminous rim sits OUTSIDE the goo filter (un-blurred) so the liquid edge
    reads as a bright meniscus while the iris opens. Opacity driven in JS. */
 .contact__iris-rim {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.6);
-  stroke-width: 2;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.52));
   opacity: 0;
 }
 
@@ -36,7 +48,7 @@
   position: relative;
   z-index: 10000;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #f5f2ea;
 }
 
 /* Animated path (desktop, no reduced-motion): the footer goes transparent so
@@ -58,7 +70,36 @@
   padding-bottom: clamp(24px, 3vw, 40px);
 }
 
+.footer__strands {
+  position: absolute;
+  top: clamp(-56px, -3vw, -24px);
+  right: clamp(-180px, -9vw, -96px);
+  width: min(1320px, 88vw);
+  height: min(700px, 64vh);
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: normal;
+  filter: saturate(1.32) contrast(1.18);
+  mask-image:
+    radial-gradient(ellipse at 62% 42%, black 0 46%, transparent 76%),
+    linear-gradient(to bottom, black 0 72%, transparent 100%);
+  -webkit-mask-image:
+    radial-gradient(ellipse at 62% 42%, black 0 46%, transparent 76%),
+    linear-gradient(to bottom, black 0 72%, transparent 100%);
+}
+
+.footer__strands::after {
+  content: '';
+  display: none;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .footer__inner {
+  position: relative;
+  z-index: 1;
   opacity: 0;
 }
 
@@ -89,63 +130,118 @@
   font-style: italic;
 }
 
+.contact__cta-field {
+  position: relative;
+  width: min(710px, 100%);
+  margin-bottom: clamp(48px, 6vw, 80px);
+}
+
 /* ── Contact Items (Pill Buttons) ── */
 .contact__items {
+  position: relative;
+  z-index: 2;
   display: flex;
-  gap: 20px;
+  gap: 16px;
   align-items: center;
-  margin-bottom: clamp(48px, 6vw, 80px);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  box-sizing: border-box;
+  margin: -14px 0;
+  padding: 14px 22px;
 }
 
 .contact__btn {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 28px;
-  border-radius: 100px;
-  border: 1px solid rgba(10, 10, 10, 0.15);
-  font-family: var(--font-sans);
-  font-size: clamp(14px, 1.2vw, 18px);
-  color: #0a0a0a;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(320px, 100%);
+  min-height: 78px;
+  padding: 0 44px;
+  border-radius: 22px;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.82vw, 13px);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  color: rgba(10, 10, 10, 0.74);
   text-decoration: none;
   background: transparent;
-  overflow: hidden;
+  overflow: visible;
+  isolation: isolate;
   z-index: 1;
-  transition: border-color 0.4s var(--ease-out), color 0.4s var(--ease-out);
+  transition: color 0.3s var(--ease-out);
+}
+
+.contact__btn--email {
+  width: min(350px, 100%);
+}
+
+.contact__btn--github {
+  width: min(300px, 100%);
+}
+
+.contact__btn-shape {
+  position: absolute;
+  inset: -14px -18px;
+  width: auto;
+  height: auto;
+  z-index: 1;
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .contact__btn::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: #0a0a0a;
-  transform: scaleX(0);
-  transform-origin: right;
-  transition: transform 0.55s cubic-bezier(0.85, 0, 0.15, 1);
-  z-index: -1;
-  will-change: transform;
+  background: rgba(245, 242, 234, 0.28);
+  border-radius: inherit;
+  opacity: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px rgba(10, 10, 10, 0.025);
+  z-index: 0;
 }
 
 .contact__btn:hover::before {
-  transform: scaleX(1);
-  transform-origin: left;
+  opacity: 1;
 }
 
 .contact__btn:hover {
-  color: #f0f0f0;
-  border-color: #0a0a0a;
+  color: rgba(10, 10, 10, 0.88);
+}
+
+.contact__btn:hover .contact__btn-shape,
+.contact__btn:focus-visible .contact__btn-shape {
+  opacity: 0.9;
+}
+
+.contact__btn:focus-visible {
+  outline: 1px solid rgba(139, 30, 22, 0.55);
+  outline-offset: 5px;
+}
+
+.contact__btn-text,
+.contact__btn-arrow {
+  position: relative;
+  z-index: 2;
+  text-shadow: none;
+}
+
+.contact__btn-text {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .contact__btn-arrow {
-  font-size: 0.95em;
-  transition: transform 0.4s var(--ease-out);
-  will-change: transform;
+  font-family: var(--font-sans);
+  font-size: 0.9em;
+  color: rgba(10, 10, 10, 0.62);
 }
 
 .contact__btn:hover .contact__btn-arrow {
-  transform: translate(3px, -3px);
+  transform: none;
 }
 
 /* ── Meta ── */
@@ -234,6 +330,10 @@
     display: none;
   }
 
+  .footer__strands {
+    display: none;
+  }
+
   .footer {
     min-height: 100svh;
     display: flex;
@@ -280,23 +380,35 @@
     margin-bottom: 28px;
   }
 
+  .contact__cta-field {
+    width: 100%;
+    margin-bottom: 40px;
+  }
+
   .contact__items {
     flex-direction: column;
     align-items: flex-start;
+    flex-wrap: nowrap;
     gap: 12px;
-    margin-bottom: 40px;
+    width: 100%;
+    margin: -14px 0;
+    padding: 14px 18px;
   }
 
   .contact__btn {
     width: 100%;
     justify-content: space-between;
-    min-height: 54px;
-    padding: 13px 18px;
-    font-size: 14px;
-    border-color: rgba(10, 10, 10, 0.18);
-    background:
-      linear-gradient(90deg, rgba(10, 10, 10, 0.055), rgba(10, 10, 10, 0.018));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    min-height: 76px;
+    padding: 0 30px;
+    border-radius: 22px;
+    font-size: 12px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .contact__btn::before {
+    inset: 0;
+    border-radius: inherit;
   }
 
   .contact__btn-text {

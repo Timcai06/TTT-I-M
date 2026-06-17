@@ -11,7 +11,9 @@ async function waitForLive(page: Page) {
 }
 
 async function canvasCount(page: Page) {
-  return page.evaluate(() => document.querySelectorAll('canvas').length)
+  return page.evaluate(() =>
+    document.querySelectorAll('canvas:not(.laser-flow-canvas):not(.strands-canvas):not(.shape-blur-canvas)').length
+  )
 }
 
 test('Particle Continuum does not leak WebGL canvases across chapter jumps', async ({ page }) => {

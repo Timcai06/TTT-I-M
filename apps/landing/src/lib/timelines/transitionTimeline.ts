@@ -1,6 +1,11 @@
 import { gsap } from '../gsap'
 import { waveBandPath, type WaveDirection } from '../waveFrontPath'
 
+const TARGET_REVEAL_AT = 0.7
+const TARGET_EXIT_AT = 1.5
+
+export const CHAPTER_TRANSITION_TARGET_GLITCH_SECONDS = TARGET_EXIT_AT - TARGET_REVEAL_AT
+
 /**
  * @description 章节转场 timeline 在关键帧上回调 React/滚动状态的桥接函数集合
  */
@@ -38,10 +43,14 @@ export function createTransitionTimeline(
   const svg = root.querySelector<SVGSVGElement>('.chapter-transition__wave')
   const leadPath = root.querySelector<SVGPathElement>('.chapter-transition__wave-lead')
   const mainPath = root.querySelector<SVGPathElement>('.chapter-transition__wave-main')
+  const targetGlitch = root.querySelector<HTMLElement>('.chapter-transition__target-glitch')
   const targetName = root.querySelector<HTMLElement>('.chapter-transition__target-name')
   const targetChars = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('.chapter-transition__target-glyph'))
   const grain = root.querySelector<HTMLElement>('.chapter-transition__grain')
   const index = root.querySelector<HTMLElement>('.chapter-transition__target-index')
+  const targetExitNodes = [index, targetGlitch, ...targetChars].filter(
+    (node): node is HTMLElement => Boolean(node),
+  )
 
   const width = root.clientWidth || window.innerWidth
   const height = root.clientHeight || window.innerHeight
@@ -78,6 +87,7 @@ export function createTransitionTimeline(
 
   gsap.set(root, { autoAlpha: 1, pointerEvents: 'auto' })
   gsap.set(grain, { opacity: 0 })
+  gsap.set(targetGlitch, { opacity: 0 })
   gsap.set(targetChars, {
     opacity: 0,
     filter: 'blur(8px)',
@@ -98,7 +108,8 @@ export function createTransitionTimeline(
 
   // 2. 0.65 - 1.0s: grain, index and the target name surface on the band.
   tl.to(grain, { opacity: 0.85, duration: 0.18 }, 0.65)
-  tl.to(index, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' }, 0.7)
+  tl.to(index, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' }, TARGET_REVEAL_AT)
+  tl.to(targetGlitch, { opacity: 1, duration: 0.16, ease: 'power2.out' }, TARGET_REVEAL_AT)
   tl.to(targetChars, {
     opacity: 1,
     filter: 'blur(0px)',
@@ -107,7 +118,7 @@ export function createTransitionTimeline(
     duration: 0.34,
     stagger: 0.022,
     ease: 'power3.out',
-  }, 0.7)
+  }, TARGET_REVEAL_AT)
     .call(cb.onRevealTarget, undefined, 0.8)
 
   // 3. 1.1s - 1.25s: chromatic aberration flash as the cover completes.
@@ -136,8 +147,8 @@ export function createTransitionTimeline(
 
   // 5. 1.5s+: text and grain recede, then the trailing edge pulls away in the
   // SAME direction — one wave washing through, never doubling back.
-  tl.to([index, ...targetChars], { opacity: 0, duration: 0.22, ease: 'power2.in' }, 1.5)
-  tl.to(grain, { opacity: 0, duration: 0.32, ease: 'power2.inOut' }, 1.5)
+  tl.to(targetExitNodes, { opacity: 0, duration: 0.22, ease: 'power2.in' }, TARGET_EXIT_AT)
+  tl.to(grain, { opacity: 0, duration: 0.32, ease: 'power2.inOut' }, TARGET_EXIT_AT)
   tl.to(wave, { back: 1, duration: 0.8, ease: 'power2.inOut', onUpdate: render }, 1.6)
 
   return tl

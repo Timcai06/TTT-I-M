@@ -1,5 +1,12 @@
 @import './components/intro.css';
 @import './components/cursor.css';
+@import './components/glitch-text.css';
+@import './components/gradual-blur.css';
+@import './components/laser-flow.css';
+@import './components/scroll-reveal.css';
+@import './components/shape-blur.css';
+@import './components/strands.css';
+@import './components/staggered-section-menu.css';
 @import './components/nav.css';
 @import './components/signature-mark.css';
 @import './components/hero.css';
@@ -17,8 +24,7 @@
     .archive-theme-marker,
     .archive-cluster,
     .skill-row,
-    .project-card,
-    .contact__btn {
+    .project-card {
       animation: mobile-card-reveal both;
       animation-timeline: view();
       animation-range: entry 6% cover 30%;

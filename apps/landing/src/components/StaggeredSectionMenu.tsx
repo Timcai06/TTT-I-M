@@ -1,0 +1,157 @@
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { gsap } from '../lib/gsap'
+
+const CLOSED_X_PERCENT = 150
+
+export interface StaggeredSectionMenuItem {
+  id: string
+  index: string
+  label: string
+  summary: string
+}
+
+interface StaggeredSectionMenuProps {
+  items: StaggeredSectionMenuItem[]
+  socialItems: Array<{ label: string; href: string }>
+  open: boolean
+  activeId: string
+  onClose: () => void
+  onSelect: (id: string) => void
+}
+
+export default function StaggeredSectionMenu({
+  items,
+  socialItems,
+  open,
+  activeId,
+  onClose,
+  onSelect,
+}: StaggeredSectionMenuProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const layerRefs = useRef<HTMLDivElement[]>([])
+  const openRef = useRef(open)
+
+  const setLayerRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return
+    layerRefs.current[Number(node.dataset.layerIndex ?? 0)] = node
+  }, [])
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current
+    const layers = layerRefs.current
+    if (!panel) return
+
+    gsap.set([panel, ...layers], { xPercent: CLOSED_X_PERCENT, opacity: 1 })
+    gsap.set(panel.querySelectorAll('.staggered-section-menu__label'), { yPercent: 130, rotate: 8 })
+    gsap.set(panel.querySelectorAll('.staggered-section-menu__meta, .staggered-section-menu__social-link'), {
+      opacity: 0,
+      y: 16,
+    })
+  }, [])
+
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+
+    const layers = layerRefs.current
+    const labels = Array.from(panel.querySelectorAll<HTMLElement>('.staggered-section-menu__label'))
+    const meta = Array.from(panel.querySelectorAll<HTMLElement>('.staggered-section-menu__meta'))
+    const socials = Array.from(panel.querySelectorAll<HTMLElement>('.staggered-section-menu__social-link'))
+
+    if (open) {
+      openRef.current = true
+      const tl = gsap.timeline()
+      gsap.set(rootRef.current, { pointerEvents: 'auto' })
+      gsap.set(layers, { xPercent: CLOSED_X_PERCENT, opacity: 1 })
+      gsap.set(panel, { xPercent: CLOSED_X_PERCENT, opacity: 1 })
+      gsap.set(labels, { yPercent: 130, rotate: 8 })
+      gsap.set([...meta, ...socials], { opacity: 0, y: 16 })
+
+      layers.forEach((layer, index) => {
+        tl.to(layer, { xPercent: 0, duration: 0.54, ease: 'power4.out' }, index * 0.055)
+      })
+      tl.to(panel, { xPercent: 0, duration: 0.68, ease: 'power4.out' }, 0.18)
+      tl.to(labels, { yPercent: 0, rotate: 0, duration: 0.82, ease: 'power4.out', stagger: 0.065 }, 0.34)
+      tl.to(meta, { opacity: 1, y: 0, duration: 0.42, ease: 'power2.out', stagger: 0.035 }, 0.48)
+      tl.to(socials, { opacity: 1, y: 0, duration: 0.42, ease: 'power2.out', stagger: 0.055 }, 0.68)
+      return () => {
+        tl.kill()
+      }
+    }
+
+    if (!openRef.current) return
+    openRef.current = false
+    const tween = gsap.to([panel, ...layers], {
+      xPercent: CLOSED_X_PERCENT,
+      duration: 0.34,
+      ease: 'power3.in',
+      overwrite: true,
+      onComplete: () => {
+        gsap.set(rootRef.current, { pointerEvents: 'none' })
+      },
+    })
+
+    return () => {
+      tween.kill()
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose, open])
+
+  return (
+    <div
+      className={`staggered-section-menu${open ? ' is-open' : ''}`}
+      id="section-map"
+      ref={rootRef}
+      aria-hidden={!open}
+    >
+      <button className="staggered-section-menu__scrim" type="button" aria-label="Close section map" onClick={onClose} />
+      <div className="staggered-section-menu__layers" aria-hidden="true">
+        {['#8b1e16', '#cf9eff', '#f5f2ea'].map((color, index) => (
+          <div
+            className="staggered-section-menu__layer"
+            data-layer-index={index}
+            key={color}
+            ref={setLayerRef}
+            style={{ background: color }}
+          />
+        ))}
+      </div>
+      <aside className="staggered-section-menu__panel" ref={panelRef} aria-label="Section map">
+        <div className="staggered-section-menu__kicker">Section Map</div>
+        <div className="staggered-section-menu__list" role="list">
+          {items.map((item) => (
+            <button
+              className={`staggered-section-menu__item${activeId === item.id ? ' is-active' : ''}`}
+              key={item.id}
+              aria-label={`Go to ${item.label}`}
+              onClick={() => onSelect(item.id)}
+              type="button"
+            >
+              <span className="staggered-section-menu__index">{item.index}</span>
+              <span className="staggered-section-menu__label-wrap">
+                <span className="staggered-section-menu__label">{item.label}</span>
+              </span>
+              <span className="staggered-section-menu__meta">{item.summary}</span>
+            </button>
+          ))}
+        </div>
+        <div className="staggered-section-menu__socials" aria-label="Social links">
+          {socialItems.map((item) => (
+            <a className="staggered-section-menu__social-link" href={item.href} key={item.label}>
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </aside>
+    </div>
+  )
+}

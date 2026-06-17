@@ -285,9 +285,9 @@ test('Mobile navigation collapses chapters behind a menu and lands on Frame cont
   await expect(page.getByRole('button', { name: /menu/i })).toBeVisible()
 
   await page.getByRole('button', { name: /menu/i }).click()
-  await expect(page.locator('.nav__mobile-panel')).toBeVisible()
+  await expect(page.locator('.staggered-section-menu.is-open .staggered-section-menu__panel')).toBeVisible()
 
-  await page.locator('.nav__mobile-panel').getByRole('button', { name: /Frame/ }).click()
+  await page.locator('.staggered-section-menu__panel').getByRole('button', { name: /Frame/ }).click()
   await page.waitForFunction(() => (
     window.location.hash === '#frame'
     || document.querySelector('.nav__link.is-active')?.textContent?.includes('Frame')

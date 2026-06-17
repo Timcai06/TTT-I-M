@@ -16,9 +16,12 @@
       "runtimeArgs": [
         "run",
         "preview",
+        "-w",
+        "@timcai/landing",
         "--",
         "--port",
-        "4174"
+        "4174",
+        "--strictPort"
       ],
       "port": 4174
     },

@@ -26,12 +26,76 @@ function walk(dir) {
 
 const componentFiles = walk('src/components').filter((file) => /\.(ts|tsx)$/.test(file))
 const dataImport = /from\s+['"][./]*data\//
+const lifeGallerySource = readFileSync('src/components/LifeGallery.tsx', 'utf8')
+const scrollRevealSource = readFileSync('src/components/ScrollReveal.tsx', 'utf8')
+const gradualBlurSource = readFileSync('src/components/GradualBlur.tsx', 'utf8')
+const laserFlowSource = readFileSync('src/components/LaserFlow.tsx', 'utf8')
+const shapeBlurSource = readFileSync('src/components/ShapeBlur.tsx', 'utf8')
+const strandsSource = readFileSync('src/components/Strands.tsx', 'utf8')
+const projectsSource = readFileSync('src/components/Projects.tsx', 'utf8')
+const projectsStyleSource = readFileSync('src/styles/components/projects.css', 'utf8')
+const footerSource = readFileSync('src/components/Footer.tsx', 'utf8')
+const footerStyleSource = readFileSync('src/styles/components/footer.css', 'utf8')
+const appStyleSource = readFileSync('src/styles/app.css', 'utf8')
+const packageManifest = JSON.parse(readFileSync('package.json', 'utf8'))
 
 const offenders = componentFiles.filter((file) => dataImport.test(readFileSync(file, 'utf8')))
 if (offenders.length > 0) {
   throw new Error(
     `Components must import content from src/content, not src/data directly:\n  - ${offenders.join('\n  - ')}`
   )
+}
+
+if (!lifeGallerySource.includes('ScrollReveal') || !lifeGallerySource.includes('animateOnScroll={false}')) {
+  throw new Error('LifeGallery narrative copy must use the React Bits ScrollReveal skin inside the pinned gallery timeline.')
+}
+
+if (!scrollRevealSource.includes('scroll-reveal__word') || !scrollRevealSource.includes('TOKEN_RE') || !appStyleSource.includes("./components/scroll-reveal.css")) {
+  throw new Error('ScrollReveal must keep scoped CJK-aware word spans and its CSS import.')
+}
+
+if (!lifeGallerySource.includes('GradualBlur') || !lifeGallerySource.includes('life__gallery-blur--bottom')) {
+  throw new Error('LifeGallery must keep the React Bits GradualBlur edge treatment on the pinned gallery.')
+}
+
+if (!gradualBlurSource.includes('CURVE_FUNCTIONS') || !appStyleSource.includes("./components/gradual-blur.css") || !packageManifest.dependencies?.mathjs) {
+  throw new Error('GradualBlur must keep the React Bits curve layers, CSS import, and mathjs dependency contract.')
+}
+
+if (!projectsSource.includes('LaserFlow') || !projectsSource.includes('projects__bento-laser')) {
+  throw new Error('Projects must keep the React Bits LaserFlow layer on the Work bento image borders.')
+}
+
+if (!projectsStyleSource.includes('.projects__bento-laser') || !projectsStyleSource.includes('.bento-tile::before')) {
+  throw new Error('Projects bento must keep the laser border treatment around the top six Work images.')
+}
+
+if (!laserFlowSource.includes('RawShaderMaterial') || !appStyleSource.includes("./components/laser-flow.css")) {
+  throw new Error('LaserFlow must keep its Three shader renderer and CSS import.')
+}
+
+if (!footerSource.includes('Strands') || !footerSource.includes('footer__strands') || !footerSource.includes('prefers-reduced-motion: no-preference')) {
+  throw new Error('Footer must keep Strands scoped to the Contact outro signal and motion-safe desktop mounting.')
+}
+
+if (!footerSource.includes('ShapeBlur') || !footerSource.includes('contact__btn-shape') || !footerSource.includes('shapeWidth={6.45}')) {
+  throw new Error('Footer contact CTA links must keep the React Bits ShapeBlur button treatment.')
+}
+
+if (!shapeBlurSource.includes("from 'three'") || !shapeBlurSource.includes('u_color') || !shapeBlurSource.includes('sdRoundRect') || !shapeBlurSource.includes('shape-blur-canvas')) {
+  throw new Error('ShapeBlur must keep its Three shader renderer, landing color uniform, original round-rect shader, and scoped canvas class.')
+}
+
+if (!strandsSource.includes("from 'ogl'") || !strandsSource.includes('IntersectionObserver') || !strandsSource.includes('strands-canvas')) {
+  throw new Error('Strands must keep the React Bits OGL renderer with visibility-paused canvas lifecycle.')
+}
+
+if (!footerStyleSource.includes('.footer__strands') || !appStyleSource.includes("./components/strands.css") || !packageManifest.dependencies?.ogl) {
+  throw new Error('Footer Strands must keep its final-signal CSS, app import, and ogl dependency.')
+}
+
+if (!footerStyleSource.includes('.contact__btn-shape') || !appStyleSource.includes("./components/shape-blur.css") || !packageManifest.dependencies?.three) {
+  throw new Error('Footer ShapeBlur CTA must keep its scoped CSS, app import, and three dependency.')
 }
 
 // The repository abstraction must expose both the sync landing accessor and the

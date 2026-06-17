@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { gsap, Flip } from '../lib/gsap'
 import { photos } from '../content'
 import { useMobileExperience } from '../lib/device'
+import GradualBlur from './GradualBlur'
+import ScrollReveal from './ScrollReveal'
 
 /**
  * @description Life 章节 —— 将生活照片从 bento 网格过渡到全屏影像背景，并叠加三段 split-text 叙事。
@@ -55,21 +57,22 @@ export default function LifeGallery() {
 
         // Initial setup for the narrative text elements - query from wrap node for stability
         const paragraphs = wrap.querySelectorAll<HTMLElement>('.life__intro-p')
-        const allLines = wrap.querySelectorAll<HTMLElement>('.life__intro-p .split-line__inner')
+        const introOverlay = wrap.querySelector<HTMLElement>('.life__intro-overlay')
+        const allWords = wrap.querySelectorAll<HTMLElement>('.life__intro-p .scroll-reveal__word')
+        const allRevealText = wrap.querySelectorAll<HTMLElement>('.life__intro-p .scroll-reveal')
         const allMeta = wrap.querySelectorAll<HTMLElement>('.life__intro-kicker')
+        gsap.set(introOverlay, { opacity: 0 })
         if (paragraphs.length > 0) {
-          gsap.set(paragraphs, { opacity: 0, y: 0 })
+          gsap.set(paragraphs, { opacity: 0, y: 0, rotate: 0 })
         }
         if (allMeta.length > 0) {
           gsap.set(allMeta, { opacity: 0, y: 14, filter: 'blur(6px)' })
         }
-        if (allLines.length > 0) {
-          // `y: 0` is explicit on purpose: GSAP reads any CSS transform back as
-          // a pixel `y`, so if the stylesheet ever (re)introduces a translateY
-          // baseline, animating `yPercent` to 0 would leave that px behind and
-          // shove the revealed line out of its overflow:hidden clip box. Pinning
-          // y to 0 keeps the reveal purely in yPercent space.
-          gsap.set(allLines, { yPercent: 110, y: 0, opacity: 0 })
+        if (allRevealText.length > 0) {
+          gsap.set(allRevealText, { transformOrigin: '0% 50%', rotate: 5 })
+        }
+        if (allWords.length > 0) {
+          gsap.set(allWords, { opacity: 0.08, filter: 'blur(10px)' })
         }
 
         // 钉住 .gallery-wrap（正好 100vh），让 gallery 完整填满视口；
@@ -104,35 +107,43 @@ export default function LifeGallery() {
           filter: 'brightness(0.18) saturate(0.4) contrast(1.05) blur(8px)',
           duration: 1.5,
         })
+        tl.to(introOverlay, { opacity: 1, duration: 0.25, ease: 'none' }, '<0.95')
 
         // 5. Sequential paragraph slide-up and fade-out
         if (paragraphs.length > 0) {
           paragraphs.forEach((p, index) => {
-            const lines = p.querySelectorAll('.split-line__inner')
+            const revealText = p.querySelectorAll('.scroll-reveal')
+            const words = p.querySelectorAll('.scroll-reveal__word')
             const meta = p.querySelectorAll('.life__intro-kicker')
 
             // Fade in paragraph container
-            tl.fromTo(p, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, index === 0 ? '+=0.1' : '+=0.6')
+            tl.fromTo(p, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.55 }, index === 0 ? '+=0.1' : '+=0.6')
             tl.fromTo(meta,
               { opacity: 0, y: 14, filter: 'blur(6px)' },
               { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, stagger: 0.08, ease: 'power3.out' },
               '<'
             )
-            
-            // Slide up the split-text lines (concurrent with paragraph fade)
-            tl.fromTo(lines,
-              { yPercent: 120, y: 0, opacity: 0, filter: 'blur(7px)', letterSpacing: '0.03em' },
-              { yPercent: 0, y: 0, opacity: 1, filter: 'blur(0px)', letterSpacing: '-0.015em', stagger: 0.16, duration: 1.18, ease: 'expo.out' },
+
+            tl.fromTo(revealText,
+              { rotate: 5 },
+              { rotate: 0, duration: 1.35, ease: 'none' },
+              '<'
+            )
+
+            tl.fromTo(words,
+              { opacity: 0.08, filter: 'blur(10px)' },
+              { opacity: 1, filter: 'blur(0px)', stagger: 0.05, duration: 1.3, ease: 'none' },
               '<0.12'
             )
-            
+
             // Hold for reading
             tl.to({}, { duration: 2.6 }) 
             
             // Fade out and slide up
             tl.to(p, { opacity: 0, y: -24, duration: 0.7, ease: 'power2.in' })
             // 重置该段文字行，避免回滚/叠层残留
-            tl.set(lines, { yPercent: 120, y: 0, opacity: 0, filter: 'blur(7px)', letterSpacing: '0.03em' })
+            tl.set(revealText, { rotate: 5 })
+            tl.set(words, { opacity: 0.08, filter: 'blur(10px)' })
             tl.set(meta, { opacity: 0, y: 14, filter: 'blur(6px)' })
           })
         }
@@ -141,9 +152,11 @@ export default function LifeGallery() {
           gsap.set(items, { clearProps: 'all' })
           gsap.set(gallery, { clearProps: 'all' })
           if (images.length) gsap.set(images, { clearProps: 'all' })
+          gsap.set(introOverlay, { clearProps: 'all' })
           if (paragraphs.length) gsap.set(paragraphs, { clearProps: 'all' })
           if (allMeta.length) gsap.set(allMeta, { clearProps: 'all' })
-          if (allLines.length) gsap.set(allLines, { clearProps: 'all' })
+          if (allRevealText.length) gsap.set(allRevealText, { clearProps: 'all' })
+          if (allWords.length) gsap.set(allWords, { clearProps: 'all' })
         }
       })
     }
@@ -209,27 +222,57 @@ export default function LifeGallery() {
           ))}
         </div>
 
+        <GradualBlur
+          className="life__gallery-blur life__gallery-blur--bottom"
+          position="bottom"
+          height="22vh"
+          strength={3.2}
+          divCount={9}
+          curve="bezier"
+          exponential
+          opacity={0.9}
+          zIndex={60}
+        />
+
         {/* 电影感叙事文字图层 */}
         <div className="life__intro-overlay" aria-hidden="true">
           <div className="life__intro-container">
-            <p className="life__intro-p">
+            <div className="life__intro-p">
               <span className="life__intro-kicker">01 / Motion</span>
-              <span className="split-line"><span className="split-line__inner">在绿茵场上，我是前场的 10 号。</span></span>
-              <span className="split-line"><span className="split-line__inner">像梅西那样在防线之间寻找缝隙，</span></span>
-              <span className="split-line"><span className="split-line__inner">一次直塞或转身，就改写节奏。</span></span>
-            </p>
-            <p className="life__intro-p">
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                在绿茵场上，我是前场的 10 号。
+              </ScrollReveal>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                像梅西那样在防线之间寻找缝隙，
+              </ScrollReveal>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                一次直塞或转身，就改写节奏。
+              </ScrollReveal>
+            </div>
+            <div className="life__intro-p">
               <span className="life__intro-kicker">02 / Light</span>
-              <span className="split-line"><span className="split-line__inner">在镜头背后，我是街头的寻光者。</span></span>
-              <span className="split-line"><span className="split-line__inner">从陆家嘴天际线到霓虹的马路，</span></span>
-              <span className="split-line"><span className="split-line__inner">记录代码之外的城市瞬间。</span></span>
-            </p>
-            <p className="life__intro-p">
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                在镜头背后，我是街头的寻光者。
+              </ScrollReveal>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                从陆家嘴天际线到霓虹的马路，
+              </ScrollReveal>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                记录代码之外的城市瞬间。
+              </ScrollReveal>
+            </div>
+            <div className="life__intro-p">
               <span className="life__intro-kicker">03 / Build</span>
-              <span className="split-line"><span className="split-line__inner">在屏幕面前，我是写代码的 builder。</span></span>
-              <span className="split-line"><span className="split-line__inner">写清文档，陪队友啃下最后一公里。</span></span>
-              <span className="split-line"><span className="split-line__inner">让想法真正跑起来，胜过千言。</span></span>
-            </p>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                在屏幕面前，我是写代码的 builder。
+              </ScrollReveal>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                写清文档，陪队友啃下最后一公里。
+              </ScrollReveal>
+              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
+                让想法真正跑起来，胜过千言。
+              </ScrollReveal>
+            </div>
           </div>
         </div>
       </div>

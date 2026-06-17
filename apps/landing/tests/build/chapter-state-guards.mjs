@@ -5,6 +5,7 @@ const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const providerSource = readFileSync('src/components/ChapterStateProvider.tsx', 'utf8')
 const navSource = readFileSync('src/components/Nav.tsx', 'utf8')
 const navStyleSource = readFileSync('src/styles/components/nav.css', 'utf8')
+const glitchTextStyleSource = readFileSync('src/styles/components/glitch-text.css', 'utf8')
 const scrollIndicatorStyleSource = readFileSync('src/styles/components/scroll-indicator.css', 'utf8')
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
 const themeDriverSource = readFileSync('src/components/ChapterThemeDriver.tsx', 'utf8')
@@ -61,6 +62,14 @@ if (scrollIndicatorSource.includes('getBoundingClientRect')) {
   throw new Error('Active chapter consumers must not each read layout independently.')
 }
 
+if (
+  !navSource.includes('StaggeredSectionMenu') ||
+  !navSource.includes('nav__links') ||
+  !navSource.includes("transitionToChapter(id, { updateHash: true })")
+) {
+  throw new Error('Nav must keep the existing top chapter links and use StaggeredSectionMenu only as an enhanced section-map overlay.')
+}
+
 if (!chapterScrollMetricsSource.includes('useSyncExternalStore') || !chapterScrollMetricsSource.includes('ScrollTrigger.create')) {
   throw new Error('Chapter scroll metrics must be a shared external store backed by one ScrollTrigger.')
 }
@@ -85,6 +94,10 @@ if (!appSource.includes('<ChapterTransition />')) {
   throw new Error('App must mount the full-screen chapter transition layer.')
 }
 
+if (!appSource.includes("getStage() === 'live'") || !appSource.includes('scrollToChapter(hash, { immediate: true })') || !appSource.includes('for (const delay of [120, 520, 1100])')) {
+  throw new Error('Initial hash deep links must wait for the live stage and reassert the immediate chapter landing after late layout shifts.')
+}
+
 if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSource.includes('immediate: true')) {
   throw new Error('ChapterTransition must listen for nav requests and jump directly while the cover is active.')
 }
@@ -93,6 +106,8 @@ const transitionLayerInputs = [
   'chapter-transition__wave-lead',
   'chapter-transition__wave-main',
   'chapter-transition__grain',
+  'GlitchText',
+  'chapter-transition__target-glitch',
   'chapter-transition__target-glyph',
   'usePretextTextInteraction',
   'waveBandPath',
@@ -116,6 +131,14 @@ if (transitionContractSource.includes('__aura') || transitionContractSource.incl
 
 if (transitionTimelineSource.includes("document.querySelector('main')") || transitionTimelineSource.includes('document.querySelector(\"main\")')) {
   throw new Error('Chapter transition timeline must not animate the global main layout.')
+}
+
+if (!glitchTextStyleSource.includes('@keyframes chapter-glitch') || !glitchTextStyleSource.includes('.glitch-text:not(.enable-on-hover)::after')) {
+  throw new Error('Chapter transition target name must keep the React Bits glitch-text CSS skin.')
+}
+
+if (!transitionContractSource.includes('CHAPTER_TRANSITION_TARGET_GLITCH_SECONDS') || !glitchTextStyleSource.includes('--glitch-iteration-count, infinite')) {
+  throw new Error('Chapter transition glitch text must stay duration-synced to the target reveal window.')
 }
 
 // All chapter jumps flow through the one typed bus (transitionToChapter →
@@ -147,7 +170,11 @@ if (
   !footerSource.includes('getBoundingClientRect') ||
   !footerSource.includes('progress > 0.001')
 ) {
-  throw new Error('Footer liquid blob must keep a real-position visibility gate so it cannot leak into earlier Frame/Life sections.')
+  throw new Error('Footer liquid blob must keep a real-position visibility gate.')
+}
+
+if (footerSource.includes('isDirectContactEntry') || footerSource.includes('directContactEntry')) {
+  throw new Error('Footer must not bypass the liquid iris reveal based on the URL hash; direct deep-link stability belongs to App scroll restoration.')
 }
 
 if (globalStyleSource.includes('transform: translateZ(0); /* Force GPU composite layer */')) {

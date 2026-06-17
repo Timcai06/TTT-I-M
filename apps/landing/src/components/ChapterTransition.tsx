@@ -10,9 +10,13 @@ import { scrollToChapter } from '../lib/chapterScroll'
 import { getChapterTheme } from '../lib/chapterThemeTokens'
 import { getStage, setStage } from '../lib/stage'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
-import { createTransitionTimeline } from '../lib/timelines/transitionTimeline'
+import {
+  CHAPTER_TRANSITION_TARGET_GLITCH_SECONDS,
+  createTransitionTimeline,
+} from '../lib/timelines/transitionTimeline'
 import { prefersReducedMotion } from '../lib/motion'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
+import GlitchText from './GlitchText'
 
 const transitionChapters = navChapters.map((chapter) => {
   const progress = progressChapters.find((entry) => entry.id === chapter.id)?.progress
@@ -179,9 +183,17 @@ export default function ChapterTransition() {
         <div className="chapter-transition__target">
           <span className="chapter-transition__target-index">SEC {target?.index}</span>
           <strong>
-            <span className="chapter-transition__target-name" ref={targetNameRef}>
-              {splitText(target?.name ?? '', 'chapter-transition__target-glyph')}
-            </span>
+            <GlitchText
+              duration={CHAPTER_TRANSITION_TARGET_GLITCH_SECONDS}
+              enableShadows
+              enableOnHover={false}
+              className="chapter-transition__target-glitch"
+              text={target?.name ?? ''}
+            >
+              <span className="chapter-transition__target-name" ref={targetNameRef}>
+                {splitText(target?.name ?? '', 'chapter-transition__target-glyph')}
+              </span>
+            </GlitchText>
           </strong>
         </div>
       </div>

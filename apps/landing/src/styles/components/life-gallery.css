@@ -165,9 +165,21 @@
   .life__intro-overlay {
     display: none;
   }
+
+  .life__gallery-blur {
+    display: none;
+  }
 }
 
 /* ── Text overlay for narrative storytelling ── */
+.life__gallery-blur {
+  z-index: 60;
+}
+
+.life__gallery-blur--bottom {
+  background: linear-gradient(to top, rgba(8, 10, 13, 0.64), transparent);
+}
+
 .life__intro-overlay {
   position: absolute;
   inset: 0;
@@ -176,6 +188,7 @@
   justify-content: center;
   z-index: 100; /* Ensure overlay renders in front of grid items */
   pointer-events: none;
+  opacity: 0;
   transform: translateZ(100px); /* Promote to GPU layer & push forward to fix 3D intersection bug */
   will-change: transform, opacity;
 }
@@ -228,26 +241,21 @@
   color: var(--fg-soft);
 }
 
-.life__intro-p .split-line {
+.life__intro-line {
   display: block;
-  overflow: hidden;
+  max-width: min(960px, 100%);
+  margin-inline: auto;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  text-wrap: balance;
+  white-space: nowrap;
 }
 
-.life__intro-p .split-line__inner {
-  display: inline-block;
+.life__intro-p .scroll-reveal-text {
   font-kerning: normal;
-  text-wrap: balance;
-  /* Each split-line must stay on ONE visual line — the rise-from-mask reveal
-     clips vertically, so a wrapped line would be cut off mid-paragraph. Copy is
-     kept short; nowrap guarantees it even if a glyph nudges the width. */
-  white-space: nowrap;
-  /* Initial hidden state is owned by GSAP via `yPercent` (set on mount).
-     Do NOT set a CSS `transform: translateY(110%)` here: GSAP reads the
-     computed % transform back as a stray pixel `y`, and once it animates
-     `yPercent` to 0 that pixel residual stays — shoving the revealed line
-     ~110px below its `overflow:hidden` clip box, so the text never shows.
-     Hiding with opacity keeps the reveal purely in GSAP's transform space. */
-  opacity: 0;
 }
 
 @media (max-width: 768px) {
@@ -260,7 +268,7 @@
     line-height: 1.22;
     text-align: center;
   }
-  .life__intro-p .split-line__inner {
+  .life__intro-line {
     white-space: normal;
   }
   .life__intro-kicker {
