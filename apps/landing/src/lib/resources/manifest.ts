@@ -97,12 +97,17 @@ export function buildResourceManifest(): ResourceTask[] {
     { id: 'chunks:chapters', label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
   ]
 
+  // These now gate the intro (Loader exits on full-manifest `ready`), so they
+  // fetch at normal ('auto') priority instead of being deprioritized — the bar
+  // should reflect genuine network speed, not an artificial low-priority drip.
+  // Decode stays 'idle' (queued) to avoid a ~50-image eager-decode storm that
+  // would jank the intro animation.
   const deferred: ResourceTask[] = collectImageUrls().map((src) => ({
     id: `image:${src}`,
     label: src,
     tier: 'deferred',
     type: 'image',
-    load: () => loadImage(src, { decode: 'idle', fetchPriority: 'low', loading: 'eager' }),
+    load: () => loadImage(src, { decode: 'idle', fetchPriority: 'auto', loading: 'eager' }),
   }))
 
   return [...critical, ...deferred]

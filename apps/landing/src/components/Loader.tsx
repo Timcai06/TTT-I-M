@@ -60,11 +60,13 @@ export default function Loader() {
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
-  // The exit gate is criticalReady (runtime core), not full-manifest ready —
-  // deferred images keep eager-fetching in the background after the panel
-  // exits (00-principles whole-site-preheat fix ②: same total download,
-  // smaller black-screen gate).
-  const stageText = preload.criticalReady ? 'ready' : preload.label
+  // The exit gate is the FULL manifest (`ready`), not just the critical tier:
+  // the loader is a true "everything loaded" screen — when the bar hits 100%
+  // every chunk AND every curated image is fetched/decoded, so scrolling into
+  // any section (Frame, Work/LaserFlow) is pop-in- and hitch-free. Each task
+  // still races a 12s timeout (preloadController) so a dead resource can't
+  // strand the intro.
+  const stageText = preload.ready ? 'ready' : preload.label
 
   useEffect(() => {
     preloadRef.current = preload
@@ -150,20 +152,20 @@ export default function Loader() {
       const current = preloadRef.current
       if (!current) return
 
-      // The bar tracks the *gate* (critical tier): 100% = runtime ready, the
-      // moment the panel may exit. Deferred background fetching continues past
-      // this and is intentionally not part of the displayed gate.
-      const actualProgress = current.criticalTotal > 0 ? current.criticalCompleted / current.criticalTotal : 0
-      const target = current.criticalReady ? 1 : actualProgress
+      // The bar tracks the FULL manifest: 100% = every chunk and every curated
+      // image fetched/decoded, the moment the panel may exit. This is real
+      // resource progress across all ~50+ tasks, not a critical-only subset.
+      const actualProgress = current.total > 0 ? current.completed / current.total : 0
+      const target = current.ready ? 1 : actualProgress
 
-      displayedProgress = stepDisplayedProgress(displayedProgress, target, current.criticalReady)
+      displayedProgress = stepDisplayedProgress(displayedProgress, target, current.ready)
 
-      const displayValue = displayedProgressValue(displayedProgress, current.criticalReady)
+      const displayValue = displayedProgressValue(displayedProgress, current.ready)
 
       if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
 
-      if (!current.criticalReady || displayedProgress < 0.999) {
+      if (!current.ready || displayedProgress < 0.999) {
         frame = window.requestAnimationFrame(renderProgress)
       }
     }
@@ -173,7 +175,7 @@ export default function Loader() {
   }, [])
 
   useEffect(() => {
-    if (!introReady || !preload.criticalReady || exitStarted.current || !panelRef.current) return
+    if (!introReady || !preload.ready || exitStarted.current || !panelRef.current) return
     exitStarted.current = true
     setExiting(true)
 
@@ -238,7 +240,7 @@ export default function Loader() {
     }, panelRef)
 
     return () => ctx.revert()
-  }, [introReady, preload.criticalReady])
+  }, [introReady, preload.ready])
 
   if (done) return null
 
