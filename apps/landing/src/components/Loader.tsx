@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
-import DitherBackground from './DitherBackground'
 import { dispatchIntroExit } from '../lib/intro'
 import { setStage } from '../lib/stage'
 import { useIntroPretextInteraction } from '../lib/pretextIntroText'
@@ -12,6 +11,10 @@ import {
   stepDisplayedProgress,
 } from '../lib/loaderTiming'
 
+// Lazy so the intro Dither shader (+ three) stays out of the eager index chunk;
+// the static `.intro` gradient is the fallback until it streams in.
+const DitherBackground = lazy(() => import('./DitherBackground'))
+
 const BAFFLE_CHARS = '!<>-_\\/[]{}—=+*^?#█▓▒░█'
 
 function randomBaffleChar() {
@@ -21,7 +24,8 @@ function randomBaffleChar() {
 /**
  * @description Loader 全屏加载页 —— 站点入口动画的 start-to-end 编排。
  *   阶段 1 (intro): 标题 "Tim Cai." 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
- *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.criticalReady (runtime 核心就绪；deferred 图片继续后台拉)，
+ *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.ready (整个 manifest 就绪 —— 所有 chunk
+ *     + 所有 curated 图片都已 fetch/decode，进度条 100% = 全站加载完)，
  *     标题向上浮出遮罩 → 计数器/进度条淡出 → 整个面板向上 wipe out，露出 Hero
  *   阶段 3 (complete): `done` 状态置 true，组件返回 null，彻底从 DOM 卸载
  *
@@ -45,7 +49,7 @@ function randomBaffleChar() {
  *   step2: Effect 1 — 字符缓慢升起到基线 (1.25s, stagger 0.075s)
  *   step3: Effect 1 — timeline onComplete → setStage('intro') → 激活 pretext 交互
  *   step4: Effect 2 — 进度条 rAF loop: displayedProgress 缓动追踪 preload progress
- *   step5: Effect 3 — introReady && preload.criticalReady → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
+ *   step5: Effect 3 — introReady && preload.ready → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
  *   step6: Effect 3 — panel yPercent: -100 → dispatchIntroExit → 若干 ms 后 setDone(true)
  */
 export default function Loader() {
@@ -275,7 +279,9 @@ export default function Loader() {
 
   return (
     <div className="intro" ref={panelRef}>
-      <DitherBackground />
+      <Suspense fallback={null}>
+        <DitherBackground />
+      </Suspense>
       <div className="intro__meta">// Portfolio · 2026</div>
 
       <div className={`intro__text-wrap${introReady && !exiting ? ' intro__text-wrap--interactive' : ''}`}>

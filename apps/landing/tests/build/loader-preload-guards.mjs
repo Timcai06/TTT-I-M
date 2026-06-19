@@ -155,19 +155,20 @@ if (!controllerSource.includes('DEFERRED_CONCURRENCY') || !controllerSource.incl
   throw new Error('Preload controller must run the complete landing manifest (deferred queue), not stop at critical resources.')
 }
 
-// Gate contract (fix ②): intro exit is gated by criticalReady, NOT full-manifest
-// ready — and the deferred tier keeps fetching after the panel exits. Guard both
-// directions: the controller must expose the split, and the Loader must consume
-// the critical gate (a regression to `preload.ready` re-creates the long black
-// gate; dropping criticalReady silently would un-gate the runtime core).
+// Gate contract (2026-06-18, deliberate change): the loader is a true
+// "everything loaded" screen — the intro exits on FULL-manifest `ready`, so the
+// bar hitting 100% means every chunk AND every curated image is fetched/decoded
+// and scrolling into any section (Frame, Work/LaserFlow) is pop-in-/hitch-free.
+// The controller still computes the critical-tier fields (kept for diagnostics),
+// but the Loader must consume the full gate, not the critical-only one.
 if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {
-  throw new Error('Preload controller must expose the critical-tier gate (criticalReady/criticalCompleted/criticalTotal).')
+  throw new Error('Preload controller must still expose the critical-tier fields (criticalReady/criticalCompleted/criticalTotal) for diagnostics.')
 }
-if (!loaderSource.includes('preload.criticalReady')) {
-  throw new Error('Loader must gate the intro exit on preload.criticalReady (critical tier), not the full manifest.')
+if (!loaderSource.includes('preload.ready')) {
+  throw new Error('Loader must gate the intro exit on full-manifest preload.ready (true everything-loaded screen).')
 }
-if (loaderSource.includes('preload.ready')) {
-  throw new Error('Loader must not gate on full-manifest preload.ready — deferred images continue in the background after exit.')
+if (loaderSource.includes('preload.criticalReady')) {
+  throw new Error('Loader must not gate on the critical-tier-only preload.criticalReady — the intro should wait for the full manifest.')
 }
 
 if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {

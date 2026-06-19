@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import { getLenis } from '../lib/lenis'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
@@ -71,7 +71,7 @@ function ProjectsBento() {
               role="listitem"
               className={`bento-tile${shot ? '' : ' bento-tile--soon'}`}
               key={p.id}
-              style={{ '--tile-accent': p.accent, '--tile-i': i } as CSSProperties}
+              style={{ '--tile-accent': p.accent, '--tile-i': i }}
               onClick={() => scrollToCard(p.id)}
               aria-label={`跳到项目 ${p.name} — ${p.tagline}`}
               data-cursor="hover"

@@ -1,10 +1,19 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
 const sectionSource = readFileSync('src/components/frame/ArchiveThemeSection.tsx', 'utf8')
 const hookSource = readFileSync('src/components/frame/useArchiveThemeScroll.ts', 'utf8')
 const slotSource = readFileSync('src/components/frame/ArchiveImageSlot.tsx', 'utf8')
-const frameStyleSource = readFileSync('src/styles/components/frame.css', 'utf8')
+// frame.css was split into frame/*.css (archive-theme/cluster/slot/responsive);
+// concatenate the entry + all partials so these contract checks find the rules
+// regardless of which split file they landed in.
+const frameStyleDir = 'src/styles/components/frame'
+const frameStyleSource = [
+  readFileSync('src/styles/components/frame.css', 'utf8'),
+  ...readdirSync(frameStyleDir)
+    .filter((file) => file.endsWith('.css'))
+    .map((file) => readFileSync(`${frameStyleDir}/${file}`, 'utf8')),
+].join('\n')
 
 const forbiddenInFrame = ['gsap', 'useEffect', 'useRef', 'useState', 'ArchiveImageSlot', 'ArchiveClusterPanel']
   .filter((needle) => frameSource.includes(needle))
