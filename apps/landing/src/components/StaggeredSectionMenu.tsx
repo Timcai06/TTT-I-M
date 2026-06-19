@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
+import GradualBlur from './GradualBlur'
 
 const CLOSED_X_PERCENT = 150
 
@@ -114,6 +115,12 @@ export default function StaggeredSectionMenu({
       aria-hidden={!open}
     >
       <button className="staggered-section-menu__scrim" type="button" aria-label="Close section map" onClick={onClose} />
+      {/* Progressive edge dissolve: a vertical blur band just left of the panel
+          so the page frosts densest right where the menu begins (heaviest on the
+          right/panel side), echoing the Frame edge dissolve. Fades in via .is-open. */}
+      <div className="staggered-section-menu__seam" aria-hidden="true">
+        <GradualBlur position="right" target="parent" width="100%" strength={2.6} divCount={6} curve="ease-out" />
+      </div>
       <div className="staggered-section-menu__layers" aria-hidden="true">
         {['#8b1e16', '#cf9eff', '#f5f2ea'].map((color, index) => (
           <div

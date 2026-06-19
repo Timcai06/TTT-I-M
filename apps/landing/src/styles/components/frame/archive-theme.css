@@ -5,7 +5,16 @@
   overflow: hidden;
   border-top: 1px solid var(--line);
   contain: layout paint;
+  /* Per-theme colour temperature (space-separated RGB so it composes with
+     `rgb(... / a)`): building reads cool steel, cuisine warm sand, scenery
+     green. Drives the watermark hue + a faint top wash below. */
+  --frame-tint: 240 240 240;
+  background: radial-gradient(ellipse 82% 58% at 50% 0%, rgb(var(--frame-tint) / 0.045), transparent 62%);
 }
+
+.archive-theme-section--building { --frame-tint: 120 144 168; }
+.archive-theme-section--cuisine { --frame-tint: 214 197 168; }
+.archive-theme-section--scenery { --frame-tint: 122 168 132; }
 
 .archive-theme-section::before {
   content: attr(data-theme-word);
@@ -18,7 +27,7 @@
   font-size: clamp(88px, 16vw, 238px);
   line-height: 0.8;
   letter-spacing: 0;
-  color: var(--fg);
+  color: rgb(var(--frame-tint));
   /* --word-reveal 由 useArchiveThemeScroll scrub 写入（0→1）：
      水印随滚动从左到右被「擦亮」并轻微右移，替代原先的静态 0.035。 */
   opacity: calc(0.012 + var(--word-reveal, 1) * 0.05);

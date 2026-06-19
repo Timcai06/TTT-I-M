@@ -20,8 +20,36 @@
   display: block;
   width: 100%;
   height: 100%;
-  background: transparent;
+  /* Frosted glass: when the menu opens, the whole page recedes behind a light
+     blur + dark wash so the panel takes focus. The frost is CONSTANT and faded
+     in/out via opacity — `backdrop-filter` transitions get stuck (never revert)
+     in Chromium, so the page would stay blurred after close. opacity:0 makes the
+     backdrop-filter render nothing, so closed = no page blur. */
+  background: rgba(6, 5, 5, 0.5);
   border: 0;
+  opacity: 0;
+  -webkit-backdrop-filter: blur(18px) saturate(0.85) brightness(0.82);
+  backdrop-filter: blur(18px) saturate(0.85) brightness(0.82);
+  transition: opacity 0.55s var(--ease-out);
+}
+
+.staggered-section-menu.is-open .staggered-section-menu__scrim {
+  opacity: 1;
+}
+
+/* Progressive edge dissolve band, parked just left of the panel. */
+.staggered-section-menu__seam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: var(--section-menu-width);
+  width: clamp(64px, 7vw, 120px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.55s var(--ease-out);
+}
+
+.staggered-section-menu.is-open .staggered-section-menu__seam {
   opacity: 1;
 }
 
@@ -58,7 +86,9 @@
   background:
     radial-gradient(circle at 78% 8%, rgba(207, 158, 255, 0.18), transparent 34%),
     linear-gradient(180deg, #f7f3eb 0%, #eee7dc 100%);
-  box-shadow: -10px 0 46px rgba(0, 0, 0, 0.26);
+  /* Wider, softer falloff so the card emerges from the frosted page instead of
+     hard-cutting against it. */
+  box-shadow: -30px 0 90px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
 }
 

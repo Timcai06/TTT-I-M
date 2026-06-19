@@ -48,6 +48,12 @@
     overflow: visible;
   }
 
+  /* The horizontal edge dissolve only makes sense on the desktop pinned track;
+     the vertical mobile flow has no left/right viewport edges to fade. */
+  .frame-edge-blur {
+    display: none;
+  }
+
   .archive-theme-section::before,
   .archive-theme-section::after,
   .archive-cluster::before {

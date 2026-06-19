@@ -3,6 +3,7 @@ import type { ArchiveTheme } from '../../content'
 import ArchiveClusterPanel from './ArchiveClusterPanel'
 import { ArchiveClusterMarker, ArchiveThemeMarker } from './ArchiveMarkers'
 import ArchiveRail from './ArchiveRail'
+import GradualBlur from '../GradualBlur'
 import useArchiveThemeScroll from './useArchiveThemeScroll'
 
 /**
@@ -27,6 +28,31 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
     >
       <div className="archive-theme-section__pin">
         <ArchiveRail active={active} theme={theme} themeIndex={themeIndex} />
+
+        {/* Cinematic edge dissolve: the horizontal track's left/right margins fade
+            into a soft blur so images don't hard-cut at the viewport edge. zIndex
+            sits above the track content (z 1) but below the rail HUD (z 4) so the
+            HUD stays sharp. Hidden on mobile (vertical flow) via .frame-edge-blur. */}
+        <GradualBlur
+          position="left"
+          target="parent"
+          width="clamp(48px, 7vw, 120px)"
+          strength={2.4}
+          divCount={6}
+          curve="ease-out"
+          zIndex={3}
+          className="frame-edge-blur"
+        />
+        <GradualBlur
+          position="right"
+          target="parent"
+          width="clamp(48px, 7vw, 120px)"
+          strength={2.4}
+          divCount={6}
+          curve="ease-out"
+          zIndex={3}
+          className="frame-edge-blur"
+        />
 
         <div className="archive-theme-section__track" data-horizontal-track ref={track}>
           <ArchiveThemeMarker theme={theme} />
