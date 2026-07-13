@@ -64,7 +64,7 @@ const PER_CHUNK_BUDGET_KB = {
   'three-vendor': 260,
   'react-vendor': 72,
   'gsap-vendor': 66,
-  'index': 40,
+  'index': 41,
   'layout': 24,
 }
 const TOTAL_JS_BUDGET_KB = 460

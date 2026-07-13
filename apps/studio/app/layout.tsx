@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     default: 'Tim Cai Studio',
     template: '%s · Tim Cai Studio',
   },
-  description: 'A quiet content platform for essays, work details, and future publishing workflows.',
+  description: 'Case notes on evidence-grounded AI systems, PyTorch observability, research intelligence, and visual engineering.',
 }
 
 const navItems = [

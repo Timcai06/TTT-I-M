@@ -32,9 +32,9 @@ export const skillRows: SkillRow[] = [
     name: 'Frontend',
     subtitle: 'Interface · 界面实现',
     description:
-      '把设计稿、动效节奏和内容结构落到可维护的 React / Next.js 界面里，关注首屏、响应式和真实交互手感。',
+      '把复杂系统状态落到可维护的 React / Next.js 界面里，让模型图、运行证据和内容叙事都能被快速读懂。',
     tags: ['React 19', 'Next.js 16', 'TypeScript', 'Tailwind', 'shadcn/ui'],
-    usedIn: [{ label: 'Earnlytics', to: 'projects' }, { label: 'TTT I·M Landing' }],
+    usedIn: [{ label: 'PulseGraph', to: 'projects' }, { label: 'Earnlytics', to: 'projects' }, { label: 'TTT I·M Landing' }],
   },
   {
     index: '/02',
@@ -50,27 +50,27 @@ export const skillRows: SkillRow[] = [
     name: 'Backend',
     subtitle: 'Services · 服务与任务',
     description:
-      '用 FastAPI / Django 搭起接口、任务队列和数据层，把上传、推理、导出这类长流程做成可复现、可部署的链路。',
-    tags: ['FastAPI', 'Django', 'Celery', 'Redis', 'PostgreSQL'],
-    usedIn: [{ label: 'Earnlytics', to: 'projects' }, { label: 'Formula Lab', to: 'projects' }],
+      '用 FastAPI / Django / SSE 搭起运行时、任务与数据层，让训练、检索、推理和导出成为可观察、可恢复的链路。',
+    tags: ['FastAPI', 'Django', 'SSE', 'Celery', 'PostgreSQL'],
+    usedIn: [{ label: 'PulseGraph', to: 'projects' }, { label: 'SciScope', to: 'projects' }, { label: 'Formula Lab', to: 'projects' }],
   },
   {
     index: '/04',
-    name: 'AI · Data',
-    subtitle: 'Models · 模型接入',
+    name: 'AI · Evidence',
+    subtitle: 'Models · 训练与证据',
     description:
-      '从 YOLOv8-seg、OCR 到 RAG，把模型能力接进真实产品流程：上传、识别、检索、对话、导出。',
-    tags: ['DeepSeek', 'Cohere', 'YOLOv8-seg', 'PaddleOCR', 'pgvector'],
-    usedIn: [{ label: 'BDI · Infra Scan', to: 'projects' }, { label: 'Earnlytics', to: 'projects' }],
+      '从 PyTorch 训练遥测到 RAG 论断核查，把模型结果和来源证据一起交付，而不是只展示一次成功输出。',
+    tags: ['PyTorch', 'DeepSeek', 'LangGraph', 'pgvector', 'YOLOv8-seg'],
+    usedIn: [{ label: 'PulseGraph', to: 'projects' }, { label: 'SciScope', to: 'projects' }, { label: 'BDI · Infra Scan', to: 'projects' }],
   },
   {
     index: '/05',
     name: 'Infra',
     subtitle: 'Delivery · 部署与运维',
     description:
-      '把部署、缓存、任务调度和自动化同步做成稳定链路，让原型能持续运行，而不是只跑在本地。',
-    tags: ['Docker', 'Vercel', 'Supabase', 'GitHub Actions', 'Linux'],
-    usedIn: [{ label: 'Earnlytics', to: 'projects' }, { label: 'Formula Lab', to: 'projects' }],
+      '把本地优先、托管体验、数据持久化和自动化验证拆成清晰边界，让系统既能复现，也能持续交付。',
+    tags: ['Docker', 'Supabase', 'GitHub Actions', 'Linux', 'Vercel'],
+    usedIn: [{ label: 'PulseGraph', to: 'projects' }, { label: 'SciScope', to: 'projects' }, { label: 'Earnlytics', to: 'projects' }],
   },
   {
     index: '/06',

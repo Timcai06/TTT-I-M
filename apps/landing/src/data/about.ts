@@ -7,7 +7,7 @@ export interface AboutFact {
 }
 
 export const facts: AboutFact[] = [
-  { value: '10+', label: 'Public repos' },
-  { value: '6', label: 'Stacks shipped' },
-  { value: '2026', label: 'Freshman year' },
+  { value: '63', label: 'Recorded ML runs' },
+  { value: '159K+', label: 'Indexed papers' },
+  { value: '6', label: 'Systems shipped' },
 ]

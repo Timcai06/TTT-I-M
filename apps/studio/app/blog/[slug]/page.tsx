@@ -4,12 +4,15 @@ import { notFound } from 'next/navigation'
 import MdxContent from '../../../components/MdxContent'
 import { posts } from '../../../content'
 
+type BlogPostProps = { params: Promise<{ slug: string }> }
+
 export function generateStaticParams() {
   return posts.all().map((post) => ({ slug: post.slug }))
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const post = posts.get(params.slug)
+export async function generateMetadata({ params }: BlogPostProps): Promise<Metadata> {
+  const { slug } = await params
+  const post = posts.get(slug)
   if (!post) return {}
 
   return {
@@ -18,8 +21,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   }
 }
 
-export default function BlogPost({ params }: { params: { slug: string } }) {
-  const post = posts.get(params.slug)
+export default async function BlogPost({ params }: BlogPostProps) {
+  const { slug } = await params
+  const post = posts.get(slug)
   if (!post) notFound()
 
   return (

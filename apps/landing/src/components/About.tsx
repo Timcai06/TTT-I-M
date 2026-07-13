@@ -173,20 +173,21 @@ export default function About() {
         <div className="about__left">
           <div className="section__label">About — 自述</div>
           <h2 className="about__lead">
-            <span className="split-line"><span className="about__lead-line split-line__inner">在上海读大一，</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner">写代码、做建模、跑视觉算法</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner"><em>抓那些会变成产品的</em></span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner"><em>瞬间。</em></span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner">上海大一在读，</span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner">把训练、检索与数据证据</span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner"><em>做成能被看见、被验证的</em></span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner"><em>系统。</em></span></span>
           </h2>
 
           <div className="about__content-flow">
             {/* Block 1: Vision / Background (Large Serif, Left-aligned) */}
             <div className="about__block about__block--vision">
               <p>
-                今年大一，把课内的 <span className="highlight-text">Linux 实践</span>、
-                数学建模和课外的 <span className="highlight-text">AI 工具链、深度学习算法、GNN CNN神经网络</span>做成一些能真正跑起来的东西。
-                从自创无人机巡检 YOLOv8-seg 视觉算法到完整美股财报分析 RAG 系统，
-                我喜欢把 <span className="highlight-text font-italic">“算法 → 原型 → 产品”</span> 这一步抠到能复现的程度。
+                今年大一，我把深度学习训练、科研检索、视觉算法和数学建模做成一些能真正运行、能复盘的系统。
+                <span className="highlight-text"> PulseGraph</span> 记录模型图、遥测、事件和推理证据；
+                <span className="highlight-text"> SciScope</span> 把近 16 万篇运行时文献接进混合检索、论断核查与可追溯回答。
+                我关心的不只是模型给了什么结果，更是
+                <span className="highlight-text font-italic">“证据从哪里来、运行中发生了什么、别人能否复现”</span>。
               </p>
             </div>
 
@@ -212,18 +213,18 @@ export default function About() {
               </div>
               <span className="about__block-label">// TECHNICAL STACK</span>
               <p>
-                前端: React / Next.js / Tailwind CSS / GSAP / R3F<br />
-                后端: FastAPI / Django / Celery / PostgreSQL / Redis<br />
-                AI & 建模: Codex / Claude code / Pytorch / Python3 / Tensorflow
+                界面: React / Next.js / TypeScript / GSAP / R3F<br />
+                AI Runtime: PyTorch / FastAPI / LangGraph / DeepSeek / SSE<br />
+                Data & Systems: PostgreSQL / pgvector / Go / Python / Linux
               </p>
             </div>
 
             {/* Block 3: Manifesto (Medium Serif, Indented Left, Accent Highlight) */}
             <div className="about__block about__block--manifesto">
               <p>
-                我是一个在代码上比较克制的人。
-                宁可多写几句文档，也不喜欢留一堆
-                <span className="highlight-code"> as、any</span> 让队友在深夜兜底。
+                我不把“能跑”当作完成。
+                数据口径、运行证据、失败边界和
+                <span className="highlight-code"> reproduction commands</span>，都应该和界面一起交付。
               </p>
             </div>
           </div>
@@ -255,8 +256,8 @@ export default function About() {
             {/* Block 4: Philosophy moved underneath the portrait frame */}
             <div className="about__block about__block--philosophy">
               <p>
-                这个站本身也是一次尝试 — GSAP + R3F + 自定义 GLSL，<br />
-                没有用模板，每一帧 & 每一行着色器代码都是手写的。
+                这个站也是一件系统作品 — GSAP + R3F + 自定义 GLSL，<br />
+                用同一条滚动叙事连接代码、证据、项目与生活切片。
               </p>
             </div>
           </div>

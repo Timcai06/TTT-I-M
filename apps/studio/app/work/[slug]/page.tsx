@@ -3,12 +3,15 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { works } from '../../../content'
 
+type WorkDetailProps = { params: Promise<{ slug: string }> }
+
 export function generateStaticParams() {
   return works.all().map((work) => ({ slug: work.slug }))
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const work = works.get(params.slug)
+export async function generateMetadata({ params }: WorkDetailProps): Promise<Metadata> {
+  const { slug } = await params
+  const work = works.get(slug)
   if (!work) return {}
 
   return {
@@ -17,8 +20,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   }
 }
 
-export default function WorkDetail({ params }: { params: { slug: string } }) {
-  const work = works.get(params.slug)
+export default async function WorkDetail({ params }: WorkDetailProps) {
+  const { slug } = await params
+  const work = works.get(slug)
   if (!work) notFound()
 
   return (

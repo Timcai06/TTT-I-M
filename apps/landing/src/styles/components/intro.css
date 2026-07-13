@@ -99,7 +99,7 @@
 }
 
 .intro__text::after {
-  content: 'AI · FULL-STACK · VISUAL SYSTEMS';
+  content: 'AI SYSTEMS · OBSERVABILITY · VISUALS';
   position: absolute;
   left: 50%;
   top: calc(100% + clamp(18px, 2.6vw, 32px));

@@ -291,8 +291,8 @@ export default function Projects() {
           </h2>
         </div>
         <p className="projects__header-side">
-          每个项目都对应一个 GitHub 仓库。点开看 README 里我留下的细节 —
-          它们大多是阶段性的，但每一个我都在工程化上花过功夫。
+          项目不只按技术栈排列，也按证据链展开：输入、运行、结果、失败边界和复现方式，
+          都在对应的 GitHub 仓库里留下记录。
         </p>
       </div>
 

@@ -318,12 +318,12 @@ export default function Hero() {
           </div>
           <div className="hero__meta-block" style={{ textAlign: 'right' }}>
             <div>Tim · Cai</div>
-            <div>freshman / builder</div>
-            <div>full-stack · AI · 建模</div>
+            <div>freshman / AI builder</div>
+            <div>systems · RAG · 建模</div>
           </div>
         </div>
 
-        <div className="hero__kicker">visual systems / webgl / front-end storytelling</div>
+        <div className="hero__kicker">AI systems / evidence / visual interfaces</div>
         <h1 className="hero__name hero__split" ref={nameRef}>
           <span className="split-line"><span className="split-line__inner">{heroGlyphs('Tim')}</span></span>
           <span className="split-line"><span className="split-line__inner">{heroGlyphs('Cai.')}</span></span>
