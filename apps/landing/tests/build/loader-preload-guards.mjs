@@ -7,7 +7,7 @@ const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 
 // The whole-site preload was refactored from the monolithic src/lib/sitePreload.ts
-// into a tiered resources/ module (plan 01 · §4): manifest (what + tier) +
+// into a tiered resources/ module (plan 01 · §4): manifest (what + phase) +
 // loaders (how, per type) + preloadController (the failure-tolerant hook).
 const resourceFiles = {
   manifest: 'src/lib/resources/manifest.ts',
@@ -83,17 +83,20 @@ if (loaderSource.includes('v: 100') || loaderSource.includes('duration: 1.6')) {
   throw new Error('Loader still contains the old fake 0-100 timed counter animation.')
 }
 
-// ── Manifest: still the whole-site (curated) asset set, now explicitly tiered ──
+// ── Manifest: bounded whole-site render-ready asset set ──
 const requiredManifestInputs = [
   'archiveImages',
   'projects',
   'photos',
   'preloadLazyChapters',
   'srcSet',
+  'loadResponsiveImage',
+  'grain-128.png',
+  'sciscope-film-poster.jpg',
   'chunks:pretext',
   'texture:hero',
   "tier: 'critical'",
-  "tier: 'deferred'",
+  "tier: 'visual'",
 ]
 const missingManifest = requiredManifestInputs.filter((needle) => !manifestSource.includes(needle))
 if (missingManifest.length > 0) {
@@ -121,7 +124,7 @@ const requiredControllerInputs = [
   'TASK_TIMEOUT_MS',
   'withTimeout',
   'non-fatal',
-  'ready: true',
+  'renderReady: true',
 ]
 const missingController = requiredControllerInputs.filter((needle) => !controllerSource.includes(needle))
 if (missingController.length > 0) {
@@ -129,11 +132,11 @@ if (missingController.length > 0) {
 }
 
 // A1 regression guard: a single failed/slow resource must never leave the intro
-// stranded. Only the initial state may be ready:false — a second occurrence
+// stranded. Only the initial state may be renderReady:false — a second occurrence
 // signals a fatal completion path (the old "block intro on failure" bug).
-const readyFalseCount = (controllerSource.match(/ready: false/g) ?? []).length
+const readyFalseCount = (controllerSource.match(/renderReady: false/g) ?? []).length
 if (readyFalseCount > 1) {
-  throw new Error('Preload controller has a ready:false completion path (A1): failures must be non-fatal.')
+  throw new Error('Preload controller has a renderReady:false completion path (A1): failures must be non-fatal.')
 }
 
 if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('preloadLazyChapters')) {
@@ -141,35 +144,51 @@ if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('
 }
 
 if (!loadersSource.includes("decode = 'none'") || !loadersSource.includes("decode === 'eager'") || !loadersSource.includes("decode === 'idle'")) {
-  throw new Error('Image loaders must make eager decode opt-in; deferred image loading must not decode by default.')
+  throw new Error('Image loaders must keep eager and idle decode as explicit strategies.')
 }
 
-if (!manifestSource.includes("decode: 'idle'") || !manifestSource.includes("fetchPriority: 'low'") || !manifestSource.includes("loading: 'eager'")) {
-  throw new Error('Deferred manifest images must warm in the background with idle decode, low fetch priority, and eager loading semantics.')
+if (!manifestSource.includes("decode: 'eager'") || !manifestSource.includes("fetchPriority: 'auto'") || !manifestSource.includes("loading: 'eager'")) {
+  throw new Error('Render-ready images must finish decode before hand-off without forcing every asset to high fetch priority.')
 }
 
-// Whole-site preheat intent (00-principles): the controller must still RUN the
-// complete landing manifest to completion (deferred queue, full download), even
-// though the intro-exit gate is the critical tier only (fix ②, 2026-06-10).
-if (!controllerSource.includes('DEFERRED_CONCURRENCY') || !controllerSource.includes('deferredIndexes') || !controllerSource.includes('whole-site preload completed')) {
-  throw new Error('Preload controller must run the complete landing manifest (deferred queue), not stop at critical resources.')
+if (manifestSource.includes('srcSetUrls') || manifestSource.includes('...srcSetUrls')) {
+  throw new Error('Responsive preload must not expand and download every srcset candidate.')
 }
 
-// Gate contract: only the bounded runtime-critical tier may hold the intro.
-// The full manifest still completes in the background, but archive/network
-// variance cannot turn the loader into a black-screen failure mode.
+const requiredResponsiveSelection = ['image.sizes = sizes', 'image.srcset = srcSet', 'image.src = src', 'image.currentSrc']
+const missingResponsiveSelection = requiredResponsiveSelection.filter((needle) => !loadersSource.includes(needle))
+if (missingResponsiveSelection.length > 0) {
+  throw new Error(`Responsive image loader is not browser-selected/currentSrc-aware: ${missingResponsiveSelection.join(', ')}`)
+}
+
+// The controller runs the complete bounded landing manifest before hand-off.
+if (!controllerSource.includes('VISUAL_CONCURRENCY') || !controllerSource.includes('visualIndexes') || !controllerSource.includes('whole-site preload completed')) {
+  throw new Error('Preload controller must run the complete landing manifest (visual queue), not stop at critical resources.')
+}
+
+for (const token of ['settleRenderLayout', 'requestScrollRefresh(true)', 'requestAnimationFrame']) {
+  if (!controllerSource.includes(token)) {
+    throw new Error(`Render-ready gate must settle layout and refresh ScrollTrigger before hand-off: missing ${token}`)
+  }
+}
+
+// Gate contract: criticalReady marks the phase boundary; renderReady is the
+// only intro-exit gate. Failed resources remain non-fatal through runTask.
 if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {
   throw new Error('Preload controller must still expose the critical-tier fields (criticalReady/criticalCompleted/criticalTotal) for diagnostics.')
 }
-if (!loaderSource.includes('preload.criticalReady')) {
-  throw new Error('Loader must gate intro exit and progress on preload.criticalReady.')
+if (!controllerSource.includes('renderReady') || !controllerSource.includes('renderReady: true')) {
+  throw new Error('Preload controller must expose a full-manifest renderReady gate.')
 }
-if (loaderSource.includes('introReady || !preload.ready')) {
-  throw new Error('Loader intro exit must not wait for the full deferred manifest.')
+if (!loaderSource.includes('preload.renderReady') || !loaderSource.includes('current.renderReady')) {
+  throw new Error('Loader exit and progress must be driven by the full renderReady state.')
+}
+if (/!introReady \|\| !preload\.criticalReady/.test(loaderSource)) {
+  throw new Error('Loader must not exit at the SYSTEM phase boundary before device assets are decoded.')
 }
 
 if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {
-  throw new Error('Image decode queue must release deferred decode work during idle frame budget.')
+  throw new Error('Image decode queue must release scroll-near decode work during idle frame budget.')
 }
 
 const requiredGLQualityInputs = [

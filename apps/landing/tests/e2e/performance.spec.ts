@@ -99,14 +99,9 @@ test('LCP is within budget', async ({ page }) => {
     (window as unknown as Record<string, number | null>).__lcpMs,
   )
 
-  // NOTE: since the critical/deferred gate split (2026-06-10, 00-principles
-  // fix ②), the loader exits once the critical tier (hero texture / fonts /
-  // chunks / particles) is ready — deferred images keep fetching in the
-  // background. LCP is therefore critical-tier-bound, not whole-archive-bound:
-  // the old whole-gate warm baseline was ≈3.3s (budget 4200); the critical-only
-  // gate budget is 2800ms. If this fails, either the critical tier grew (check
-  // manifest.ts) or the gate regressed to full-manifest ready (guarded in
-  // loader-preload-guards.mjs).
+  // Loader intentionally waits for the bounded render-ready set. This advisory
+  // metric now captures that product choice; if it regresses, inspect selected
+  // responsive candidates and decode concurrency before weakening the gate.
   expect(lcpMs, `LCP ${lcpMs?.toFixed(0)}ms exceeds ${LCP_BUDGET_MS}ms budget`).toBeLessThan(LCP_BUDGET_MS)
 })
 

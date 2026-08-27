@@ -232,6 +232,20 @@ if (!vercelSource.includes('apps/landing/dist') || !vercelSource.includes('npm r
   throw new Error('Root Vercel config must build and serve the landing workspace output.')
 }
 
+// The Landing deliberately embeds same-origin HTML renderers (for example the
+// Stack -> Work Spark Badge). DENY makes those production-only iframes blank,
+// while SAMEORIGIN keeps third-party framing blocked.
+const globalHeaders = vercelConfig.headers
+  ?.find((entry) => entry.source === '/(.*)')
+  ?.headers ?? []
+const globalHeaderMap = new Map(globalHeaders.map((header) => [header.key, header.value]))
+if (globalHeaderMap.get('X-Frame-Options') !== 'SAMEORIGIN') {
+  throw new Error('Landing security headers must allow its same-origin renderer iframes via X-Frame-Options: SAMEORIGIN.')
+}
+if (!globalHeaderMap.get('Content-Security-Policy-Report-Only')?.includes("frame-ancestors 'self'")) {
+  throw new Error("Landing CSP reporting must match the same-origin iframe policy with frame-ancestors 'self'.")
+}
+
 const rewrites = vercelConfig.rewrites ?? []
 const rewriteMap = new Map(rewrites.map((rewrite) => [rewrite.source, rewrite.destination]))
 

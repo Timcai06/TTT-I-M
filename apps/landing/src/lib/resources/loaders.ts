@@ -12,7 +12,7 @@ type ImageDecodeMode = 'eager' | 'idle' | 'none'
  * 这里同时控制网络优先级、浏览器 loading hint 和 decode 策略。
  */
 interface LoadImageOptions {
-  /** 解码策略：critical 用 eager，deferred 用 idle，纯预取可用 none。 */
+  /** 解码策略：render-ready 用 eager，滚动邻近预热用 idle，纯预取可用 none。 */
   decode?: ImageDecodeMode
   /** 浏览器 fetch priority hint；critical hero/frame 资源可设 high。 */
   fetchPriority?: 'high' | 'low' | 'auto'
@@ -20,9 +20,16 @@ interface LoadImageOptions {
   loading?: 'eager' | 'lazy'
 }
 
+/** 浏览器响应式图片选择所需的最小属性集合。 */
+export interface ResponsiveImageSource {
+  sizes: string
+  src: string
+  srcSet: string
+}
+
 /**
  * @description 预加载单张图片，并按策略执行 eager / idle / none 解码。
- *   Loader manifest 通过该函数统一处理 critical 图片和 deferred Frame 图片，避免各组件各自抢网络/解码资源。
+ *   Loader manifest 通过该函数统一处理静态视觉图片，避免各组件各自抢网络/解码资源。
  * @dependencies
  *   - 浏览器 `Image` 构造器、`image.decode`
  *   - `enqueueImageDecode` 空闲解码队列
@@ -82,6 +89,63 @@ export function loadImage(src: string, {
       image.onerror = null
       if (image.naturalWidth <= 0) {
         reject(new Error(`Failed to preload image: ${src}`))
+        return
+      }
+      void complete()
+    }
+  })
+}
+
+/**
+ * @description 让浏览器依据当前 viewport、DPR 与 sizes 从 srcSet 中只选择一个真实候选，
+ *   并在任务完成前下载、解码该候选。这样 Loader 预热的 URL 与页面 `<img>` 最终使用的
+ *   `currentSrc` 一致，不会再把 720/1080/原图三个版本全部下载。
+ * @dependencies 原生 responsive image selection (`srcset` + `sizes`) 与 `loadImage` 相同的解码策略
+ * @performance / @caveats 属性顺序很重要：必须先写 sizes/srcset，最后写 src，避免浏览器先请求 fallback。
+ */
+export function loadResponsiveImage({ sizes, src, srcSet }: ResponsiveImageSource, {
+  decode = 'eager',
+  fetchPriority = 'auto',
+  loading = 'eager',
+}: LoadImageOptions = {}): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false
+    const image = new Image()
+
+    const complete = async () => {
+      if (settled) return
+      settled = true
+      try {
+        if (decode === 'eager' && typeof image.decode === 'function') {
+          await image.decode().catch((error: unknown) => {
+            if (import.meta.env.DEV) {
+              console.warn(`[resources] responsive image decode rejected for ${image.currentSrc || src}`, error)
+            }
+          })
+        } else if (decode === 'idle') {
+          await enqueueImageDecode(image).catch(() => {})
+        }
+      } finally {
+        image.onload = null
+        image.onerror = null
+      }
+      resolve()
+    }
+
+    image.decoding = 'async'
+    image.loading = loading
+    image.fetchPriority = fetchPriority
+    image.onload = complete
+    image.onerror = () => reject(new Error(`Failed to preload responsive image: ${src}`))
+    image.sizes = sizes
+    image.srcset = srcSet
+    image.src = src
+
+    if (image.complete) {
+      if (image.naturalWidth <= 0) {
+        image.onload = null
+        image.onerror = null
+        reject(new Error(`Failed to preload responsive image: ${src}`))
         return
       }
       void complete()

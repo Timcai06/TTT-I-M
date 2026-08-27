@@ -69,10 +69,10 @@ test('WebGL unavailable: app still loads, fallbacks hold, no uncaught crash', as
   expect(fatal, `uncaught non-WebGL errors:\n${fatal.join('\n')}`).toHaveLength(0)
 })
 
-// ── 3. Missing asset (A1: whole-site preload failure is non-fatal) ───────────────
+// ── 3. Missing asset (A1: render-ready failure is non-fatal) ──────────────────
 
 test('a 404 frame image does not strand the loader (A1)', async ({ page }) => {
-  // Abort one image family; the whole-site preload must skip it, not block forever.
+  // Abort one selected responsive image; render-ready must skip it, not block forever.
   await page.route('**/frame/**/*.webp', (route) => {
     if (route.request().url().includes('scenery-01')) return route.abort()
     return route.continue()
@@ -83,4 +83,52 @@ test('a 404 frame image does not strand the loader (A1)', async ({ page }) => {
   // The decisive assertion: the loader still hands off despite the failed asset.
   await waitForLive(page)
   await expect(page.locator('#hero')).toBeVisible()
+})
+
+test('loader hands off after render-ready tasks without downloading every frame variant', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await waitForLive(page)
+
+  const state = await page.evaluate(() => {
+    const preloadDebug = (window as unknown as {
+      __portfolioPreloadDebug?: {
+        snapshot: () => {
+          failed: Array<{ id: string }>
+          pending: Array<{ id: string }>
+        }
+      }
+    }).__portfolioPreloadDebug
+    const preload = preloadDebug?.snapshot()
+
+    const frameRequests = performance
+      .getEntriesByType('resource')
+      .map((entry) => new URL(entry.name).pathname)
+      .filter((pathname) => pathname.startsWith('/frame/') && pathname.endsWith('.webp'))
+
+    const candidatesByPhoto = new Map<string, Set<string>>()
+    frameRequests.forEach((pathname) => {
+      const logical = pathname.replace(/-(?:720|1080)(?=\.webp$)/, '')
+      const candidates = candidatesByPhoto.get(logical) ?? new Set<string>()
+      candidates.add(pathname)
+      candidatesByPhoto.set(logical, candidates)
+    })
+
+    return {
+      failedTasks: preload?.failed.map((task) => task.id) ?? ['missing debug snapshot'],
+      pendingTasks: preload?.pending.map((task) => task.id) ?? ['missing debug snapshot'],
+      overfetchedCandidates: Array.from(candidatesByPhoto.entries())
+        // A handful of archive photographs are deliberately reused as 720px
+        // Life tiles, so two URLs can be valid. Three means the preload layer
+        // expanded the complete 720/1080/original srcset again.
+        .filter(([, candidates]) => candidates.size > 2)
+        .map(([logical, candidates]) => ({ logical, candidates: Array.from(candidates) })),
+    }
+  })
+
+  expect(state.pendingTasks, `preload tasks still pending at hand-off: ${state.pendingTasks.join(', ')}`).toEqual([])
+  expect(state.failedTasks, `preload tasks skipped unexpectedly: ${state.failedTasks.join(', ')}`).toEqual([])
+  expect(
+    state.overfetchedCandidates,
+    `all srcset variants downloaded for one photograph: ${JSON.stringify(state.overfetchedCandidates)}`,
+  ).toEqual([])
 })

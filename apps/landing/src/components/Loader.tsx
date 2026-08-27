@@ -24,7 +24,7 @@ function randomBaffleChar() {
 /**
  * @description Loader 全屏加载页 —— 站点入口动画的 start-to-end 编排。
  *   阶段 1 (intro): 标题 "Tim Cai." 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
- *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.criticalReady（首屏运行资源就绪），
+ *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.renderReady（设备所需资源已下载并解码），
  *     标题向上浮出遮罩 → 计数器/进度条淡出 → 整个面板向上 wipe out，露出 Hero
  *   阶段 3 (complete): `done` 状态置 true，组件返回 null，彻底从 DOM 卸载
  *
@@ -48,7 +48,7 @@ function randomBaffleChar() {
  *   step2: Effect 1 — 字符缓慢升起到基线 (1.25s, stagger 0.075s)
  *   step3: Effect 1 — timeline onComplete → setStage('intro') → 激活 pretext 交互
  *   step4: Effect 2 — 进度条 rAF loop: displayedProgress 缓动追踪 preload progress
- *   step5: Effect 3 — introReady && preload.criticalReady → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
+ *   step5: Effect 3 — introReady && preload.renderReady → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
  *   step6: Effect 3 — panel yPercent: -100 → dispatchIntroExit → 若干 ms 后 setDone(true)
  */
 export default function Loader() {
@@ -63,10 +63,8 @@ export default function Loader() {
   const [introReady, setIntroReady] = useState(false)
   const preload = useWholeSitePreload()
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
-  // Keep the black-screen gate bounded to the runtime-critical tier. Curated
-  // chapter imagery continues through the controller's deferred queue after
-  // the panel exits, so a slow archive image cannot strand the whole site.
-  const stageText = preload.criticalReady ? 'ready' : preload.label
+  const renderPhase = preload.criticalReady ? '02 / ARCHIVE' : '01 / SYSTEM'
+  const stageText = preload.renderReady ? 'render ready' : preload.label
 
   useEffect(() => {
     preloadRef.current = preload
@@ -152,19 +150,19 @@ export default function Loader() {
       const current = preloadRef.current
       if (!current) return
 
-      const actualProgress = current.criticalTotal > 0
-        ? current.criticalCompleted / current.criticalTotal
+      const actualProgress = current.total > 0
+        ? current.completed / current.total
         : 0
-      const target = current.criticalReady ? 1 : actualProgress
+      const target = current.renderReady ? 1 : actualProgress
 
-      displayedProgress = stepDisplayedProgress(displayedProgress, target, current.criticalReady)
+      displayedProgress = stepDisplayedProgress(displayedProgress, target, current.renderReady)
 
-      const displayValue = displayedProgressValue(displayedProgress, current.criticalReady)
+      const displayValue = displayedProgressValue(displayedProgress, current.renderReady)
 
       if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
 
-      if (!current.criticalReady || displayedProgress < 0.999) {
+      if (!current.renderReady || displayedProgress < 0.999) {
         frame = window.requestAnimationFrame(renderProgress)
       }
     }
@@ -174,7 +172,7 @@ export default function Loader() {
   }, [])
 
   useEffect(() => {
-    if (!introReady || !preload.criticalReady || exitStarted.current || !panelRef.current) return
+    if (!introReady || !preload.renderReady || exitStarted.current || !panelRef.current) return
     exitStarted.current = true
     setExiting(true)
 
@@ -239,7 +237,7 @@ export default function Loader() {
     }, panelRef)
 
     return () => ctx.revert()
-  }, [introReady, preload.criticalReady])
+  }, [introReady, preload.renderReady])
 
   if (done) return null
 
@@ -285,8 +283,8 @@ export default function Loader() {
       <div className="intro__scan-line" aria-hidden="true" />
 
       <div className="intro__status" aria-hidden="true">
-        <span>Runtime gate</span>
-        <span>Critical resources</span>
+        <span>{renderPhase}</span>
+        <span>{preload.criticalReady ? 'Device assets' : 'Runtime core'}</span>
       </div>
       <div className="intro__counter">
         <span ref={countRef}>00</span>

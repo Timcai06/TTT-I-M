@@ -112,7 +112,7 @@ function runQueue(deadline: IdleDeadlineLike) {
 
 /**
  * @description 将已加载图片加入 idle decode 队列。
- *   用于 deferred 图片：网络加载完成后不立即同步 decode，而是在浏览器空闲片段中释放解码压力。
+ *   用于滚动邻近预热图片：网络加载完成后不立即同步 decode，而是在浏览器空闲片段中释放解码压力。
  * @dependencies `runQueue` / `schedule`
  * @performance / @caveats 只接受 complete 且 naturalWidth > 0 的图片；未完成图片直接 resolve，
  *   因为加载失败/未加载的判定属于 `loadImage` 负责。

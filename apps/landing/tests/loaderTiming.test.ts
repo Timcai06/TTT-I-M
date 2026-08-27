@@ -30,7 +30,7 @@ void test('group beats dominate the rise stagger over per-char offsets', () => {
   }
 })
 
-void test('progress damp accelerates once critical tier is ready', () => {
+void test('progress damp accelerates once the render-ready gate opens', () => {
   assert.ok(progressDampFactor(true) > progressDampFactor(false))
 })
 
@@ -43,7 +43,7 @@ void test('displayed progress converges to target without overshooting', () => {
   assert.ok(displayed > 0.999, `should converge near 1, got ${displayed}`)
 })
 
-void test('display value is capped at 99 until critical tier is ready', () => {
+void test('display value is capped at 99 until the render-ready gate opens', () => {
   // Even when the damped value sits just under 1, the counter must not show 100
   // before the gate opens — 100% means "the panel may exit now".
   assert.equal(displayedProgressValue(0.999, false), 99)
@@ -51,7 +51,7 @@ void test('display value is capped at 99 until critical tier is ready', () => {
   assert.equal(displayedProgressValue(0.42, false), 42)
 })
 
-void test('display value reaches exactly 100 once critical tier is ready', () => {
+void test('display value reaches exactly 100 once the render-ready gate opens', () => {
   assert.equal(displayedProgressValue(0.995, true), 100)
   assert.equal(displayedProgressValue(1, true), 100)
   // ceil, so a freshly-ready low value still rounds up rather than stalling

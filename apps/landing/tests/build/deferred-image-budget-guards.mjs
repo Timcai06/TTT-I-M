@@ -1,23 +1,19 @@
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { extname, join } from 'node:path'
 
-// Deferred-image byte budget (2026-06-10 audit follow-up).
+// Render-ready image byte budget.
 //
-// The loader's deferred tier eagerly background-fetches every curated landing
-// image after the intro exits (manifest.ts → collectImageUrls: frame archive,
-// life photos, project shots, portraits/hero texture). That whole-site preheat
-// is intentional — but its total byte cost is invisible in code review: one
-// new frame theme can silently add many MB to what every visitor downloads.
-// This guard makes the budget explicit. The directory set below mirrors
-// collectImageUrls' sources; if the manifest grows a new image root, add it
-// here (the cross-check beneath fails loudly if a known root disappears).
+// Frame has several srcset candidates per logical image. The Loader now asks the
+// browser for exactly one candidate, so summing every generated file would
+// measure an impossible request set. We budget the largest candidate per Frame
+// image (worst device selection) plus the bounded static roots.
 //
-// Baseline 2026-06-12: ~24.0 MiB (frame 22.3 + projects 1.1 + life 0.3 +
-// portrait 0.3). Budget = baseline + ~8% headroom. Raising it is allowed but
-// must be a conscious decision in a diff, not an accident.
-const BUDGET_BYTES = 26 * 1024 * 1024
+// Baseline 2026-08-27: largest Frame selections ~9.9 MiB plus static landing
+// imagery. Budget keeps modest headroom without charging all 720/1080/original
+// variants to every visitor.
+const BUDGET_BYTES = 15 * 1024 * 1024
 
-const DEFERRED_IMAGE_ROOTS = ['dist/frame', 'dist/life', 'dist/projects', 'dist/portrait']
+const STATIC_IMAGE_ROOTS = ['dist/life', 'dist/projects', 'dist/portrait', 'dist/noise']
 const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
 
 function walkBytes(dir) {
@@ -29,14 +25,25 @@ function walkBytes(dir) {
   }, 0)
 }
 
-const missing = DEFERRED_IMAGE_ROOTS.filter((dir) => !existsSync(dir))
+const FRAME_SOURCE_MANIFEST = 'src/data/frameImageSources.generated.ts'
+const missing = [...STATIC_IMAGE_ROOTS, 'dist/frame', FRAME_SOURCE_MANIFEST].filter((entry) => !existsSync(entry))
 if (missing.length > 0) {
   throw new Error(
-    `Deferred image roots missing from dist (build first, or update this guard if the manifest moved):\n  - ${missing.join('\n  - ')}`
+    `Render-ready image inputs missing (build first, or update this guard if the manifest moved):\n  - ${missing.join('\n  - ')}`
   )
 }
 
-const breakdown = DEFERRED_IMAGE_ROOTS.map((dir) => ({ dir, bytes: walkBytes(dir) }))
+const generatedSource = readFileSync(FRAME_SOURCE_MANIFEST, 'utf8')
+const frameSources = JSON.parse(generatedSource.slice(generatedSource.indexOf('{'), generatedSource.lastIndexOf('}') + 1))
+const frameBytes = Object.values(frameSources).reduce((sum, candidates) => {
+  const selected = candidates.reduce((largest, candidate) => candidate.width > largest.width ? candidate : largest)
+  return sum + statSync(join('dist', selected.src)).size
+}, 0)
+
+const breakdown = [
+  { dir: 'dist/frame (largest candidate per image)', bytes: frameBytes },
+  ...STATIC_IMAGE_ROOTS.map((dir) => ({ dir, bytes: walkBytes(dir) })),
+]
 const totalBytes = breakdown.reduce((sum, { bytes }) => sum + bytes, 0)
 
 // Anti-vacuous: an empty image set means the asset pipeline broke upstream,
@@ -51,13 +58,13 @@ const mib = (bytes) => (bytes / 1024 / 1024).toFixed(1)
 if (totalBytes > BUDGET_BYTES) {
   const lines = breakdown.map(({ dir, bytes }) => `  - ${dir}: ${mib(bytes)} MiB`).join('\n')
   throw new Error(
-    `Deferred preheat image set is ${mib(totalBytes)} MiB, over the ${mib(BUDGET_BYTES)} MiB budget:\n${lines}\n` +
+    `Render-ready image set is ${mib(totalBytes)} MiB, over the ${mib(BUDGET_BYTES)} MiB budget:\n${lines}\n` +
       'Either shrink/re-encode the new assets or consciously raise BUDGET_BYTES with justification.'
   )
 }
 
 console.log(
-  `[deferred-image-budget-guards] ${mib(totalBytes)} MiB of ${mib(BUDGET_BYTES)} MiB budget (` +
+  `[render-ready-image-budget-guards] ${mib(totalBytes)} MiB of ${mib(BUDGET_BYTES)} MiB budget (` +
     breakdown.map(({ dir, bytes }) => `${dir.replace('dist/', '')} ${mib(bytes)}`).join(', ') +
     ')'
 )

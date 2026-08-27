@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { requestScrollRefresh } from '../scroll/requestRefresh'
 import { buildResourceManifest, type ResourceTask } from './manifest'
 
 // A stuck resource (hung socket, dead CDN) must never strand the intro on a
 // black screen. Every task races this timeout; on timeout it's treated as a
 // non-fatal skip so the gate keeps moving. This is the A1 fix: previously a
-// single failed/404 image left `ready:false` forever.
+// single failed/404 image left the render-ready state false forever.
 const TASK_TIMEOUT_MS = 12000
 
 type PreloadTaskDebugStatus = 'pending' | 'fulfilled' | 'rejected'
@@ -45,18 +46,16 @@ interface PreloadDebugHandle {
 /**
  * 全站预加载状态。Loader 使用该状态驱动真实进度条，而不是播放假的 fixed-duration 进度。
  *
- * 闸门语义（00 原则·整站预热约束·修复②，2026-06-10）：
- * - `criticalReady` 是 intro 退场的唯一闸门：runtime 核心（hero texture / fonts /
- *   chunks / about particles）就绪即放行，黑屏闸门只系在 critical 上。
- * - deferred 图片在退场后**继续**按并发队列 eager fetch 直到 `ready`（Loader 退场后
- *   仍保持挂载，effect 不中断）—— 总下载量不变，保留整站预热的意图，只缩小闸门。
+ * 闸门语义：`criticalReady` 只标记 SYSTEM 阶段结束；`renderReady` 才是 intro
+ * 的退场闸门。后者表示 bounded landing manifest 已完成或按非致命容错跳过，
+ * 包括当前设备实际选择的图片候选及其 decode。
  */
 export interface WholeSitePreloadState {
-  /** 已完成或已跳过的任务数量（critical + deferred 全量）。 */
+  /** 已完成或已跳过的任务数量（critical + visual 全量）。 */
   completed: number
   /** critical 层已完成或已跳过的任务数量；进度条显示它。 */
   criticalCompleted: number
-  /** critical 层是否全部结束 —— intro 退场闸门。 */
+  /** critical 层是否全部结束 —— SYSTEM → ARCHIVE 的阶段标记。 */
   criticalReady: boolean
   /** critical 层任务总数。 */
   criticalTotal: number
@@ -64,8 +63,8 @@ export interface WholeSitePreloadState {
   failed: string[]
   /** 当前完成任务的展示标签。 */
   label: string
-  /** 是否已完成 critical + deferred 全部任务（整站预热完成，非退场闸门）。 */
-  ready: boolean
+  /** 是否已完成 critical + visual 全部任务 —— intro 的 render-ready 退场闸门。 */
+  renderReady: boolean
   /** manifest 总任务数。 */
   total: number
 }
@@ -196,26 +195,45 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
   }
 }
 
-const DEFERRED_CONCURRENCY = 6
+const VISUAL_CONCURRENCY = 8
 
 /**
- * @description 全站资源预加载 hook。Loader 用 `criticalReady` 门控 intro 退场，
- *   deferred 图片在退场后继续按并发队列 eager fetch（hook 跑完整 manifest 到 `ready`）。
- *   Frame DOM 图片保持 eager fetch，配合后台队列把快速滚入 Frame 的空图窗口压到最小。
+ * @description 图片解码任务完成后让 React/浏览器跨过两个绘制机会，再做一次最终
+ * ScrollTrigger 全局测量。超时兜底覆盖后台标签页的 rAF 节流，避免 Loader 被布局
+ * settle 永久卡住。
+ */
+function settleRenderLayout(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeout)
+      requestScrollRefresh(true)
+      resolve()
+    }
+    const timeout = window.setTimeout(finish, 250)
+    window.requestAnimationFrame(() => window.requestAnimationFrame(finish))
+  })
+}
+
+/**
+ * @description 全站资源预加载 hook。Loader 用 `renderReady` 门控 intro 退场；
+ *   critical 先准备运行时，visual 随后按受控并发下载并解码当前设备会展示的资源。
  * @dependencies
  *   - `buildResourceManifest` 生成资源任务列表
  *   - `withTimeout` 为每个任务提供硬超时
  *   - DEV 环境下的 `createPreloadDebug`
  * @performance / @caveats
- *   - deferred 并发固定为 6，避免大量图片同时 fetch/decode 形成 CPU/GPU decode 风暴。
+ *   - visual 并发固定为 8，在网络利用率和图片解码压力之间取平衡。
  *   - 任何单任务失败都只记录到 `failed`，不会让 intro 永久卡住；这是 Loader A1 黑屏修复的关键边界。
  *   - `tasks` 用 `useState(buildResourceManifest)` 固定一次，避免组件重渲染时重建 manifest 并重跑预加载。
  * @steps
  *   step1: 初始化 manifest 和可视化 preload state
- *   step2: critical indexes 全并发执行，结束即 criticalReady=true（intro 退场闸门开启）
- *   step3: deferred indexes 按 `DEFERRED_CONCURRENCY` 分片在后台继续执行
+ *   step2: critical indexes 全并发执行，结束即 criticalReady=true（切换到 ARCHIVE 阶段）
+ *   step3: visual indexes 按 `VISUAL_CONCURRENCY` 分片执行并等待完成
  *   step4: 每个任务完成/跳过后更新 completed/criticalCompleted/label/failed
- *   step5: 全部结束后标记 ready=true（整站预热完成），并关闭 DEV debug timers
+ *   step5: 全部结束后标记 renderReady=true（允许 intro 退场），并关闭 DEV debug timers
  */
 export function useWholeSitePreload(): WholeSitePreloadState {
   const [tasks] = useState(buildResourceManifest)
@@ -226,7 +244,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     criticalTotal: tasks.filter((task) => task.tier === 'critical').length,
     failed: [],
     label: 'Preparing',
-    ready: false,
+    renderReady: false,
     total: tasks.length,
   }))
 
@@ -282,19 +300,18 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     const criticalIndexes = tasks
       .map((task, index) => (task.tier === 'critical' ? index : -1))
       .filter((index) => index >= 0)
-    const deferredIndexes = tasks
-      .map((task, index) => (task.tier === 'deferred' ? index : -1))
+    const visualIndexes = tasks
+      .map((task, index) => (task.tier === 'visual' ? index : -1))
       .filter((index) => index >= 0)
     const run = async () => {
       await runGroup(criticalIndexes)
-      // The intro-exit gate opens here: runtime core is ready. The deferred
-      // tier below keeps eager-fetching in the background (the Loader stays
-      // mounted after its panel exits, so this effect is never cancelled by
-      // the hand-off) — whole-site preheat intent preserved, smaller gate.
+      // Runtime core is ready. Keep the intro mounted while the bounded visual
+      // set is fetched and decoded; this removes the fast-scroll race entirely.
       if (!cancelled) {
-        setState((current) => ({ ...current, criticalReady: true, label: 'Ready' }))
+        setState((current) => ({ ...current, criticalReady: true, label: 'Visual archive' }))
       }
-      await runGroup(deferredIndexes, DEFERRED_CONCURRENCY)
+      await runGroup(visualIndexes, VISUAL_CONCURRENCY)
+      if (!cancelled) await settleRenderLayout()
     }
 
     void run().then(() => {
@@ -306,7 +323,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
         criticalTotal: criticalIndexes.length,
         failed: [...failed],
         label: 'Ready',
-        ready: true,
+        renderReady: true,
         total: tasks.length,
       })
       debug?.report(failed.length > 0 ? `landing ready with ${failed.length} skipped` : 'whole-site preload completed')

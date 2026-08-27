@@ -2,10 +2,10 @@ import { archiveImages } from '../../data/frames'
 import { photos } from '../../data/life'
 import { projects } from '../../data/projects'
 import {
-  HERO_TEXTURE,
   loadFonts,
   loadHeroTexture,
   loadImage,
+  loadResponsiveImage,
   loadPretext,
   preloadLazyChapters,
 } from './loaders'
@@ -14,8 +14,8 @@ import {
 // set. The future blog / work / UGC zones grow without bound and must NOT be
 // added here — they load lazily / via SSR. (See plan/00-principles.md.)
 
-/** 资源加载层级：critical 阻塞 Loader 退场，deferred 只做后台预热。 */
-export type ResourceTier = 'critical' | 'deferred'
+/** 资源加载阶段：critical 准备运行时，visual 准备当前设备会展示的视觉资源。 */
+export type ResourceTier = 'critical' | 'visual'
 /** 资源成本分类，用于调试 preload 进度和定位卡顿来源。 */
 export type ResourceType = 'image' | 'font' | 'texture' | 'chunk' | 'particles'
 
@@ -27,7 +27,7 @@ export interface ResourceTask {
   id: string
   /** 面向 loading UI / 调试日志的资源名称 */
   label: string
-  /** critical 会阻塞 loader 退出；deferred 在面板退出后继续后台加载 */
+  /** critical 先执行；visual 下载并解码完成后共同构成 render-ready */
   tier: ResourceTier
   /** 资源类型，用于理解成本来源：image/font/texture/chunk/particles */
   type: ResourceType
@@ -47,47 +47,35 @@ function unique(values: string[]) {
  * @dependencies 依赖标准 srcSet 逗号分隔格式，如 "/a.webp 640w, /a@2x.webp 1280w"
  * @caveats 这里只提取 URL，不解析宽度描述符；浏览器最终选择仍由 img.sizes/srcset 自己决定
  */
-function srcSetUrls(srcSet: string) {
-  return srcSet
-    .split(',')
-    .map((candidate) => candidate.trim().split(/\s+/)[0] ?? '')
-    .filter(Boolean)
-}
-
 /**
- * @description 收集 landing 有边界的静态图片集合，供 deferred preload 队列后台预热
+ * @description 收集 landing 有边界的静态图片集合，供 render-ready 队列下载并解码
  * @dependencies 依赖 frame archiveImages、life photos、project shots、Hero texture 和 About portrait
  * @caveats 只收 landing curated assets；blog/work/studio 的无界内容不能加入这里，避免 loader 变成 CMS 全站爬虫
  */
 function collectImageUrls() {
-  const frameUrls = archiveImages.flatMap((image) => [
-    image.src,
-    ...srcSetUrls(image.srcSet),
-  ])
-
   const projectUrls = projects.flatMap((project) =>
     project.media?.shots.flatMap((shot) => [shot.src]) ?? []
   )
 
   return unique([
-    HERO_TEXTURE,
     '/portrait/about_me.jpg',
+    '/noise/grain-128.png',
+    '/projects/sciscope/sciscope-film-poster.jpg',
     ...photos.map((photo) => photo.src),
     ...projectUrls,
-    ...frameUrls,
   ])
 }
 
 /**
  * The whole-site preload manifest, in load order.
  *
- * `critical` runs first (hero texture, fonts, Pretext, lazy chapter chunks)
- * and is the intro-exit gate: 100% on the loader bar = runtime ready.
- * `deferred` is every curated image; it keeps
- * eager-fetching through the concurrency queue *after* the panel exits
- * (00-principles whole-site-preheat fix ②: same total download, smaller
- * black-screen gate). Frame DOM images stay eager-fetch as the second line of
- * defense against pop-in on a fast scroll into Frame.
+ * `critical` runs first (hero texture, fonts, Pretext, lazy chapter chunks).
+ * `visual` is the bounded visual set. Loader waits for the complete manifest.
+ * Static images and exactly one
+ * browser-selected responsive candidate per Frame image are downloaded and
+ * decoded before hand-off. The SciScope film itself remains click-to-play; only
+ * its poster participates in render-ready so the original audio/video rhythm is
+ * not turned into a boot-time tax.
  */
 export function buildResourceManifest(): ResourceTask[] {
   const critical: ResourceTask[] = [
@@ -97,15 +85,25 @@ export function buildResourceManifest(): ResourceTask[] {
     { id: 'chunks:chapters', label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
   ]
 
-  // These continue warming after the critical gate opens. Decode stays queued
-  // for idle time so the archive does not compete with the intro hand-off.
-  const deferred: ResourceTask[] = collectImageUrls().map((src) => ({
+  const staticImages: ResourceTask[] = collectImageUrls().map((src) => ({
     id: `image:${src}`,
     label: src,
-    tier: 'deferred',
+    tier: 'visual',
     type: 'image',
-    load: () => loadImage(src, { decode: 'idle', fetchPriority: 'low', loading: 'eager' }),
+    load: () => loadImage(src, { decode: 'eager', fetchPriority: 'auto', loading: 'eager' }),
   }))
 
-  return [...critical, ...deferred]
+  const responsiveImages: ResourceTask[] = archiveImages.map((image) => ({
+    id: `responsive-image:${image.src}`,
+    label: image.src,
+    tier: 'visual',
+    type: 'image',
+    load: () => loadResponsiveImage(image, {
+      decode: 'eager',
+      fetchPriority: 'auto',
+      loading: 'eager',
+    }),
+  }))
+
+  return [...critical, ...staticImages, ...responsiveImages]
 }
