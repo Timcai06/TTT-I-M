@@ -60,6 +60,10 @@ export default function WorkTransition() {
 
     let lastControlPost = 0
     let focusFrame = 0
+    // ── 滚动门（有意设计）：在 progress 达到 WORK_GATE_PROGRESS 时锁定前进滚动，
+    // 强制用户点击「ENTER THE WORK」进入作品区 —— 这一段是 Stack→Work 的沉浸式叙事桥。
+    // 仅桌面（`!mobile`）启用；只在 gate 锁定期间拦截 wheel/keydown 的前进方向，
+    // 并提供可聚焦的进入按钮作为键盘/读屏用户的绕过路径。若非 gate 锁定会直接放行。 ──
     const clampToGate = () => {
       const lenis = getLenis()
       if (lenis) lenis.scrollTo(gateScrollRef.current, { immediate: true, force: true })

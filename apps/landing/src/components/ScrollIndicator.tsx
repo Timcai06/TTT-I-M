@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
-import { progressChapters } from '../chapters/registry'
 import { transitionToChapter } from '../lib/chapterTransition'
 import { useLandingScrollNarrative } from '../lib/useLandingScrollNarrative'
+import { narrativeChapters, narrativeProgressById } from '../lib/narrativeChapters'
 
-const sections = progressChapters.map((c) => ({
-  id: c.id,
-  index: c.progress.index,
-  name: c.progress.name,
+const sections = narrativeChapters.map(({ id }) => ({
+  id,
+  index: narrativeProgressById[id]?.index ?? '',
+  name: narrativeProgressById[id]?.name ?? id,
 }))
 const firstSection = sections[0] ?? { id: 'hero', index: '01', name: 'HOME' }
 
@@ -24,8 +24,8 @@ export default function ScrollIndicator() {
   }
 
   return (
-    <div className="scroll-indicator" aria-hidden="true">
-      <div className="scroll-indicator__label">
+    <div className="scroll-indicator" role="group" aria-label="章节导航">
+      <div className="scroll-indicator__label" aria-hidden="true">
         <span key={`idx-${activeSection.id}`} className="scroll-indicator__index animate-slide-up">
           {activeSection.index}
         </span>
@@ -45,10 +45,9 @@ export default function ScrollIndicator() {
               key={sec.id}
               className={`scroll-indicator__segment${isActive ? ' is-active' : ''}`}
               onClick={() => handleSegmentClick(sec.id)}
-              tabIndex={-1}
               aria-label={`Scroll to ${sec.name}`}
             >
-              <span className="scroll-indicator__tooltip">
+              <span className="scroll-indicator__tooltip" aria-hidden="true">
                 <span className="scroll-indicator__tooltip-num">{sec.index}</span>
                 <span className="scroll-indicator__tooltip-name">{sec.name}</span>
               </span>

@@ -62,21 +62,31 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
       // quickSetter is typed as bare `Function` upstream; pin the real signature.
       const setDash = gsap.quickSetter(path, 'strokeDasharray') as (value: string) => void
 
+      // 预计算 Y→length 查找表（每次 pathD 重建一次）。蛇形路径的 y 单调递增
+      // （skillsFlowPath 用 C1 连续、拐点竖直切线保证），因此滚动时只需在
+      // 纯数值表上二分/插值，而不再是每个滚动帧调用 16 次昂贵的 getPointAtLength()。
+      const SAMPLES = 48
+      const table = Array.from({ length: SAMPLES + 1 }, (_, index) => {
+        const l = (length * index) / SAMPLES
+        return { length: l, y: path.getPointAtLength(l).y }
+      })
+
       const lengthAtY = (targetY: number) => {
         let low = 0
-        let high = length
-
-        for (let i = 0; i < 16; i += 1) {
-          const mid = (low + high) / 2
-          const point = path.getPointAtLength(mid)
-          if (point.y < targetY) {
-            low = mid
-          } else {
-            high = mid
-          }
+        let high = table.length
+        while (low < high) {
+          const mid = (low + high) >> 1
+          const sample = table[mid]
+          if (sample && sample.y < targetY) low = mid + 1
+          else high = mid
         }
-
-        return Math.min(length, Math.max(0, high))
+        const upper = table[low]
+        const lower = table[low - 1]
+        if (!upper) return length
+        if (!lower) return upper.length
+        const span = upper.y - lower.y || 1
+        const t = Math.min(1, Math.max(0, (targetY - lower.y) / span))
+        return lower.length + (upper.length - lower.length) * t
       }
 
       const syncLineToViewportCenter = () => {

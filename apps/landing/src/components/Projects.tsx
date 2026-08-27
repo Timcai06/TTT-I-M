@@ -3,22 +3,10 @@ import { gsap, ScrollTrigger } from '../lib/gsap'
 import { getLenis } from '../lib/lenis'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
+import { mixHexColor } from '../lib/hex.ts'
 import { projects, type Project } from '../content'
 import BorderGlow from './BorderGlow'
 import SciScopeFilm from './SciScopeFilm'
-
-function mixHex(from: string, to: string, weight: number) {
-  const parse = (value: string) => {
-    const hex = value.replace('#', '')
-    return [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16))
-  }
-  const source = parse(from)
-  const target = parse(to)
-  return `#${source.map((channel, index) => {
-    const mixed = Math.round(channel + ((target[index] ?? channel) - channel) * weight)
-    return mixed.toString(16).padStart(2, '0')
-  }).join('')}`
-}
 
 /**
  * @description Bento 速览格 —— 六个项目的不等宽导航瓦片（zentry bento 模式）。
@@ -63,7 +51,7 @@ function ProjectsBento() {
                 coneSpread={32}
                 fillOpacity={0.46}
                 borderRadius={18}
-                colors={[mixHex(p.accent, '#777b79', 0.72), '#d8bd86', '#a6aaa7']}
+                colors={[mixHexColor(p.accent, '#777b79', 0.72), '#d8bd86', '#a6aaa7']}
               >
                 {shot ? (
                   <img

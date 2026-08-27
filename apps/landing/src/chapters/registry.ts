@@ -65,6 +65,8 @@ export const chapters: Chapter[] = [
   },
   {
     // The life gallery is an interstitial — intentionally absent from nav/rail.
+    // 有意不纳入 nav/progress → 也不进 `lib/narrativeChapters` 的测量集合。
+    // 后果（接受）：滑过它时 active 章节与背景色温会定格在上一节被追踪的章节。
     id: 'life',
     Component: LifeGallery,
   },
@@ -82,6 +84,7 @@ export const chapters: Chapter[] = [
   },
   {
     // A cinematic bridge from capability to proof; intentionally navless.
+    // 同样刻意不纳入 nav/rail/narrative 测量 —— 滑动期间 active/色温定格于 skills。
     id: 'work-transition',
     Component: WorkTransition,
   },

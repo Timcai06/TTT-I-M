@@ -1,6 +1,7 @@
 import { pickActiveChapterId, type ChapterRectSnapshot } from './activeChapter.ts'
 import { computeChapterProgressFills, getChapterProgressSegmentEnd } from './chapterProgress.ts'
 import { getChapterTheme, type ChapterTheme } from './chapterThemeTokens.ts'
+import { mixHexColor } from './hex.ts'
 
 export interface LandingScrollNarrative {
   activeId: string
@@ -13,19 +14,6 @@ export interface LandingScrollNarrative {
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value))
-}
-
-function parseHexChannel(hex: string, start: number) {
-  return Number.parseInt(hex.slice(start, start + 2), 16)
-}
-
-function mixHexColor(from: string, to: string, blend: number) {
-  const amount = clamp01(blend)
-  const red = Math.round(parseHexChannel(from, 1) + (parseHexChannel(to, 1) - parseHexChannel(from, 1)) * amount)
-  const green = Math.round(parseHexChannel(from, 3) + (parseHexChannel(to, 3) - parseHexChannel(from, 3)) * amount)
-  const blue = Math.round(parseHexChannel(from, 5) + (parseHexChannel(to, 5) - parseHexChannel(from, 5)) * amount)
-
-  return `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
 }
 
 function mixTheme(fromId: string, toId: string, blend: number): ChapterTheme {
