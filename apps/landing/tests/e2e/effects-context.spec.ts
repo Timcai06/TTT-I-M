@@ -177,6 +177,26 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
   await waitForLive(page)
   const transition = page.locator('#work-transition')
   const start = await transition.evaluate((section) => section.getBoundingClientRect().top + window.scrollY)
+
+  // A large jump toward the chapter used to make anticipatePin fix the visual
+  // layer to the viewport while the section was still below it. Native sticky
+  // must keep the bridge inside its own document-flow boundary at any speed.
+  const approach = await transition.evaluate((section) => {
+    const top = section.getBoundingClientRect().top + window.scrollY
+    return top - window.innerHeight - 120
+  })
+  await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), approach)
+  const preEntryGeometry = await transition.evaluate((section) => {
+    const sticky = section.querySelector<HTMLElement>('.work-transition__sticky')
+    return {
+      sectionTop: section.getBoundingClientRect().top,
+      stickyTop: sticky?.getBoundingClientRect().top ?? Number.NEGATIVE_INFINITY,
+      viewportHeight: window.innerHeight,
+    }
+  })
+  expect(preEntryGeometry.sectionTop).toBeGreaterThan(preEntryGeometry.viewportHeight)
+  expect(preEntryGeometry.stickyTop).toBeGreaterThanOrEqual(preEntryGeometry.sectionTop - 1)
+
   await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), start + 2)
   await page.waitForTimeout(250)
 

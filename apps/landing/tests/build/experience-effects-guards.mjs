@@ -59,6 +59,14 @@ if (!workTransition.includes('spark-badge-portfolio.html?url')) {
 if (!workTransitionStyle.includes('height: 680svh') || !workTransitionStyle.includes('height: 300svh')) {
   throw new Error('The Stack → Work bridge must retain its measured desktop/mobile narrative space.')
 }
+if (!/\.work-transition__sticky\s*\{[^}]*position:\s*sticky/s.test(workTransitionStyle)) {
+  throw new Error('WorkTransition must stay inside its own chapter with native sticky positioning.')
+}
+for (const earlyPinToken of ["pin: '.work-transition__sticky'", 'pinSpacing:', 'anticipatePin:']) {
+  if (workTransition.includes(earlyPinToken)) {
+    throw new Error(`WorkTransition must not let ScrollTrigger pin ahead of its chapter: ${earlyPinToken}`)
+  }
+}
 for (const needle of ['addTrackedPhase', 'work-transition__phase-content', '{ y: 72, autoAlpha: 0 }', 'scrub: mobile ? 0.25 : 0.32', 'rendering="colored"']) {
   if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its scroll-tracked narrative treatment: ${needle}`)
 }
