@@ -31,7 +31,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'ss01', 'cv11';
-  overflow-x: hidden;
+  /* `hidden` turns this axis into a scroll container in some engines and
+     breaks section-bounded position: sticky descendants. `clip` preserves the
+     same horizontal crop without changing the sticky containing block. */
+  overflow-x: clip;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

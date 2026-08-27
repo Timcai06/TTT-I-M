@@ -1,7 +1,6 @@
 import { useId, useMemo, useRef } from 'react'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useReducedMotion } from '../lib/motion'
-import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 
 export type MaskedHeadingProps = {
   text: string
@@ -79,7 +78,6 @@ export default function MaskedHeading({
     if (reducedMotion) {
       gsap.set(stage, { autoAlpha: 1, clipPath: 'inset(0% 0% 0% 0%)' })
       gsap.set(media, { yPercent: 0 })
-      requestScrollRefresh()
       return
     }
 
@@ -118,8 +116,6 @@ export default function MaskedHeading({
         },
       })
     }
-
-    requestScrollRefresh()
   }, {
     scope: root,
     dependencies: [fillScale, parallax, reducedMotion, reveal, trigger],

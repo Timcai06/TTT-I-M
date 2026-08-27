@@ -178,9 +178,36 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
   const transition = page.locator('#work-transition')
   const start = await transition.evaluate((section) => section.getBoundingClientRect().top + window.scrollY)
 
-  // A large jump toward the chapter used to make anticipatePin fix the visual
-  // layer to the viewport while the section was still below it. Native sticky
-  // must keep the bridge inside its own document-flow boundary at any speed.
+  // The bridge must remain physically inside its section throughout Frame.
+  // This catches both GSAP fixed-pin preemption and sticky choosing the wrong
+  // scroll container after a global overflow regression.
+  const frame = page.locator('#frame')
+  for (const progress of [0.2, 0.5, 0.8]) {
+    const frameScroll = await frame.evaluate((section, nextProgress) => {
+      const rect = section.getBoundingClientRect()
+      const top = rect.top + window.scrollY
+      return top + Math.max(0, rect.height - window.innerHeight) * nextProgress
+    }, progress)
+    await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), frameScroll)
+    await page.waitForTimeout(100)
+
+    const frameGeometry = await transition.evaluate((section) => {
+      const sticky = section.querySelector<HTMLElement>('.work-transition__sticky')
+      const sectionRect = section.getBoundingClientRect()
+      const stickyRect = sticky?.getBoundingClientRect()
+      return {
+        sectionTop: sectionRect.top,
+        stickyTop: stickyRect?.top ?? Number.NEGATIVE_INFINITY,
+        stickyPosition: sticky ? getComputedStyle(sticky).position : '',
+        viewportHeight: window.innerHeight,
+      }
+    })
+    expect(frameGeometry.sectionTop).toBeGreaterThan(frameGeometry.viewportHeight)
+    expect(frameGeometry.stickyTop).toBeGreaterThanOrEqual(frameGeometry.sectionTop - 1)
+    expect(frameGeometry.stickyPosition).toBe('sticky')
+  }
+
+  // A large jump toward the chapter must still preserve the same boundary.
   const approach = await transition.evaluate((section) => {
     const top = section.getBoundingClientRect().top + window.scrollY
     return top - window.innerHeight - 120

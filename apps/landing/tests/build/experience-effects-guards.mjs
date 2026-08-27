@@ -61,12 +61,18 @@ if (!workTransition.includes('spark-badge-portfolio.html?url')) {
 if (!workTransitionStyle.includes('height: 680svh') || !workTransitionStyle.includes('height: 300svh')) {
   throw new Error('The Stack → Work bridge must retain its measured desktop/mobile narrative space.')
 }
-if (!workTransition.includes("pin: '.work-transition__sticky'") || !workTransition.includes('pinSpacing: false')) {
-  throw new Error('WorkTransition must keep its visual stage pinned throughout the long narrative chapter.')
+if (!/\.work-transition__sticky\s*\{[^}]*position:\s*sticky/s.test(workTransitionStyle)) {
+  throw new Error('WorkTransition must keep its visual stage section-bound with native sticky positioning.')
 }
-for (const earlyPinToken of ['anticipatePin:']) {
+if (!/\.work-transition\s*\{[^}]*overflow:\s*clip/s.test(workTransitionStyle)) {
+  throw new Error('WorkTransition must clip its renderer to the chapter boundary.')
+}
+if (!/overflow-x:\s*clip/.test(globalStyle)) {
+  throw new Error('The document must crop horizontally without creating a sticky-breaking scroll container.')
+}
+for (const earlyPinToken of ["pin: '.work-transition__sticky'", 'pinSpacing:', 'anticipatePin:']) {
   if (workTransition.includes(earlyPinToken)) {
-    throw new Error(`WorkTransition must not let ScrollTrigger pin ahead of its chapter: ${earlyPinToken}`)
+    throw new Error(`WorkTransition must not let ScrollTrigger detach its stage from the chapter: ${earlyPinToken}`)
   }
 }
 for (const needle of ['addTrackedPhase', 'work-transition__phase-content', '{ y: 72, autoAlpha: 0 }', 'scrub: mobile ? 0.25 : 0.32', 'rendering="colored"']) {

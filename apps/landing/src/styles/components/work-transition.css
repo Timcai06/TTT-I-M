@@ -42,12 +42,13 @@
 
   position: relative;
   height: 680svh;
+  overflow: clip;
   color: #f4f1e8;
   background: #000;
 }
 
 .work-transition__sticky {
-  position: relative;
+  position: sticky;
   top: 0;
   height: 100svh;
   min-height: 620px;
