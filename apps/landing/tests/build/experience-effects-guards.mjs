@@ -8,6 +8,7 @@ const required = [
   'src/components/DriftWall.tsx',
   'src/components/AccordionGallery.tsx',
   'src/components/WorkTransition.tsx',
+  'src/components/MaskedHeading.tsx',
   'src/components/SciScopeFilm.tsx',
   'src/lib/sound/SoundProvider.tsx',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
@@ -29,6 +30,7 @@ const life = read('src/components/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
 const projects = read('src/components/Projects.tsx')
+const maskedHeading = read('src/components/MaskedHeading.tsx')
 const footer = read('src/components/Footer.tsx')
 const workTransition = read('src/components/WorkTransition.tsx')
 const workTransitionStyle = read('src/styles/components/work-transition.css')
@@ -168,6 +170,13 @@ for (const [source, component, owner] of [
   [footer, 'ASCIIText', 'Contact'],
 ]) {
   if (!source.includes(component)) throw new Error(`${owner} must mount ${component}.`)
+}
+
+for (const token of ['MaskedHeading', 'sources={projectHeadingSources}', 'emphasis="I made"', 'parallax={18}', 'reveal="wipe"']) {
+  if (!projects.includes(token)) throw new Error(`Work heading must preserve its project-media mask treatment: ${token}`)
+}
+for (const token of ['useGSAP', 'useReducedMotion', '<mask', '<foreignObject', "mediaType === 'video'", 'once: true']) {
+  if (!maskedHeading.includes(token)) throw new Error(`MaskedHeading is missing its accessible live-media implementation: ${token}`)
 }
 
 if (

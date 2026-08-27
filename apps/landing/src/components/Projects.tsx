@@ -6,7 +6,12 @@ import { attachTilt } from '../lib/tilt'
 import { mixHexColor } from '../lib/hex.ts'
 import { projects, type Project } from '../content'
 import BorderGlow from './BorderGlow'
+import MaskedHeading from './MaskedHeading'
 import SciScopeFilm from './SciScopeFilm'
+
+const projectHeadingSources = projects
+  .map((project) => project.media?.shots[0]?.src)
+  .filter((source): source is string => Boolean(source))
 
 /**
  * @description Bento 速览格 —— 六个项目的不等宽导航瓦片（zentry bento 模式）。
@@ -215,19 +220,6 @@ export default function Projects() {
   useEffect(() => {
     if (!root.current) return
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.section__title .split-line__inner',
-        { yPercent: 110, skewY: 6 },
-        {
-          yPercent: 0,
-          skewY: 0,
-          duration: 1.4,
-          ease: 'expo.out',
-          stagger: 0.12,
-          scrollTrigger: { trigger: '.section__title', start: 'top 88%', toggleActions: 'play none none reverse' },
-        }
-      )
-
       // Bento tiles cascade in once (per-tile delay lives in CSS via --tile-i).
       const bento = root.current?.querySelector<HTMLElement>('.projects__bento')
       if (bento) {
@@ -272,12 +264,18 @@ export default function Projects() {
   return (
     <section className="section projects container" id="projects" ref={root}>
       <div className="projects__header">
-        <div>
+        <div className="projects__heading-wrap">
           <div className="section__label">Work — 选作</div>
-          <h2 className="section__title">
-            <span className="split-line"><span className="split-line__inner">Six things <em>I made</em></span></span>
-            <span className="split-line"><span className="split-line__inner">in 2026.</span></span>
-          </h2>
+          <MaskedHeading
+            className="projects__masked-heading"
+            text={'Six things I made\nin 2026.'}
+            sources={projectHeadingSources}
+            emphasis="I made"
+            fillScale={1.12}
+            parallax={18}
+            reveal="wipe"
+            trigger="view"
+          />
         </div>
         <p className="projects__header-side">
           项目不只按技术栈排列，也按证据链展开：输入、运行、结果、失败边界和复现方式，
