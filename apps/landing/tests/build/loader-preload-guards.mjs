@@ -144,8 +144,8 @@ if (!loadersSource.includes("decode = 'none'") || !loadersSource.includes("decod
   throw new Error('Image loaders must make eager decode opt-in; deferred image loading must not decode by default.')
 }
 
-if (!manifestSource.includes("decode: 'idle'") || !manifestSource.includes("loading: 'eager'")) {
-  throw new Error('Deferred manifest images must be gated by the loader with idle decode and eager fetch semantics.')
+if (!manifestSource.includes("decode: 'idle'") || !manifestSource.includes("fetchPriority: 'low'") || !manifestSource.includes("loading: 'eager'")) {
+  throw new Error('Deferred manifest images must warm in the background with idle decode, low fetch priority, and eager loading semantics.')
 }
 
 // Whole-site preheat intent (00-principles): the controller must still RUN the
@@ -155,20 +155,17 @@ if (!controllerSource.includes('DEFERRED_CONCURRENCY') || !controllerSource.incl
   throw new Error('Preload controller must run the complete landing manifest (deferred queue), not stop at critical resources.')
 }
 
-// Gate contract (2026-06-18, deliberate change): the loader is a true
-// "everything loaded" screen — the intro exits on FULL-manifest `ready`, so the
-// bar hitting 100% means every chunk AND every curated image is fetched/decoded
-// and scrolling into any section (Frame, Work media) is pop-in-/hitch-free.
-// The controller still computes the critical-tier fields (kept for diagnostics),
-// but the Loader must consume the full gate, not the critical-only one.
+// Gate contract: only the bounded runtime-critical tier may hold the intro.
+// The full manifest still completes in the background, but archive/network
+// variance cannot turn the loader into a black-screen failure mode.
 if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {
   throw new Error('Preload controller must still expose the critical-tier fields (criticalReady/criticalCompleted/criticalTotal) for diagnostics.')
 }
-if (!loaderSource.includes('preload.ready')) {
-  throw new Error('Loader must gate the intro exit on full-manifest preload.ready (true everything-loaded screen).')
+if (!loaderSource.includes('preload.criticalReady')) {
+  throw new Error('Loader must gate intro exit and progress on preload.criticalReady.')
 }
-if (loaderSource.includes('preload.criticalReady')) {
-  throw new Error('Loader must not gate on the critical-tier-only preload.criticalReady — the intro should wait for the full manifest.')
+if (loaderSource.includes('introReady || !preload.ready')) {
+  throw new Error('Loader intro exit must not wait for the full deferred manifest.')
 }
 
 if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {
