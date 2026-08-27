@@ -6,9 +6,75 @@
 
 .frame-horizontal {
   position: relative;
-  background: transparent;
+  background: #000;
   border-top: 1px solid var(--line);
   overflow: clip;
+}
+
+.frame-accordion {
+  position: relative;
+  padding-top: clamp(56px, 8vw, 110px);
+  padding-bottom: clamp(100px, 14vw, 190px);
+}
+
+.frame-accordion::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: 2% -18% 8%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 38%, rgb(216 189 134 / 8%), transparent 34%),
+    radial-gradient(circle at 78% 62%, rgb(104 128 148 / 7%), transparent 38%);
+  filter: blur(24px);
+}
+
+.frame-accordion > * { position: relative; z-index: 1; }
+
+.frame-accordion__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  color: var(--fg-mute);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.frame-accordion__meta p {
+  max-width: 360px;
+  margin: 0;
+  color: var(--fg-soft);
+  line-height: 1.7;
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
+.frame-accordion__meta p i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 9px;
+  border-radius: 50%;
+  background: #d8bd86;
+  box-shadow: 0 0 0 5px rgb(216 189 134 / 10%);
+  animation: archive-hint-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes archive-hint-pulse {
+  50% { box-shadow: 0 0 0 9px rgb(216 189 134 / 0%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-accordion__meta p i { animation: none; }
+}
+
+.archive-theme-section { scroll-margin-top: 56px; }
+
+@media (max-width: 640px) {
+  .frame-accordion__meta { flex-direction: column; }
 }
 
 .archive-frame-text {

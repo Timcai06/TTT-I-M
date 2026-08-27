@@ -15,6 +15,10 @@ apps/*/dist
 apps/*/.next
 apps/*/test-results
 apps/*/tsconfig.tsbuildinfo
+apps/*/.playwright-cli
+apps/*/output
+output
+tmp
 *.local
 
 # Local source/archive material that should not be shipped by Vite publicDir

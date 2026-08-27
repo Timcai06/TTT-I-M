@@ -3,37 +3,81 @@
   position: fixed;
   top: 0;
   left: 0;
+  width: 76px;
+  height: 56px;
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: difference;
+  will-change: transform, opacity;
+  transition: opacity 0.12s;
+}
+
+.cursor::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 12px;
   height: 12px;
   border: 1px solid var(--fg);
   border-radius: 50%;
-  pointer-events: none;
-  z-index: 9998;
-  transform: translate(-50%, -50%);
-  mix-blend-mode: difference;
-  transition: width 0.3s var(--ease-out), height 0.3s var(--ease-out), opacity 0.3s;
+  background: transparent;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center;
+  will-change: transform;
+  transition:
+    transform 0.075s var(--ease-out),
+    border-radius 0.075s var(--ease-out),
+    border-color 0.075s var(--ease-out),
+    background-color 0.075s var(--ease-out),
+    box-shadow 0.075s var(--ease-out);
 }
 
-.cursor.is-hover {
-  width: 56px;
-  height: 56px;
-  background: var(--fg);
+.cursor::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity 0.04s linear;
 }
+
+.cursor.is-hover::before {
+  background: var(--fg);
+  transform: translate(-50%, -50%) scale(4.6667);
+}
+
+.cursor.is-labeled::before {
+  border-radius: 999px;
+  transform: translate(-50%, -50%) scale(6.3333, 2.6667);
+}
+
+.cursor.is-labeled::after { opacity: 1; }
 
 .cursor.is-scanning {
-  width: 48px;
-  height: 2px;
+  mix-blend-mode: normal;
+}
+
+.cursor.is-scanning::before {
   border-radius: 0;
   background: var(--accent-warm, #ea412d);
   border-color: transparent;
-  mix-blend-mode: normal;
   box-shadow: 0 0 12px rgba(234, 65, 45, 0.6);
   animation: pulse-scan 0.8s ease-in-out infinite alternate;
 }
 
+.cursor.is-scanning::after { opacity: 0; }
+
 @keyframes pulse-scan {
-  0% { opacity: 0.6; width: 32px; }
-  100% { opacity: 1; width: 48px; }
+  0% { opacity: 0.6; transform: translate(-50%, -50%) scale(2.6667, 0.1667); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(4, 0.1667); }
 }
 
 @media (hover: none), (pointer: coarse) {

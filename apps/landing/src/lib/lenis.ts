@@ -27,9 +27,9 @@ export function useLenis() {
 
     lenisInstance = lenis
 
-    // While scrolling, suspend pointer/hover effects (cheaper repaints, no
-    // hover-state thrash). Driven off Lenis's own scroll event so there's a
-    // single scroll subscription instead of a redundant native listener.
+    // Mark active scroll bursts so expensive decorative layers can reduce
+    // repaint work. Pointer hit-testing stays enabled: the Frame archive must
+    // be able to acquire hover while panels move beneath a stationary cursor.
     let hoverTimeout: number | undefined
     const onScroll = () => {
       ScrollTrigger.update()

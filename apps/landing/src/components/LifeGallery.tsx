@@ -1,279 +1,66 @@
-import { useEffect, useRef } from 'react'
-import { gsap, Flip } from '../lib/gsap'
+import { useRef } from 'react'
 import { photos } from '../content'
 import { useMobileExperience } from '../lib/device'
-import GradualBlur from './GradualBlur'
-import ScrollReveal from './ScrollReveal'
+import { gsap, useGSAP } from '../lib/gsap'
+import DriftWall from './DriftWall'
 
-/**
- * @description Life 章节 —— 将生活照片从 bento 网格过渡到全屏影像背景，并叠加三段 split-text 叙事。
- *   桌面端使用 GSAP Flip + ScrollTrigger pin 创建“照片吸附成全屏 → 文字逐段浮现 → 背景变暗”的电影化段落；
- *   移动端完全跳过 Flip/pin，回退为普通 in-flow 图片卡片，避免高屏窄视口下横向溢出和 pin 失真。
- * @dependencies
- *   - GSAP + Flip + ScrollTrigger（桌面端网格 morph、pin、scrub 时间线）
- *   - `photos` 内容数组（图片 src/alt）
- *   - `useMobileExperience`（移动端降级门控）
- *   - CSS 类 `gallery--bento` / `gallery--final` 提供 Flip 前后布局状态
- * @performance / @caveats
- *   - Flip 状态依赖 DOM 布局测量；resize 时必须 `ctxRef.current?.revert()` 后重建，避免旧尺寸状态污染新布局。
- *   - 桌面 timeline 中图片 filter 会在全屏背景阶段参与 scrub，成本较高；移动端禁用该整段效果是刻意的性能边界。
- *   - split-line 的 `y: 0` 是保护性设置，防止 CSS transform 基线残留导致文字被 overflow:hidden 裁掉。
- * @steps
- *   step1: 桌面端测量 bento → final 两种 gallery 布局，创建 Flip 动画
- *   step2: pin `gallery-wrap`，让照片段落占满 100vh 并按滚动 scrub 推进
- *   step3: gallery 吸附入场后执行 Flip，全屏化照片背景
- *   step4: 背景图片逐步 dim/blur，为文字可读性让出层级
- *   step5: 三段生活叙事依次 reveal、停留、退出，并在回滚时重置行状态
- */
 export default function LifeGallery() {
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const galleryRef = useRef<HTMLDivElement>(null)
-  const ctxRef = useRef<gsap.Context | null>(null)
+  const root = useRef<HTMLElement>(null)
   const mobile = useMobileExperience()
 
-  useEffect(() => {
-    if (mobile) return
-    const gallery = galleryRef.current
-    const wrap = wrapRef.current
-    if (!gallery || !wrap) return
-
-    const createFlip = () => {
-      ctxRef.current?.revert()
-
-      gallery.classList.remove('gallery--final')
-
-      ctxRef.current = gsap.context(() => {
-        const items = gallery.querySelectorAll('.gallery__item')
-
-        gallery.classList.add('gallery--final')
-        const flipState = Flip.getState(items)
-        gallery.classList.remove('gallery--final')
-
-        const flip = Flip.to(flipState, {
-          simple: true,
-          duration: 3.0,
-          ease: 'expoScale(1, 5)',
-        })
-
-        // Initial setup for the narrative text elements - query from wrap node for stability
-        const paragraphs = wrap.querySelectorAll<HTMLElement>('.life__intro-p')
-        const introOverlay = wrap.querySelector<HTMLElement>('.life__intro-overlay')
-        const allWords = wrap.querySelectorAll<HTMLElement>('.life__intro-p .scroll-reveal__word')
-        const allRevealText = wrap.querySelectorAll<HTMLElement>('.life__intro-p .scroll-reveal')
-        const allMeta = wrap.querySelectorAll<HTMLElement>('.life__intro-kicker')
-        gsap.set(introOverlay, { opacity: 0 })
-        if (paragraphs.length > 0) {
-          gsap.set(paragraphs, { opacity: 0, y: 0, rotate: 0 })
-        }
-        if (allMeta.length > 0) {
-          gsap.set(allMeta, { opacity: 0, y: 14, filter: 'blur(6px)' })
-        }
-        if (allRevealText.length > 0) {
-          gsap.set(allRevealText, { transformOrigin: '0% 50%', rotate: 5 })
-        }
-        if (allWords.length > 0) {
-          gsap.set(allWords, { opacity: 0.08, filter: 'blur(10px)' })
-        }
-
-        // 钉住 .gallery-wrap（正好 100vh），让 gallery 完整填满视口；
-        // .life__header 在钉住前先正常滚走，避免顶部标题占位导致只露出上半。
-        const galleryWrap = gallery.parentElement as HTMLElement
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: galleryWrap,
-            start: 'top top',
-            end: () => '+=' + window.innerHeight * 10,
-            scrub: 1.1,
-            pin: galleryWrap,
-          },
-        })
-
-        // 1. 吸附入场：bento 网格像被磁性吸住、轻微回弹定格，而非硬停顿
-        tl.fromTo(gallery, { scale: 1.045 }, { scale: 1, duration: 1.4, ease: 'power3.out' })
-        tl.to({}, { duration: 0.25 })
-
-        // 2. Morph the bento grid TO full bleed
-        tl.add(flip)
-
-        // 3. Brief settle at full-bleed state
-        tl.to({}, { duration: 0.5 })
-
-        // 4. Gradually dim and blur background images for text readability
-        const images = gallery.querySelectorAll('.gallery__item img')
-        tl.fromTo(images, {
-          filter: 'brightness(1) saturate(0.82) contrast(1.05) blur(0px)',
-        }, {
-          filter: 'brightness(0.18) saturate(0.4) contrast(1.05) blur(8px)',
-          duration: 1.5,
-        })
-        tl.to(introOverlay, { opacity: 1, duration: 0.25, ease: 'none' }, '<0.95')
-
-        // 5. Sequential paragraph slide-up and fade-out
-        if (paragraphs.length > 0) {
-          paragraphs.forEach((p, index) => {
-            const revealText = p.querySelectorAll('.scroll-reveal')
-            const words = p.querySelectorAll('.scroll-reveal__word')
-            const meta = p.querySelectorAll('.life__intro-kicker')
-
-            // Fade in paragraph container
-            tl.fromTo(p, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.55 }, index === 0 ? '+=0.1' : '+=0.6')
-            tl.fromTo(meta,
-              { opacity: 0, y: 14, filter: 'blur(6px)' },
-              { opacity: 1, y: 0, filter: 'blur(0px)', duration: 0.9, stagger: 0.08, ease: 'power3.out' },
-              '<'
-            )
-
-            tl.fromTo(revealText,
-              { rotate: 5 },
-              { rotate: 0, duration: 1.35, ease: 'none' },
-              '<'
-            )
-
-            tl.fromTo(words,
-              { opacity: 0.08, filter: 'blur(10px)' },
-              { opacity: 1, filter: 'blur(0px)', stagger: 0.05, duration: 1.3, ease: 'none' },
-              '<0.12'
-            )
-
-            // Hold for reading
-            tl.to({}, { duration: 2.6 }) 
-            
-            // Fade out and slide up
-            tl.to(p, { opacity: 0, y: -24, duration: 0.7, ease: 'power2.in' })
-            // 重置该段文字行，避免回滚/叠层残留
-            tl.set(revealText, { rotate: 5 })
-            tl.set(words, { opacity: 0.08, filter: 'blur(10px)' })
-            tl.set(meta, { opacity: 0, y: 14, filter: 'blur(6px)' })
-          })
-        }
-
-        return () => {
-          gsap.set(items, { clearProps: 'all' })
-          gsap.set(gallery, { clearProps: 'all' })
-          if (images.length) gsap.set(images, { clearProps: 'all' })
-          gsap.set(introOverlay, { clearProps: 'all' })
-          if (paragraphs.length) gsap.set(paragraphs, { clearProps: 'all' })
-          if (allMeta.length) gsap.set(allMeta, { clearProps: 'all' })
-          if (allRevealText.length) gsap.set(allRevealText, { clearProps: 'all' })
-          if (allWords.length) gsap.set(allWords, { clearProps: 'all' })
-        }
-      })
-    }
-
-    createFlip()
-    window.addEventListener('resize', createFlip)
-
-    return () => {
-      window.removeEventListener('resize', createFlip)
-      ctxRef.current?.revert()
-    }
-  }, [mobile])
-
-  useEffect(() => {
-    if (mobile) return
-    const wrap = wrapRef.current
-    if (!wrap) return
-
-    const ctx = gsap.context(() => {
-      gsap.from('.life__header .section__label', {
-        scrollTrigger: { trigger: '.life__header', start: 'top 85%' },
-        opacity: 0,
-        y: 24,
-        duration: 1.6,
-        ease: 'expo.out',
-      })
-      gsap.fromTo(
-        '.life__header .section__title .split-line__inner',
-        { yPercent: 110, skewY: 6 },
-        {
-          yPercent: 0,
-          skewY: 0,
-          duration: 1.6,
-          ease: 'expo.out',
-          stagger: 0.12,
-          scrollTrigger: { trigger: '.life__header', start: 'top 85%' },
-        }
-      )
-    }, wrap)
-
-    return () => ctx.revert()
-  }, [mobile])
+  useGSAP(() => {
+    gsap.from('.life__eyebrow', {
+      autoAlpha: 0,
+      y: 20,
+      duration: 1,
+      ease: 'power3.out',
+      scrollTrigger: { trigger: root.current, start: 'top 76%' },
+    })
+    gsap.from('.life__statement-line', {
+      autoAlpha: 0,
+      yPercent: 90,
+      stagger: 0.1,
+      duration: 1.2,
+      ease: 'expo.out',
+      scrollTrigger: { trigger: root.current, start: 'top 70%' },
+    })
+  }, { scope: root })
 
   return (
-    <section className="life" id="life" ref={wrapRef}>
-      <div className="life__header container">
-        <div className="section__label">Life — 生活</div>
-        <h2 className="section__title">
-          <span className="split-line"><span className="split-line__inner">Off the <em>clock</em>.</span></span>
+    <section className="life" id="life" ref={root}>
+      <div className="life__copy container">
+        <div className="life__eyebrow">Life archive · 生活切片</div>
+        <h2 className="life__statement" aria-label="Off the clock, still looking for movement and light.">
+          <span className="life__statement-mask"><span className="life__statement-line">Off the clock,</span></span>
+          <span className="life__statement-mask"><span className="life__statement-line"><em>still looking</em> for movement and light.</span></span>
         </h2>
+        <p className="life__note">
+          球场上的空当、城市里的光、以及和朋友并肩完成一件事的瞬间——
+          它们塑造了我观察系统与人的方式。
+        </p>
       </div>
 
-      <div className="gallery-wrap">
-        <div className="gallery gallery--bento" id="gallery-life" ref={galleryRef}>
-          {photos.map((p, i) => (
-            <div className="gallery__item" key={i}>
-              {p.src ? (
-                <img src={p.src} alt={p.alt} loading="lazy" decoding="async" />
-              ) : (
-                <div className="gallery__placeholder" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <GradualBlur
-          className="life__gallery-blur life__gallery-blur--bottom"
-          position="bottom"
-          height="22vh"
-          strength={3.2}
-          divCount={9}
-          curve="bezier"
-          exponential
-          opacity={0.9}
-          zIndex={60}
+      <div className="life__wall" data-drift-wall>
+        <DriftWall
+          items={photos.map((photo) => ({ image: photo.src, title: photo.alt, tone: photo.tone }))}
+          columns={mobile ? 3 : 7}
+          tileWidth={mobile ? 154 : 188}
+          tileHeight={mobile ? 116 : 160}
+          gap={mobile ? 12 : 16}
+          scale={mobile ? 1.1 : 1.08}
+          tilt={mobile ? 8 : 11}
+          turn={mobile ? -8 : -7}
+          depth={mobile ? 70 : 40}
+          speed={mobile ? 28 : 38}
+          variance={0.45}
+          parallax={mobile ? 0.24 : 0.38}
+          lift={mobile ? 34 : 64}
+          fade={mobile ? 0.42 : 0.34}
+          dim={0.66}
+          overlayColor="#000000"
         />
-
-        {/* 电影感叙事文字图层 */}
-        <div className="life__intro-overlay" aria-hidden="true">
-          <div className="life__intro-container">
-            <div className="life__intro-p">
-              <span className="life__intro-kicker">01 / Motion</span>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                在绿茵场上，我是前场的 10 号。
-              </ScrollReveal>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                像梅西那样在防线之间寻找缝隙，
-              </ScrollReveal>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                一次直塞或转身，就改写节奏。
-              </ScrollReveal>
-            </div>
-            <div className="life__intro-p">
-              <span className="life__intro-kicker">02 / Light</span>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                在镜头背后，我是街头的寻光者。
-              </ScrollReveal>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                从陆家嘴天际线到霓虹的马路，
-              </ScrollReveal>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                记录代码之外的城市瞬间。
-              </ScrollReveal>
-            </div>
-            <div className="life__intro-p">
-              <span className="life__intro-kicker">03 / Build</span>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                在屏幕面前，我是写代码的 builder。
-              </ScrollReveal>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                写清文档，陪队友啃下最后一公里。
-              </ScrollReveal>
-              <ScrollReveal as="span" animateOnScroll={false} containerClassName="life__intro-line" baseOpacity={0.08} baseRotation={5} blurStrength={10}>
-                让想法真正跑起来，胜过千言。
-              </ScrollReveal>
-            </div>
-          </div>
+        <div className="life__wall-index" aria-hidden="true">
+          <span>01 / MOTION</span><span>02 / LIGHT</span><span>03 / BUILD</span>
         </div>
       </div>
     </section>

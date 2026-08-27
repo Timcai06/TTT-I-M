@@ -159,11 +159,13 @@ if (!studioContent.includes('readPosts()') || !studioMdx.includes('readdirSync(p
 
 if (
   !sharedContent.includes('portfolioProjects') ||
+  !sharedContent.includes('landingPortfolioProjects') ||
   !sharedProjects.includes('export const portfolioProjects') ||
+  !sharedProjects.includes('export const landingPortfolioProjects') ||
   !studioContent.includes('portfolioProjects') ||
-  !landingProjects.includes("portfolioProjects as projects")
+  !landingProjects.includes("landingPortfolioProjects as projects")
 ) {
-  throw new Error('Work content must stay single-sourced from packages/content portfolioProjects for both landing and studio.')
+  throw new Error('Work content must remain single-sourced in packages/content, with a curated Landing catalogue and the existing Studio catalogue.')
 }
 
 if (!studioBlogDetail.includes('MdxContent') || !studioBlogDetail.includes('post.body')) {

@@ -3,6 +3,19 @@
   position: relative;
 }
 
+.skills::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: clamp(-160px, -10vw, -90px);
+  bottom: clamp(-160px, -10vw, -90px);
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: #000;
+}
+
 .skills__flow-svg {
   position: absolute;
   top: 0;
@@ -24,24 +37,23 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 0;
-  margin-top: 80px;
+  margin-top: 56px;
   border-top: 1px solid var(--line);
 }
 
 .disable-hover .skills,
 .disable-hover .skills__list,
-.disable-hover .skill-row,
-.disable-hover .skill-row__used-link {
+.disable-hover .skill-row {
   pointer-events: auto;
 }
 
 .skill-row {
   width: 100%;
   display: grid;
-  grid-template-columns: 80px 1fr auto;
-  align-items: start;
+  grid-template-columns: 80px minmax(260px, 0.72fr) minmax(320px, 1fr);
+  align-items: center;
   gap: 24px 40px;
-  padding: 40px 0;
+  padding: 32px 0;
   border-bottom: 1px solid var(--line);
   cursor: default;
   opacity: 0;
@@ -101,7 +113,7 @@
 .skill-row__main {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -115,31 +127,22 @@
 
 .skill-row__name {
   font-family: var(--font-serif);
-  font-size: clamp(40px, 5vw, 80px);
+  font-size: clamp(30px, 3.7vw, 58px);
   font-weight: 400;
   letter-spacing: -0.04em;
-  line-height: 0.98;
+  line-height: 1;
   margin: 0;
 }
 
-.skill-row__desc {
-  max-width: 46ch;
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--fg-soft);
-}
-
-/* meta 列贴右对齐，hug 容器右缘——避开随滚动生长的红色粗带，保证标签与链接可读 */
+/* 技术条目直接沿用简历内容，右侧只保留分类内的工具列表。 */
 .skill-row__meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 18px;
-  margin-top: 0.7em;
+  gap: 0;
+  margin-top: 0;
   min-width: 0;
-  max-width: 280px;
+  max-width: 520px;
   text-align: right;
 }
 
@@ -147,53 +150,13 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px 18px;
+  gap: 10px 20px;
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.18em;
-  color: var(--fg-mute);
+  color: var(--fg-soft);
   text-transform: uppercase;
-}
-
-.skill-row__used {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: baseline;
-  gap: 6px 12px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: var(--fg-dim);
-}
-
-.skill-row__used-label {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  opacity: 0.7;
-}
-
-.skill-row__used-item {
-  color: var(--fg-mute);
-}
-
-.skill-row__used-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  letter-spacing: inherit;
-  color: var(--fg-mute);
-  border-bottom: 1px dashed var(--line-strong);
-  transition: color 0.18s var(--ease-out), border-color 0.18s var(--ease-out);
-}
-
-.skill-row__used-link:hover,
-.skill-row__used-link:focus-visible {
-  color: #ff3333;
-  border-bottom-color: rgba(255, 51, 51, 0.6);
-  outline: none;
+  line-height: 1.65;
 }
 
 @media (max-width: 768px) {
@@ -274,15 +237,10 @@
     line-height: 0.95;
   }
 
-  .skill-row__desc {
-    max-width: none;
-    font-size: 13px;
-  }
-
-  /* 移动端单列卡片内左对齐，和 eyebrow / 标题 / 描述保持一致（桌面的右对齐只为避开红带） */
+  /* 移动端单列卡片内左对齐。 */
   .skill-row__meta {
     margin-top: 4px;
-    gap: 14px;
+    gap: 0;
     align-items: flex-start;
     max-width: none;
     text-align: left;
@@ -298,12 +256,4 @@
     line-height: 1.6;
   }
 
-  .skill-row__used {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-
-  .skill-row__used-link {
-    padding: 2px 0;
-  }
 }

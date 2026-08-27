@@ -1,14 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
 import { transitionToChapter } from '../lib/chapterTransition'
 import { prefersReducedMotion } from '../lib/motion'
-import ShapeBlur from './ShapeBlur'
 import SignatureMark from './SignatureMark'
-import Strands from './Strands'
-
-const shouldShowFooterStrands = () =>
-  typeof window !== 'undefined' &&
-  window.matchMedia('(min-width: 769px) and (prefers-reduced-motion: no-preference)').matches
+import ASCIIText from './ASCIIText'
 
 /**
  * @description Contact/Footer 章节 —— 最后一屏的联系入口与站点收束。
@@ -27,7 +22,7 @@ const shouldShowFooterStrands = () =>
  *     避免旧版「白叠白」—— 揭示发生在上一章节的深色之上，高对比可见。
  *   - `.contact__blob-wrap` 是 fixed 满视口高层级揭示层，必须同时通过真实 footer rect 和 ScrollTrigger 进度门控；
  *     否则 Frame/LifeGallery 的 pin 或图片 relayout 可能让 footer trigger 提前测量，导致白色穿到前面的章节。
- *   - `.contact__btn` 入场只改 opacity，不改 y；hover 也不移动，ShapeBlur 独占按钮的交互反馈。
+ *   - `.contact__btn` 入场只改 opacity，不改 y；hover 保持轻量边框反馈，避免与 ASCIIText 争抢 GPU。
  *   - 时钟 30s 更新一次足够表达「本地时间」，避免每秒 setInterval 造成无意义 React/DOM 压力。
  * @steps
  *   step1: 设置 footer 内部元素初始状态，桌面非降动下挂 is-iris-reveal 并初始化 iris SVG 尺寸
@@ -40,15 +35,6 @@ export default function Footer() {
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const clockRef = useRef<HTMLTimeElement>(null)
-  const [showStrands, setShowStrands] = useState(shouldShowFooterStrands)
-
-  useEffect(() => {
-    const query = window.matchMedia('(min-width: 769px) and (prefers-reduced-motion: no-preference)')
-    const sync = () => setShowStrands(shouldShowFooterStrands())
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
 
   useEffect(() => {
     if (!root.current || !svgRef.current || !wrapRef.current) return
@@ -119,6 +105,8 @@ export default function Footer() {
       renderIris()
     }
 
+    let directContactFrame = 0
+    let directContactTimer = 0
     const ctx = gsap.context(() => {
       // Set initial states for elements that will animate in. The buttons fade
       // in on opacity only (no y) so the magnetic transform below owns x/y
@@ -127,12 +115,15 @@ export default function Footer() {
       gsap.set('.footer__title .split-line__inner', { yPercent: 110, skewY: 6 })
       gsap.set('.contact__btn', { opacity: 0 })
       gsap.set('.footer__meta', { opacity: 0 })
-      gsap.set('.footer__strands', { opacity: 0 })
       gsap.set(wrapEl, { autoAlpha: 0 })
 
       const updateBlobVisibility = (progress = 0) => {
         const rect = rootEl.getBoundingClientRect()
         const isNearContact = rect.top <= window.innerHeight * 1.02 && rect.bottom >= 0
+        if (animated && window.location.hash === '#contact' && isNearContact) {
+          iris.p = 1
+          renderIris()
+        }
         gsap.set(wrapEl, { autoAlpha: isNearContact && progress > 0.001 ? 1 : 0 })
       }
 
@@ -155,11 +146,28 @@ export default function Footer() {
         tl.to(iris, { p: 1, duration: 0.6, ease: 'none', onUpdate: renderIris }, 0)
       }
       tl.to('.footer__inner', { opacity: 1, duration: 0.1, ease: 'none' }, 0.18)
-      tl.to('.footer__strands', { opacity: 1, duration: 0.36, ease: 'power2.out' }, 0.26)
       tl.to('.footer__kicker', { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, 0.18)
       tl.to('.footer__title .split-line__inner', { yPercent: 0, skewY: 0, duration: 0.5, stagger: 0.12, ease: 'power3.out' }, 0.22)
       tl.to('.contact__btn', { opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power3.out' }, 0.32)
       tl.to('.footer__meta', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.45)
+
+      // A direct /#contact landing can arrive before all lazy chapters have
+      // finished changing the document height. If Contact is already visible,
+      // resolve the reveal immediately instead of waiting for another physical
+      // scroll event to advance the scrubbed timeline.
+      const settleDirectContact = () => {
+        if (window.location.hash !== '#contact') return
+        const rect = rootEl.getBoundingClientRect()
+        if (rect.top > window.innerHeight || rect.bottom < 0) return
+        tl.progress(1)
+        if (animated) {
+          iris.p = 1
+          renderIris()
+        }
+        updateBlobVisibility(1)
+      }
+      directContactFrame = window.requestAnimationFrame(settleDirectContact)
+      directContactTimer = window.setTimeout(settleDirectContact, 700)
     }, root)
 
     const onResize = () => {
@@ -184,6 +192,8 @@ export default function Footer() {
 
     return () => {
       window.removeEventListener('resize', onResize)
+      window.cancelAnimationFrame(directContactFrame)
+      window.clearTimeout(directContactTimer)
       rootEl.classList.remove('is-iris-reveal')
       window.clearInterval(clockId)
       ctx.revert()
@@ -218,27 +228,17 @@ export default function Footer() {
         </svg>
       </div>
       <div className="container footer__content">
-        {showStrands && (
-          <div className="footer__strands" aria-hidden="true">
-            <Strands
-              colors={['#ff3333', '#cf9eff', '#06b6d4']}
-              count={3}
-              speed={0.32}
-              amplitude={0.82}
-              waviness={0.92}
-              thickness={0.62}
-              glow={2.45}
-              taper={3.2}
-              spread={1.08}
-              hueShift={0.02}
-              intensity={0.72}
-              saturation={1.28}
-              opacity={0.64}
-              scale={1.42}
-              glass={false}
-            />
-          </div>
-        )}
+        <div className="footer__ascii" aria-hidden="true">
+          <ASCIIText
+            text="LET'S BUILD"
+            asciiFontSize={7}
+            textFontSize={260}
+            textColor="#2d0806"
+            planeBaseHeight={8.2}
+            enableWaves
+            gradient="linear-gradient(90deg, #240706 0%, #8f2117 52%, #123f3c 100%)"
+          />
+        </div>
         <div className="footer__inner">
           <div className="footer__kicker">// GET IN TOUCH · 联系方式</div>
           <h2 className="footer__title">
@@ -254,32 +254,10 @@ export default function Footer() {
           <div className="contact__cta-field">
             <div className="contact__items">
               <a href="mailto:cairentian932@gmail.com" className="contact__btn contact__btn--email">
-                <ShapeBlur
-                  className="contact__btn-shape"
-                  color="#6f342c"
-                  opacity={0.82}
-                  shapeWidth={5.75}
-                  shapeHeight={1.24}
-                  roundness={0.42}
-                  borderSize={0.062}
-                  circleSize={0.94}
-                  circleEdge={1.12}
-                />
                 <span className="contact__btn-text">cairentian932@gmail.com</span>
                 <span className="contact__btn-arrow">↗</span>
               </a>
               <a href="https://github.com/Timcai06" target="_blank" rel="noopener noreferrer" className="contact__btn contact__btn--github">
-                <ShapeBlur
-                  className="contact__btn-shape"
-                  color="#6f342c"
-                  opacity={0.86}
-                  shapeWidth={4.95}
-                  shapeHeight={1.24}
-                  roundness={0.42}
-                  borderSize={0.062}
-                  circleSize={0.94}
-                  circleEdge={1.12}
-                />
                 <span className="contact__btn-text">github.com/Timcai06</span>
                 <span className="contact__btn-arrow">↗</span>
               </a>

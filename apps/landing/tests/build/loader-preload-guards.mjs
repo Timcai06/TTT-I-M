@@ -60,7 +60,7 @@ if (/preloadAboutTextParticles|particles:about-manifesto|chunks:text-particles/.
 }
 
 if (/ABOUT_PARTICLE_TEXT|DeferredTextParticles/.test(aboutSource)) {
-  throw new Error('About must not mount the legacy TextParticles canvas after ParticleContinuum owns the About particle layer.')
+  throw new Error('About must stay free of the retired TextParticles canvas.')
 }
 
 if (!loaderSource.includes('introReady && !done && !exiting')) {
@@ -158,7 +158,7 @@ if (!controllerSource.includes('DEFERRED_CONCURRENCY') || !controllerSource.incl
 // Gate contract (2026-06-18, deliberate change): the loader is a true
 // "everything loaded" screen — the intro exits on FULL-manifest `ready`, so the
 // bar hitting 100% means every chunk AND every curated image is fetched/decoded
-// and scrolling into any section (Frame, Work/LaserFlow) is pop-in-/hitch-free.
+// and scrolling into any section (Frame, Work media) is pop-in-/hitch-free.
 // The controller still computes the critical-tier fields (kept for diagnostics),
 // but the Loader must consume the full gate, not the critical-only one.
 if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {

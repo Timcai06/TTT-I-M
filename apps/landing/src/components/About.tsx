@@ -14,7 +14,7 @@ function parseFact(value: string): { to: number; suffix: string } {
 /**
  * @description About 章节 —— 自述与工程叙事。内容分为左右两栏：
  *   左栏：标题逐行裂分入场 → 三段文字块 (Vision / Tech Stack / Manifesto)
- *         → 统计数字牌；背景粒子由 App 级 ParticleContinuum 统一承接
+ *         → 统计数字牌；暗房 grain 与排版本身承接背景层次
  *   右栏：圆角肖像框入场（一次性缓动，避免 scroll-scrub 的 border-radius repaint 开销）
  *         → Policy 哲学段落
  *
@@ -25,7 +25,7 @@ function parseFact(value: string): { to: number; suffix: string } {
  * @dependencies
  *   - GSAP + ScrollTrigger + gsap.context (动画生命周期管理)
  *   - `revealWords` (CJK 感知 word-by-word blur→clear scrub)
- *   - App 级 `ParticleContinuum` (M1b 后唯一的 About 粒子叙事层)
+ *   - App 级静态 grain（About 不持有独立 WebGL 背景）
  *   - Tech 竖线使用自定义贝塞尔路径 (C 1,2,3,4...) strokeDashoffset scrubbing
  *
  * @performance / @caveats

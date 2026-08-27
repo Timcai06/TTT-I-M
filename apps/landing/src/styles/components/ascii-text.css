@@ -1,0 +1,56 @@
+.ascii-text-container,
+.ascii-filter {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ascii-text-container canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ascii-text-container pre {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  color: transparent;
+  background-image: var(--ascii-gradient);
+  background-attachment: fixed;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  mix-blend-mode: multiply;
+  font-family: var(--font-mono);
+  line-height: 1em;
+  text-align: left;
+  user-select: none;
+  white-space: pre;
+}
+
+.ascii-text-container .ascii-text__fallback {
+  left: 50%;
+  top: 50%;
+  width: max-content;
+  max-width: 100%;
+  font-size: clamp(28px, 7vw, 104px);
+  font-weight: 600;
+  letter-spacing: -0.08em;
+  line-height: 0.9;
+  text-align: center;
+  white-space: pre-wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ascii-text-container pre { filter: none !important; }
+}

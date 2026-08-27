@@ -102,21 +102,6 @@ main {
   z-index: 1;
 }
 
-.particle-continuum {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 1;
-  mix-blend-mode: screen;
-  contain: layout paint size;
-}
-
-.particle-continuum canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
 .container {
   width: min(1280px, calc(100% - 64px));
   margin-inline: auto;
@@ -226,15 +211,9 @@ main {
   backface-visibility: hidden;
 }
 
-/* ── Scroll Performance Throttler ──
-   `pointer-events` is an inherited property, so setting it on <body> during a
-   scroll burst suspends hover/pointer effects across the whole tree WITHOUT a
-   universal `.disable-hover *` selector — which forced a full-tree style recalc
-   on every 150ms toggle. Children that opt back in with `pointer-events: auto`
-   (only the scroll rail) stay interactive, which is cheap and desirable. */
-.disable-hover {
-  pointer-events: none;
-}
+/* `.disable-hover` remains a scroll-burst performance signal for selected
+   paint-heavy layers. It must never disable pointer hit-testing globally:
+   moving archive panels need to acquire hover before scrolling fully settles. */
 
 /* ── Reduced motion ──
    JS already disables Lenis smoothing and the WebGL particle field; this

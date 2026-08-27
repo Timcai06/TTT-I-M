@@ -27,15 +27,28 @@ async function waitForMobileChaptersReady(page: Page) {
 
 async function scrollChapterToTop(page: Page, id: string) {
   await waitForMobileChaptersReady(page)
-  await page.evaluate((chapterId) => {
-    document.getElementById(chapterId)?.scrollIntoView({ block: 'start' })
-  }, id)
+  if (id === 'contact') {
+    await page.getByRole('button', { name: /open section menu/i }).click()
+    const panel = page.locator('.staggered-section-menu.is-open .staggered-section-menu__panel')
+    await expect(panel).toBeVisible()
+    await panel.getByRole('button', { name: /Contact/ }).click()
+  } else {
+    await page.evaluate((chapterId) => {
+      const target = document.getElementById(chapterId)
+      if (!target) return
+      const top = target.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top, behavior: 'auto' })
+    }, id)
+  }
   await page.waitForFunction((chapterId) => {
     const el = document.getElementById(chapterId)
     if (!el) return false
     const rect = el.getBoundingClientRect()
-    return Math.abs(rect.top) < 24 || (rect.top < 0 && rect.bottom > window.innerHeight * 0.5)
-  }, id, { timeout: 3000 })
+    const atDocumentEnd = Math.abs(document.documentElement.scrollHeight - (window.scrollY + window.innerHeight)) < 4
+    return Math.abs(rect.top) < 24
+      || (rect.top < 0 && rect.bottom > window.innerHeight * 0.5)
+      || (atDocumentEnd && rect.bottom <= window.innerHeight + 24 && rect.bottom > window.innerHeight * 0.5)
+  }, id, { timeout: id === 'contact' ? 15_000 : 5000 })
 }
 
 test('Mobile Hero presents title and portrait in the first viewport', async ({ page }) => {
@@ -153,7 +166,7 @@ test('Mobile Stack reads as a single-column engineering map without overflow', a
       trackCount,
       rowBounds,
       eyebrowCount: document.querySelectorAll('#skills .skill-row__eyebrow').length,
-      descCount: document.querySelectorAll('#skills .skill-row__desc').length,
+      tagCount: document.querySelectorAll('#skills .skill-row__tags span').length,
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
     }
@@ -162,19 +175,20 @@ test('Mobile Stack reads as a single-column engineering map without overflow', a
   expect(stack.rowCount).toBe(6)
   expect(stack.trackCount).toBe(1) // single-column grid on mobile
   expect(stack.eyebrowCount).toBe(6)
-  expect(stack.descCount).toBe(6)
+  expect(stack.tagCount).toBeGreaterThan(30)
   expect(stack.rowBounds.filter((r) => r.left < 0 || r.right > 390), JSON.stringify(stack.rowBounds)).toHaveLength(0)
   expect(stack.scrollWidth).toBe(stack.viewportWidth)
 })
 
-test('Mobile Life gallery uses wide in-flow image cards', async ({ page }) => {
+test('Mobile Life gallery keeps its layered DriftWall inside the viewport', async ({ page }) => {
   await openMobileHome(page)
   await scrollChapterToTop(page, 'life')
 
   const lifeLayout = await page.evaluate(() => {
-    const galleryWrap = document.querySelector<HTMLElement>('#life .gallery-wrap')
-    const overlay = document.querySelector<HTMLElement>('#life .life__intro-overlay')
-    const images = [...document.querySelectorAll<HTMLImageElement>('#life .gallery__item img')]
+    const wall = document.querySelector<HTMLElement>('#life .life__wall')
+    const driftWall = document.querySelector<HTMLElement>('#life [data-drift-wall] .drift-wall')
+    const wallRect = wall?.getBoundingClientRect()
+    const images = [...document.querySelectorAll<HTMLImageElement>('#life .drift-wall__tile img')]
       .filter((img) => {
         const rect = img.getBoundingClientRect()
         return rect.width > 1 && rect.height > 1 && rect.bottom > 0 && rect.top < window.innerHeight
@@ -190,19 +204,22 @@ test('Mobile Life gallery uses wide in-flow image cards', async ({ page }) => {
       })
 
     return {
-      wrapPosition: galleryWrap ? window.getComputedStyle(galleryWrap).position : '',
-      overlayDisplay: overlay ? window.getComputedStyle(overlay).display : '',
+      wallPosition: wall ? window.getComputedStyle(wall).position : '',
+      wallBounds: wallRect ? { left: Math.round(wallRect.left), right: Math.round(wallRect.right) } : null,
+      driftWallExists: Boolean(driftWall),
+      columnCount: document.querySelectorAll('#life .drift-wall__col').length,
       images,
       scrollWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
     }
   })
 
-  expect(lifeLayout.wrapPosition).toBe('relative')
-  expect(lifeLayout.overlayDisplay).toBe('none')
+  expect(lifeLayout.wallPosition).toBe('relative')
+  expect(lifeLayout.driftWallExists).toBe(true)
+  expect(lifeLayout.columnCount).toBe(3)
   expect(lifeLayout.images.length).toBeGreaterThan(0)
-  expect(lifeLayout.images.filter((image) => image.width <= image.height), JSON.stringify(lifeLayout.images)).toHaveLength(0)
-  expect(lifeLayout.images.filter((image) => image.left < 0 || image.right > lifeLayout.viewportWidth), JSON.stringify(lifeLayout.images)).toHaveLength(0)
+  expect(lifeLayout.wallBounds?.left).toBeGreaterThanOrEqual(0)
+  expect(lifeLayout.wallBounds?.right).toBeLessThanOrEqual(lifeLayout.viewportWidth)
   expect(lifeLayout.scrollWidth).toBe(lifeLayout.viewportWidth)
 })
 

@@ -1,0 +1,326 @@
+.sciscope-film {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: clamp(150px, 14vw, 230px) clamp(26px, 5.5vw, 88px) clamp(110px, 10vw, 170px);
+  overflow: hidden;
+  color: #f1f0eb;
+  background: #000;
+  isolation: isolate;
+}
+
+.sciscope-film::before {
+  position: absolute;
+  top: 0;
+  right: clamp(26px, 5.5vw, 88px);
+  left: clamp(26px, 5.5vw, 88px);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  content: '';
+}
+
+.sciscope-film__intro,
+.sciscope-film__entrance,
+.sciscope-film__footer {
+  width: min(100%, 1440px);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.sciscope-film__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.65fr);
+  align-items: end;
+  gap: clamp(52px, 9vw, 150px);
+  margin-bottom: clamp(64px, 7vw, 108px);
+}
+
+.sciscope-film__index {
+  display: block;
+  margin-bottom: 28px;
+  color: rgba(157, 211, 214, 0.76);
+  font: 500 9px/1 var(--font-mono);
+  letter-spacing: 0.2em;
+}
+
+.sciscope-film__intro h3 {
+  margin: 0;
+  color: #f1f0eb;
+  font: 400 clamp(58px, 7.4vw, 118px)/0.88 var(--font-serif);
+  letter-spacing: -0.058em;
+  text-wrap: balance;
+}
+
+.sciscope-film__note {
+  padding-bottom: 8px;
+}
+
+.sciscope-film__note > p {
+  margin: 0 0 38px;
+  color: rgba(241, 240, 235, 0.58);
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.sciscope-film__note dl {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+}
+
+.sciscope-film__note dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sciscope-film__note dt {
+  color: rgba(241, 240, 235, 0.34);
+}
+
+.sciscope-film__note dd {
+  margin: 0;
+  color: rgba(241, 240, 235, 0.72);
+  text-align: right;
+}
+
+.sciscope-film__entrance {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: clamp(14px, 1.5vw, 24px);
+  outline: none;
+  background: #050708;
+  box-shadow:
+    0 56px 150px rgba(0, 0, 0, 0.68),
+    0 0 80px rgba(98, 170, 178, 0.08);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sciscope-film__entrance::after {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border: 1px solid rgba(173, 226, 229, 0.12);
+  border-radius: inherit;
+  pointer-events: none;
+  content: '';
+  transition: border-color 420ms ease, box-shadow 420ms ease;
+}
+
+.sciscope-film__poster {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #050708;
+  filter: saturate(0.82) contrast(1.08) brightness(0.72);
+  transform: scale(1.015);
+  transition: filter 720ms cubic-bezier(0.22, 1, 0.36, 1), transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sciscope-film__poster-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.42), transparent 28% 58%, rgba(0, 0, 0, 0.78)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 42%);
+}
+
+.sciscope-film__poster-top,
+.sciscope-film__poster-action {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+}
+
+.sciscope-film__poster-top {
+  top: clamp(18px, 2.1vw, 34px);
+  right: clamp(18px, 2.1vw, 34px);
+  left: clamp(18px, 2.1vw, 34px);
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.56);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.sciscope-film__poster-action {
+  right: clamp(22px, 3.2vw, 52px);
+  bottom: clamp(22px, 3.2vw, 52px);
+  left: clamp(22px, 3.2vw, 52px);
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.sciscope-film__play-label {
+  color: #fff;
+  font: 400 clamp(38px, 5vw, 78px)/0.92 var(--font-serif);
+  letter-spacing: -0.045em;
+}
+
+.sciscope-film__play-meta {
+  flex: none;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.34);
+  color: rgba(255, 255, 255, 0.82);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  backdrop-filter: blur(12px);
+}
+
+.sciscope-film__entrance:is(:hover, :focus-visible) .sciscope-film__poster {
+  filter: saturate(0.94) contrast(1.08) brightness(0.88);
+  transform: scale(1.035);
+}
+
+.sciscope-film__entrance:is(:hover, :focus-visible)::after {
+  border-color: rgba(181, 233, 236, 0.48);
+  box-shadow: 0 0 44px rgba(91, 182, 191, 0.14) inset;
+}
+
+.sciscope-film__entrance:focus-visible {
+  outline: 2px solid rgba(208, 245, 247, 0.88);
+  outline-offset: 5px;
+}
+
+.sciscope-film__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 18px;
+  color: rgba(241, 240, 235, 0.32);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.sciscope-film__dialog {
+  width: min(1440px, calc(100vw - 48px), calc((100dvh - 86px) * 16 / 9));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.sciscope-film__dialog::backdrop {
+  background: rgba(0, 0, 0, 0.94);
+  backdrop-filter: blur(18px);
+}
+
+.sciscope-film__dialog-panel {
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  background: #050505;
+  box-shadow: 0 48px 140px rgba(0, 0, 0, 0.88);
+}
+
+.sciscope-film__dialog-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px;
+  padding: 0 18px;
+  color: rgba(255, 255, 255, 0.54);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.sciscope-film__dialog-bar button {
+  min-height: 36px;
+  padding: 0 12px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.sciscope-film__dialog video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+@media (max-width: 768px) {
+  .sciscope-film {
+    width: 100%;
+    margin: clamp(110px, 20vw, 180px) 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .sciscope-film::before {
+    right: 0;
+    left: 0;
+  }
+
+  .sciscope-film__intro {
+    grid-template-columns: 1fr;
+    gap: 42px;
+    margin-bottom: 52px;
+  }
+
+  .sciscope-film__intro h3 {
+    font-size: clamp(46px, 13vw, 68px);
+  }
+
+  .sciscope-film__note {
+    width: min(100%, 440px);
+  }
+
+  .sciscope-film__poster-top {
+    display: none;
+  }
+
+  .sciscope-film__poster-action {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sciscope-film__play-label {
+    font-size: clamp(30px, 9vw, 48px);
+  }
+
+  .sciscope-film__footer {
+    display: none;
+  }
+
+  .sciscope-film__dialog {
+    width: min(calc(100vw - 24px), calc((100dvh - 78px) * 16 / 9));
+  }
+
+  .sciscope-film__dialog-panel {
+    border-radius: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sciscope-film__poster,
+  .sciscope-film__entrance::after {
+    transition: none;
+  }
+
+  .sciscope-film__entrance:is(:hover, :focus-visible) .sciscope-film__poster {
+    transform: scale(1.015);
+  }
+}

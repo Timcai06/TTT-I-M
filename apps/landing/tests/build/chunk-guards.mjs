@@ -24,8 +24,8 @@ if (requiredHeroPreloads.length > 0) {
   throw new Error(`Hero WebGL assets are not preloaded from index.html: ${requiredHeroPreloads.join(', ')}`)
 }
 
-if (!indexSource.includes('ParticleContinuum')) {
-  throw new Error(`Entry chunk ${indexChunk} does not contain the App-level Particle Continuum layer.`)
+if (indexSource.includes('ParticleContinuum')) {
+  throw new Error(`Entry chunk ${indexChunk} still contains the retired global Particle Continuum layer.`)
 }
 
 if (!indexSource.includes('ParticlePortrait')) {
@@ -33,7 +33,7 @@ if (!indexSource.includes('ParticlePortrait')) {
 }
 
 
-const forbiddenDebugNeedles = ['leva', '__CONTINUUM_DEBUG__']
+const forbiddenDebugNeedles = ['leva', '__CONTINUUM_DEBUG__', 'continuumQualityForTier']
 const debugLeaks = forbiddenDebugNeedles.filter((needle) => indexSource.includes(needle))
 if (debugLeaks.length > 0) {
   throw new Error(`Production entry chunk contains debug-only Continuum tooling: ${debugLeaks.join(', ')}`)
@@ -94,5 +94,5 @@ if (budgetFailures.length > 0) {
   throw new Error(`Chunk size budget exceeded:\n  - ${budgetFailures.join('\n  - ')}`)
 }
 
-console.log(`[chunk-guards] ${indexChunk} preloads Hero WebGL and keeps ${pretextChunk} available for loader-time preloading.`)
+console.log(`[chunk-guards] ${indexChunk} keeps Hero WebGL eager while chapter-scoped effects remain lazy.`)
 console.log(`[chunk-guards] total JS ${totalKb.toFixed(1)} KB gzip within ${TOTAL_JS_BUDGET_KB} KB budget.`)

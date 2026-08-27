@@ -2,14 +2,7 @@
 @import './components/cursor.css';
 @import './components/glitch-text.css';
 @import './components/gradual-blur.css';
-@import './components/laser-flow.css';
-@import './components/scroll-reveal.css';
-@import './components/shape-blur.css';
-@import './components/strands.css';
 @import './components/staggered-section-menu.css';
-@import './components/spotlight-card.css';
-@import './components/shiny-text.css';
-@import './components/gradient-text.css';
 @import './components/nav.css';
 @import './components/signature-mark.css';
 @import './components/hero.css';
@@ -17,9 +10,15 @@
 @import './components/life-gallery.css';
 @import './components/frame.css';
 @import './components/skills.css';
+@import './components/work-transition.css';
 @import './components/projects.css';
+@import './components/sciscope-film.css';
 @import './components/footer.css';
 @import './components/scroll-indicator.css';
+@import './components/drift-wall.css';
+@import './components/accordion-gallery.css';
+@import './components/ascii-text.css';
+@import './components/border-glow.css';
 
 @media (max-width: 768px) {
   @supports (animation-timeline: view()) {

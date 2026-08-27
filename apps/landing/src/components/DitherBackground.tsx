@@ -55,15 +55,22 @@ export default function DitherBackground({
     const mount = mountRef.current
     if (!mount || prefersReducedMotion()) return
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      alpha: false,
-      depth: false,
-      stencil: false,
-      powerPreference: 'high-performance',
-      premultipliedAlpha: false,
-      preserveDrawingBuffer: false,
-    })
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: false,
+        depth: false,
+        stencil: false,
+        powerPreference: 'high-performance',
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: false,
+      })
+    } catch {
+      // The intro already carries a CSS gradient fallback. A denied or lost
+      // WebGL context must not tear down the React tree around it.
+      return
+    }
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     renderer.setPixelRatio(dpr)
     renderer.setClearColor(0x000000, 1)

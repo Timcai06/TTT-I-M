@@ -27,11 +27,12 @@ function walk(dir) {
 const componentFiles = walk('src/components').filter((file) => /\.(ts|tsx)$/.test(file))
 const dataImport = /from\s+['"][./]*data\//
 const lifeGallerySource = readFileSync('src/components/LifeGallery.tsx', 'utf8')
-const scrollRevealSource = readFileSync('src/components/ScrollReveal.tsx', 'utf8')
 const gradualBlurSource = readFileSync('src/components/GradualBlur.tsx', 'utf8')
-const laserFlowSource = readFileSync('src/components/LaserFlow.tsx', 'utf8')
-const shapeBlurSource = readFileSync('src/components/ShapeBlur.tsx', 'utf8')
-const strandsSource = readFileSync('src/components/Strands.tsx', 'utf8')
+const driftWallSource = readFileSync('src/components/DriftWall.tsx', 'utf8')
+const accordionSource = readFileSync('src/components/AccordionGallery.tsx', 'utf8')
+const borderGlowSource = readFileSync('src/components/BorderGlow.tsx', 'utf8')
+const asciiTextSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
+const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
 const projectsSource = readFileSync('src/components/Projects.tsx', 'utf8')
 const projectsStyleSource = readFileSync('src/styles/components/projects.css', 'utf8')
 const footerSource = readFileSync('src/components/Footer.tsx', 'utf8')
@@ -46,59 +47,50 @@ if (offenders.length > 0) {
   )
 }
 
-if (!lifeGallerySource.includes('ScrollReveal') || !lifeGallerySource.includes('animateOnScroll={false}')) {
-  throw new Error('LifeGallery narrative copy must use the React Bits ScrollReveal skin inside the pinned gallery timeline.')
+if (!lifeGallerySource.includes('DriftWall') || !lifeGallerySource.includes('data-drift-wall')) {
+  throw new Error('LifeGallery must use the full React Bits DriftWall scene.')
 }
 
-if (!scrollRevealSource.includes('scroll-reveal__word') || !scrollRevealSource.includes('TOKEN_RE') || !appStyleSource.includes("./components/scroll-reveal.css")) {
-  throw new Error('ScrollReveal must keep scoped CJK-aware word spans and its CSS import.')
+for (const needle of ['requestAnimationFrame', 'IntersectionObserver', 'translate3d', 'translateZ', 'prefers-reduced-motion']) {
+  if (!driftWallSource.includes(needle)) throw new Error(`DriftWall must preserve ${needle}.`)
 }
 
-if (!lifeGallerySource.includes('GradualBlur') || !lifeGallerySource.includes('life__gallery-blur--bottom')) {
-  throw new Error('LifeGallery must keep the React Bits GradualBlur edge treatment on the pinned gallery.')
+if (!frameSource.includes('AccordionGallery') || !frameSource.includes('data-frame-accordion')) {
+  throw new Error('Frame must expose the React Bits AccordionGallery archive index.')
+}
+for (const needle of ['flexGrow', 'rotationY', 'parallax', 'stagger', 'ResizeObserver']) {
+  if (!accordionSource.includes(needle)) throw new Error(`AccordionGallery must preserve ${needle}.`)
 }
 
 if (!gradualBlurSource.includes('CURVE_FUNCTIONS') || !appStyleSource.includes("./components/gradual-blur.css") || !packageManifest.dependencies?.mathjs) {
   throw new Error('GradualBlur must keep the React Bits curve layers, CSS import, and mathjs dependency contract.')
 }
 
-if (!projectsSource.includes('LaserFlow') || !projectsSource.includes('projects__bento-laser')) {
-  throw new Error('Projects must keep the React Bits LaserFlow layer on the Work bento image borders.')
+if (!projectsSource.includes('BorderGlow') || !projectsSource.includes('bento-tile__img') || !projectsSource.includes("p.id === 'educanvas'")) {
+  throw new Error('Projects must combine BorderGlow with the source-backed image focus treatment and EduCanvas sweep.')
+}
+for (const needle of ['--edge-proximity', '--cursor-angle', 'buildGradientVars', 'sweep-active']) {
+  if (!borderGlowSource.includes(needle)) throw new Error(`BorderGlow must preserve ${needle}.`)
+}
+if (!projectsStyleSource.includes('.bento-glow') || !projectsStyleSource.includes('filter: blur(3px)') || !projectsStyleSource.includes('filter: blur(0)')) {
+  throw new Error('Projects must retain the blurred-rest and clear-focused BorderGlow card treatment.')
 }
 
-if (!projectsStyleSource.includes('.projects__bento-laser') || !projectsStyleSource.includes('.bento-tile::before')) {
-  throw new Error('Projects bento must keep the laser border treatment around the top six Work images.')
+if (!footerSource.includes('ASCIIText') || !footerSource.includes('footer__ascii')) {
+  throw new Error('Footer must use ASCIIText as the scoped final signal.')
+}
+for (const needle of ["from 'three'", 'vertexShader', 'fragmentShader', 'getImageData', 'hue-rotate', 'IntersectionObserver', 'forceContextLoss']) {
+  if (!asciiTextSource.includes(needle)) throw new Error(`ASCIIText must preserve ${needle}.`)
 }
 
-if (!laserFlowSource.includes('RawShaderMaterial') || !appStyleSource.includes("./components/laser-flow.css")) {
-  throw new Error('LaserFlow must keep its Three shader renderer and CSS import.')
+if (!footerStyleSource.includes('.footer__ascii') || !appStyleSource.includes("./components/ascii-text.css")) {
+  throw new Error('Footer ASCIIText must keep its scoped styling and app import.')
 }
 
-if (!footerSource.includes('Strands') || !footerSource.includes('footer__strands') || !footerSource.includes('prefers-reduced-motion: no-preference')) {
-  throw new Error('Footer must keep Strands scoped to the Contact outro signal and motion-safe desktop mounting.')
-}
-
-// Contract is structural: the CTA keeps the ShapeBlur treatment and configures
-// its shape. The exact shapeWidth is a visual tunable, not a contract value, so
-// check for the prop's presence rather than hardcoding a specific number.
-if (!footerSource.includes('ShapeBlur') || !footerSource.includes('contact__btn-shape') || !footerSource.includes('shapeWidth=')) {
-  throw new Error('Footer contact CTA links must keep the React Bits ShapeBlur button treatment.')
-}
-
-if (!shapeBlurSource.includes("from 'three'") || !shapeBlurSource.includes('u_color') || !shapeBlurSource.includes('sdRoundRect') || !shapeBlurSource.includes('shape-blur-canvas')) {
-  throw new Error('ShapeBlur must keep its Three shader renderer, landing color uniform, original round-rect shader, and scoped canvas class.')
-}
-
-if (!strandsSource.includes("from 'ogl'") || !strandsSource.includes('IntersectionObserver') || !strandsSource.includes('strands-canvas')) {
-  throw new Error('Strands must keep the React Bits OGL renderer with visibility-paused canvas lifecycle.')
-}
-
-if (!footerStyleSource.includes('.footer__strands') || !appStyleSource.includes("./components/strands.css") || !packageManifest.dependencies?.ogl) {
-  throw new Error('Footer Strands must keep its final-signal CSS, app import, and ogl dependency.')
-}
-
-if (!footerStyleSource.includes('.contact__btn-shape') || !appStyleSource.includes("./components/shape-blur.css") || !packageManifest.dependencies?.three) {
-  throw new Error('Footer ShapeBlur CTA must keep its scoped CSS, app import, and three dependency.')
+for (const retired of ['ParticleContinuum', 'LaserFlow', 'Strands', 'ShapeBlur', 'SpotlightCard']) {
+  if (componentFiles.some((file) => file.endsWith(`/${retired}.tsx`))) {
+    throw new Error(`Retired global/duplicate effect remains: ${retired}`)
+  }
 }
 
 // The repository abstraction must expose both the sync landing accessor and the

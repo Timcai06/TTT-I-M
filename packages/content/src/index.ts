@@ -144,5 +144,5 @@ export const defaultMeta: ContentMeta = {
   publishState: 'published',
 }
 
-export { portfolioProjects } from './projects'
+export { landingPortfolioProjects, portfolioProjects } from './projects'
 export type { MediaKind, PortfolioProject, Project, ProjectShot } from './projects'

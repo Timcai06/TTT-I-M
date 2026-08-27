@@ -20,6 +20,7 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
 
   return (
     <section
+      id={`frame-${theme.id}`}
       aria-labelledby={`frame-${theme.id}-title`}
       className={`archive-theme-section archive-theme-section--${theme.id}`}
       data-archive-theme={theme.id}

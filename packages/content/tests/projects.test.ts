@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { portfolioProjects } from '../src/projects.ts'
+import { landingPortfolioProjects, portfolioProjects } from '../src/projects.ts'
 
 void test('selected work keeps PulseGraph and SciScope single-sourced with real media', () => {
   assert.equal(portfolioProjects.length, 6)
@@ -25,5 +25,22 @@ void test('selected work keeps PulseGraph and SciScope single-sourced with real 
       const mediaPath = join(process.cwd(), 'apps/landing/public', shot.src)
       assert.ok(existsSync(mediaPath), `Missing project media: ${mediaPath}`)
     }
+  }
+})
+
+void test('Landing promotes EduCanvas while Studio keeps its current catalogue', () => {
+  assert.equal(landingPortfolioProjects.length, 6)
+  assert.equal(landingPortfolioProjects[0]?.id, 'educanvas')
+  assert.ok(!landingPortfolioProjects.some((project) => project.id === 'earnlytics'))
+  assert.ok(portfolioProjects.some((project) => project.id === 'earnlytics'))
+  assert.ok(!portfolioProjects.some((project) => project.id === 'educanvas'))
+
+  const eduCanvas = landingPortfolioProjects[0]
+  assert.equal(eduCanvas?.github, 'https://github.com/Timcai06/EduCanvas')
+  assert.equal(eduCanvas?.media?.shots[0]?.src, '/projects/educanvas/home.webp')
+  assert.equal(eduCanvas?.media?.shots.length, 3)
+  for (const shot of eduCanvas?.media?.shots ?? []) {
+    const mediaPath = join(process.cwd(), 'apps/landing/public', shot.src)
+    assert.ok(existsSync(mediaPath), `Missing EduCanvas media: ${mediaPath}`)
   }
 })

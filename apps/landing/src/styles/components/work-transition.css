@@ -1,0 +1,270 @@
+/* Stack → Work narrative bridge. The particle renderer is section-local. */
+.spark-badge,
+.liquid-metal-button {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.spark-badge,
+.spark-badge__frame {
+  background: #000;
+}
+
+.liquid-metal-button,
+.liquid-metal-button__frame {
+  background: #070708;
+}
+
+.spark-badge__frame,
+.liquid-metal-button__frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.spark-badge__frame.is-ready,
+.liquid-metal-button__frame.is-ready {
+  opacity: 1;
+}
+
+.work-transition {
+  --work-metal: #d8bd86;
+
+  position: relative;
+  height: 680svh;
+  color: #f4f1e8;
+  background: #000;
+}
+
+.work-transition__sticky {
+  position: relative;
+  top: 0;
+  height: 100svh;
+  min-height: 620px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #000;
+}
+
+.work-transition__spark {
+  position: absolute;
+  inset: 0 0 0 28vw;
+  z-index: 0;
+  transform-origin: 64% 52%;
+  will-change: opacity, transform;
+  pointer-events: none;
+  mask-image: linear-gradient(90deg, transparent 0, #000 18%, #000 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18%, #000 100%);
+}
+
+.work-transition__spark .spark-badge,
+.work-transition__spark .spark-badge__frame {
+  background: #000;
+}
+
+.work-transition__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 71% 52%, transparent 0 28%, rgba(0, 0, 0, 0.2) 58%, #000 90%),
+    linear-gradient(90deg, #000 0 26%, rgba(0, 0, 0, 0.84) 38%, transparent 68%);
+}
+
+.work-transition__copy {
+  position: absolute;
+  inset: 0 auto 0 clamp(24px, 6vw, 104px);
+  z-index: 4;
+  width: min(58vw, 920px);
+  pointer-events: none;
+}
+
+.work-transition__kicker {
+  position: absolute;
+  top: clamp(78px, 10vh, 118px);
+  left: 0;
+  margin: 0;
+  color: rgba(244, 241, 232, 0.48);
+  font: 500 10px/1.2 var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.work-transition__phase {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: min(58vw, 920px);
+  transform: translateY(-50%);
+}
+
+.work-transition__phase-content {
+  visibility: hidden;
+  opacity: 0;
+  backface-visibility: hidden;
+  will-change: opacity, transform;
+}
+
+.work-transition__index {
+  display: block;
+  margin-bottom: 20px;
+  color: var(--work-metal);
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.2em;
+}
+
+.work-transition__phase h2 {
+  margin: 0;
+  color: #f4f1e8;
+  font: 400 clamp(50px, 5.25vw, 86px)/0.92 var(--font-serif);
+  letter-spacing: -0.065em;
+}
+
+.work-transition__phase h2 > span {
+  display: block;
+}
+
+.work-transition__phase h2 em {
+  color: var(--work-metal);
+  font-weight: 400;
+}
+
+.work-transition__phase p {
+  width: min(38ch, 88%);
+  margin: 30px 0 0;
+  color: rgba(244, 241, 232, 0.62);
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.work-transition__cta-shell {
+  position: absolute;
+  left: clamp(20px, 5.2vw, 88px);
+  bottom: clamp(28px, 4vh, 48px);
+  z-index: 6;
+  width: 350px;
+  height: 228px;
+}
+
+.work-transition__cta {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.work-transition__cta > span {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  color: rgba(255, 255, 255, 0.3);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.work-transition[data-gate='locked'] .work-transition__gate-hint {
+  color: rgba(244, 241, 232, 0.72);
+}
+
+@media (max-width: 768px) {
+  .work-transition {
+    height: 300svh;
+  }
+
+  .work-transition__sticky {
+    min-height: 560px;
+  }
+
+  .work-transition__spark {
+    inset: 24% -32% 0 -32%;
+    mask-image: linear-gradient(180deg, transparent 0, #000 18%, #000 84%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 18%, #000 84%, transparent 100%);
+  }
+
+  .work-transition__veil {
+    background:
+      linear-gradient(180deg, #000 0 18%, transparent 42% 68%, #000 92%),
+      radial-gradient(circle at 50% 58%, transparent 0 24%, rgba(0, 0, 0, 0.58) 74%);
+  }
+
+  .work-transition__copy {
+    inset: 0 22px;
+    width: auto;
+  }
+
+  .work-transition__kicker {
+    top: 74px;
+  }
+
+  .work-transition__phase {
+    top: 24%;
+    width: 100%;
+  }
+
+  .work-transition__phase--three {
+    top: 22%;
+  }
+
+  .work-transition__phase h2 {
+    font-size: clamp(46px, 14vw, 68px);
+  }
+
+  .work-transition__phase p {
+    margin-top: 20px;
+    font-size: 12px;
+  }
+
+  .work-transition__cta-shell {
+    bottom: 8px;
+    left: 50%;
+    width: min(330px, 94vw);
+    height: 206px;
+    transform: translateX(-50%);
+  }
+
+  .work-transition__cta > span {
+    bottom: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spark-badge__frame,
+  .liquid-metal-button__frame {
+    transition: none;
+  }
+
+  .work-transition {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .work-transition__sticky {
+    min-height: 100svh;
+  }
+
+  .work-transition__phase--one,
+  .work-transition__phase--two {
+    display: none;
+  }
+
+  .work-transition__phase--three .work-transition__phase-content,
+  .work-transition__cta {
+    visibility: visible;
+    opacity: 1;
+  }
+}

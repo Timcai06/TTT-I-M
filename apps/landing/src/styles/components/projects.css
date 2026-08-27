@@ -4,6 +4,19 @@
   border-top: 1px solid var(--line);
 }
 
+.projects::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -1px;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: #000;
+}
+
 .projects__header {
   display: flex;
   justify-content: space-between;
@@ -19,9 +32,8 @@
   line-height: 1.8;
 }
 
-/* ── Bento 速览格（zentry bento 模式：不等宽瓦片 + 低曝光作品预览）──
-   闲置态 = 暗场图片 + 编号/名称；hover/focus = 亮度聚焦 + scrim 压暗保证文字可读。
-   仅 CSS transition（clip-path/transform/opacity），无逐帧 JS。 */
+/* ── Bento 速览格：闲置时保留低曝光、轻模糊的项目预览；
+   hover/focus 时卡片前移放大，首图恢复清晰与颜色。 */
 .projects__bento-shell {
   position: relative;
   margin-top: 72px;
@@ -97,51 +109,6 @@
     box-shadow 0.4s ease;
 }
 
-.bento-tile::before,
-.bento-tile::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.bento-tile::before {
-  border: 1px solid color-mix(in srgb, #cf9eff 46%, transparent);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 1px 24px rgba(207, 158, 255, 0.11),
-    0 0 30px rgba(207, 158, 255, 0.16);
-  opacity: 0.58;
-  transition:
-    opacity 0.42s ease,
-    border-color 0.42s ease,
-    box-shadow 0.42s ease;
-}
-
-.bento-tile::after {
-  inset: -1px 8% auto 8%;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(207, 158, 255, 0.28) 12%,
-    rgba(255, 255, 255, 0.92) 50%,
-    rgba(207, 158, 255, 0.28) 88%,
-    transparent
-  );
-  box-shadow:
-    0 0 16px rgba(207, 158, 255, 0.55),
-    0 0 42px rgba(207, 158, 255, 0.28);
-  opacity: 0.62;
-  transform: scaleX(0.74);
-  transform-origin: center;
-  transition:
-    opacity 0.42s ease,
-    transform 0.42s ease;
-}
-
 .projects__bento.is-visible .bento-tile {
   opacity: 1;
   transform: translateY(0);
@@ -159,35 +126,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.28;
-  filter: grayscale(0.78) brightness(0.48) contrast(1.12);
-  transform: scale(1.08);
+  opacity: 1;
+  filter: none;
+  transform: none;
   z-index: 0;
-  transition:
-    opacity 0.38s ease,
-    filter 0.46s ease,
-    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.bento-tile__scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(5, 5, 6, 0.18) 0%, rgba(5, 5, 6, 0.58) 54%, rgba(5, 5, 6, 0.9) 100%),
-    radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--tile-accent) 20%, transparent), transparent 52%);
-  opacity: 0.72;
-  z-index: 1;
-  transition: opacity 0.42s ease;
-}
-
-.bento-tile:is(:hover, :focus-visible) .bento-tile__img {
-  opacity: 0.88;
-  filter: grayscale(0.08) brightness(0.84) contrast(1.05);
-  transform: scale(1.01);
-}
-
-.bento-tile:is(:hover, :focus-visible) .bento-tile__scrim {
-  opacity: 0.88;
 }
 
 .bento-tile:is(:hover, :focus-visible) {
@@ -195,20 +137,6 @@
   box-shadow:
     0 18px 58px rgba(207, 158, 255, 0.16),
     0 22px 70px color-mix(in srgb, var(--tile-accent) 16%, transparent);
-}
-
-.bento-tile:is(:hover, :focus-visible)::before {
-  border-color: color-mix(in srgb, #cf9eff 62%, var(--tile-accent));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 30px rgba(207, 158, 255, 0.18),
-    0 0 42px rgba(207, 158, 255, 0.26);
-  opacity: 0.9;
-}
-
-.bento-tile:is(:hover, :focus-visible)::after {
-  opacity: 0.95;
-  transform: scaleX(0.92);
 }
 
 .bento-tile__top {
@@ -290,25 +218,153 @@
     grid-auto-rows: clamp(150px, 26vw, 210px);
   }
 
-  .bento-tile__img {
-    opacity: 0.46;
-    filter: grayscale(0.48) brightness(0.58) contrast(1.08);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .bento-tile,
   .bento-tile__img,
   .bento-tile__name,
-  .bento-tile__line,
-  .bento-tile::before,
-  .bento-tile::after {
+  .bento-tile__line {
     transition: none;
   }
 
   .bento-tile {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* React Bits BorderGlow project index. The image focus treatment stays CSS-only
+   so pointer focus is immediate and never waits for a generated pixel grid. */
+.bento-glow {
+  position: relative;
+  z-index: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--tile-i) * 70ms),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--tile-i) * 70ms);
+}
+
+.bento-glow:has(.border-glow-card:is(:hover, :focus-visible, .sweep-active)) {
+  z-index: 4;
+}
+
+.bento-glow .border-glow-card:not(:hover):not(:focus-visible):not(.sweep-active)::before {
+  opacity: 0.28;
+}
+
+.bento-glow:nth-child(1),
+.bento-glow:nth-child(5) { grid-column: span 2; }
+
+.projects__bento.is-visible .bento-glow {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.bento-glow .bento-tile {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding: 0;
+  overflow: visible;
+  opacity: 1;
+  transform: translate3d(0, 0, 0.01px) scale(1);
+  background: #0b0d0e;
+  transition:
+    transform 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.42s ease,
+    box-shadow 0.55s ease;
+  will-change: transform;
+}
+
+.bento-glow .border-glow-inner {
+  grid-area: 1 / 1;
+  width: auto;
+  height: auto;
+  align-self: stretch;
+  justify-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 18px 20px;
+}
+
+.bento-glow .bento-tile__img {
+  position: absolute;
+  inset: -4%;
+  width: 108%;
+  height: 108%;
+  object-fit: cover;
+  opacity: 0.46;
+  filter: blur(3px) grayscale(0.68) brightness(0.56) contrast(1.1);
+  transform: scale(1.025);
+  transform-origin: center;
+  transition:
+    opacity 0.44s ease,
+    filter 0.52s ease,
+    transform 0.82s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: filter, transform;
+  z-index: 0;
+}
+
+.bento-image__empty {
+  margin: auto;
+  color: var(--fg-mute);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.bento-glow .bento-tile__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.82;
+  background:
+    linear-gradient(180deg, rgba(4, 5, 6, 0.16), rgba(4, 5, 6, 0.42) 44%, rgba(4, 5, 6, 0.92)),
+    radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--tile-accent) 20%, transparent), transparent 52%);
+  transition: opacity 0.48s ease;
+}
+
+.bento-glow .bento-tile:is(:hover, :focus-visible) {
+  transform: translate3d(0, -4px, 0.01px) scale(1.028);
+  border-color: color-mix(in srgb, var(--tile-accent) 58%, rgba(255, 255, 255, 0.3));
+  box-shadow:
+    0 28px 78px rgba(0, 0, 0, 0.5),
+    0 20px 66px color-mix(in srgb, var(--tile-accent) 14%, transparent);
+}
+
+.bento-glow .bento-tile:is(:hover, :focus-visible) .bento-tile__img {
+  opacity: 0.96;
+  filter: blur(0) grayscale(0.04) brightness(0.9) contrast(1.03);
+  transform: scale(1.075);
+}
+
+.bento-glow .bento-tile:is(:hover, :focus-visible) .bento-tile__scrim {
+  opacity: 0.52;
+}
+
+.bento-glow .bento-tile__top,
+.bento-glow .bento-tile__name,
+.bento-glow .bento-tile__tag,
+.bento-glow .bento-tile__line {
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento-glow { opacity: 1; transform: none; transition: none; }
+
+  .bento-glow .bento-tile,
+  .bento-glow .bento-tile__img,
+  .bento-glow .bento-tile__scrim {
+    transition: none;
   }
 }
 
@@ -345,8 +401,8 @@
 }
 
 /* alternate sides for editorial rhythm */
-.project-card:nth-child(even) .project-card__text { order: 2; }
-.project-card:nth-child(even) .project-card__media { order: 1; }
+.project-card:nth-of-type(even) .project-card__text { order: 2; }
+.project-card:nth-of-type(even) .project-card__media { order: 1; }
 
 .project-card:hover {
   opacity: 1;
@@ -747,8 +803,8 @@
     grid-template-columns: 1fr;
     gap: 32px;
   }
-  .project-card:nth-child(even) .project-card__text,
-  .project-card:nth-child(even) .project-card__media { order: 0; }
+  .project-card:nth-of-type(even) .project-card__text,
+  .project-card:nth-of-type(even) .project-card__media { order: 0; }
   .project-card__media { order: 0; }
   .project-card:hover .project-card__title { transform: none; }
   .project-card:hover .project-card__cn { transform: none; }
@@ -798,7 +854,7 @@
     transition: none;
   }
 
-  .project-card:nth-child(2n) {
+  .project-card:nth-of-type(2n) {
     width: calc(100% - 12px);
     margin-left: 12px;
   }

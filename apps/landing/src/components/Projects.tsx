@@ -1,12 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import { getLenis } from '../lib/lenis'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
 import { projects, type Project } from '../content'
-import LaserFlow from './LaserFlow'
-import SpotlightCard from './SpotlightCard'
-import ShinyText from './ShinyText'
+import BorderGlow from './BorderGlow'
+import SciScopeFilm from './SciScopeFilm'
+
+function mixHex(from: string, to: string, weight: number) {
+  const parse = (value: string) => {
+    const hex = value.replace('#', '')
+    return [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16))
+  }
+  const source = parse(from)
+  const target = parse(to)
+  return `#${source.map((channel, index) => {
+    const mixed = Math.round(channel + ((target[index] ?? channel) - channel) * weight)
+    return mixed.toString(16).padStart(2, '0')
+  }).join('')}`
+}
 
 /**
  * @description Bento 速览格 —— 六个项目的不等宽导航瓦片（zentry bento 模式）。
@@ -17,16 +29,6 @@ import ShinyText from './ShinyText'
  *   reveal 全部走 CSS transition（clip-path/transform/opacity），无逐帧 JS。
  */
 function ProjectsBento() {
-  const [showLaser, setShowLaser] = useState(false)
-
-  useEffect(() => {
-    const query = window.matchMedia('(min-width: 901px) and (prefers-reduced-motion: no-preference)')
-    const sync = () => setShowLaser(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
-
   const scrollToCard = (id: string) => {
     const card = document.querySelector<HTMLElement>(`[data-project-id="${id}"]`)
     if (!card) return
@@ -40,54 +42,53 @@ function ProjectsBento() {
 
   return (
     <div className="projects__bento-shell">
-      {showLaser && (
-        <div className="projects__bento-laser" aria-hidden="true">
-          <LaserFlow
-            color="#cf9eff"
-            horizontalBeamOffset={0.0}
-            verticalBeamOffset={-0.09}
-            horizontalSizing={0.5}
-            verticalSizing={2.0}
-            wispDensity={1.0}
-            wispSpeed={13}
-            wispIntensity={4.2}
-            flowSpeed={0.35}
-            flowStrength={0.25}
-            fogIntensity={0.4}
-            fogScale={0.3}
-            fogFallSpeed={0.6}
-            mouseTiltStrength={0.008}
-          />
-        </div>
-      )}
-
       <div className="projects__bento" role="list" aria-label="项目速览">
         {projects.map((p, i) => {
           const shot = p.media?.shots[0]
           return (
-            <SpotlightCard
-              as="button"
-              type="button"
-              role="listitem"
-              className={`bento-tile${shot ? '' : ' bento-tile--soon'}`}
-              key={p.id}
-              style={{ '--tile-accent': p.accent, '--tile-i': i }}
-              onClick={() => scrollToCard(p.id)}
-              aria-label={`跳到项目 ${p.name} — ${p.tagline}`}
-              data-cursor="hover"
-            >
-              {shot && <img className="bento-tile__img" src={shot.src} alt="" loading="lazy" />}
-              <span className="bento-tile__scrim" aria-hidden="true" />
-              <span className="bento-tile__top" aria-hidden="true">
-                <span className="bento-tile__index">{p.index}</span>
-                <span className="bento-tile__year">{p.year}</span>
-              </span>
-              <span className="bento-tile__name" aria-hidden="true">{p.name}</span>
-              <span className="bento-tile__tag" aria-hidden="true">
-                {shot ? p.tagline : 'in the lab / / /'}
-              </span>
-              <span className="bento-tile__line" aria-hidden="true" />
-            </SpotlightCard>
+            <div className="bento-glow" role="listitem" key={p.id} style={{ '--tile-i': i } as React.CSSProperties}>
+              <BorderGlow
+                as="button"
+                type="button"
+                className={`bento-tile${shot ? '' : ' bento-tile--soon'}`}
+                style={{ '--tile-accent': p.accent } as React.CSSProperties}
+                onClick={() => scrollToCard(p.id)}
+                aria-label={`跳到项目 ${p.name} — ${p.tagline}`}
+                data-cursor="hover"
+                animated={p.id === 'educanvas'}
+                edgeSensitivity={14}
+                glowColor="39 46 72"
+                glowIntensity={1.3}
+                glowRadius={48}
+                coneSpread={32}
+                fillOpacity={0.46}
+                borderRadius={18}
+                colors={[mixHex(p.accent, '#777b79', 0.72), '#d8bd86', '#a6aaa7']}
+              >
+                {shot ? (
+                  <img
+                    className="bento-tile__img"
+                    src={shot.src}
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority={i < 2 ? 'high' : 'auto'}
+                  />
+                ) : (
+                  <span className="bento-image__empty">in the lab / / /</span>
+                )}
+                <span className="bento-tile__scrim" aria-hidden="true" />
+                <span className="bento-tile__top" aria-hidden="true">
+                  <span className="bento-tile__index">{p.index}</span>
+                  <span className="bento-tile__year">{p.year}</span>
+                </span>
+                <span className="bento-tile__name" aria-hidden="true">{p.name}</span>
+                <span className="bento-tile__tag" aria-hidden="true">
+                  {shot ? p.tagline : 'in the lab / / /'}
+                </span>
+                <span className="bento-tile__line" aria-hidden="true" />
+              </BorderGlow>
+            </div>
           )
         })}
       </div>
@@ -284,7 +285,7 @@ export default function Projects() {
     <section className="section projects container" id="projects" ref={root}>
       <div className="projects__header">
         <div>
-          <div className="section__label"><ShinyText text="Work — 选作" speed={6} /></div>
+          <div className="section__label">Work — 选作</div>
           <h2 className="section__title">
             <span className="split-line"><span className="split-line__inner">Six things <em>I made</em></span></span>
             <span className="split-line"><span className="split-line__inner">in 2026.</span></span>
@@ -300,12 +301,12 @@ export default function Projects() {
 
       <div className="projects__list">
         {projects.map((p) => (
-          <article
-            className="project-card"
-            key={p.id}
-            data-accent={p.accent}
-            data-project-id={p.id}
-          >
+          <Fragment key={p.id}>
+            <article
+              className="project-card"
+              data-accent={p.accent}
+              data-project-id={p.id}
+            >
             <div className="project-card__text">
               <div className="project-card__top">
                 <span className="project-card__index">{p.index}</span>
@@ -345,8 +346,10 @@ export default function Projects() {
               </div>
             </div>
 
-            <ProjectMedia project={p} />
-          </article>
+              <ProjectMedia project={p} />
+            </article>
+            {p.id === 'sciscope' && <SciScopeFilm />}
+          </Fragment>
         ))}
       </div>
     </section>

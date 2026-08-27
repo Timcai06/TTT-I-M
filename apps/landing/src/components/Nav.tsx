@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, type CSSProperties } from 'react'
 import { navChapters } from '../chapters/registry'
 import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
+import { useSound } from '../lib/sound/SoundProvider'
 import type { StaggeredSectionMenuItem } from './StaggeredSectionMenu'
 
 const StaggeredSectionMenu = lazy(() => import('./StaggeredSectionMenu'))
@@ -66,6 +67,7 @@ const sectionSocialItems = [
 
 export default function Nav() {
   const { activeId } = useChapterState()
+  const { enabled: soundEnabled, setEnabled: setSoundEnabled } = useSound()
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuHasOpened, setMenuHasOpened] = useState(false)
 
@@ -101,6 +103,17 @@ export default function Nav() {
               SHA <span style={{ color: 'var(--accent)' }}>● </span>1
               <span style={{ marginLeft: 8 }}>—</span> ZJGSU
             </div>
+            <button
+              className="nav__sound-button"
+              type="button"
+              aria-label={soundEnabled ? 'Turn portfolio sound off' : 'Turn portfolio sound on'}
+              aria-pressed={soundEnabled}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+            >
+              <span className="nav__sound-indicator" aria-hidden="true" />
+              <span className="nav__sound-label nav__sound-label--long">Sound {soundEnabled ? 'On' : 'Off'}</span>
+              <span className="nav__sound-label nav__sound-label--short">Snd</span>
+            </button>
             <button
               className="nav__menu-button"
               type="button"

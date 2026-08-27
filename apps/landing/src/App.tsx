@@ -6,6 +6,7 @@ import { getStage, subscribeStage } from './lib/stage'
 import { requestScrollRefresh } from './lib/scroll/requestRefresh'
 import { onChaptersReady } from './lib/chaptersReady'
 import { scrollToChapter } from './lib/chapterScroll'
+import { SoundProvider } from './lib/sound/SoundProvider'
 import Loader from './components/Loader'
 import Cursor from './components/Cursor'
 import ScrollIndicator from './components/ScrollIndicator'
@@ -16,7 +17,6 @@ import ChapterStateProvider from './components/ChapterStateProvider'
 import ChapterThemeDriver from './components/ChapterThemeDriver'
 import ChapterTransition from './components/ChapterTransition'
 import { chapters } from './chapters/registry'
-import ParticleContinuum from './lib/continuum/ParticleContinuum'
 import './styles/app.css'
 
 export default function App() {
@@ -106,26 +106,27 @@ export default function App() {
     <>
       <Loader />
       <Cursor />
-      <ChapterStateProvider>
-        <ParticleContinuum />
-        <ScrollIndicator />
-        <Nav />
-        <ChapterThemeDriver />
-      </ChapterStateProvider>
-      <ChapterTransition />
-      <main>
-        {chapters.map(({ id, Component }) => (
-          // One boundary pair per chapter: Suspense so a still-loading section
-          // can't suspend (blank out) its already-painted neighbours — notably
-          // the eager Hero — and ChapterBoundary so a render error or a failed
-          // lazy-chunk fetch collapses only this chapter, not the whole tree.
-          <ChapterBoundary key={id} chapterId={id}>
-            <Suspense fallback={null}>
-              <Component />
-            </Suspense>
-          </ChapterBoundary>
-        ))}
-      </main>
+      <SoundProvider>
+        <ChapterStateProvider>
+          <ScrollIndicator />
+          <Nav />
+          <ChapterThemeDriver />
+        </ChapterStateProvider>
+        <ChapterTransition />
+        <main>
+          {chapters.map(({ id, Component }) => (
+            // One boundary pair per chapter: Suspense so a still-loading section
+            // can't suspend (blank out) its already-painted neighbours — notably
+            // the eager Hero — and ChapterBoundary so a render error or a failed
+            // lazy-chunk fetch collapses only this chapter, not the whole tree.
+            <ChapterBoundary key={id} chapterId={id}>
+              <Suspense fallback={null}>
+                <Component />
+              </Suspense>
+            </ChapterBoundary>
+          ))}
+        </main>
+      </SoundProvider>
       <div className="grain" aria-hidden="true" />
       <Analytics />
       <SpeedInsights />

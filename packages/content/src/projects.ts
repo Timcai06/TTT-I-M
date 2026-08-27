@@ -218,6 +218,33 @@ const landingProjects: Project[] = [
   },
 ]
 
+const eduCanvasProject: Project = {
+  id: 'educanvas',
+  index: '01',
+  name: 'EduCanvas',
+  cnTitle: '教育能力驱动的通用个人 Agent 平台',
+  tagline: 'One Agent Runtime across knowledge, creation and trusted learning',
+  description:
+    '以教育能力为核心的通用个人 Agent 平台。资料、对话、Canvas 产物与学习过程共享同一条 Agent Runtime；教育能力通过 Profile、Skills、Tools 与可信领域服务按需接入。',
+  stack: ['Next.js', 'TypeScript', 'PostgreSQL', 'Drizzle', 'pnpm', 'Docker'],
+  highlights: [
+    'Single Agent Runtime：普通协作与教育场景共用唯一 Agent Loop',
+    'gateway.v1、Model Gateway 与 Provider Adapter 构成明确协议和信任边界',
+    'Web、Gateway、Worker 与领域 packages 形成可部署、可验证的 monorepo',
+  ],
+  year: '2026',
+  github: 'https://github.com/Timcai06/EduCanvas',
+  accent: '#8192d8',
+  media: {
+    kind: 'ui',
+    shots: [
+      { src: '/projects/educanvas/home.webp', label: 'EduCanvas 智能学习首页' },
+      { src: '/projects/educanvas/learning-response.webp', label: 'Agent 学习内容生成' },
+      { src: '/projects/educanvas/focus-mode.webp', label: '沉浸式学习提问界面' },
+    ],
+  },
+}
+
 export type { MediaKind, ProjectShot, Project }
 
 export interface PortfolioProject extends Project {
@@ -237,7 +264,7 @@ export interface PortfolioProject extends Project {
   notes: string[]
 }
 
-export const portfolioProjects: PortfolioProject[] = landingProjects.map((project) => ({
+const toPortfolioProject = (project: Project): PortfolioProject => ({
   ...project,
   slug: project.id,
   title: project.name,
@@ -253,4 +280,17 @@ export const portfolioProjects: PortfolioProject[] = landingProjects.map((projec
   liveUrl: project.live,
   status: project.highlights.includes('Coming soon') ? 'In the lab' : 'Shipped system',
   notes: project.highlights,
-}))
+})
+
+/** Studio keeps its current published work catalogue until its own redesign. */
+export const portfolioProjects: PortfolioProject[] = landingProjects.map(toPortfolioProject)
+
+/** Landing is a curated narrative: EduCanvas replaces Earnlytics and leads the Agent/full-stack story. */
+export const landingPortfolioProjects: PortfolioProject[] = [
+  eduCanvasProject,
+  ...['sciscope', 'pulsegraph', 'bdi', 'formula-lab', 'a-modeling']
+    .map((id) => landingProjects.find((project) => project.id === id))
+    .filter((project): project is Project => Boolean(project)),
+]
+  .map((project, index) => ({ ...project, index: String(index + 1).padStart(2, '0') }))
+  .map(toPortfolioProject)

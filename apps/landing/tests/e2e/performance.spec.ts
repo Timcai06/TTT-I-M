@@ -301,18 +301,19 @@ test('scroll scrub frame time p95 stays within budget', async ({ page }) => {
   ).toBeLessThan(FRAME_P95_BUDGET_MS)
 })
 
-test('Continuum visible forms keep p95 frame time within budget', async ({ page }) => {
+test('chapter-scoped React Bits effects keep p95 frame time within budget', async ({ page }) => {
   await openHome(page)
 
   const sections = [
-    { nav: 'About', label: 'About/disintegrate' },
-    { nav: 'Work', label: 'Work/mathSurface' },
-    { nav: 'Contact', label: 'Contact/gerstner' },
+    { id: 'life', label: 'Life/DriftWall' },
+    { id: 'frame', label: 'Frame/AccordionGallery' },
+    { id: 'projects', label: 'Work/BorderGlow focus cards' },
+    { id: 'contact', label: 'Contact/ASCIIText' },
   ]
 
   for (const section of sections) {
-    await page.locator('.nav__link', { hasText: section.nav }).click()
-    await page.waitForTimeout(1000)
+    await page.locator(`#${section.id}`).scrollIntoViewIfNeeded()
+    await page.waitForTimeout(700)
     const p95 = await sampleFrameP95(page, async () => {
       await page.mouse.wheel(0, 220)
       await page.waitForTimeout(250)

@@ -1,0 +1,189 @@
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+
+const read = (path) => readFileSync(path, 'utf8')
+const required = [
+  'src/components/BorderGlow.tsx',
+  'src/components/ASCIIText.tsx',
+  'src/components/DriftWall.tsx',
+  'src/components/AccordionGallery.tsx',
+  'src/components/WorkTransition.tsx',
+  'src/components/SciScopeFilm.tsx',
+  'src/lib/sound/SoundProvider.tsx',
+  'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
+  'src/shaders/liquid-metal-button/liquid-metal-button.html',
+  'src/shaders/spark-badge/SparkBadge.tsx',
+  'src/shaders/spark-badge/spark-badge.html',
+  'src/shaders/spark-badge/spark-badge-portfolio.html',
+  'public/projects/sciscope/sciscope-concept-film.mp4',
+  'public/projects/sciscope/sciscope-film-poster.jpg',
+  'public/projects/sciscope/sciscope-soundtrack.mp3',
+]
+
+for (const path of required) {
+  if (!existsSync(path)) throw new Error(`Missing source-backed experience component: ${path}`)
+}
+
+const app = read('src/App.tsx')
+const life = read('src/components/LifeGallery.tsx')
+const driftWall = read('src/components/DriftWall.tsx')
+const frame = read('src/components/Frame.tsx')
+const projects = read('src/components/Projects.tsx')
+const footer = read('src/components/Footer.tsx')
+const workTransition = read('src/components/WorkTransition.tsx')
+const workTransitionStyle = read('src/styles/components/work-transition.css')
+const liquidMetalButton = read('src/shaders/liquid-metal-button/LiquidMetalButton.tsx')
+const sciScopeFilm = read('src/components/SciScopeFilm.tsx')
+const sciScopeFilmStyle = read('src/styles/components/sciscope-film.css')
+const soundProvider = read('src/lib/sound/SoundProvider.tsx')
+const globalStyle = read('src/styles/global.css')
+const nav = read('src/components/Nav.tsx')
+const loader = read('src/components/Loader.tsx')
+const registry = read('src/chapters/registry.ts')
+const landingProjects = read('src/data/projects.ts')
+const studioContent = read('../studio/content/index.ts')
+
+if (/ParticleContinuum|lib\/continuum/.test(app) || existsSync('src/lib/continuum/ParticleContinuum.tsx')) {
+  throw new Error('The retired global Particle Continuum must not remain in the Landing runtime.')
+}
+
+if (!workTransition.includes('variant="browser"') || !workTransition.includes('LiquidMetalButton')) {
+  throw new Error('The Stack → Work bridge must use the Spark browser variant and one Liquid Metal CTA.')
+}
+if (!workTransition.includes('useReducedMotion') || !workTransition.includes('controlsForProgress') || !workTransition.includes('ctaMounted')) {
+  throw new Error('The Stack → Work bridge must retain reduced-motion and scroll-driven particle controls.')
+}
+if (!workTransition.includes('spark-badge-portfolio.html?url')) {
+  throw new Error('The portfolio must use its budgeted Spark scene while preserving the canonical source beside it.')
+}
+if (!workTransitionStyle.includes('height: 680svh') || !workTransitionStyle.includes('height: 300svh')) {
+  throw new Error('The Stack → Work bridge must retain its measured desktop/mobile narrative space.')
+}
+for (const needle of ['addTrackedPhase', 'work-transition__phase-content', '{ y: 72, autoAlpha: 0 }', 'scrub: mobile ? 0.25 : 0.32', 'rendering="colored"']) {
+  if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its scroll-tracked narrative treatment: ${needle}`)
+}
+for (const retiredToken of ['snap:', 'yPercent:', 'work-transition__reveal']) {
+  if (workTransition.includes(retiredToken) || workTransitionStyle.includes(retiredToken)) {
+    throw new Error(`WorkTransition must not restore fragmented snap/reveal choreography: ${retiredToken}`)
+  }
+}
+if (!workTransitionStyle.includes('.work-transition__cta-shell') || !workTransition.includes('work-transition__cta-shell')) {
+  throw new Error('The Liquid Metal CTA must keep layout positioning separate from its GSAP animation layer.')
+}
+for (const retiredToken of ['work-transition__product', '/projects/educanvas/home.webp', 'educanvas.local', 'EduCanvas /']) {
+  if (workTransition.includes(retiredToken) || workTransitionStyle.includes(retiredToken)) {
+    throw new Error(`WorkTransition must not restore its retired product screenshot treatment: ${retiredToken}`)
+  }
+}
+if (!/\.work-transition__spark\s*\{[^}]*pointer-events:\s*none/s.test(workTransitionStyle)) {
+  throw new Error('The decorative Spark iframe must not intercept wheel input.')
+}
+if (workTransitionStyle.includes('mask-image: radial-gradient(ellipse 72% 76%')) {
+  throw new Error('The Liquid Metal CTA bloom must not be clipped by the retired radial mask.')
+}
+for (const token of ['media="print"', 'bridge-ready', 'pointer-bridge', 'portfolio:iframe-pointer', 'syncPendingFrame', 'escapeHtml(safeText)']) {
+  if (!liquidMetalButton.includes(token)) throw new Error(`Liquid Metal runtime must avoid a blank font-blocked entrance: ${token}`)
+}
+if (workTransition.includes('cursorLabel=')) {
+  throw new Error('The Liquid Metal CTA animation must carry focus without a competing cursor label.')
+}
+for (const copy of ['A stack is still', 'Connect the parts.', 'Six projects.', '哪里还没做完']) {
+  if (!workTransition.includes(copy)) throw new Error(`WorkTransition must keep its concrete humanized narrative: ${copy}`)
+}
+if (/work-transition__edge/.test(workTransition) || /work-transition__edge/.test(workTransitionStyle)) {
+  throw new Error('The retired Stack → Work edge gradients must not return.')
+}
+for (const needle of ['WORK_GATE_PROGRESS', 'preventForwardScroll', 'event.deltaY <= 0', "data-gate={gateLocked ? 'locked' : 'open'}", 'Click to continue']) {
+  if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its click-to-enter gate: ${needle}`)
+}
+if (workTransition.includes('lenis.stop()')) {
+  throw new Error('WorkTransition must not freeze reverse scrolling at its one-way project gate.')
+}
+if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
+  throw new Error('Scroll performance markers must not disable Archive pointer hit-testing globally.')
+}
+
+if (!projects.includes("p.id === 'sciscope' && <SciScopeFilm />")) {
+  throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
+}
+for (const token of ['data-mode="entrance"', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
+  if (!sciScopeFilm.includes(token)) throw new Error(`SciScopeFilm entrance is missing ${token}.`)
+}
+for (const retiredToken of ['ScrollTrigger', 'useGSAP', 'resolveSciScopePlayback', 'sciscope-film__evidence', 'sciscope-film__story', 'currentTime = target']) {
+  if (sciScopeFilm.includes(retiredToken)) throw new Error(`SciScopeFilm must not retain scroll-scrub storytelling: ${retiredToken}`)
+}
+if (!sciScopeFilmStyle.includes('aspect-ratio: 16 / 9') || sciScopeFilmStyle.includes('height: 760svh') || sciScopeFilmStyle.includes('position: sticky')) {
+  throw new Error('SciScopeFilm must be a static cinematic entrance, not a pinned scroll runway.')
+}
+if (!sciScopeFilmStyle.includes('100dvh - 86px') || !sciScopeFilmStyle.includes('100dvh - 32px')) {
+  throw new Error('SciScopeFilm must reserve viewport height for both its title bar and safe-area margins.')
+}
+if (!app.includes('SoundProvider') || !nav.includes('aria-pressed={soundEnabled}')) {
+  throw new Error('The global opt-in sound provider and accessible nav toggle must remain wired.')
+}
+for (const requiredSoundToken of ['MASTER_GAIN = 0.28', 'FADE_SECONDS = 0.18', 'visibilitychange', 'AudioBufferSourceNode']) {
+  if (!soundProvider.includes(requiredSoundToken)) throw new Error(`SoundProvider is missing ${requiredSoundToken}.`)
+}
+if (/sciscope-concept-film|sciscope-soundtrack/.test(loader)) {
+  throw new Error('SciScope film/audio must not enter the critical Loader manifest.')
+}
+
+const filmBytes = statSync('public/projects/sciscope/sciscope-concept-film.mp4').size
+const soundtrackBytes = statSync('public/projects/sciscope/sciscope-soundtrack.mp3').size
+if (filmBytes > 5_500_000) throw new Error(`SciScope film exceeds 5.5 MB: ${filmBytes}`)
+if (soundtrackBytes > 700_000) throw new Error(`SciScope soundtrack exceeds 700 KB: ${soundtrackBytes}`)
+const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')
+if (!sparkPortfolio.includes("set('particleAmount', 0.08, 1.4)")) {
+  throw new Error('The portfolio Spark adapter must retain its controllable chapter-density range.')
+}
+const skillsIndex = registry.indexOf("id: 'skills'")
+const transitionIndex = registry.indexOf("id: 'work-transition'")
+const projectsIndex = registry.indexOf("id: 'projects'")
+if (!(skillsIndex < transitionIndex && transitionIndex < projectsIndex)) {
+  throw new Error('The navless work transition must remain between Stack and Work.')
+}
+
+const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex')
+const canonicalScenes = {
+  'src/shaders/liquid-metal-button/liquid-metal-button.html': '76624e881a3aecbd79b473d9c51f53c7157d47052abd0f9dc28fefd223b0a819',
+  'src/shaders/spark-badge/spark-badge.html': 'a8eefdee0d87deefae9b8b8dac4d79c0ee41447578a78090cad9c956e33ccf90',
+}
+for (const [path, expected] of Object.entries(canonicalScenes)) {
+  const actual = sha256(path)
+  if (actual !== expected) throw new Error(`${path} drifted from the approved ThreeUI source: ${actual}`)
+}
+
+for (const [source, component, owner] of [
+  [life, 'DriftWall', 'Life'],
+  [frame, 'AccordionGallery', 'Frame'],
+  [projects, 'BorderGlow', 'Projects'],
+  [footer, 'ASCIIText', 'Contact'],
+]) {
+  if (!source.includes(component)) throw new Error(`${owner} must mount ${component}.`)
+}
+
+if (
+  !life.includes('columns={mobile ? 3 : 7}') ||
+  !life.includes('tileWidth={mobile ? 154 : 188}') ||
+  !life.includes('tilt={mobile ? 8 : 11}') ||
+  !life.includes('turn={mobile ? -8 : -7}') ||
+  !life.includes('dim={0.66}') ||
+  !life.includes('overlayColor="#000000"')
+) {
+  throw new Error('Life archive must keep its seven-column equal-width desktop composition.')
+}
+for (const token of ['Math.min(safeItems.length, 5)', 'column * 5 + slot * 3', 'TONE_SEQUENCE', 'toneBuckets', "'data-tone'", "'--dw-card-position'"]) {
+  if (!driftWall.includes(token)) throw new Error(`DriftWall must preserve varied equal-width image distribution: ${token}`)
+}
+if (driftWall.includes("'--dw-card-w'")) {
+  throw new Error('DriftWall must not reintroduce per-card width variance.')
+}
+
+if (!landingProjects.includes('landingPortfolioProjects')) {
+  throw new Error('Landing must consume its EduCanvas-specific curated project list.')
+}
+if (!studioContent.includes('portfolioProjects') || studioContent.includes('landingPortfolioProjects')) {
+  throw new Error('Studio must remain on its existing portfolioProjects catalogue this round.')
+}
+
+console.log('[experience-effects-guards] source-backed effects are chapter-scoped; canonical ThreeUI scenes are verified; Continuum and project PixelTransition are retired; Studio is isolated.')

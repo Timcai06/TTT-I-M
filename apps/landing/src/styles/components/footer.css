@@ -57,44 +57,48 @@
    iris always fully covers the section while it's on screen. */
 .footer.is-iris-reveal {
   background: transparent;
-  min-height: 100svh;
+  min-height: clamp(620px, 70svh, 700px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .footer__content {
   position: relative;
   z-index: 10002;
   width: 100%;
-  padding-top: clamp(40px, 6vw, 80px);
-  padding-bottom: clamp(24px, 3vw, 40px);
+  padding-top: clamp(32px, 4vw, 52px);
+  padding-bottom: clamp(20px, 2.4vw, 30px);
 }
 
-.footer__strands {
+.footer__ascii {
   position: absolute;
-  top: clamp(-56px, -3vw, -24px);
-  right: clamp(-180px, -9vw, -96px);
-  width: min(1320px, 88vw);
-  height: min(700px, 64vh);
-  opacity: 0;
+  z-index: 0;
+  top: auto;
+  right: clamp(4px, 1.2vw, 22px);
+  bottom: clamp(250px, 29vh, 302px);
+  left: auto;
+  width: min(59vw, 900px);
+  height: clamp(282px, 25vw, 360px);
+  opacity: 1;
   overflow: hidden;
   pointer-events: none;
-  mix-blend-mode: normal;
-  filter: saturate(1.32) contrast(1.18);
-  mask-image:
-    radial-gradient(ellipse at 62% 42%, black 0 46%, transparent 76%),
-    linear-gradient(to bottom, black 0 72%, transparent 100%);
-  -webkit-mask-image:
-    radial-gradient(ellipse at 62% 42%, black 0 46%, transparent 76%),
-    linear-gradient(to bottom, black 0 72%, transparent 100%);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  mask-image: linear-gradient(90deg, transparent 0%, black 13%, black 90%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 13%, black 90%, transparent 100%);
 }
 
-.footer__strands::after {
-  content: '';
-  display: none;
-  position: absolute;
+.footer__ascii .ascii-text-container {
   inset: 0;
-  pointer-events: none;
+  width: auto;
+  height: auto;
+}
+
+.footer__ascii .ascii-text-container pre {
+  background-attachment: scroll;
+  mix-blend-mode: multiply;
+  filter: contrast(1.5) saturate(1.28);
 }
 
 .footer__inner {
@@ -110,18 +114,19 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(10, 10, 10, 0.5);
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 /* ── Title ── */
 .footer__title {
   font-family: var(--font-serif);
-  font-size: clamp(48px, 8vw, 120px);
+  max-width: min(72%, 900px);
+  font-size: clamp(52px, 6.4vw, 96px);
   font-weight: 400;
   line-height: 0.9;
   letter-spacing: -0.04em;
   color: #0a0a0a;
-  margin: 0 0 clamp(40px, 5vw, 64px);
+  margin: 0 0 clamp(28px, 3.2vw, 42px);
   display: flex;
   flex-direction: column;
 }
@@ -133,7 +138,7 @@
 .contact__cta-field {
   position: relative;
   width: min(710px, 100%);
-  margin-bottom: clamp(48px, 6vw, 80px);
+  margin-bottom: clamp(30px, 3.6vw, 44px);
 }
 
 /* ── Contact Items (Pill Buttons) ── */
@@ -156,21 +161,22 @@
   justify-content: space-between;
   gap: 14px;
   width: min(320px, 100%);
-  min-height: 78px;
-  padding: 0 44px;
-  border-radius: 22px;
-  border: 0;
+  min-height: 64px;
+  padding: 0 32px;
+  border-radius: 18px;
+  border: 1px solid rgba(111, 52, 44, 0.18);
   font-family: var(--font-mono);
   font-size: clamp(11px, 0.82vw, 13px);
   font-weight: 400;
   letter-spacing: 0.015em;
   color: rgba(10, 10, 10, 0.74);
   text-decoration: none;
-  background: transparent;
+  background: rgba(245, 242, 234, 0.64);
   overflow: visible;
   isolation: isolate;
   z-index: 1;
-  transition: color 0.3s var(--ease-out);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  transition: color 0.3s var(--ease-out), border-color 0.3s var(--ease-out), background 0.3s var(--ease-out);
 }
 
 .contact__btn--email {
@@ -179,16 +185,6 @@
 
 .contact__btn--github {
   width: min(300px, 100%);
-}
-
-.contact__btn-shape {
-  position: absolute;
-  inset: -14px -18px;
-  width: auto;
-  height: auto;
-  z-index: 1;
-  opacity: 0.9;
-  pointer-events: none;
 }
 
 .contact__btn::before {
@@ -210,11 +206,8 @@
 
 .contact__btn:hover {
   color: rgba(10, 10, 10, 0.88);
-}
-
-.contact__btn:hover .contact__btn-shape,
-.contact__btn:focus-visible .contact__btn-shape {
-  opacity: 0.9;
+  border-color: rgba(111, 52, 44, 0.46);
+  background: rgba(245, 242, 234, 0.9);
 }
 
 .contact__btn:focus-visible {
@@ -255,7 +248,7 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(10, 10, 10, 0.45);
-  padding-top: clamp(24px, 3vw, 40px);
+  padding-top: clamp(18px, 2vw, 26px);
   border-top: 1px solid rgba(10, 10, 10, 0.1);
 }
 
@@ -330,14 +323,13 @@
     display: none;
   }
 
-  .footer__strands {
+  .footer__ascii {
     display: none;
   }
 
   .footer {
-    min-height: 100svh;
-    display: flex;
-    align-items: flex-end;
+    min-height: auto;
+    display: block;
     background:
       linear-gradient(135deg, rgba(120, 144, 168, 0.14), transparent 28%),
       radial-gradient(circle at 12% 0%, rgba(10, 10, 10, 0.08), transparent 34%),
@@ -365,42 +357,43 @@
 
   .footer__content {
     width: calc(100% - 32px);
-    padding-top: 72px;
-    padding-bottom: 28px;
+    padding-top: 52px;
+    padding-bottom: 24px;
   }
 
   .footer__kicker {
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .footer__title {
-    font-size: clamp(44px, 13vw, 58px);
+    max-width: 100%;
+    font-size: clamp(42px, 12vw, 54px);
     line-height: 0.96;
     letter-spacing: -0.045em;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
   }
 
   .contact__cta-field {
     width: 100%;
-    margin-bottom: 40px;
+    margin-bottom: 28px;
   }
 
   .contact__items {
     flex-direction: column;
     align-items: flex-start;
     flex-wrap: nowrap;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
-    margin: -14px 0;
-    padding: 14px 18px;
+    margin: 0;
+    padding: 0;
   }
 
   .contact__btn {
     width: 100%;
     justify-content: space-between;
-    min-height: 76px;
-    padding: 0 30px;
-    border-radius: 22px;
+    min-height: 56px;
+    padding: 0 24px;
+    border-radius: 18px;
     font-size: 12px;
     background: transparent;
     box-shadow: none;

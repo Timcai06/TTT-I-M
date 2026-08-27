@@ -11,6 +11,7 @@ export const lazyChapterLoaders = {
   life: () => import('../components/LifeGallery'),
   frame: () => import('../components/Frame'),
   skills: () => import('../components/Skills'),
+  workTransition: () => import('../components/WorkTransition'),
   projects: () => import('../components/Projects'),
   contact: () => import('../components/Footer'),
 } satisfies Record<string, LazyChapterLoader>
@@ -23,6 +24,7 @@ const About = lazy(lazyChapterLoaders.about)
 const LifeGallery = lazy(lazyChapterLoaders.life)
 const Frame = lazy(lazyChapterLoaders.frame)
 const Skills = lazy(lazyChapterLoaders.skills)
+const WorkTransition = lazy(lazyChapterLoaders.workTransition)
 const Projects = lazy(lazyChapterLoaders.projects)
 const Footer = lazy(lazyChapterLoaders.contact)
 
@@ -77,6 +79,11 @@ export const chapters: Chapter[] = [
     Component: Skills,
     nav: { label: '03 · Stack' },
     progress: { index: '04', name: 'STACK' },
+  },
+  {
+    // A cinematic bridge from capability to proof; intentionally navless.
+    id: 'work-transition',
+    Component: WorkTransition,
   },
   {
     id: 'projects',

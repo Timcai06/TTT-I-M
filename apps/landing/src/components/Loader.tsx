@@ -67,7 +67,7 @@ export default function Loader() {
   // The exit gate is the FULL manifest (`ready`), not just the critical tier:
   // the loader is a true "everything loaded" screen — when the bar hits 100%
   // every chunk AND every curated image is fetched/decoded, so scrolling into
-  // any section (Frame, Work/LaserFlow) is pop-in- and hitch-free. Each task
+  // any section (Frame, Work media) is pop-in- and hitch-free. Each task
   // still races a 12s timeout (preloadController) so a dead resource can't
   // strand the intro.
   const stageText = preload.ready ? 'ready' : preload.label

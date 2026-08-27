@@ -1,6 +1,7 @@
 import { archiveIntro, archiveOutro, archiveThemes } from '../content'
 import ArchiveTextPanel from './frame/ArchiveTextPanel'
 import ArchiveThemeSection from './frame/ArchiveThemeSection'
+import AccordionGallery from './AccordionGallery'
 
 /**
  * @description Frame 章节入口 —— 将摄影存档组织为横向叙事流。
@@ -22,6 +23,32 @@ export default function Frame() {
   return (
     <section className="frame-horizontal" id="frame" data-horizontal-section>
       <ArchiveTextPanel layout="intro" panel={archiveIntro} />
+      <div className="frame-accordion container" data-frame-accordion>
+        <div className="frame-accordion__meta">
+          <span>Archive index · 摄影索引</span>
+          <p><i aria-hidden="true" /> Hover to preview · click to enter · 悬停预览，点击进入章节</p>
+        </div>
+        <AccordionGallery
+          items={archiveThemes.map((theme) => {
+            const image = theme.clusters[0]?.slots[0]?.image
+            return {
+              image: image?.src ?? '',
+              alt: image?.title ?? theme.title,
+              label: theme.title,
+              link: `#frame-${theme.id}`,
+            }
+          })}
+          defaultIndex={1}
+          height={520}
+          expandRatio={0.58}
+          accentColor="#d8bd86"
+          overlayColor="#080a0c"
+          textColor="#f5f2ea"
+          grayscale
+          showLabels
+          trigger="hover"
+        />
+      </div>
       {archiveThemes.map((theme, index) => (
         <ArchiveThemeSection key={theme.id} theme={theme} themeIndex={index} />
       ))}

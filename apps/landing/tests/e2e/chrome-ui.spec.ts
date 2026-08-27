@@ -42,7 +42,7 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
   const footerState = await page.evaluate(() => {
     const footer = document.querySelector<HTMLElement>('#contact')
     const inner = document.querySelector<HTMLElement>('.footer__inner')
-    const strands = document.querySelector<HTMLElement>('.footer__strands')
+    const ascii = document.querySelector<HTMLElement>('.footer__ascii')
     const irisWrap = document.querySelector<HTMLElement>('.contact__blob-wrap')
     const irisCore = document.querySelector<SVGCircleElement>('[data-iris-core]')
     if (!footer || !inner) return null
@@ -52,7 +52,7 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
       footerTop: footer.getBoundingClientRect().top,
       footerBg: getComputedStyle(footer).backgroundColor,
       innerOpacity: Number(getComputedStyle(inner).opacity),
-      strandsOpacity: strands ? Number(getComputedStyle(strands).opacity) : 0,
+      asciiOpacity: ascii ? Number(getComputedStyle(ascii).opacity) : 0,
       irisWrapOpacity: irisWrap ? Number(getComputedStyle(irisWrap).opacity) : 0,
       irisWrapVisibility: irisWrap ? getComputedStyle(irisWrap).visibility : 'missing',
       irisCoreRadius: irisCore ? Number(irisCore.getAttribute('r')) : 0,
@@ -63,7 +63,8 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
   expect(footerState?.footerClass).toContain('is-iris-reveal')
   expect(footerState?.footerTop ?? Number.POSITIVE_INFINITY).toBeLessThan(220)
   expect(footerState?.innerOpacity).toBe(1)
-  expect(footerState?.strandsOpacity).toBe(1)
+  expect(footerState?.asciiOpacity).toBeGreaterThan(0.3)
+  await expect(page.locator('.footer__ascii pre')).toHaveCount(1)
   expect(footerState?.irisWrapOpacity).toBeGreaterThan(0.95)
   expect(footerState?.irisWrapVisibility).toBe('visible')
   expect(footerState?.irisCoreRadius).toBeGreaterThan(0)

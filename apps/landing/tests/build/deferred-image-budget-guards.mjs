@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { extname, join } from 'node:path'
 
 // Deferred-image byte budget (2026-06-10 audit follow-up).
 //
@@ -18,12 +18,14 @@ import { join } from 'node:path'
 const BUDGET_BYTES = 26 * 1024 * 1024
 
 const DEFERRED_IMAGE_ROOTS = ['dist/frame', 'dist/life', 'dist/projects', 'dist/portrait']
+const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
 
 function walkBytes(dir) {
   return readdirSync(dir).reduce((sum, entry) => {
     const full = join(dir, entry)
     const stats = statSync(full)
-    return sum + (stats.isDirectory() ? walkBytes(full) : stats.size)
+    if (stats.isDirectory()) return sum + walkBytes(full)
+    return sum + (IMAGE_EXTENSIONS.has(extname(entry).toLowerCase()) ? stats.size : 0)
   }, 0)
 }
 
