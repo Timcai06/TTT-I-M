@@ -47,7 +47,7 @@
 }
 
 .work-transition__sticky {
-  position: sticky;
+  position: relative;
   top: 0;
   height: 100svh;
   min-height: 620px;

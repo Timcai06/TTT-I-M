@@ -100,6 +100,8 @@ export default function WorkTransition() {
         trigger: section,
         start: 'top top',
         end: 'bottom bottom',
+        pin: '.work-transition__sticky',
+        pinSpacing: false,
         scrub: mobile ? 0.25 : 0.32,
         invalidateOnRefresh: true,
         onUpdate: (self) => {

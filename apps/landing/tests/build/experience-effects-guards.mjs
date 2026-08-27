@@ -59,10 +59,10 @@ if (!workTransition.includes('spark-badge-portfolio.html?url')) {
 if (!workTransitionStyle.includes('height: 680svh') || !workTransitionStyle.includes('height: 300svh')) {
   throw new Error('The Stack → Work bridge must retain its measured desktop/mobile narrative space.')
 }
-if (!/\.work-transition__sticky\s*\{[^}]*position:\s*sticky/s.test(workTransitionStyle)) {
-  throw new Error('WorkTransition must stay inside its own chapter with native sticky positioning.')
+if (!workTransition.includes("pin: '.work-transition__sticky'") || !workTransition.includes('pinSpacing: false')) {
+  throw new Error('WorkTransition must keep its visual stage pinned throughout the long narrative chapter.')
 }
-for (const earlyPinToken of ["pin: '.work-transition__sticky'", 'pinSpacing:', 'anticipatePin:']) {
+for (const earlyPinToken of ['anticipatePin:']) {
   if (workTransition.includes(earlyPinToken)) {
     throw new Error(`WorkTransition must not let ScrollTrigger pin ahead of its chapter: ${earlyPinToken}`)
   }

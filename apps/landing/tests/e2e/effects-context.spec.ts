@@ -232,6 +232,10 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
   await scrollToProgress(0.44)
   expect(await readProgress()).toBeGreaterThan(0.43)
   expect(await readProgress()).toBeLessThan(0.47)
+  const pinnedStage = await transition.locator('.work-transition__sticky').boundingBox()
+  expect(pinnedStage).not.toBeNull()
+  expect(Math.abs(pinnedStage!.y)).toBeLessThanOrEqual(2)
+  expect(pinnedStage!.height).toBeGreaterThanOrEqual(page.viewportSize()!.height - 2)
   await expect(transition.locator('[data-work-phase="system"] .work-transition__phase-content')).toHaveCSS('opacity', '1')
   await expect(transition.locator('[data-work-phase="potential"] .work-transition__phase-content')).toHaveCSS('opacity', '0')
 
