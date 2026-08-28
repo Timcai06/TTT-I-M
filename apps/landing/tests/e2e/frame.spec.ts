@@ -125,6 +125,50 @@ test('Frame themes show their final clusters before the next chapter takes over'
   })
 })
 
+test('Frame first pinned movement releases after lazy pin heights settle', async ({ page }) => {
+  await openHome(page)
+  await page.getByRole('button', { name: '02 · Frame' }).click()
+  await expect(page.locator('#frame')).toBeInViewport()
+
+  const firstPinEnd = await page.locator('#frame-building').evaluate((section) => {
+    const spacer = section.parentElement
+    if (!spacer?.classList.contains('pin-spacer')) return 0
+    return Math.round(spacer.getBoundingClientRect().bottom + window.scrollY)
+  })
+  expect(firstPinEnd).toBeGreaterThan(0)
+  const viewportHeight = await page.evaluate(() => window.innerHeight)
+
+  for (let step = 0; step < 40; step += 1) {
+    const cuisineTop = await page.locator('#frame-cuisine').evaluate((section) => section.getBoundingClientRect().top)
+    if (cuisineTop <= viewportHeight * 0.6) break
+    await page.mouse.wheel(0, 700)
+    await page.waitForTimeout(140)
+  }
+
+  const result = await page.evaluate((expectedPinEnd) => ({
+    cuisineTop: document.querySelector('#frame-cuisine')?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
+    expectedPinEnd,
+    scrollY: window.scrollY,
+    viewportHeight: window.innerHeight,
+  }), firstPinEnd)
+
+  expect(result.scrollY, JSON.stringify(result)).toBeGreaterThan(firstPinEnd - result.viewportHeight * 1.5)
+  expect(result.cuisineTop, JSON.stringify(result)).toBeLessThan(result.viewportHeight * 0.6)
+})
+
+test('Natural chapter scrolling replaces the hash without creating a navigation jump', async ({ page }) => {
+  await openHome(page)
+  await page.evaluate(() => {
+    const frame = document.querySelector<HTMLElement>('#frame')
+    if (!frame) return
+    window.scrollTo({ top: frame.offsetTop - window.innerHeight * 0.8, behavior: 'auto' })
+  })
+  await page.mouse.wheel(0, 900)
+
+  await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#frame')
+  await expect(page.locator('.nav__link.is-active')).toContainText('Frame')
+})
+
 test('Frame and Work navigation active states stay aligned with scroll targets', async ({ page }) => {
   await openHome(page)
 

@@ -21,6 +21,7 @@ const scrollSource = readFileSync('src/lib/chapterScroll.ts', 'utf8')
 const chapterScrollMetricsSource = readFileSync('src/lib/chapterScrollMetrics.ts', 'utf8')
 const landingNarrativeSource = readFileSync('src/lib/landingScrollNarrative.ts', 'utf8')
 const scrollFrameSchedulerSource = readFileSync('src/lib/scrollFrameScheduler.ts', 'utf8')
+const lenisSource = readFileSync('src/lib/lenis.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
@@ -80,6 +81,18 @@ if (!chapterScrollMetricsSource.includes('createScrollFrameScheduler') || !scrol
 
 if (!chapterScrollMetricsSource.includes('registeredIdSets') || !chapterScrollMetricsSource.includes('syncRegisteredIds')) {
   throw new Error('Chapter scroll metrics must union all subscriber chapter ids instead of letting consumers overwrite each other.')
+}
+
+if (
+  !lenisSource.includes("ScrollTrigger.addEventListener('refresh', syncLenisDimensions)") ||
+  !lenisSource.includes('lenis.resize()') ||
+  !lenisSource.includes("ScrollTrigger.removeEventListener('refresh', syncLenisDimensions)")
+) {
+  throw new Error('Lenis must re-measure its scroll limit after ScrollTrigger pin spacers refresh, and release that listener on cleanup.')
+}
+
+if (!providerSource.includes('userScrollStarted') || !providerSource.includes("window.history.replaceState(null, '', nextUrl)")) {
+  throw new Error('Natural chapter scrolling must keep the URL hash aligned without adding browser history entries.')
 }
 
 if (!landingNarrativeSource.includes('pickActiveChapterId') || !landingNarrativeSource.includes('computeChapterProgressFills') || !landingNarrativeSource.includes('getChapterTheme')) {

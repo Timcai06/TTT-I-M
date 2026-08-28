@@ -50,6 +50,18 @@ export function useLenis() {
     gsap.ticker.add(tickerFn)
     gsap.ticker.lagSmoothing(0)
 
+    // ScrollTrigger creates and resizes pin spacers after lazy chapters mount.
+    // Lenis' ResizeObserver does not reliably observe those synthetic height
+    // changes in a production build, so its cached scroll limit can remain at
+    // the pre-pin document height. The result is a hard clamp part-way through
+    // Frame even though the native document is much taller. Refresh is the one
+    // point at which every pin has finished measuring; resize Lenis there so
+    // both runtimes share the same scroll range.
+    const syncLenisDimensions = () => {
+      lenis.resize()
+    }
+    ScrollTrigger.addEventListener('refresh', syncLenisDimensions)
+
     // A chapter-jump transition owns the viewport: freeze smooth scrolling while
     // the overlay plays and resume when we land. This lives here (the single
     // Lenis owner) as a stage side-effect instead of being driven imperatively
@@ -70,6 +82,7 @@ export function useLenis() {
       unsubStage()
       document.body.classList.remove('disable-hover')
       lenis.off('scroll', onScroll)
+      ScrollTrigger.removeEventListener('refresh', syncLenisDimensions)
       gsap.ticker.remove(tickerFn)
       lenis.destroy()
       lenisInstance = null
