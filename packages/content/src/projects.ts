@@ -15,6 +15,26 @@ interface ProjectShot {
   label: string
 }
 
+/** 一个聚合项目中的独立案例；首页只挂载当前案例的主图。 */
+interface ProjectCaseStudy {
+  /** 案例内稳定标识，用于交互状态与测试定位。 */
+  id: string
+  /** 案例顺序，显示为 `01` / `02` 等。 */
+  index: string
+  /** 案例名称。 */
+  title: string
+  /** 对题目或决策对象的短说明。 */
+  subtitle: string
+  /** 该案例解决了什么问题，以及证据边界是什么。 */
+  summary: string
+  /** 案例最有辨识度的方法标签。 */
+  methods: string[]
+  /** 案例自己的 GitHub 仓库。 */
+  repository: string
+  /** 切换到该案例时按需加载的代表性结果图。 */
+  shot: ProjectShot
+}
+
 /**
  * 项目条目定义 —— Projects 组件的完整数据契约。
  * 每个项目在内容区展示为卡片：左侧文本信息 + 右侧媒体展示。
@@ -50,6 +70,8 @@ interface Project {
     kind: MediaKind
     shots: ProjectShot[]
   }
+  /** 多个相关工作共享一个项目入口时使用的案例索引。 */
+  caseStudies?: ProjectCaseStudy[]
 }
 
 const landingProjects: Project[] = [
@@ -158,35 +180,70 @@ const landingProjects: Project[] = [
     },
   },
   {
-    id: 'a-modeling',
+    id: 'modeling-lab',
     index: '05',
-    name: '霍尔木兹封锁油价模型',
-    cnTitle: '数学建模 A 题',
-    tagline: '短期冲击 + 中长期油价调节',
+    name: 'Modeling Lab',
+    cnTitle: '应用数学建模研究集',
+    tagline: 'Four studies in uncertainty, optimization and evidence',
     description:
-      '省 2026 数学建模 A 题。解释为什么霍尔木兹封锁巨大供应缺口下，油价并未冲到 278-337 美元/桶的反事实基准，而是在 110-120 美元/桶形成平台。',
-    stack: ['Python', 'R', 'LaTeX', 'Ridge', 'ARIMA', 'GARCH', '蒙特卡洛'],
+      '把四次建模工作放进同一个研究入口：从能源冲击、沙漠决策、文物成分识别到农业风险规划。每个案例保留自己的问题、模型、检验图表与可复现仓库，而不是被拆成四张相似的项目卡。',
+    stack: ['Python', 'R', 'LaTeX', 'MILP', 'MDP', 'Monte Carlo', 'CLR', 'CVaR'],
     highlights: [
-      '短期模型 RMSE 3.38 / MAE 2.76 / MAPE 2.76%，优于 ARIMA 基准',
-      '中长期接入 EIA / JODI / OPEC / OVX 官方外生约束',
-      '蒙特卡洛 + 16 项敏感性分析 + DM 检验 + Newey-West 校准',
+      '04 studies · 机制建模、序贯决策、成分数据分析与风险优化',
+      '案例之间共享可复现骨架，但不抹平各自的数据口径与假设边界',
+      '首页只加载当前案例主图，其余结果按需展开并直达独立仓库',
     ],
     year: '2026',
-    github: 'https://github.com/Timcai06/-A-',
-    accent: '#1fb6c4',
+    github: 'https://github.com/Timcai06/26_MathModel_Tunnel',
+    accent: '#98b8b5',
     media: {
       kind: 'data',
       shots: [
-        { src: '/projects/a-modeling/monte-carlo-tree.webp', label: '蒙特卡洛情景树' },
-        { src: '/projects/a-modeling/path-cloud.webp', label: '价格路径云图' },
-        { src: '/projects/a-modeling/sensitivity-tornado.webp', label: '参数敏感性龙卷风' },
-        { src: '/projects/a-modeling/fitted-vs-actual.webp', label: '精修模型 vs 实际' },
-        { src: '/projects/a-modeling/lagged-gpr.webp', label: 'GPR 滞后散点' },
-        { src: '/projects/a-modeling/ovx-volatility.webp', label: 'OVX 隐含波动率' },
-        { src: '/projects/a-modeling/return-volatility.webp', label: '收益率波动率' },
-        { src: '/projects/a-modeling/residual-correction.webp', label: '短期残差校正' },
+        { src: '/projects/modeling-lab/tunnel.webp', label: '能源冲击 · 蒙特卡洛情景树' },
       ],
     },
+    caseStudies: [
+      {
+        id: 'tunnel',
+        index: '01',
+        title: '霍尔木兹封锁与油价冲击',
+        subtitle: '机制模型 · Markov · Monte Carlo',
+        summary: '解释短期价格平台，并用状态转移与尾部情景刻画 60—180 天的调节路径。',
+        methods: ['Mechanism', 'Markov', 'Monte Carlo'],
+        repository: 'https://github.com/Timcai06/26_MathModel_Tunnel',
+        shot: { src: '/projects/modeling-lab/tunnel.webp', label: '第 180 天价格分布与尾部突破概率' },
+      },
+      {
+        id: 'desert',
+        index: '02',
+        title: '穿越沙漠的序贯决策',
+        subtitle: 'MILP · MDP · 多人博弈',
+        summary: '把天气、负重、补给和多人策略放进统一决策过程，并审计候选策略的收益—失败风险前沿。',
+        methods: ['MILP', 'MDP', 'Game Theory'],
+        repository: 'https://github.com/Timcai06/26_MathModel_Desert',
+        shot: { src: '/projects/modeling-lab/desert.webp', label: '收益—失败风险前沿' },
+      },
+      {
+        id: 'glass',
+        index: '03',
+        title: '古代玻璃成分与鉴别',
+        subtitle: 'Compositional Data · CLR · Robust Clustering',
+        summary: '在成分闭合约束下分析风化差异、类型分离与未知样本归类，避免直接对比例数据做失真的欧氏比较。',
+        methods: ['CLR', 'Robust Clustering', 'Classification'],
+        repository: 'https://github.com/Timcai06/26_MathModel_Glass',
+        shot: { src: '/projects/modeling-lab/glass.webp', label: '铅钡与高钾玻璃的成分分离' },
+      },
+      {
+        id: 'agriculture',
+        index: '04',
+        title: '农作物种植策略优化',
+        subtitle: 'MILP · SAA · CVaR',
+        summary: '在地块、轮作和销量约束下，从确定性排产扩展到可审计的样本外风险规划。',
+        methods: ['MILP', 'SAA', 'CVaR'],
+        repository: 'https://github.com/Timcai06/26_MathModel_Agriculture',
+        shot: { src: '/projects/modeling-lab/agriculture.webp', label: '统一决策骨架与三层证据链' },
+      },
+    ],
   },
   {
     id: 'sciscope',
@@ -245,7 +302,7 @@ const eduCanvasProject: Project = {
   },
 }
 
-export type { MediaKind, ProjectShot, Project }
+export type { MediaKind, ProjectCaseStudy, ProjectShot, Project }
 
 export interface PortfolioProject extends Project {
   slug: string
@@ -288,7 +345,7 @@ export const portfolioProjects: PortfolioProject[] = landingProjects.map(toPortf
 /** Landing is a curated narrative: EduCanvas replaces Earnlytics and leads the Agent/full-stack story. */
 export const landingPortfolioProjects: PortfolioProject[] = [
   eduCanvasProject,
-  ...['sciscope', 'pulsegraph', 'bdi', 'formula-lab', 'a-modeling']
+  ...['sciscope', 'pulsegraph', 'bdi', 'formula-lab', 'modeling-lab']
     .map((id) => landingProjects.find((project) => project.id === id))
     .filter((project): project is Project => Boolean(project)),
 ]

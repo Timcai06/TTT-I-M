@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { useMobileExperience } from '../lib/device'
+import { useReducedMotion } from '../lib/motion'
 import { useSound } from '../lib/sound/SoundProvider'
+import { LiquidMetalButton } from '../shaders/liquid-metal-button/LiquidMetalButton'
+import ScrollExpand from './ScrollExpand'
 
 const FILM_URL = '/projects/sciscope/sciscope-concept-film.mp4'
 const POSTER_URL = '/projects/sciscope/sciscope-film-poster.jpg'
@@ -7,9 +11,18 @@ const POSTER_URL = '/projects/sciscope/sciscope-film-poster.jpg'
 export default function SciScopeFilm() {
   const dialog = useRef<HTMLDialogElement>(null)
   const filmVideo = useRef<HTMLVideoElement>(null)
-  const playButton = useRef<HTMLButtonElement>(null)
+  const playButton = useRef<HTMLDivElement>(null)
   const [filmOpen, setFilmOpen] = useState(false)
   const { enterFilmMode, exitFilmMode, setEnabled, stopActive } = useSound()
+  const mobile = useMobileExperience()
+  const reducedMotion = useReducedMotion()
+
+  const warmFilm = () => {
+    const video = filmVideo.current
+    if (!video || video.preload === 'auto') return
+    video.preload = 'auto'
+    video.load()
+  }
 
   const openFilm = () => {
     const modal = dialog.current
@@ -31,7 +44,7 @@ export default function SciScopeFilm() {
   const handleDialogClose = () => {
     exitFilmMode(filmVideo.current)
     setFilmOpen(false)
-    playButton.current?.focus()
+    playButton.current?.querySelector<HTMLIFrameElement>('.liquid-metal-button__frame')?.focus()
   }
 
   useEffect(() => () => {
@@ -42,57 +55,61 @@ export default function SciScopeFilm() {
   return (
     <section
       className="sciscope-film"
-      data-mode="entrance"
+      data-mode="scroll-expand"
       data-state={filmOpen ? 'playing' : 'ready'}
       aria-labelledby="sciscope-film-title"
     >
-      <header className="sciscope-film__intro">
-        <div className="sciscope-film__intro-copy">
-          <span className="sciscope-film__index">SCISCOPE / CONCEPT FILM</span>
-          <h3 id="sciscope-film-title">One question.<br />Thirty uninterrupted seconds.</h3>
-        </div>
-        <div className="sciscope-film__note">
-          <p>
-            A short product film about research that can show its work—from an open question to
-            traceable evidence. Playback begins deliberately and keeps the original edit and sound intact.
-          </p>
-          <dl>
-            <div><dt>Runtime</dt><dd>00:30</dd></div>
-            <div><dt>Format</dt><dd>Product concept</dd></div>
-            <div><dt>Audio</dt><dd>Original sound</dd></div>
-          </dl>
-        </div>
-      </header>
-
-      <button
-        ref={playButton}
-        className="sciscope-film__entrance"
-        type="button"
-        onClick={openFilm}
-        aria-label="Play the 30 second SciScope concept film with sound"
-        data-cursor-label="PLAY 00:30"
+      <ScrollExpand
+        className="sciscope-film__expand"
+        src={POSTER_URL}
+        alt="A luminous data tunnel from the opening of the SciScope concept film"
+        title={'One question.\nThirty uninterrupted seconds.'}
+        scrollHint="Scroll to enter"
+        startWidth={62}
+        startHeight={66}
+        startRadius={18}
+        endRadius={0}
+        mediaZoom={1.12}
+        scrollDistance={0.85}
+        holdDistance={0.18}
+        smoothing={0.45}
+        overlayScrim={0.56}
+        useWindowScroll={!mobile}
+        enabled={!mobile && !reducedMotion}
+        style={mobile ? { height: 'min(78svh, 680px)' } : undefined}
       >
-        <img
-          className="sciscope-film__poster"
-          src={POSTER_URL}
-          alt="A luminous data tunnel from the opening of the SciScope concept film"
-          loading="lazy"
-        />
-        <span className="sciscope-film__poster-scrim" aria-hidden="true" />
-        <span className="sciscope-film__poster-top" aria-hidden="true">
-          <span>SCISCOPE / FILM 01</span>
-          <span>ORIGINAL CUT · 2026</span>
-        </span>
-        <span className="sciscope-film__poster-action">
-          <span className="sciscope-film__play-label">Play the film</span>
-          <span className="sciscope-film__play-meta">00:30 · SOUND ON</span>
-        </span>
-      </button>
-
-      <footer className="sciscope-film__footer" aria-hidden="true">
-        <span>QUESTION → SEARCH → EVIDENCE → SYNTHESIS</span>
-        <span>CLICK TO ENTER</span>
-      </footer>
+        <div className="sciscope-film__expanded-copy">
+          <span className="sciscope-film__index">SCISCOPE / ORIGINAL CUT · 2026</span>
+          <h3 id="sciscope-film-title">Research that can<br />show its work.</h3>
+          <p>
+            From one open question to traceable evidence. The entrance follows your scroll;
+            the film keeps its own uninterrupted rhythm.
+          </p>
+          <div
+            ref={playButton}
+            className="sciscope-film__play-shell"
+            data-cursor="default"
+            onPointerEnter={warmFilm}
+            onFocusCapture={warmFilm}
+          >
+            <LiquidMetalButton
+              className="sciscope-film__liquid-play"
+              text="PLAY ORIGINAL CUT"
+              variant="pill"
+              rendering="colored"
+              embedded
+              onClick={openFilm}
+            />
+            <span className="sciscope-film__play-meta">00:30 · SOUND ON</span>
+          </div>
+          <div className="sciscope-film__path" aria-hidden="true">
+            <span>QUESTION</span><i />
+            <span>SEARCH</span><i />
+            <span>EVIDENCE</span><i />
+            <span>SYNTHESIS</span>
+          </div>
+        </div>
+      </ScrollExpand>
 
       <dialog
         className="sciscope-film__dialog"

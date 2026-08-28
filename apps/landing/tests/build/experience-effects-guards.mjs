@@ -9,6 +9,7 @@ const required = [
   'src/components/AccordionGallery.tsx',
   'src/components/WorkTransition.tsx',
   'src/components/MaskedHeading.tsx',
+  'src/components/ScrollExpand.tsx',
   'src/components/SciScopeFilm.tsx',
   'src/lib/sound/SoundProvider.tsx',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
@@ -31,6 +32,8 @@ const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
 const projects = read('src/components/Projects.tsx')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
+const scrollExpand = read('src/components/ScrollExpand.tsx')
+const scrollExpandStyle = read('src/styles/components/scroll-expand.css')
 const footer = read('src/components/Footer.tsx')
 const workTransition = read('src/components/WorkTransition.tsx')
 const workTransitionStyle = read('src/styles/components/work-transition.css')
@@ -122,14 +125,23 @@ if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
 if (!projects.includes("p.id === 'sciscope' && <SciScopeFilm />")) {
   throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
 }
-for (const token of ['data-mode="entrance"', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
+for (const token of ['<ScrollExpand', 'useWindowScroll={!mobile}', 'enabled={!mobile && !reducedMotion}', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
   if (!sciScopeFilm.includes(token)) throw new Error(`SciScopeFilm entrance is missing ${token}.`)
 }
 for (const retiredToken of ['ScrollTrigger', 'useGSAP', 'resolveSciScopePlayback', 'sciscope-film__evidence', 'sciscope-film__story', 'currentTime = target']) {
   if (sciScopeFilm.includes(retiredToken)) throw new Error(`SciScopeFilm must not retain scroll-scrub storytelling: ${retiredToken}`)
 }
-if (!sciScopeFilmStyle.includes('aspect-ratio: 16 / 9') || sciScopeFilmStyle.includes('height: 760svh') || sciScopeFilmStyle.includes('position: sticky')) {
-  throw new Error('SciScopeFilm must be a static cinematic entrance, not a pinned scroll runway.')
+for (const token of ['getBoundingClientRect().top', 'gsap.quickTo', 'ScrollTrigger.create', 'paused: true', 'readProgress']) {
+  if (!scrollExpand.includes(token)) throw new Error(`ScrollExpand is missing its live-position GSAP driver: ${token}`)
+}
+if (scrollExpand.includes('trigger: trackNode') || scrollExpand.includes("start: 'top top'")) {
+  throw new Error('ScrollExpand must not bind progress to stale one-time track coordinates.')
+}
+if (!/\.scroll-expand__stage\s*\{[^}]*position:\s*sticky/s.test(scrollExpandStyle)) {
+  throw new Error('ScrollExpand must keep its stage section-bound with native sticky positioning.')
+}
+if (!sciScopeFilmStyle.includes('aspect-ratio: 16 / 9') || sciScopeFilmStyle.includes('height: 760svh')) {
+  throw new Error('SciScopeFilm must keep the original film unscripted inside its sound-enabled dialog.')
 }
 if (!sciScopeFilmStyle.includes('100dvh - 86px') || !sciScopeFilmStyle.includes('100dvh - 32px')) {
   throw new Error('SciScopeFilm must reserve viewport height for both its title bar and safe-area margins.')

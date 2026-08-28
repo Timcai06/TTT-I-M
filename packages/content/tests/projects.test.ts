@@ -44,3 +44,21 @@ void test('Landing promotes EduCanvas while Studio keeps its current catalogue',
     assert.ok(existsSync(mediaPath), `Missing EduCanvas media: ${mediaPath}`)
   }
 })
+
+void test('Modeling Lab groups four real studies behind one landing project', () => {
+  const modelingLab = landingPortfolioProjects.find((project) => project.id === 'modeling-lab')
+
+  assert.ok(modelingLab)
+  assert.equal(modelingLab.name, 'Modeling Lab')
+  assert.equal(modelingLab.media?.shots.length, 1)
+  assert.deepEqual(
+    modelingLab.caseStudies?.map((study) => study.id),
+    ['tunnel', 'desert', 'glass', 'agriculture'],
+  )
+
+  for (const study of modelingLab.caseStudies ?? []) {
+    assert.match(study.repository, /^https:\/\/github\.com\/Timcai06\/26_MathModel_/)
+    const mediaPath = join(process.cwd(), 'apps/landing/public', study.shot.src)
+    assert.ok(existsSync(mediaPath), `Missing Modeling Lab media: ${mediaPath}`)
+  }
+})

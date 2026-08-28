@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
 import { getLenis } from '../lib/lenis'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 import { attachTilt } from '../lib/tilt'
@@ -89,6 +89,105 @@ function ProjectsBento() {
   )
 }
 
+function ModelingLabMedia({ project }: { project: Project }) {
+  const cases = project.caseStudies ?? []
+  const [activeId, setActiveId] = useState(cases[0]?.id ?? '')
+  const root = useRef<HTMLDivElement>(null)
+  const visual = useRef<HTMLDivElement>(null)
+  const active = cases.find((study) => study.id === activeId) ?? cases[0]
+
+  useGSAP(() => {
+    if (!visual.current || !active) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      gsap.set(visual.current, { autoAlpha: 1, y: 0 })
+      return
+    }
+    gsap.fromTo(
+      visual.current,
+      { autoAlpha: 0, y: 14 },
+      { autoAlpha: 1, y: 0, duration: 0.58, ease: 'power3.out', clearProps: 'transform' },
+    )
+  }, { scope: root, dependencies: [active?.id], revertOnUpdate: true })
+
+  if (!active) return null
+
+  const warmImage = (src: string) => {
+    const image = new Image()
+    image.decoding = 'async'
+    image.src = src
+  }
+
+  return (
+    <div className="project-card__media project-card__media--modeling modeling-lab" ref={root}>
+      <div className="modeling-lab__cases" role="tablist" aria-label="数学建模案例">
+        <div className="modeling-lab__cases-label">Case index</div>
+        {cases.map((study) => {
+          const selected = study.id === active.id
+          return (
+            <button
+              key={study.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls="modeling-lab-case-panel"
+              className={`modeling-lab__case${selected ? ' is-active' : ''}`}
+              data-case-id={study.id}
+              onPointerEnter={() => warmImage(study.shot.src)}
+              onFocus={() => {
+                warmImage(study.shot.src)
+                setActiveId(study.id)
+              }}
+              onClick={() => setActiveId(study.id)}
+            >
+              <span className="modeling-lab__case-index">{study.index}</span>
+              <span className="modeling-lab__case-copy">
+                <strong>{study.title}</strong>
+                <small>{study.subtitle}</small>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <figure
+        id="modeling-lab-case-panel"
+        className="media-frame media-frame--data modeling-lab__frame"
+        data-cursor="hover"
+        role="tabpanel"
+      >
+        <div className="media-frame__chrome">
+          <span className="media-frame__dots"><i /><i /><i /></span>
+          <span className="media-frame__label">CASE {active.index} · MODEL READOUT</span>
+        </div>
+        <div className="modeling-lab__visual" ref={visual}>
+          <div className="media-frame__stage">
+            <img
+              key={active.shot.src}
+              src={active.shot.src}
+              alt={`${active.title} — ${active.shot.label}`}
+              loading={active.index === '01' ? 'eager' : 'lazy'}
+              decoding="async"
+              className="media-frame__img is-active"
+            />
+          </div>
+          <figcaption className="modeling-lab__caption">
+            <div>
+              <span>{active.shot.label}</span>
+              <p>{active.summary}</p>
+            </div>
+            <a href={active.repository} target="_blank" rel="noopener noreferrer">
+              Case repo
+              <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 9l6-6M4 3h5v5" stroke="currentColor" strokeWidth="1.2" />
+              </svg>
+            </a>
+          </figcaption>
+        </div>
+      </figure>
+    </div>
+  )
+}
+
 /**
  * @description 项目卡片右侧媒体展示器。根据 `Project.media.kind` 切换 cinematic / ui / terminal / data 四种外观，
  *   并在多截图项目中提供缩略图 hover/focus/click 切换。该组件只负责单张项目卡片内的媒体状态，
@@ -110,6 +209,10 @@ function ProjectsBento() {
  */
 function ProjectMedia({ project }: { project: Project }) {
   const [active, setActive] = useState(0)
+
+  if (project.caseStudies?.length) {
+    return <ModelingLabMedia project={project} />
+  }
 
   if (!project.media) {
     return (
@@ -316,7 +419,7 @@ export default function Projects() {
               </div>
               <div className="project-card__links">
                 <a className="project-card__link" href={p.github} target="_blank" rel="noopener noreferrer">
-                  GitHub
+                  {p.caseStudies?.length ? 'Featured repo' : 'GitHub'}
                   <svg viewBox="0 0 12 12" fill="none">
                     <path d="M3 9l6-6M4 3h5v5" stroke="currentColor" strokeWidth="1.2" />
                   </svg>

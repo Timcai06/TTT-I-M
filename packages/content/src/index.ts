@@ -145,4 +145,4 @@ export const defaultMeta: ContentMeta = {
 }
 
 export { landingPortfolioProjects, portfolioProjects } from './projects'
-export type { MediaKind, PortfolioProject, Project, ProjectShot } from './projects'
+export type { MediaKind, PortfolioProject, Project, ProjectCaseStudy, ProjectShot } from './projects'

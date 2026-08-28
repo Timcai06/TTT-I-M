@@ -97,6 +97,7 @@ export default function Cursor() {
        regardless of when they mount. ── */
     const findTarget = (node: EventTarget | null): HTMLElement | null => {
       if (!(node instanceof Element)) return null
+      if (node.closest('[data-cursor="default"]')) return null
       return node.closest<HTMLElement>('a, button, [data-cursor="hover"], [data-cursor-label]')
     }
 
