@@ -1,0 +1,82 @@
+import type { VisualEffectDefinition } from './contracts.ts'
+
+export const visualEffectManifest = [
+  {
+    id: 'horizontal-bend',
+    chapter: 'frame',
+    trigger: 'visible archive theme + scroll progress',
+    fallback: 'real DOM rail with GradualBlur edges',
+    reducedMotion: 'disabled',
+    contextCost: 1,
+    license: 'MIT + Commons Clause',
+    sourceUrl: 'https://github.com/DavidHDev/canvas-ui',
+  },
+  {
+    id: 'project-laser',
+    chapter: 'projects',
+    trigger: 'explicit Work CTA handoff',
+    fallback: 'short WebGL beam over the real DOM intro',
+    reducedMotion: 'disabled',
+    contextCost: 1,
+    license: 'MIT + Commons Clause',
+    sourceUrl: 'https://github.com/DavidHDev/canvas-ui',
+  },
+  {
+    id: 'footer-liquid-cursor',
+    chapter: 'contact',
+    trigger: 'footer visible after iris reveal on fine pointer',
+    fallback: 'precise GSAP cursor over the real Footer DOM',
+    reducedMotion: 'disabled',
+    contextCost: 1,
+    license: 'MIT + Commons Clause',
+    sourceUrl: 'https://github.com/DavidHDev/canvas-ui',
+  },
+  {
+    id: 'project-case-dialog',
+    chapter: 'projects',
+    trigger: 'View case study activation',
+    fallback: 'semantic project content and outbound links remain in document flow',
+    reducedMotion: 'static',
+    contextCost: 0,
+    license: 'MIT',
+    sourceUrl: 'https://github.com/mui/base-ui',
+    packageName: '@base-ui/react',
+  },
+  {
+    id: 'project-evidence-lightbox',
+    chapter: 'frame + projects',
+    trigger: 'real image activation',
+    fallback: 'same-origin image link opens normally',
+    reducedMotion: 'static',
+    contextCost: 0,
+    license: 'MIT',
+    sourceUrl: 'https://github.com/dimsemenov/PhotoSwipe',
+    packageName: 'photoswipe',
+  },
+  {
+    id: 'project-metric-number-flow',
+    chapter: 'projects',
+    trigger: 'evidenced metric enters the viewport',
+    fallback: 'accessible static final value',
+    reducedMotion: 'static',
+    contextCost: 0,
+    license: 'MIT',
+    sourceUrl: 'https://github.com/barvian/number-flow',
+    packageName: '@number-flow/react',
+  },
+  {
+    id: 'project-mobile-carousel',
+    chapter: 'projects',
+    trigger: 'coarse pointer or narrow project-media viewport',
+    fallback: 'vertical document-flow media list',
+    reducedMotion: 'static',
+    contextCost: 0,
+    license: 'MIT',
+    sourceUrl: 'https://github.com/davidjerleke/embla-carousel',
+    packageName: 'embla-carousel-react',
+  },
+] as const satisfies readonly VisualEffectDefinition[]
+
+export function getVisualEffectDefinition(id: string): VisualEffectDefinition | undefined {
+  return visualEffectManifest.find((effect) => effect.id === id)
+}

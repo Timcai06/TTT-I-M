@@ -250,6 +250,11 @@ test('Mobile Frame and Work media stay inside the viewport', async ({ page }) =>
             // deliberately overscales during focus. Its control owns the real
             // geometry; sampling the cover crop creates a false overflow alarm.
             if (img.closest('.bento-tile')) return false
+            // Embla keeps neighbouring slides laid out beyond the viewport so
+            // they can be dragged in. The viewport clips them; validate that
+            // clipping frame below instead of treating offscreen slide geometry
+            // as document overflow.
+            if (img.closest('.project-carousel__viewport')) return false
             const rect = img.getBoundingClientRect()
             const style = window.getComputedStyle(img)
             return rect.width > 1
@@ -273,7 +278,7 @@ test('Mobile Frame and Work media stay inside the viewport', async ({ page }) =>
             }
           })
         const clippedFrames = [...document.querySelectorAll<HTMLElement>(
-          `#${chapterId} .bento-tile, #${chapterId} .media-thumb`,
+          `#${chapterId} .bento-tile, #${chapterId} .media-thumb, #${chapterId} .project-carousel__viewport`,
         )]
           .filter((frame) => {
             const rect = frame.getBoundingClientRect()
@@ -283,7 +288,11 @@ test('Mobile Frame and Work media stay inside the viewport', async ({ page }) =>
             const rect = frame.getBoundingClientRect()
             return {
               chapterId,
-              alt: frame.classList.contains('bento-tile') ? 'Bento frame' : 'Thumbnail frame',
+              alt: frame.classList.contains('bento-tile')
+                ? 'Bento frame'
+                : frame.classList.contains('project-carousel__viewport')
+                  ? 'Carousel viewport'
+                  : 'Thumbnail frame',
               left: Math.round(rect.left),
               right: Math.round(rect.right),
               top: Math.round(rect.top),

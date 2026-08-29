@@ -68,11 +68,22 @@ const PER_CHUNK_BUDGET_KB = {
   'index': 41,
   'layout': 24,
   'workHandoff': 5,
+  'projects': 18,
+  'ProjectCaseDialog': 20,
+  'photoswipe.esm': 30,
+  'MobileProjectCarousel': 12,
+  'ProjectMetrics': 8,
 }
-const TOTAL_JS_BUDGET_KB = 460
+const TOTAL_JS_BUDGET_KB = 540
+const TOTAL_CSS_BUDGET_KB = 160
 
 const jsFiles = readdirSync(distDir).filter((file) => file.endsWith('.js'))
 const gzipKb = (file) => gzipSync(readFileSync(resolve(distDir, file))).length / 1024
+
+const productionLabLeaks = readdirSync(distDir).filter((file) => /VisualLab|visual-lab/i.test(file))
+if (productionLabLeaks.length > 0 || jsFiles.some((file) => readFileSync(resolve(distDir, file), 'utf8').includes('Visual systems lab'))) {
+  throw new Error(`Development-only Visual Lab leaked into production assets: ${productionLabLeaks.join(', ') || 'inline source'}`)
+}
 
 const liquidSourceAsset = readdirSync(distDir)
   .find((file) => /^liquid-metal-button-.*\.html$/.test(file))
@@ -105,9 +116,16 @@ if (totalKb > TOTAL_JS_BUDGET_KB) {
   budgetFailures.push(`total JS is ${totalKb.toFixed(1)} KB gzip, over the ${TOTAL_JS_BUDGET_KB} KB budget`)
 }
 
+const cssFiles = readdirSync(distDir).filter((file) => file.endsWith('.css'))
+const totalCssKb = cssFiles.reduce((sum, file) => sum + gzipKb(file), 0)
+if (totalCssKb > TOTAL_CSS_BUDGET_KB) {
+  budgetFailures.push(`total CSS is ${totalCssKb.toFixed(1)} KB gzip, over the ${TOTAL_CSS_BUDGET_KB} KB budget`)
+}
+
 if (budgetFailures.length > 0) {
   throw new Error(`Chunk size budget exceeded:\n  - ${budgetFailures.join('\n  - ')}`)
 }
 
 console.log(`[chunk-guards] ${indexChunk} keeps Hero WebGL eager while chapter-scoped effects remain lazy.`)
 console.log(`[chunk-guards] total JS ${totalKb.toFixed(1)} KB gzip within ${TOTAL_JS_BUDGET_KB} KB budget.`)
+console.log(`[chunk-guards] total CSS ${totalCssKb.toFixed(1)} KB gzip within ${TOTAL_CSS_BUDGET_KB} KB budget.`)

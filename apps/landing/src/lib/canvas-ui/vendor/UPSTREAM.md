@@ -9,9 +9,11 @@ Vendored files preserve the upstream rendering pipelines. Local integration
 changes are deliberately limited to:
 
 - `LaserVanilla.ts`: an externally-driven scroll-activity method used by the
-  existing GSAP ScrollTrigger stage.
+  existing GSAP ScrollTrigger stage, plus pause/resume lifecycle hooks that do
+  not alter the upstream renderer while active.
 - `LiquidVanilla.ts`: a `captureContent` switch so the Footer can render the
-  complete fluid solver as a dye-only layer without distorting real Footer DOM.
+  complete fluid solver as a dye-only layer without distorting real Footer DOM,
+  plus the same pause/resume lifecycle hooks.
 - `@ts-nocheck` headers because the application enables stricter indexed-access
   checks than the upstream build.
 

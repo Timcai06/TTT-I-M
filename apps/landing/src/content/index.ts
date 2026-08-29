@@ -28,3 +28,6 @@ export const photos = photosRepo.all()
 export const facts = factsRepo.all()
 export const skillRows = skillsRepo.all()
 export const archiveThemes = framesRepo.all()
+export const archiveImages = archiveThemes.flatMap((theme) => (
+  theme.clusters.flatMap((cluster) => cluster.slots.map((slot) => slot.image))
+))

@@ -21,7 +21,7 @@
     "lint": "npm run lint --workspace @timcai/landing && npm run lint --workspace @timcai/studio",
     "lint:landing": "npm run lint --workspace @timcai/landing",
     "lint:studio": "npm run lint --workspace @timcai/studio",
-    "test:build": "npm run build:landing && npm run test:build --workspace @timcai/landing && npm run test:content && node tests/build/platform-guards.mjs",
+    "test:build": "npm run build:landing && npm run test:guards --workspace @timcai/landing && npm run test:content && node tests/build/platform-guards.mjs",
     "test:build:landing": "npm run test:build --workspace @timcai/landing",
     "test:smoke": "node tests/runtime/cross-zone-smoke.mjs",
     "test:unit": "npm run test:content && npm run test:unit --workspace @timcai/landing",
@@ -34,6 +34,8 @@
     "three": "0.182.0"
   },
   "overrides": {
+    "brace-expansion": "5.0.9",
+    "js-yaml": "3.15.2",
     "three": "0.182.0"
   }
 }

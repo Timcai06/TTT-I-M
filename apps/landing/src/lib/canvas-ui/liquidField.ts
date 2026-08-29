@@ -2,8 +2,9 @@ import {
   createLiquid as createCanvasUiLiquid,
   type LiquidInstance,
 } from './vendor/Liquid/LiquidVanilla'
+import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
 
-export interface LiquidFieldHandle {
+export interface LiquidFieldHandle extends EffectLifecycle {
   setActive(active: boolean): void
   splat(x: number, y: number, dx: number, dy: number): void
   clear(): void
@@ -55,7 +56,11 @@ export function createLiquidField(canvas: HTMLCanvasElement): LiquidFieldHandle 
 
   let active = false
   return {
-    setActive(next) { active = next },
+    setActive(next) {
+      active = next
+      if (next) instance?.resume()
+      else instance?.pause()
+    },
     splat(x, y, dx, dy) {
       if (!active || !instance) return
       const rect = canvas.getBoundingClientRect()
@@ -71,6 +76,9 @@ export function createLiquidField(canvas: HTMLCanvasElement): LiquidFieldHandle 
       // The Footer controller destroys the field whenever it deactivates;
       // rebuilding the official targets is therefore the clear operation.
     },
+    pause() { instance?.pause() },
+    resume() { instance?.resume() },
+    resize() { instance?.resize() },
     destroy() {
       instance?.destroy()
       instance = null

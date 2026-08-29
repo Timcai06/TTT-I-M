@@ -30,14 +30,22 @@ const app = read('src/App.tsx')
 const life = read('src/components/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
-const projects = read('src/components/Projects.tsx')
+const projects = [
+  'src/chapters/projects/Projects.tsx',
+  'src/chapters/projects/ProjectsIntro.tsx',
+  'src/chapters/projects/ProjectsBento.tsx',
+  'src/chapters/projects/useProjectsNarrative.ts',
+].map(read).join('\n')
 const projectLaser = read('src/components/ProjectLaser.tsx')
 const laserRuntime = read('src/lib/canvas-ui/laser.ts')
 const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
 const scrollExpand = read('src/components/ScrollExpand.tsx')
 const scrollExpandStyle = read('src/styles/components/scroll-expand.css')
-const footer = read('src/components/Footer.tsx')
+const footer = [
+  'src/chapters/contact/Footer.tsx',
+  'src/chapters/contact/useFooterReveal.ts',
+].map(read).join('\n')
 const footerLiquid = read('src/components/FooterLiquidCursor.tsx')
 const liquidRuntime = read('src/lib/canvas-ui/liquidField.ts')
 const liquidVendor = read('src/lib/canvas-ui/vendor/Liquid/LiquidVanilla.ts')
@@ -67,7 +75,7 @@ if (!workTransition.includes('useReducedMotion') || !workTransition.includes('co
 if (!workTransition.includes('spark-badge-portfolio.html?url')) {
   throw new Error('The portfolio must use its budgeted Spark scene while preserving the canonical source beside it.')
 }
-if (!workTransitionStyle.includes('height: 680svh') || !workTransitionStyle.includes('height: 300svh')) {
+if (!workTransitionStyle.includes('height: var(--work-transition-height-desktop)') || !workTransitionStyle.includes('height: var(--work-transition-height-mobile)')) {
   throw new Error('The Stack → Work bridge must retain its measured desktop/mobile narrative space.')
 }
 if (!/\.work-transition__sticky\s*\{[^}]*position:\s*sticky/s.test(workTransitionStyle)) {
@@ -131,7 +139,7 @@ if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
   throw new Error('Scroll performance markers must not disable Archive pointer hit-testing globally.')
 }
 
-if (!projects.includes("p.id === 'sciscope' && <SciScopeFilm />")) {
+if (!projects.includes("project.id === 'sciscope'") || !projects.includes('<SciScopeFilm />')) {
   throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
 }
 for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'laserActive']) {
@@ -236,7 +244,7 @@ for (const [source, component, owner] of [
   if (!source.includes(component)) throw new Error(`${owner} must mount ${component}.`)
 }
 
-for (const token of ['MaskedHeading', 'sources={projectHeadingSources}', 'emphasis="I made"', 'parallax={18}', 'reveal="wipe"']) {
+for (const token of ['MaskedHeading', 'sources={headingSources}', 'emphasis="I made"', 'parallax={18}', 'reveal="wipe"']) {
   if (!projects.includes(token)) throw new Error(`Work heading must preserve its project-media mask treatment: ${token}`)
 }
 for (const token of ['useGSAP', 'useReducedMotion', '<mask', '<foreignObject', "mediaType === 'video'", 'once: true']) {

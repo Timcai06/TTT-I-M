@@ -8,7 +8,8 @@
 
 ## Build Guards (`test:build:*`)
 Located in `tests/build/`, these scripts analyze the codebase to enforce structural rules:
-- **Chunk Guards** (`chunk-guards.mjs`): Verifies that `three-vendor`, `gsap-vendor`, etc., are correctly split and haven't bloated the main bundle.
+- **Chunk Guards** (`chunk-guards.mjs`): Verifies that `three-core`, `react-three-fiber`, `gsap-vendor`, and deferred feature chunks remain split and within budget.
+- **Visual-contract Guards**: Pin the narrative spec, effect manifest, development-only Lab boundary, CSS cascade layers, and deferred UI chunks.
 - **Architecture Guards** (`chapter-state-guards.mjs`): Ensures Chapter state management is unbroken.
 - **Frame Architecture Guards** (`frame-architecture-guards.mjs`): Enforces rules specific to the horizontal scroll Frame section.
 - **Loader/Preload Guards** (`loader-preload-guards.mjs`): Validates that all necessary assets are correctly registered in the preload manifest.
@@ -24,7 +25,11 @@ Critical paths verified:
 - `tests/e2e/performance.spec.ts` covers LCP, long tasks, CLS, heap, scroll-scrub, stage/overlay cleanup, INP, and FPS-p95. CI uses relaxed env budgets where 2-core headless runners are noisy; local browser runs are the stricter signal.
 
 ## Content-layer guard
-- `content-layer-guards.mjs`: asserts no `apps/landing/src/components/**` file imports `data/*` directly (everything goes through `src/content`), and that the repository (`all()`/`list()`/`get()`) + schema (`ContentMeta`/`PublishState`) contracts exist.
+- `content-layer-guards.mjs`: scans both `components/**` and `chapters/**`, rejects direct `data/*` imports, and asserts the repository/schema plus intrinsic media and evidence contracts.
+
+## Dependency security
+- Direct runtime/build dependencies are kept on patched Next, Vite, Sharp, and SVGO lines.
+- Run `npm audit` after dependency changes. Do not use `npm audit fix --force`; review the proposed patch graph first and keep Landing and Studio builds green.
 
 ## Guard coverage gaps (important — "build green" ≠ "works in prod")
 Build guards are **static source-string assertions**. They do NOT exercise runtime, so they cannot catch deploy/integration failures on their own. Runtime complements:

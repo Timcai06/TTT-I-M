@@ -18,13 +18,14 @@
 
 ## Build & Deployment (Vercel)
 - Vercel handles edge caching for static assets.
-- **Chunking Strategy**: `vite.config.ts` explicitly splits `react-vendor`, `gsap-vendor`, and `three-vendor` to prevent content updates from busting the long-term cache of heavy dependencies. Keep these boundaries clean.
-- **Chunk budget guard** (`chunk-guards.mjs`): gzip ceilings per chunk (three 260 / react 72 / gsap 66 / index 40 / layout 24) + total JS ≤ 460 KB. A dependency bump or an accidental eager `three`/`gsap` import fails CI.
+- **Chunking Strategy**: `vite.config.ts` explicitly splits React, GSAP, Three/R3F and deferred feature libraries so content updates do not invalidate heavy vendor caches. PhotoSwipe, Base UI Dialog, Embla, and NumberFlow remain chapter/action scoped.
+- **Chunk budget guard** (`chunk-guards.mjs`): total JS ≤ 540 KB gzip and total CSS ≤ 160 KB gzip, with independent ceilings for Projects, Dialog, PhotoSwipe, Embla, and NumberFlow. A dependency bump or accidental eager import fails CI.
 - **Deferred image byte guard** (`deferred-image-budget-guards.mjs`): audits the bounded landing preload manifest so Frame/Life/Work assets cannot silently grow beyond the agreed background-preload budget.
 
 ## Runtime budget hardening (plan 02.5)
 - **Preload tiers (B2, gate split 2026-06-10)**: the intro-exit gate is the *critical* tier only (`criticalReady`: hero texture, fonts, chunks, About particles) — the loader bar shows critical progress and 100% = runtime ready. Deferred images keep eager-fetching through the concurrency queue (6-wide) *after* the panel exits (the Loader stays mounted, so the run is never cancelled), with idle decode via `lib/resources/imageDecodeQueue.ts`. Same total download as the whole-site gate, smaller black-screen window (00-principles preheat fix ②). Frame DOM images stay eager as the pop-in second line of defense. Failures are non-fatal (per-task timeout — a single 404/slow image can never strand the loader). Background `decode()` rejections are swallowed silently (some valid WebP rejects background decode in Chrome; the DOM `<img>` still paints).
 - **WebGL quality tiers (B3)**: `lib/webgl/quality.ts` picks high/medium/low from device hints and scales DPR, Hero portrait segments, About text targets, transition particles, and the optional-context budget.
+- **Optional UI loading**: Project Dialog, PhotoSwipe, NumberFlow, and mobile-only Embla are dynamically imported from their interaction/viewport boundary. SciScope's real video/audio remains outside PhotoSwipe and retains native playback controls.
 - **Single scroll snapshot (B5)**: active chapter + progress rail both read `lib/chapterScrollMetrics.ts` (one `useSyncExternalStore` snapshot, one ScrollTrigger, idle teardown) instead of independent measurements.
 - **Grain (B4)**: desktop keeps the idle `mix-blend` overlay; under scroll pressure (`.disable-hover`) and on mobile/coarse-pointer it switches to a static PNG + normal blend to avoid full-screen re-compositing in the hot window.
 - **Scroll throttle (A4)**: `.disable-hover` relies on `pointer-events` inheritance (body-only), not a `.disable-hover *` wildcard, so toggling it per scroll burst doesn't trigger a full-tree style recalc.

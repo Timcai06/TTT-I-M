@@ -127,14 +127,14 @@ function toPublicPath(file) {
 }
 
 /**
- * @description 从 public/frame 下的原图与响应式变体生成运行时代码可消费的 srcSet manifest。
- * @dependencies sharp metadata 读取真实宽度；输出文件为 src/data/frameImageSources.generated.ts
+ * @description 从 public/frame 下的原图与响应式变体生成运行时代码可消费的图片 manifest。
+ * @dependencies sharp metadata 读取真实宽高；输出文件为 src/data/frameImageSources.generated.ts
  * @performance / @caveats manifest 只记录已经存在的候选文件；缺失某个 responsive variant
  *   不会阻塞构建，Frame 数据层会回退到原始 src，避免本地源图缺失导致整站不可运行。
  * @steps
  * step1: 遍历 building/cuisine/scenery 输出目录，排除 -720/-1080 变体作为主键
- * step2: 用 sharp 读取候选宽度并按宽度排序
- * step3: 写出 `as const` TypeScript manifest，供 frames.ts 拼接 srcSet
+ * step2: 用 sharp 读取候选宽高并按宽度排序
+ * step3: 写出 `as const` TypeScript manifest，供 frames.ts 拼接 srcSet 并读取 Lightbox 尺寸
  */
 async function writeFrameImageSourcesManifest() {
   const { default: sharp } = await import('sharp')
@@ -158,13 +158,16 @@ async function writeFrameImageSourcesManifest() {
       const byWidth = new Map()
       for (const candidate of paths) {
         const metadata = await sharp(candidate).metadata()
-        if (!metadata.width) continue
-        byWidth.set(metadata.width, toPublicPath(candidate))
+        if (!metadata.width || !metadata.height) continue
+        byWidth.set(metadata.width, {
+          src: toPublicPath(candidate),
+          height: metadata.height,
+        })
       }
 
       manifest[toPublicPath(resolve(dir, file))] = [...byWidth.entries()]
         .sort(([a], [b]) => a - b)
-        .map(([width, src]) => ({ src, width }))
+        .map(([width, { src, height }]) => ({ src, width, height }))
     }
   }
 

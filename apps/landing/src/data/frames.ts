@@ -3,9 +3,9 @@ import { frameImageSources } from './frameImageSources.generated'
 /**
  * Frame 章节的类型体系 —— 摄影存档网格的完整数据契约。
  * 结构层级：ArchiveTheme (主题) → ArchiveCluster (集群) → ArchiveSlot (槽位) → ArchiveImage (图片)。
- * @dependencies Frame 组件 + frame/ 子组件消费此类型树；`frameImageSources.generated.ts` 提供响应式 srcSet
- * @caveats 图片尺寸通过 `buildingDimensions` / `cuisineDimensions` / `sceneryDimensions` 硬编码映射，
- *   新增照片时需同步更新对应映射表，否则 Frame 渲染会抛出 `Missing frame image dimensions` 异常
+ * @dependencies Frame 组件 + frame/ 子组件消费此类型树；`frameImageSources.generated.ts` 提供响应式 srcSet 与真实尺寸
+ * @caveats 图片尺寸由 Sharp 在资产准备阶段生成；新增照片后需运行 setup-assets，
+ *   manifest 缺少对应主图时 Frame 会快速失败，避免用错误比例渲染。
  */
 export type ArchiveThemeId = 'building' | 'cuisine' | 'scenery'
 
@@ -121,15 +121,27 @@ function frameSrcSet(src: string): string {
   return sources.map((source) => `${source.src} ${source.width}w`).join(', ')
 }
 
+/** 从生成清单读取主图真实尺寸，供布局和按需 Lightbox 共用。 */
+function frameDimensions(src: string): readonly [number, number] {
+  const sources = frameImageSources[src as keyof typeof frameImageSources]
+  const original = sources?.find((source) => source.src === src)
+
+  if (!original) {
+    throw new Error(`Missing frame image metadata for ${src}`)
+  }
+
+  return [original.width, original.height]
+}
+
 /**
  * @description 构造单张 Frame 存档图片的标准元数据对象。
  *   该函数把人工维护的摄影语义（title/location/meta/tone）和构建生成的响应式字段合并，
  *   让 Frame 子组件只依赖 `ArchiveImage`，不关心图片资源来源。
- * @dependencies `frameSrcSet`、`FRAME_IMAGE_SIZES`、`ArchiveOrientation`
- * @performance / @caveats width/height 必须是真实原图比例；Frame 布局依赖它们避免裁切、漂移和 caption 错位。
+ * @dependencies `frameSrcSet`、`frameDimensions`、`FRAME_IMAGE_SIZES`、`ArchiveOrientation`
+ * @performance / @caveats width/height 来自 Sharp manifest；Frame 布局依赖它们避免裁切、漂移和 caption 错位。
  * @steps
- *   step1: 接收图片 id、路径、语义字段和真实尺寸
- *   step2: 通过 frameSrcSet 取响应式候选集
+ *   step1: 接收图片 id、路径和语义字段
+ *   step2: 通过生成清单读取响应式候选集与真实尺寸
  *   step3: 返回 ArchiveImage，供 theme/cluster/slot 结构复用
  */
 function frameImage({
@@ -140,8 +152,6 @@ function frameImage({
   meta,
   orientation,
   tone,
-  width,
-  height,
 }: {
   id: number
   src: string
@@ -150,9 +160,9 @@ function frameImage({
   meta: string
   orientation: ArchiveOrientation
   tone: string
-  width: number
-  height: number
 }): ArchiveImage {
+  const [width, height] = frameDimensions(src)
+
   return {
     id,
     src,
@@ -168,79 +178,6 @@ function frameImage({
   }
 }
 
-const buildingDimensions: Record<number, [number, number]> = {
-  1: [1050, 1400],
-  2: [1400, 1050],
-  3: [1050, 1400],
-  4: [1050, 1400],
-  5: [1400, 1050],
-  6: [1400, 1050],
-  7: [1400, 1050],
-  8: [787, 1400],
-  9: [1400, 1050],
-  10: [1400, 1050],
-  11: [1400, 1050],
-  12: [1400, 1050],
-  13: [1400, 1050],
-  14: [1400, 1050],
-  15: [1050, 1400],
-  16: [1400, 1050],
-  17: [1400, 1050],
-  18: [1050, 1400],
-}
-
-const cuisineDimensions: Record<number, [number, number]> = {
-  1: [1050, 1400],
-  2: [1400, 1050],
-  3: [1050, 1400],
-  4: [788, 1400],
-  5: [1050, 1400],
-  6: [1050, 1400],
-  7: [1050, 1400],
-  8: [1050, 1400],
-  9: [1400, 1050],
-  10: [1400, 1050],
-  11: [1050, 1400],
-  12: [1050, 1400],
-  13: [1400, 1050],
-  14: [1050, 1400],
-  15: [1050, 1400],
-  16: [1050, 1400],
-  17: [1050, 1400],
-  18: [1050, 1400],
-  19: [1050, 1400],
-  20: [1050, 1400],
-  21: [1400, 1050],
-}
-
-const sceneryDimensions: Record<number, [number, number]> = {
-  1: [1400, 1050],
-  2: [1054, 1400],
-  3: [1254, 1254],
-  4: [1400, 1054],
-  5: [1206, 1305],
-  6: [1254, 1254],
-  7: [1400, 1050],
-  8: [1363, 1154],
-  9: [1400, 1050],
-  10: [1400, 1050],
-  11: [1400, 1050],
-}
-
-/**
- * @description 从主题维度映射表中读取图片真实尺寸。
- *   Frame 设计要求保留原比例和清晰度，因此尺寸缺失时必须快速失败，而不是用默认比例猜测。
- * @dependencies `buildingDimensions` / `cuisineDimensions` / `sceneryDimensions`
- * @performance / @caveats 抛错是有意的构建期保护；错误默认值会导致横向布局宽度、caption 对齐和移动端可视范围失真。
- */
-function imageDimensions(dimensions: Record<number, [number, number]>, id: number): [number, number] {
-  const size = dimensions[id]
-  if (!size) {
-    throw new Error(`Missing frame image dimensions for id ${id}`)
-  }
-  return size
-}
-
 const b = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
   id,
   src: `/frame/buildings/${String(id).padStart(2, '0')}.webp`,
@@ -249,8 +186,6 @@ const b = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   meta: 'Light, structure, and urban texture',
   orientation,
   tone,
-  width: imageDimensions(buildingDimensions, id)[0],
-  height: imageDimensions(buildingDimensions, id)[1],
 })
 
 const c = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
@@ -261,8 +196,6 @@ const c = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   meta: 'Food, table light, and daily detail',
   orientation,
   tone,
-  width: imageDimensions(cuisineDimensions, id)[0],
-  height: imageDimensions(cuisineDimensions, id)[1],
 })
 
 const s = (id: number, title: string, orientation: ArchiveOrientation, tone: string): ArchiveImage => frameImage({
@@ -273,8 +206,6 @@ const s = (id: number, title: string, orientation: ArchiveOrientation, tone: str
   meta: 'Open air, distance, and atmosphere',
   orientation,
   tone,
-  width: imageDimensions(sceneryDimensions, id)[0],
-  height: imageDimensions(sceneryDimensions, id)[1],
 })
 
 export const archiveIntro: ArchiveTextPanel = {

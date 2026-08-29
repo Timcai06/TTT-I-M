@@ -41,7 +41,7 @@
   --work-metal: #d8bd86;
 
   position: relative;
-  height: 680svh;
+  height: var(--work-transition-height-desktop);
   overflow: clip;
   color: #f4f1e8;
   background: #000;
@@ -184,7 +184,7 @@
 
 @media (max-width: 768px) {
   .work-transition {
-    height: 300svh;
+    height: var(--work-transition-height-mobile);
   }
 
   .work-transition__sticky {

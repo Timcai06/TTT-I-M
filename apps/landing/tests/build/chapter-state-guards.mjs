@@ -10,10 +10,16 @@ const scrollIndicatorStyleSource = readFileSync('src/styles/components/scroll-in
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
 const themeDriverSource = readFileSync('src/components/ChapterThemeDriver.tsx', 'utf8')
 const skillsSource = readFileSync('src/components/Skills.tsx', 'utf8')
-const projectsSource = readFileSync('src/components/Projects.tsx', 'utf8')
+const projectsSource = [
+  'src/chapters/projects/Projects.tsx',
+  'src/chapters/projects/useProjectsNarrative.ts',
+].map((path) => readFileSync(path, 'utf8')).join('\n')
 const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
 const footerStyleSource = readFileSync('src/styles/components/footer.css', 'utf8')
-const footerSource = readFileSync('src/components/Footer.tsx', 'utf8')
+const footerSource = [
+  'src/chapters/contact/Footer.tsx',
+  'src/chapters/contact/useFooterReveal.ts',
+].map((path) => readFileSync(path, 'utf8')).join('\n')
 const transitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const transitionTimelineSource = readFileSync('src/lib/timelines/transitionTimeline.ts', 'utf8')
 const transitionApiSource = readFileSync('src/lib/chapterTransition.ts', 'utf8')
@@ -22,6 +28,12 @@ const chapterScrollMetricsSource = readFileSync('src/lib/chapterScrollMetrics.ts
 const landingNarrativeSource = readFileSync('src/lib/landingScrollNarrative.ts', 'utf8')
 const scrollFrameSchedulerSource = readFileSync('src/lib/scrollFrameScheduler.ts', 'utf8')
 const lenisSource = readFileSync('src/lib/lenis.ts', 'utf8')
+const mainSource = readFileSync('src/main.tsx', 'utf8')
+const appStyleSource = readFileSync('src/styles/app.css', 'utf8')
+const globalLayerSource = readFileSync('src/styles/global.css', 'utf8')
+const narrativeSpecSource = readFileSync('src/core/narrative/specs.ts', 'utf8')
+const effectManifestSource = readFileSync('src/shared/effects/manifest.ts', 'utf8')
+const registrySource = readFileSync('src/chapters/registry.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
@@ -69,6 +81,30 @@ if (
   !navSource.includes("transitionToChapter(id, { updateHash: true })")
 ) {
   throw new Error('Nav must keep the existing top chapter links and use StaggeredSectionMenu only as an enhanced section-map overlay.')
+}
+
+if (!mainSource.includes('import.meta.env.DEV && labPath') || !mainSource.includes("import('./lab/VisualLab.tsx')")) {
+  throw new Error('Visual Lab must remain a development-only dynamic route.')
+}
+
+if (!globalLayerSource.includes('@layer reset, tokens, base, primitives, chapters, effects, utilities;')) {
+  throw new Error('Landing styles must declare the shared cascade layer order before component styles.')
+}
+
+for (const layer of ['layer(primitives)', 'layer(chapters)', 'layer(effects)', '@layer utilities']) {
+  if (!appStyleSource.includes(layer)) throw new Error(`Landing app styles are missing cascade boundary: ${layer}`)
+}
+
+for (const token of ["desktopHeight: '680svh'", "mobileHeight: '300svh'", 'progress: 0.985', "release: 'explicit-cta'"]) {
+  if (!narrativeSpecSource.includes(token)) throw new Error(`Work narrative spec is missing ${token}.`)
+}
+
+for (const id of ['horizontal-bend', 'project-laser', 'footer-liquid-cursor', 'project-case-dialog', 'project-evidence-lightbox', 'project-metric-number-flow', 'project-mobile-carousel']) {
+  if (!effectManifestSource.includes(`id: '${id}'`)) throw new Error(`Visual effect manifest is missing ${id}.`)
+}
+
+for (const entrypoint of ['./hero', './about', './life', './frame', './skills', './work-transition', './projects', './contact']) {
+  if (!registrySource.includes(entrypoint)) throw new Error(`Chapter registry must resolve through vertical-slice entrypoint ${entrypoint}.`)
 }
 
 if (!chapterScrollMetricsSource.includes('useSyncExternalStore') || !chapterScrollMetricsSource.includes('ScrollTrigger.create')) {
@@ -179,7 +215,7 @@ if (!heroSource.includes('onChapterArrived') || !heroSource.includes('pretextRef
 if (
   !footerStyleSource.includes('visibility: hidden') ||
   !footerStyleSource.includes('opacity: 0') ||
-  !footerSource.includes('updateBlobVisibility') ||
+  !footerSource.includes('updateVisibility') ||
   !footerSource.includes('getBoundingClientRect') ||
   !footerSource.includes('progress > 0.001')
 ) {
@@ -201,10 +237,8 @@ if (
   throw new Error('Skills reveal timers must be tracked and cleared on cleanup to avoid delayed class writes after unmount/HMR.')
 }
 
-if (
-  projectsSource.includes("document.querySelectorAll<HTMLElement>('.project-card')") ||
-  !projectsSource.includes("root.current?.querySelectorAll<HTMLElement>('.project-card')")
-) {
+if (projectsSource.includes("document.querySelectorAll<HTMLElement>('.project-card')") ||
+  !projectsSource.includes("section.querySelectorAll<HTMLElement>('[data-motion=\"project-card\"]')")) {
   throw new Error('Projects must scope project-card DOM writes to its root section, not document-wide queries.')
 }
 

@@ -3,8 +3,9 @@ import {
   supportsHtmlInCanvas,
   type LaserInstance,
 } from './vendor/Laser/LaserVanilla'
+import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
 
-export interface LaserHandle {
+export interface LaserHandle extends EffectLifecycle {
   readonly mode: 'html-canvas' | 'beam-fallback'
   setScrollActivity(state: { progress: number; delta: number }): void
   invalidate(): void
@@ -86,6 +87,8 @@ export function createLaser(canvas: HTMLCanvasElement, capture?: HTMLElement | n
       source.requestPaint?.()
       instance?.resize()
     },
+    pause() { instance?.pause() },
+    resume() { instance?.resume() },
     resize() { instance?.resize() },
     destroy() {
       instance?.destroy()

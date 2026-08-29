@@ -1,5 +1,9 @@
-@import '@timcai/tokens/css';
-@import '@timcai/tokens/view-transitions.css';
+@layer reset, tokens, base, primitives, chapters, effects, utilities;
+
+@import '@timcai/tokens/css' layer(tokens);
+@import '@timcai/tokens/view-transitions.css' layer(tokens);
+
+@layer base {
 
 /* Shared palette/typography/motion tokens come ONLY from @timcai/tokens —
    never redeclare them here, or the package silently stops being the source
@@ -13,6 +17,10 @@
 
   color-scheme: dark;
 }
+
+}
+
+@layer reset {
 
 *,
 *::before,
@@ -80,6 +88,10 @@ canvas {
   display: block;
   max-width: 100%;
 }
+
+}
+
+@layer base {
 
 /* ── Lenis ── */
 html.lenis,
@@ -246,4 +258,5 @@ main {
     background-image: url('/noise/grain-128.png');
     background-size: 128px 128px;
   }
+}
 }

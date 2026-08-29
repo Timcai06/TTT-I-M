@@ -3,18 +3,25 @@
 ## Chapter Routing System
 This portfolio does not use a traditional router (like `react-router`). Instead, it relies on a bespoke "Chapter" mechanism for section mounting, lazy rendering, and sequential transitions.
 - Chapters are lazily loaded to prioritize the initial Hero paint.
+- Every registry entry resolves through `src/chapters/<chapter>/index.ts`. Projects and Contact are full vertical slices; the remaining entries are migration-safe boundaries around their existing implementations.
 - `src/lib/chaptersReady.ts` coordinates when a chapter is fully mounted and ready for GSAP ScrollTrigger calculation.
 
 ## Module Responsibilities
 - **Loader**: The entry point of the site. Blocks the initial render until critical assets (fonts, hero images, essential 3D textures) are preloaded to prevent FOUC (Flash of Unstyled Content).
 - **Hero & About**: High-performance areas carrying heavy Text / Particle interactions. These need tight lifecycle management.
-- **Frame**: Hijacks vertical scrolling via `Lenis` and maps it to a horizontal scroll or Z-axis camera push for photography display.
+- **Frame**: Maps vertical scroll to a horizontal photography rail; supported Chromium can add the chapter-local horizontal Bend while stable browsers retain the real DOM and edge-blur fallback.
 - **Work**: Spatial 3D project archive or engineering-style grid.
 - **Navigation Transition**: Handles the physical "shutter" or "glass break" effect when jumping between chapters.
 
 ## Animation Infrastructure
 - **GSAP + ScrollTrigger + Lenis**: `Lenis` handles the smooth scrolling math and proxies the scroll events to `ScrollTrigger` via `requestAnimationFrame`.
 - Always remember to call `ScrollTrigger.refresh()` when lazy chapters mount or DOM height changes to recalculate start/end points.
+
+## Narrative and Effect Contracts
+- `src/core/narrative/` is the data-only contract for long scroll stories. `WORK_TRANSITION_NARRATIVE` owns the Stack → Work geometry, named phases, and explicit CTA release gate; the component/controller consumes it instead of duplicating thresholds.
+- `src/shared/effects/manifest.ts` records each optional visual's chapter, fallback, motion policy, GPU cost, and source/license boundary.
+- Canvas handles share `pause / resume / resize / destroy`; optional surfaces still acquire contexts through `contextRegistry` and release them when their chapter leaves.
+- `/lab` is development-only and dynamically imports `src/lab/VisualLab.tsx`. Production builds must not emit a Visual Lab chunk.
 
 ## Three.js / React Three Fiber (R3F) Lifecycle
 - Three.js scenes must manage their own disposal to prevent memory leaks over time.
@@ -38,6 +45,8 @@ Composition has a single source of truth (`chapters/registry.ts`); runtime phase
 
 ## Content Layer — `src/content/` + `@timcai/content`
 UI components depend on a repository boundary, never on `src/data/*` directly (enforced by `content-layer-guards.mjs`). `CollectionRepository<T>` exposes sync `all()` (landing renders this — no async empty-frame flash) plus async `list()/get()` (the future MDX/DB contract). Schema reserves `ContentMeta`/`PublishState` for the future publish/UGC workflow.
+
+Project media additionally carries intrinsic `width / height`, independent `alt`, and optional evidence-backed metrics. PhotoSwipe and NumberFlow consume these contracts; invented or source-less metrics are rejected by tests.
 
 ## Platform Layer (Monorepo, direction A)
 - `apps/landing` (Vite) stays the heavy client island; `apps/studio` (Next App Router) serves `/blog`·`/work`·`/dashboard` + RSS/sitemap/OG, consuming the same repository interface. studio is **hard-isolated** from GSAP/R3F/Three/Lenis (platform guard).

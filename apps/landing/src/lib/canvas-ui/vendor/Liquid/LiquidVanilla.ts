@@ -50,6 +50,10 @@ export interface LiquidInstance {
   setOptions: (options: LiquidOptions) => void;
   /** Re-read canvas size. Call when the element is resized. */
   resize: () => void;
+  /** Stop scheduled frames without releasing simulation targets. */
+  pause: () => void;
+  /** Continue after pause without advancing hidden time. */
+  resume: () => void;
   /** Stop the loop and release all GPU resources. */
   destroy: () => void;
 }
@@ -804,6 +808,7 @@ export function createLiquid(
   let destroyed = false;
   let running = false;
   let visible = true;
+  let paused = false;
   let idleAt = 0;
 
   function idleDelayMs() {
@@ -813,7 +818,10 @@ export function createLiquid(
   }
 
   function frame(now: number) {
-    if (destroyed) return;
+    if (destroyed || paused) {
+      running = false;
+      return;
+    }
     if (!visible) {
       running = false;
       return;
@@ -837,7 +845,7 @@ export function createLiquid(
   }
 
   function start() {
-    if (destroyed || running || !visible) return;
+    if (destroyed || paused || running || !visible) return;
     running = true;
     lastTime = performance.now();
     raf = requestAnimationFrame(frame);
@@ -954,6 +962,17 @@ export function createLiquid(
     },
     resize() {
       syncCanvasSize();
+      start();
+    },
+    pause() {
+      if (paused) return;
+      paused = true;
+      running = false;
+      cancelAnimationFrame(raf);
+    },
+    resume() {
+      if (!paused) return;
+      paused = false;
       start();
     },
     destroy() {

@@ -3,701 +3,851 @@ export const frameImageSources = {
   "/frame/buildings/01.webp": [
     {
       "src": "/frame/buildings/01-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/buildings/01.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/buildings/01-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/buildings/02.webp": [
     {
       "src": "/frame/buildings/02-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/02-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/02.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/03.webp": [
     {
       "src": "/frame/buildings/03-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/buildings/03.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/buildings/03-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/buildings/04.webp": [
     {
       "src": "/frame/buildings/04-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/buildings/04.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/buildings/04-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/buildings/05.webp": [
     {
       "src": "/frame/buildings/05-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/05-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/05.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/06.webp": [
     {
       "src": "/frame/buildings/06-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/06-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/06.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/07.webp": [
     {
       "src": "/frame/buildings/07-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/07-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/07.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/08.webp": [
     {
       "src": "/frame/buildings/08-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 1281
     },
     {
       "src": "/frame/buildings/08.webp",
-      "width": 787
+      "width": 787,
+      "height": 1400
     },
     {
       "src": "/frame/buildings/08-1080.webp",
-      "width": 940
+      "width": 940,
+      "height": 1672
     }
   ],
   "/frame/buildings/09.webp": [
     {
       "src": "/frame/buildings/09-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/09-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/09.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/10.webp": [
     {
       "src": "/frame/buildings/10-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/10-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/10.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/11.webp": [
     {
       "src": "/frame/buildings/11-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/11-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/11.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/12.webp": [
     {
       "src": "/frame/buildings/12-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/12-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/12.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/13.webp": [
     {
       "src": "/frame/buildings/13-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/13-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/13.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/14.webp": [
     {
       "src": "/frame/buildings/14-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/14-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/14.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/15.webp": [
     {
       "src": "/frame/buildings/15-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/buildings/15.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/buildings/15-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/buildings/16.webp": [
     {
       "src": "/frame/buildings/16-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/16-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/16.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/17.webp": [
     {
       "src": "/frame/buildings/17-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/buildings/17-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/buildings/17.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/buildings/18.webp": [
     {
       "src": "/frame/buildings/18-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/buildings/18.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/buildings/18-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-01.webp": [
     {
       "src": "/frame/cuisine/cuisine-01-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-01.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-01-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-02.webp": [
     {
       "src": "/frame/cuisine/cuisine-02-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/cuisine/cuisine-02-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/cuisine/cuisine-02.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/cuisine/cuisine-03.webp": [
     {
       "src": "/frame/cuisine/cuisine-03-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-03.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-03-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-04.webp": [
     {
       "src": "/frame/cuisine/cuisine-04-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 1280
     },
     {
       "src": "/frame/cuisine/cuisine-04.webp",
-      "width": 788
+      "width": 788,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-04-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1920
     }
   ],
   "/frame/cuisine/cuisine-05.webp": [
     {
       "src": "/frame/cuisine/cuisine-05-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-05.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-05-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-06.webp": [
     {
       "src": "/frame/cuisine/cuisine-06-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-06.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-06-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-07.webp": [
     {
       "src": "/frame/cuisine/cuisine-07-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-07.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-07-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-08.webp": [
     {
       "src": "/frame/cuisine/cuisine-08-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-08.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-08-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-09.webp": [
     {
       "src": "/frame/cuisine/cuisine-09-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/cuisine/cuisine-09-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/cuisine/cuisine-09.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/cuisine/cuisine-10.webp": [
     {
       "src": "/frame/cuisine/cuisine-10-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/cuisine/cuisine-10-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/cuisine/cuisine-10.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/cuisine/cuisine-11.webp": [
     {
       "src": "/frame/cuisine/cuisine-11-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-11.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-11-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-12.webp": [
     {
       "src": "/frame/cuisine/cuisine-12-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-12.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-12-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-13.webp": [
     {
       "src": "/frame/cuisine/cuisine-13-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/cuisine/cuisine-13-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/cuisine/cuisine-13.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/cuisine/cuisine-14.webp": [
     {
       "src": "/frame/cuisine/cuisine-14-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-14.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-14-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-15.webp": [
     {
       "src": "/frame/cuisine/cuisine-15-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-15.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-15-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-16.webp": [
     {
       "src": "/frame/cuisine/cuisine-16-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-16.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-16-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-17.webp": [
     {
       "src": "/frame/cuisine/cuisine-17-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-17.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-17-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-18.webp": [
     {
       "src": "/frame/cuisine/cuisine-18-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-18.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-18-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-19.webp": [
     {
       "src": "/frame/cuisine/cuisine-19-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-19.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-19-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-20.webp": [
     {
       "src": "/frame/cuisine/cuisine-20-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 960
     },
     {
       "src": "/frame/cuisine/cuisine-20.webp",
-      "width": 1050
+      "width": 1050,
+      "height": 1400
     },
     {
       "src": "/frame/cuisine/cuisine-20-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1440
     }
   ],
   "/frame/cuisine/cuisine-21.webp": [
     {
       "src": "/frame/cuisine/cuisine-21-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/cuisine/cuisine-21-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/cuisine/cuisine-21.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/scenery/scenery-01.webp": [
     {
       "src": "/frame/scenery/scenery-01-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/scenery/scenery-01-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/scenery/scenery-01.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/scenery/scenery-02.webp": [
     {
       "src": "/frame/scenery/scenery-02-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 956
     },
     {
       "src": "/frame/scenery/scenery-02.webp",
-      "width": 1054
+      "width": 1054,
+      "height": 1400
     },
     {
       "src": "/frame/scenery/scenery-02-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1434
     }
   ],
   "/frame/scenery/scenery-03.webp": [
     {
       "src": "/frame/scenery/scenery-03-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 720
     },
     {
       "src": "/frame/scenery/scenery-03-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1080
     },
     {
       "src": "/frame/scenery/scenery-03.webp",
-      "width": 1254
+      "width": 1254,
+      "height": 1254
     }
   ],
   "/frame/scenery/scenery-04.webp": [
     {
       "src": "/frame/scenery/scenery-04-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 542
     },
     {
       "src": "/frame/scenery/scenery-04-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 813
     },
     {
       "src": "/frame/scenery/scenery-04.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1054
     }
   ],
   "/frame/scenery/scenery-05.webp": [
     {
       "src": "/frame/scenery/scenery-05-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 779
     },
     {
       "src": "/frame/scenery/scenery-05-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1169
     },
     {
       "src": "/frame/scenery/scenery-05.webp",
-      "width": 1206
+      "width": 1206,
+      "height": 1305
     }
   ],
   "/frame/scenery/scenery-06.webp": [
     {
       "src": "/frame/scenery/scenery-06-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 720
     },
     {
       "src": "/frame/scenery/scenery-06-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 1080
     },
     {
       "src": "/frame/scenery/scenery-06.webp",
-      "width": 1254
+      "width": 1254,
+      "height": 1254
     }
   ],
   "/frame/scenery/scenery-07.webp": [
     {
       "src": "/frame/scenery/scenery-07-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/scenery/scenery-07-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/scenery/scenery-07.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/scenery/scenery-08.webp": [
     {
       "src": "/frame/scenery/scenery-08-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 610
     },
     {
       "src": "/frame/scenery/scenery-08-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 914
     },
     {
       "src": "/frame/scenery/scenery-08.webp",
-      "width": 1363
+      "width": 1363,
+      "height": 1154
     }
   ],
   "/frame/scenery/scenery-09.webp": [
     {
       "src": "/frame/scenery/scenery-09-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/scenery/scenery-09-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/scenery/scenery-09.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/scenery/scenery-10.webp": [
     {
       "src": "/frame/scenery/scenery-10-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/scenery/scenery-10-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/scenery/scenery-10.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ],
   "/frame/scenery/scenery-11.webp": [
     {
       "src": "/frame/scenery/scenery-11-720.webp",
-      "width": 720
+      "width": 720,
+      "height": 540
     },
     {
       "src": "/frame/scenery/scenery-11-1080.webp",
-      "width": 1080
+      "width": 1080,
+      "height": 810
     },
     {
       "src": "/frame/scenery/scenery-11.webp",
-      "width": 1400
+      "width": 1400,
+      "height": 1050
     }
   ]
 } as const

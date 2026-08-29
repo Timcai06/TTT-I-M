@@ -1,49 +1,51 @@
-@import './components/intro.css';
-@import './components/cursor.css';
-@import './components/glitch-text.css';
-@import './components/gradual-blur.css';
-@import './components/staggered-section-menu.css';
-@import './components/nav.css';
-@import './components/signature-mark.css';
-@import './components/hero.css';
-@import './components/about.css';
-@import './components/life-gallery.css';
-@import './components/frame.css';
-@import './components/skills.css';
-@import './components/logo-loop.css';
-@import './components/work-transition.css';
-@import './components/masked-heading.css';
-@import './components/projects.css';
-@import './components/scroll-expand.css';
-@import './components/sciscope-film.css';
-@import './components/footer.css';
-@import './components/scroll-indicator.css';
-@import './components/drift-wall.css';
-@import './components/accordion-gallery.css';
-@import './components/ascii-text.css';
-@import './components/border-glow.css';
+@import './components/intro.css' layer(chapters);
+@import './components/cursor.css' layer(primitives);
+@import './components/glitch-text.css' layer(primitives);
+@import './components/gradual-blur.css' layer(effects);
+@import './components/staggered-section-menu.css' layer(primitives);
+@import './components/nav.css' layer(chapters);
+@import './components/signature-mark.css' layer(primitives);
+@import './components/hero.css' layer(chapters);
+@import './components/about.css' layer(chapters);
+@import './components/life-gallery.css' layer(chapters);
+@import './components/frame.css' layer(chapters);
+@import './components/skills.css' layer(chapters);
+@import './components/logo-loop.css' layer(primitives);
+@import './components/work-transition.css' layer(chapters);
+@import './components/masked-heading.css' layer(primitives);
+@import './components/projects.css' layer(chapters);
+@import './components/scroll-expand.css' layer(effects);
+@import './components/sciscope-film.css' layer(chapters);
+@import './components/footer.css' layer(chapters);
+@import './components/scroll-indicator.css' layer(primitives);
+@import './components/drift-wall.css' layer(effects);
+@import './components/accordion-gallery.css' layer(primitives);
+@import './components/ascii-text.css' layer(effects);
+@import './components/border-glow.css' layer(effects);
 
-@media (max-width: 768px) {
-  @supports (animation-timeline: view()) {
-    .gallery__item,
-    .archive-theme-marker,
-    .archive-cluster,
-    .skill-row,
-    .project-card {
-      animation: mobile-card-reveal both;
-      animation-timeline: view();
-      animation-range: entry 6% cover 30%;
+@layer utilities {
+  @media (max-width: 768px) {
+    @supports (animation-timeline: view()) {
+      .gallery__item,
+      .archive-theme-marker,
+      .archive-cluster,
+      .skill-row,
+      .project-card {
+        animation: mobile-card-reveal both;
+        animation-timeline: view();
+        animation-range: entry 6% cover 30%;
+      }
     }
   }
-}
 
-@keyframes mobile-card-reveal {
-  from {
-    opacity: 0.72;
-    transform: translateY(26px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+  @keyframes mobile-card-reveal {
+    from {
+      opacity: 0.72;
+      transform: translateY(26px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 }

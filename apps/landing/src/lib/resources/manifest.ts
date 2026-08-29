@@ -1,6 +1,4 @@
-import { archiveImages } from '../../data/frames'
-import { photos } from '../../data/life'
-import { projects } from '../../data/projects'
+import { archiveImages, photos, projects } from '../../content'
 import {
   loadFonts,
   loadHeroTexture,

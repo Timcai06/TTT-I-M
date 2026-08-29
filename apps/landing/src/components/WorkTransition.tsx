@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
+import { WORK_TRANSITION_NARRATIVE } from '../core/narrative/index.ts'
 import { useMobileExperience } from '../lib/device'
 import { gsap, useGSAP } from '../lib/gsap'
 import { getLenis } from '../lib/lenis'
@@ -18,7 +19,17 @@ type SparkControls = {
   spread: number
 }
 
-const WORK_GATE_PROGRESS = 0.985
+const WORK_GATE_PROGRESS = WORK_TRANSITION_NARRATIVE.gate.progress
+
+interface WorkTransitionStyle extends CSSProperties {
+  '--work-transition-height-desktop': string
+  '--work-transition-height-mobile': string
+}
+
+const WORK_TRANSITION_STYLE: WorkTransitionStyle = {
+  '--work-transition-height-desktop': WORK_TRANSITION_NARRATIVE.desktopHeight,
+  '--work-transition-height-mobile': WORK_TRANSITION_NARRATIVE.mobileHeight,
+}
 
 const mix = (from: number, to: number, progress: number) => from + (to - from) * progress
 
@@ -223,9 +234,10 @@ export default function WorkTransition() {
       )
     }
 
-    addTrackedPhase('.work-transition__phase--one', 0.02, 0.26)
-    addTrackedPhase('.work-transition__phase--two', 0.32, 0.57)
-    addTrackedPhase('.work-transition__phase--three', 0.7, 0.91)
+    const [potentialPhase, systemPhase, proofPhase] = WORK_TRANSITION_NARRATIVE.phases
+    addTrackedPhase('.work-transition__phase--one', potentialPhase.enter, potentialPhase.exit)
+    addTrackedPhase('.work-transition__phase--two', systemPhase.enter, systemPhase.exit)
+    addTrackedPhase('.work-transition__phase--three', proofPhase.enter, proofPhase.exit)
 
     postSparkControls(0)
     requestScrollRefresh()
@@ -266,6 +278,7 @@ export default function WorkTransition() {
       ref={root}
       aria-label="From stack to selected work"
       data-gate={gateLocked ? 'locked' : 'open'}
+      style={WORK_TRANSITION_STYLE}
     >
       <div className="work-transition__sticky">
         {!reducedMotion && (

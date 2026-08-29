@@ -62,3 +62,39 @@ void test('Modeling Lab groups four real studies behind one landing project', ()
     assert.ok(existsSync(mediaPath), `Missing Modeling Lab media: ${mediaPath}`)
   }
 })
+
+void test('project media exposes accessible intrinsic dimensions', () => {
+  const projects = new Map(
+    [...portfolioProjects, ...landingPortfolioProjects].map((project) => [project.id, project]),
+  )
+
+  for (const project of projects.values()) {
+    const shots = [
+      ...(project.media?.shots ?? []),
+      ...(project.caseStudies?.map((study) => study.shot) ?? []),
+    ]
+
+    for (const shot of shots) {
+      assert.ok(shot.alt.trim(), `${project.id}/${shot.src} must have meaningful alt text`)
+      assert.ok(shot.width > 0, `${project.id}/${shot.src} must have a positive width`)
+      assert.ok(shot.height > 0, `${project.id}/${shot.src} must have a positive height`)
+    }
+  }
+})
+
+void test('animated metrics are limited to existing evidence-backed facts', () => {
+  const projects = new Map(
+    [...portfolioProjects, ...landingPortfolioProjects].map((project) => [project.id, project]),
+  )
+
+  for (const project of projects.values()) {
+    for (const metric of project.metrics ?? []) {
+      assert.ok(Number.isFinite(metric.value), `${project.id}/${metric.label} must be finite`)
+      assert.ok(metric.evidence.trim(), `${project.id}/${metric.label} must name its evidence`)
+    }
+  }
+
+  assert.equal(projects.get('bdi')?.metrics?.[0]?.value, 6)
+  assert.equal(projects.get('modeling-lab')?.metrics?.[0]?.value, 4)
+  assert.deepEqual(projects.get('sciscope')?.metrics?.map((metric) => metric.value), [159187, 367773])
+})

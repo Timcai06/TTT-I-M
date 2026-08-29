@@ -1,5 +1,10 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, MouseEvent, ReactElement } from 'react'
 import type { ArchiveClusterSlot, ArchiveImage } from '../../content'
+import {
+  openImageLightbox,
+  type ImageLightboxItem,
+} from '../../shared/media/openImageLightbox'
+import { openSafeAsset } from '../../shared/media/openSafeAsset.ts'
 import SignatureMark from '../SignatureMark'
 
 interface ArchiveSlotStyle extends CSSProperties {
@@ -13,7 +18,9 @@ interface ArchiveSlotStyle extends CSSProperties {
   '--slot-scale'?: number
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
 
 /**
  * @description 渲染 Frame archive 里的单张摄影卡槽，保持原始比例、caption 对位和轻微层次偏移
@@ -21,13 +28,35 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
  * @performance 所有图片保持 eager fetch 以支撑 Frame 快速滚入的可信展示；只有首图通过 fetchPriority=high 提升优先级
  * @caveats offset 在组件内钳制，内容层不能通过异常 scale/位移破坏图片说明文字和图片的空间关系
  */
-export default function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot: ArchiveClusterSlot }) {
+export default function ArchiveImageSlot({
+  eager,
+  gallery,
+  galleryIndex,
+  slot,
+}: {
+  eager: boolean
+  gallery: readonly ImageLightboxItem[]
+  galleryIndex: number
+  slot: ArchiveClusterSlot
+}): ReactElement {
   const image: ArchiveImage = slot.image
   const slotStyle: ArchiveSlotStyle = {
     '--image-aspect': `${image.width} / ${image.height}`,
     '--slot-x': `${clamp(slot.offset?.x ?? 0, -10, 10)}px`,
     '--slot-y': `${clamp(slot.offset?.y ?? 0, -12, 12)}px`,
     '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.9, 1.08),
+  }
+  const openImage = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    event.preventDefault()
+    void openImageLightbox({
+      items: gallery,
+      index: galleryIndex,
+      opener: event.currentTarget,
+    }).catch((error: unknown) => {
+      console.warn('[frame] PhotoSwipe unavailable; opening the source image.', error)
+      openSafeAsset(image.src)
+    })
   }
 
   return (
@@ -41,7 +70,14 @@ export default function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot
       data-cursor="hover"
       style={slotStyle}
     >
-      <div className="archive-slot__media">
+      <a
+        className="archive-slot__media archive-slot__open"
+        href={image.src}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={openImage}
+        aria-label={`全屏查看：${image.title}`}
+      >
         <img
           src={image.src}
           srcSet={image.srcSet}
@@ -51,7 +87,7 @@ export default function ArchiveImageSlot({ eager, slot }: { eager: boolean; slot
           decoding="async"
           fetchPriority={eager ? 'high' : 'auto'}
         />
-      </div>
+      </a>
       <figcaption className="archive-slot__caption">
         <span className="archive-slot__caption-title">{image.title}</span>
         <span>{image.location}</span>

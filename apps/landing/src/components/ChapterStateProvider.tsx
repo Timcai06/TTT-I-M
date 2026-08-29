@@ -1,21 +1,43 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
 import { ChapterStateContext } from '../lib/chapterState'
 import { useLandingScrollNarrative } from '../lib/useLandingScrollNarrative'
 import { narrativeChapters } from '../lib/narrativeChapters'
-import { getStage } from '../lib/stage'
+import { useStage } from '../lib/stage'
 
 const fallbackChapterId = narrativeChapters[0]?.id ?? 'hero'
+const scrollKeys = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '])
 
-export default function ChapterStateProvider({ children }: { children: ReactNode }) {
+function hasStartedScrollNavigation(key: string): boolean {
+  return scrollKeys.has(key)
+}
+
+function resolveChapterUrl(activeId: string): string {
+  if (activeId === fallbackChapterId) {
+    return `${window.location.pathname}${window.location.search}`
+  }
+
+  return `#${activeId}`
+}
+
+function hasMatchingChapterUrl(activeId: string, nextUrl: string): boolean {
+  if (activeId === fallbackChapterId) {
+    return !window.location.hash
+  }
+
+  return window.location.hash === nextUrl
+}
+
+export default function ChapterStateProvider({ children }: { children: ReactNode }): ReactElement {
   const { activeId } = useLandingScrollNarrative(narrativeChapters, fallbackChapterId)
-  const userScrollStarted = useRef(false)
+  const [userScrollStarted, setUserScrollStarted] = useState(false)
+  const stage = useStage()
 
   useEffect(() => {
     const markUserScroll = () => {
-      userScrollStarted.current = true
+      setUserScrollStarted(true)
     }
     const markKeyboardScroll = (event: KeyboardEvent) => {
-      if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) {
+      if (hasStartedScrollNavigation(event.key)) {
         markUserScroll()
       }
     }
@@ -36,14 +58,12 @@ export default function ChapterStateProvider({ children }: { children: ReactNode
     // inconsistent. Replace (never push) the URL once the user actually scrolls
     // so browser history is not polluted and deep links are not overwritten on
     // initial load or while the cinematic transition owns the viewport.
-    if (!userScrollStarted.current || getStage() !== 'live') return
+    if (!userScrollStarted || stage !== 'live') return
 
-    const nextUrl = activeId === fallbackChapterId
-      ? `${window.location.pathname}${window.location.search}`
-      : `#${activeId}`
-    if (activeId === fallbackChapterId ? !window.location.hash : window.location.hash === nextUrl) return
+    const nextUrl = resolveChapterUrl(activeId)
+    if (hasMatchingChapterUrl(activeId, nextUrl)) return
     window.history.replaceState(null, '', nextUrl)
-  }, [activeId])
+  }, [activeId, stage, userScrollStarted])
 
   return (
     <ChapterStateContext.Provider value={{ activeId }}>

@@ -1,4 +1,5 @@
 import type { ArchiveCluster, ArchiveTheme } from '../../content'
+import type { ImageLightboxItem } from '../../shared/media/openImageLightbox'
 import ArchiveImageSlot from './ArchiveImageSlot'
 
 export default function ArchiveClusterPanel({
@@ -10,6 +11,14 @@ export default function ArchiveClusterPanel({
   eagerFirstImage: boolean
   theme: ArchiveTheme
 }) {
+  const lightboxItems: readonly ImageLightboxItem[] = cluster.slots.map(({ image }) => ({
+    src: image.src,
+    alt: `${image.title} · ${image.location}`,
+    width: image.width,
+    height: image.height,
+    label: `${image.title} — ${image.meta}`,
+  }))
+
   return (
     <article
       className={[
@@ -29,6 +38,8 @@ export default function ArchiveClusterPanel({
       {cluster.slots.map((slot, index) => (
         <ArchiveImageSlot
           eager={eagerFirstImage && index === 0}
+          gallery={lightboxItems}
+          galleryIndex={index}
           key={`${cluster.id}-${slot.image.src}`}
           slot={slot}
         />

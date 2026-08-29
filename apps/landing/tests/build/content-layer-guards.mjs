@@ -24,7 +24,8 @@ function walk(dir) {
   })
 }
 
-const componentFiles = walk('src/components').filter((file) => /\.(ts|tsx)$/.test(file))
+const componentFiles = [...walk('src/components'), ...walk('src/chapters')]
+  .filter((file) => /\.(ts|tsx)$/.test(file))
 const dataImport = /from\s+['"][./]*data\//
 const lifeGallerySource = readFileSync('src/components/LifeGallery.tsx', 'utf8')
 const gradualBlurSource = readFileSync('src/components/GradualBlur.tsx', 'utf8')
@@ -33,9 +34,18 @@ const accordionSource = readFileSync('src/components/AccordionGallery.tsx', 'utf
 const borderGlowSource = readFileSync('src/components/BorderGlow.tsx', 'utf8')
 const asciiTextSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
 const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
-const projectsSource = readFileSync('src/components/Projects.tsx', 'utf8')
-const projectsStyleSource = readFileSync('src/styles/components/projects.css', 'utf8')
-const footerSource = readFileSync('src/components/Footer.tsx', 'utf8')
+const projectsSource = [
+  'src/chapters/projects/ProjectsIntro.tsx',
+  'src/chapters/projects/ProjectsBento.tsx',
+  'src/chapters/projects/ProjectCard.tsx',
+].map((path) => readFileSync(path, 'utf8')).join('\n')
+const projectsStyleSource = [
+  'src/styles/components/projects.css',
+  'src/chapters/projects/styles/intro-bento.css',
+  'src/chapters/projects/styles/card-media.css',
+  'src/chapters/projects/styles/enhancements.css',
+].map((path) => readFileSync(path, 'utf8')).join('\n')
+const footerSource = readFileSync('src/chapters/contact/Footer.tsx', 'utf8')
 const footerStyleSource = readFileSync('src/styles/components/footer.css', 'utf8')
 const appStyleSource = readFileSync('src/styles/app.css', 'utf8')
 const packageManifest = JSON.parse(readFileSync('package.json', 'utf8'))
@@ -66,7 +76,7 @@ if (!gradualBlurSource.includes('CURVE_FUNCTIONS') || !appStyleSource.includes("
   throw new Error('GradualBlur must keep the React Bits curve layers, CSS import, and mathjs dependency contract.')
 }
 
-if (!projectsSource.includes('BorderGlow') || !projectsSource.includes('bento-tile__img') || !projectsSource.includes("p.id === 'educanvas'")) {
+if (!projectsSource.includes('BorderGlow') || !projectsSource.includes('bento-tile__img') || !projectsSource.includes("project.id === 'educanvas'")) {
   throw new Error('Projects must combine BorderGlow with the source-backed image focus treatment and EduCanvas sweep.')
 }
 for (const needle of ['--edge-proximity', '--cursor-angle', 'buildGradientVars', 'sweep-active']) {

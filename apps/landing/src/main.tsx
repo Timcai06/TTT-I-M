@@ -24,8 +24,17 @@ import '@fontsource/jetbrains-mono/500.css'
 import './styles/global.css'
 import App from './App'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const root = createRoot(document.getElementById('root')!)
+const labPath = window.location.pathname.replace(/\/+$/, '') === '/lab'
+
+async function renderLanding() {
+  if (import.meta.env.DEV && labPath) {
+    const { default: VisualLab } = await import('./lab/VisualLab.tsx')
+    root.render(<StrictMode><VisualLab /></StrictMode>)
+    return
+  }
+
+  root.render(<StrictMode><App /></StrictMode>)
+}
+
+void renderLanding()

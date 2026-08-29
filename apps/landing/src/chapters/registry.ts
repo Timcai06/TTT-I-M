@@ -1,5 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
-import Hero from '../components/Hero'
+import Hero from './hero'
 
 // Hero is eager: it paints first and hands the intro off to the loader.
 // Everything below the fold is code-split and fetched on mount (in parallel,
@@ -7,13 +7,13 @@ import Hero from '../components/Hero'
 type LazyChapterLoader = () => Promise<{ default: ComponentType }>
 
 export const lazyChapterLoaders = {
-  about: () => import('../components/About'),
-  life: () => import('../components/LifeGallery'),
-  frame: () => import('../components/Frame'),
-  skills: () => import('../components/Skills'),
-  workTransition: () => import('../components/WorkTransition'),
-  projects: () => import('../components/Projects'),
-  contact: () => import('../components/Footer'),
+  about: () => import('./about'),
+  life: () => import('./life'),
+  frame: () => import('./frame'),
+  skills: () => import('./skills'),
+  workTransition: () => import('./work-transition'),
+  projects: () => import('./projects'),
+  contact: () => import('./contact'),
 } satisfies Record<string, LazyChapterLoader>
 
 export function preloadLazyChapters() {

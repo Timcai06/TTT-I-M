@@ -1,7 +1,8 @@
 import { markDrawableSubtree, resizeCanvasToDisplaySize, supportsHtmlInCanvas } from './runtime'
 import { bendEdgeStrengths, type HorizontalBendState } from './horizontalBendMath'
+import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
 
-export interface HorizontalBendHandle {
+export interface HorizontalBendHandle extends EffectLifecycle {
   setScrollState(state: HorizontalBendState): void
   invalidate(): void
   resize(): void
@@ -9,12 +10,12 @@ export interface HorizontalBendHandle {
 }
 
 export const HORIZONTAL_BEND_CONFIG = {
-  zone: 240,
-  angle: 80,
-  rounding: 150,
-  perspective: 700,
-  ease: 240,
-  smoothing: 0.1,
+  zone: 180,
+  angle: 46,
+  rounding: 130,
+  perspective: 1250,
+  ease: 180,
+  smoothing: 0.14,
   tumble: 0,
   tilt: 0,
 } as const
@@ -225,6 +226,7 @@ export function createHorizontalBend(options: {
   let texture: WebGLTexture | null = null
   let frame = 0
   let destroyed = false
+  let paused = false
   let failed = false
   let firstFrame = false
   let hasUploadedContent = false
@@ -288,7 +290,7 @@ export function createHorizontalBend(options: {
 
   const render = (now: number) => {
     frame = 0
-    if (destroyed || failed || document.hidden || !program || !texture) return
+    if (destroyed || failed || paused || document.hidden || !program || !texture) return
     const delta = Math.min((now - previousTime) / 1000, 1 / 30)
     previousTime = now
     const smoothing = HORIZONTAL_BEND_CONFIG.smoothing
@@ -337,14 +339,28 @@ export function createHorizontalBend(options: {
   }
 
   const invalidate = () => {
-    if (destroyed || failed) return
+    if (destroyed || failed || paused) return
     source.requestPaint?.()
     if (!frame) {
       previousTime = performance.now()
       frame = window.requestAnimationFrame(render)
     }
   }
-  const onVisibility = () => { if (!document.hidden) invalidate() }
+  const pause = () => {
+    if (destroyed || paused) return
+    paused = true
+    window.cancelAnimationFrame(frame)
+    frame = 0
+  }
+  const resume = () => {
+    if (destroyed || !paused) return
+    paused = false
+    invalidate()
+  }
+  const onVisibility = () => {
+    if (document.hidden) pause()
+    else resume()
+  }
   const onContextLost = (event: Event) => {
     event.preventDefault()
     failed = true
@@ -366,8 +382,11 @@ export function createHorizontalBend(options: {
       invalidate()
     },
     invalidate,
+    pause,
+    resume,
     resize: invalidate,
     destroy() {
+      if (destroyed) return
       destroyed = true
       window.cancelAnimationFrame(frame)
       document.removeEventListener('visibilitychange', onVisibility)

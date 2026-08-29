@@ -41,7 +41,7 @@ for (const token of ['HorizontalBendSurface', 'bendHandle']) {
     throw new Error(`Frame horizontal bend is missing ${token}.`)
   }
 }
-for (const token of ['zone: 240', 'angle: 80', 'perspective: 700', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame']) {
+for (const token of ['zone: 180', 'angle: 46', 'rounding: 130', 'perspective: 1250', 'ease: 180', 'smoothing: 0.14', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame']) {
   if (!bendSource.includes(token)) throw new Error(`Horizontal Bend must keep ${token}.`)
 }
 for (const token of ['right-to-left', 'left-to-right', 'ease / distance', 'smoothstep(0, edgeSpan', 'smoothstep(1 - edgeSpan, 1']) {
@@ -50,6 +50,10 @@ for (const token of ['right-to-left', 'left-to-right', 'ease / distance', 'smoot
 
 if (!slotSource.includes('className=') || !slotSource.includes('archive-slot__media')) {
   throw new Error('ArchiveImageSlot must retain the archive slot DOM contract.')
+}
+
+for (const token of ['openImageLightbox', 'galleryIndex', 'aria-label={`全屏查看：${image.title}`}', 'openSafeAsset(image.src)']) {
+  if (!slotSource.includes(token)) throw new Error(`Frame evidence lightbox is missing ${token}.`)
 }
 
 if (!slotSource.includes('loading="eager"') || !slotSource.includes("fetchPriority={eager ? 'high' : 'auto'}")) {

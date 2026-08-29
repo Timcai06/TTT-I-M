@@ -11,8 +11,32 @@ type MediaKind = 'cinematic' | 'ui' | 'terminal' | 'data'
 interface ProjectShot {
   /** 图片路径（public 下的相对路径）。 */
   src: string
-  /** 图片描述标签，用作 caption 和缩略图 alt。 */
+  /** 图片描述标签，用作 caption。 */
   label: string
+  /** 对截图内容的可访问描述，不复用装饰性 caption。 */
+  alt: string
+  /** 原始资源宽度，供 Lightbox 在加载前建立稳定布局。 */
+  width: number
+  /** 原始资源高度，供 Lightbox 在加载前建立稳定布局。 */
+  height: number
+}
+
+/** 带来源说明的项目量化证据；没有可核验 evidence 的数字不得进入展示层。 */
+interface ProjectMetric {
+  label: string
+  value: number
+  prefix?: string
+  suffix?: string
+  precision?: number
+  evidence: string
+}
+
+/** 项目长案例中的一个内容段落；Landing 可以按需在详情 Dialog 中渲染。 */
+interface ProjectDetailSection {
+  id: string
+  title: string
+  body: string
+  bullets?: string[]
 }
 
 /** 一个聚合项目中的独立案例；首页只挂载当前案例的主图。 */
@@ -70,9 +94,24 @@ interface Project {
     kind: MediaKind
     shots: ProjectShot[]
   }
+  /** 只收录现有材料中可核验的量化证据。 */
+  metrics?: ProjectMetric[]
+  /** 可选长案例正文；缺失时由现有 description/highlights 组成详情。 */
+  detail?: {
+    lede?: string
+    sections?: ProjectDetailSection[]
+  }
   /** 多个相关工作共享一个项目入口时使用的案例索引。 */
   caseStudies?: ProjectCaseStudy[]
 }
+
+const projectShot = (
+  src: string,
+  label: string,
+  alt: string,
+  width: number,
+  height: number,
+): ProjectShot => ({ src, label, alt, width, height })
 
 const landingProjects: Project[] = [
   {
@@ -95,11 +134,19 @@ const landingProjects: Project[] = [
     media: {
       kind: 'cinematic',
       shots: [
-        { src: '/projects/bdi/corrosion.webp', label: '钢筋锈蚀' },
-        { src: '/projects/bdi/seepage.webp', label: '渗水监测' },
-        { src: '/projects/bdi/spalling.webp', label: '混凝土剥落' },
+        projectShot('/projects/bdi/corrosion.webp', '钢筋锈蚀', '桥梁钢筋锈蚀病害识别结果', 1100, 1100),
+        projectShot('/projects/bdi/seepage.webp', '渗水监测', '桥梁渗水病害识别结果', 1100, 1100),
+        projectShot('/projects/bdi/spalling.webp', '混凝土剥落', '桥梁混凝土剥落病害识别结果', 1100, 1100),
       ],
     },
+    metrics: [
+      {
+        label: '病害类别',
+        value: 6,
+        suffix: ' 类',
+        evidence: '现有系统支持裂缝、破损、梳齿、孔洞、钢筋外露与渗水六类病害分割。',
+      },
+    ],
   },
   {
     id: 'pulsegraph',
@@ -121,10 +168,10 @@ const landingProjects: Project[] = [
     media: {
       kind: 'ui',
       shots: [
-        { src: '/projects/pulsegraph/live-monitor.webp', label: '训练监控 · 推理与运行事件' },
-        { src: '/projects/pulsegraph/training-controls.webp', label: '训练资源与模型图控制台' },
-        { src: '/projects/pulsegraph/training-telemetry.webp', label: '实时训练遥测' },
-        { src: '/projects/pulsegraph/inference-output.webp', label: '真实数据集推理输出' },
+        projectShot('/projects/pulsegraph/live-monitor.webp', '训练监控 · 推理与运行事件', 'PulseGraph 训练监控、推理与运行事件界面', 1600, 1000),
+        projectShot('/projects/pulsegraph/training-controls.webp', '训练资源与模型图控制台', 'PulseGraph 训练资源与模型图控制台', 1600, 1000),
+        projectShot('/projects/pulsegraph/training-telemetry.webp', '实时训练遥测', 'PulseGraph 实时训练遥测图表', 1600, 1000),
+        projectShot('/projects/pulsegraph/inference-output.webp', '真实数据集推理输出', 'PulseGraph 真实数据集推理输出界面', 1600, 1000),
       ],
     },
   },
@@ -149,9 +196,23 @@ const landingProjects: Project[] = [
     media: {
       kind: 'ui',
       shots: [
-        { src: '/projects/earnlytics/landing.webp', label: 'AI 驱动的财报分析' },
+        projectShot('/projects/earnlytics/landing.webp', 'AI 驱动的财报分析', 'Earnlytics 财报分析首页', 1600, 876),
       ],
     },
+    metrics: [
+      {
+        label: '覆盖公司',
+        value: 30,
+        suffix: ' 家',
+        evidence: '现有项目介绍记录平台覆盖 30 家美股科技公司。',
+      },
+      {
+        label: '财报资产',
+        value: 109,
+        suffix: ' 份',
+        evidence: '现有项目介绍记录已完成 109 份财报的自动化扩展。',
+      },
+    ],
   },
   {
     id: 'formula-lab',
@@ -173,9 +234,9 @@ const landingProjects: Project[] = [
     media: {
       kind: 'ui',
       shots: [
-        { src: '/projects/formula-lab/console.webp', label: 'LaTeX 控制台' },
-        { src: '/projects/formula-lab/timeline.webp', label: '识别任务时间线' },
-        { src: '/projects/formula-lab/workbench.webp', label: '论文工作区' },
+        projectShot('/projects/formula-lab/console.webp', 'LaTeX 控制台', 'Formula Lab LaTeX 公式识别控制台', 1600, 868),
+        projectShot('/projects/formula-lab/timeline.webp', '识别任务时间线', 'Formula Lab 异步识别任务时间线', 1600, 871),
+        projectShot('/projects/formula-lab/workbench.webp', '论文工作区', 'Formula Lab 论文审校与导出工作区', 1600, 875),
       ],
     },
   },
@@ -199,9 +260,17 @@ const landingProjects: Project[] = [
     media: {
       kind: 'data',
       shots: [
-        { src: '/projects/modeling-lab/tunnel.webp', label: '能源冲击 · 蒙特卡洛情景树' },
+        projectShot('/projects/modeling-lab/tunnel.webp', '能源冲击 · 蒙特卡洛情景树', '霍尔木兹封锁与油价冲击的蒙特卡洛情景结果', 1600, 850),
       ],
     },
+    metrics: [
+      {
+        label: '研究案例',
+        value: 4,
+        suffix: ' 项',
+        evidence: 'Modeling Lab 由能源冲击、沙漠决策、文物成分识别与农业风险规划四个独立案例组成。',
+      },
+    ],
     caseStudies: [
       {
         id: 'tunnel',
@@ -211,7 +280,7 @@ const landingProjects: Project[] = [
         summary: '解释短期价格平台，并用状态转移与尾部情景刻画 60—180 天的调节路径。',
         methods: ['Mechanism', 'Markov', 'Monte Carlo'],
         repository: 'https://github.com/Timcai06/26_MathModel_Tunnel',
-        shot: { src: '/projects/modeling-lab/tunnel.webp', label: '第 180 天价格分布与尾部突破概率' },
+        shot: projectShot('/projects/modeling-lab/tunnel.webp', '第 180 天价格分布与尾部突破概率', '霍尔木兹案例第 180 天价格分布与尾部概率图', 1600, 850),
       },
       {
         id: 'desert',
@@ -221,7 +290,7 @@ const landingProjects: Project[] = [
         summary: '把天气、负重、补给和多人策略放进统一决策过程，并审计候选策略的收益—失败风险前沿。',
         methods: ['MILP', 'MDP', 'Game Theory'],
         repository: 'https://github.com/Timcai06/26_MathModel_Desert',
-        shot: { src: '/projects/modeling-lab/desert.webp', label: '收益—失败风险前沿' },
+        shot: projectShot('/projects/modeling-lab/desert.webp', '收益—失败风险前沿', '穿越沙漠策略的收益与失败风险前沿图', 1800, 735),
       },
       {
         id: 'glass',
@@ -231,7 +300,7 @@ const landingProjects: Project[] = [
         summary: '在成分闭合约束下分析风化差异、类型分离与未知样本归类，避免直接对比例数据做失真的欧氏比较。',
         methods: ['CLR', 'Robust Clustering', 'Classification'],
         repository: 'https://github.com/Timcai06/26_MathModel_Glass',
-        shot: { src: '/projects/modeling-lab/glass.webp', label: '铅钡与高钾玻璃的成分分离' },
+        shot: projectShot('/projects/modeling-lab/glass.webp', '铅钡与高钾玻璃的成分分离', '古代玻璃案例中铅钡与高钾玻璃的成分分离图', 1224, 900),
       },
       {
         id: 'agriculture',
@@ -241,7 +310,7 @@ const landingProjects: Project[] = [
         summary: '在地块、轮作和销量约束下，从确定性排产扩展到可审计的样本外风险规划。',
         methods: ['MILP', 'SAA', 'CVaR'],
         repository: 'https://github.com/Timcai06/26_MathModel_Agriculture',
-        shot: { src: '/projects/modeling-lab/agriculture.webp', label: '统一决策骨架与三层证据链' },
+        shot: projectShot('/projects/modeling-lab/agriculture.webp', '统一决策骨架与三层证据链', '农业种植策略的统一决策骨架与三层证据链', 1800, 717),
       },
     ],
   },
@@ -265,13 +334,27 @@ const landingProjects: Project[] = [
     media: {
       kind: 'data',
       shots: [
-        { src: '/projects/sciscope/tui-product.webp', label: 'SciScope 科研智能体终端' },
-        { src: '/projects/sciscope/system-capability.webp', label: 'SciScope 系统能力地图' },
-        { src: '/projects/sciscope/data-asset-funnel.webp', label: 'Data-to-Agent 数据资产规模' },
-        { src: '/projects/sciscope/agent-trace.webp', label: '证据接地 Agent 执行轨迹' },
-        { src: '/projects/sciscope/claim-grounding.webp', label: '论断核查与证据接地流程' },
+        projectShot('/projects/sciscope/tui-product.webp', 'SciScope 科研智能体终端', 'SciScope 科研智能体的 Go TUI 产品界面', 1600, 1000),
+        projectShot('/projects/sciscope/system-capability.webp', 'SciScope 系统能力地图', 'SciScope 检索、趋势、推荐与论断核查能力地图', 1600, 1000),
+        projectShot('/projects/sciscope/data-asset-funnel.webp', 'Data-to-Agent 数据资产规模', 'SciScope 从论文到向量资产的数据漏斗', 1600, 1000),
+        projectShot('/projects/sciscope/agent-trace.webp', '证据接地 Agent 执行轨迹', 'SciScope Agent 的计划、工具、证据与反思执行轨迹', 1600, 1000),
+        projectShot('/projects/sciscope/claim-grounding.webp', '论断核查与证据接地流程', 'SciScope 中文论断跨语言接地英文证据的流程', 1600, 1000),
       ],
     },
+    metrics: [
+      {
+        label: '论文资产',
+        value: 159187,
+        suffix: ' 篇',
+        evidence: '现有项目介绍记录本地运行时覆盖 159,187 篇论文。',
+      },
+      {
+        label: '检索片段',
+        value: 367773,
+        suffix: ' 个',
+        evidence: '现有项目介绍记录本地运行时包含 367,773 个论文片段。',
+      },
+    ],
   },
 ]
 
@@ -295,14 +378,21 @@ const eduCanvasProject: Project = {
   media: {
     kind: 'ui',
     shots: [
-      { src: '/projects/educanvas/home.webp', label: 'EduCanvas 智能学习首页' },
-      { src: '/projects/educanvas/learning-response.webp', label: 'Agent 学习内容生成' },
-      { src: '/projects/educanvas/focus-mode.webp', label: '沉浸式学习提问界面' },
+      projectShot('/projects/educanvas/home.webp', 'EduCanvas 智能学习首页', 'EduCanvas 智能学习首页与 Agent 输入区', 1920, 1045),
+      projectShot('/projects/educanvas/learning-response.webp', 'Agent 学习内容生成', 'EduCanvas Agent 生成结构化学习内容的界面', 1920, 1046),
+      projectShot('/projects/educanvas/focus-mode.webp', '沉浸式学习提问界面', 'EduCanvas 沉浸式学习提问与回答界面', 1920, 1047),
     ],
   },
 }
 
-export type { MediaKind, ProjectCaseStudy, ProjectShot, Project }
+export type {
+  MediaKind,
+  Project,
+  ProjectCaseStudy,
+  ProjectDetailSection,
+  ProjectMetric,
+  ProjectShot,
+}
 
 export interface PortfolioProject extends Project {
   slug: string
