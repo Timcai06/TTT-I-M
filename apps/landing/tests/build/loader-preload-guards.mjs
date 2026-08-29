@@ -38,6 +38,7 @@ if (!existsSync(introPretextPath)) {
 }
 
 const introPretextSource = readFileSync(introPretextPath, 'utf8')
+const spinnerSource = readFileSync('src/lib/spinner.ts', 'utf8')
 
 if (!packageSource.includes('test:build:loader')) {
   throw new Error('test:build must run the loader preload guard.')
@@ -69,6 +70,16 @@ if (!loaderSource.includes('introReady && !done && !exiting')) {
 
 if (!loaderSource.includes('intro__stage')) {
   throw new Error('Loader must show a compact current preload stage while the full-site gate is active.')
+}
+
+for (const token of ['DOTS12', 'intro__spinner', 'visibilitychange', 'preload.renderReady']) {
+  if (!loaderSource.includes(token)) throw new Error(`Loader dots12 status is missing ${token}.`)
+}
+if (!spinnerSource.includes('interval: 80') || !spinnerSource.includes("'⢀⠀'") || !spinnerSource.includes("'⠀⡀'")) {
+  throw new Error('Loader must keep the complete local cli-spinners dots12 definition.')
+}
+if (packageJson.dependencies?.['cli-spinners'] || packageJson.dependencies?.ora) {
+  throw new Error('Landing must not add cli-spinners or ora to the browser bundle.')
 }
 
 if (!loaderSource.includes('intro__text-wrap--interactive')) {

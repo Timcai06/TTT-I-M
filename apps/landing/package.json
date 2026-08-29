@@ -21,7 +21,9 @@
     "test:build:effects": "node tests/build/experience-effects-guards.mjs",
     "test:unit": "node --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "test:e2e:gates": "playwright test tests/e2e/degradation.spec.ts tests/e2e/chrome-ui.spec.ts tests/e2e/hero-pretext.spec.ts tests/e2e/effects-context.spec.ts",
+    "test:e2e:gates": "playwright test --project=chromium-desktop tests/e2e/degradation.spec.ts tests/e2e/chrome-ui.spec.ts tests/e2e/hero-pretext.spec.ts tests/e2e/effects-context.spec.ts tests/e2e/accessibility.spec.ts tests/e2e/canvas-ui-effects.spec.ts",
+    "test:e2e:canvas-experimental": "HTML_CANVAS_EXPERIMENTAL=1 playwright test --project=chromium-desktop tests/e2e/canvas-ui-experimental.spec.ts",
+    "test:e2e:cross-browser": "playwright test tests/e2e/award-readiness.spec.ts",
     "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
     "preview": "vite preview"
   },
@@ -45,6 +47,7 @@
     "three": "0.182.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/node": "^24.12.3",

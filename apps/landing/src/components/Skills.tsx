@@ -3,6 +3,32 @@ import { gsap, ScrollTrigger } from '../lib/gsap'
 import { skillRows as rows } from '../content'
 import { useSkillsFlowLine } from './skills/useSkillsFlowLine'
 import SkillRowItem from './skills/SkillRowItem'
+import LogoLoop from './LogoLoop'
+import type { LogoItem } from './LogoLoop'
+
+const workingSet = [
+  ['01', 'React', 'Interface'],
+  ['02', 'TypeScript', 'Language'],
+  ['03', 'GSAP', 'Motion'],
+  ['04', 'Three.js', 'Graphics'],
+  ['05', 'Python', 'Systems'],
+  ['06', 'FastAPI', 'Backend'],
+  ['07', 'PostgreSQL', 'Data'],
+  ['08', 'LangGraph', 'Agents'],
+  ['09', 'PyTorch', 'ML'],
+  ['10', 'Docker', 'Infra'],
+] satisfies ReadonlyArray<readonly [string, string, string]>
+
+const workingSetLogos: LogoItem[] = workingSet.map(([index, name, kind]) => ({
+  node: (
+    <span className="skills-working-set__mark">
+      <span className="skills-working-set__index">{index}</span>
+      <strong>{name}</strong>
+      <small>{kind}</small>
+    </span>
+  ),
+  title: `${name} — ${kind}`,
+}))
 
 /**
  * @description Skills 章节 —— 技术栈与工程交付能力矩阵（组合层）。
@@ -110,6 +136,25 @@ export default function Skills() {
         {rows.map((row) => (
           <SkillRowItem key={row.index} row={row} />
         ))}
+      </div>
+
+      <div className="skills-working-set">
+        <div className="skills-working-set__header">
+          <span>Working set · 当前工具链</span>
+          <small>Used across shipped systems / 2026</small>
+        </div>
+        <LogoLoop
+          className="skills-working-set__loop"
+          logos={workingSetLogos}
+          speed={38}
+          direction="left"
+          logoHeight={24}
+          gap={64}
+          hoverSpeed={8}
+          fadeOut
+          fadeOutColor="#000000"
+          ariaLabel="Tools used across shipped systems"
+        />
       </div>
     </section>
   )

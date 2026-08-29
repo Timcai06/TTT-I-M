@@ -1,6 +1,7 @@
 /* ── Projects ── */
 .projects {
   position: relative;
+  padding-top: 0;
   border-top: 1px solid var(--line);
 }
 
@@ -17,6 +18,110 @@
   background: #000;
 }
 
+.projects__intro {
+  position: relative;
+  min-height: 100svh;
+  padding: clamp(72px, 8vh, 96px) 0 clamp(88px, 10vh, 120px);
+}
+
+.projects__intro-sticky {
+  position: relative;
+  min-height: calc(100svh - clamp(176px, 24vh, 280px));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.projects__intro-content {
+  position: relative;
+  z-index: 2;
+}
+
+.projects__intro[data-handoff='active'] .projects__intro-content {
+  will-change: transform, clip-path, opacity;
+}
+
+.projects__laser {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: max(-60px, -5vw);
+  left: max(-60px, -5vw);
+  height: min(34svh, 320px);
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-50%);
+  transform-origin: 12% 50%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 76%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 76%, transparent 100%);
+}
+
+.projects__laser::after {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  right: 5%;
+  left: 5%;
+  height: 1px;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(216, 189, 134, 0.56) 16%, #fff4d6 50%, rgba(216, 189, 134, 0.56) 84%, transparent);
+  box-shadow: 0 0 7px rgba(255, 229, 177, 0.68), 0 0 24px rgba(216, 189, 134, 0.28);
+}
+
+.projects__laser canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.projects__laser > canvas:first-child {
+  position: relative;
+  z-index: 1;
+}
+
+.projects__laser-capture {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.projects__laser[data-mode='html-canvas'] [data-project-laser-capture] {
+  transform: none;
+  clip-path: none;
+  opacity: 1;
+}
+
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .projects__intro {
+    height: auto;
+    min-height: 0;
+    padding: 72px 0;
+  }
+
+  .projects__intro-sticky {
+    position: relative;
+    min-height: 0;
+    display: block;
+  }
+
+  .projects__intro-content {
+    transform: none;
+    clip-path: none;
+    opacity: 1;
+  }
+
+  .projects__laser { display: none; }
+}
+
 .projects__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
@@ -25,7 +130,7 @@
 }
 
 .projects__heading-wrap {
-  grid-column: 1 / -1;
+  grid-column: 1;
   width: 100%;
 }
 

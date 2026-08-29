@@ -1,0 +1,86 @@
+.logoloop {
+  --logoloop-gap: 32px;
+  --logoloop-logo-height: 28px;
+  --logoloop-fade-color: #000;
+
+  position: relative;
+  overflow: hidden;
+}
+
+.logoloop__track,
+.logoloop__list {
+  display: flex;
+  align-items: center;
+}
+
+.logoloop__track {
+  position: relative;
+  z-index: 0;
+  width: max-content;
+  will-change: transform;
+  user-select: none;
+}
+
+.logoloop__list {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.logoloop__item {
+  flex: none;
+  margin-right: var(--logoloop-gap);
+  font-size: var(--logoloop-logo-height);
+  line-height: 1;
+}
+
+.logoloop__node,
+.logoloop__link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.logoloop__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.logoloop--vertical .logoloop__track,
+.logoloop--vertical .logoloop__list {
+  flex-direction: column;
+  width: 100%;
+}
+
+.logoloop--vertical .logoloop__item {
+  margin-right: 0;
+  margin-bottom: var(--logoloop-gap);
+}
+
+.logoloop--fade::before,
+.logoloop--fade::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: clamp(36px, 8vw, 150px);
+  pointer-events: none;
+  content: '';
+}
+
+.logoloop--fade::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--logoloop-fade-color), transparent);
+}
+
+.logoloop--fade::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--logoloop-fade-color), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logoloop__track {
+    transform: translate3d(0, 0, 0) !important;
+    will-change: auto;
+  }
+}

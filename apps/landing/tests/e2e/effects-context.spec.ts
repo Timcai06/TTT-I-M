@@ -75,11 +75,19 @@ test('SciScope opens as one uninterrupted film with its original sound', async (
 
   const film = page.locator('.sciscope-film')
   await film.scrollIntoViewIfNeeded()
-  await expect(film).toHaveAttribute('data-mode', 'entrance')
-  await expect(film.locator('.sciscope-film__entrance')).toBeVisible()
+  await expect(film).toHaveAttribute('data-mode', 'scroll-expand')
+  await expect(film.locator('.sciscope-film__expand')).toBeVisible()
   await expect(film.locator('.sciscope-film__story, .sciscope-film__evidence, .sciscope-film__score')).toHaveCount(0)
 
-  await film.locator('.sciscope-film__entrance').click()
+  const expandedScroll = await film.locator('.scroll-expand__track').evaluate((track) => {
+    const top = track.getBoundingClientRect().top + window.scrollY
+    return top + window.innerHeight * 0.9
+  })
+  await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), expandedScroll)
+  await expect(film.locator('.scroll-expand__overlay')).toHaveCSS('opacity', '1')
+  const playButton = film.frameLocator('.sciscope-film__liquid-play .liquid-metal-button__frame').locator('#btn')
+  await expect(playButton).toHaveAttribute('aria-label', 'PLAY ORIGINAL CUT')
+  await playButton.click()
   const modal = page.locator('.sciscope-film__dialog')
   const video = modal.locator('video')
   await expect(modal).toBeVisible()
@@ -112,7 +120,7 @@ test('SciScope opens as one uninterrupted film with its original sound', async (
   await modal.getByRole('button', { name: 'Close concept film' }).click()
   await expect(modal).not.toBeVisible()
   await expect(film).toHaveAttribute('data-state', 'ready')
-  await expect(film.locator('.sciscope-film__entrance')).toBeFocused()
+  await expect(film.locator('.sciscope-film__liquid-play .liquid-metal-button__frame')).toBeFocused()
 })
 
 test('desktop life archive uses seven equal-width columns with varied photographs', async ({ page }) => {
@@ -272,7 +280,7 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
   await expect(transition.locator('.work-transition__product')).toHaveCount(0)
 })
 
-test('desktop stack-to-work narrative stops at the CTA until the metal button is activated', async ({ page }) => {
+test('desktop stack-to-work holds its final frame until the metal CTA releases Work', async ({ page }) => {
   await waitForLive(page)
   const transition = page.locator('#work-transition')
   const target = await transition.evaluate((section) => {
@@ -308,22 +316,28 @@ test('desktop stack-to-work narrative stops at the CTA until the metal button is
     cursorBounds!.y + cursorBounds!.height / 2 - (metalBounds!.y + metalBounds!.height / 2),
   )).toBeLessThan(8)
 
-  const lockedAt = await page.evaluate(() => window.scrollY)
+  const beforeForwardScroll = await page.evaluate(() => window.scrollY)
   await page.mouse.wheel(0, 1400)
-  await page.waitForTimeout(250)
-  expect(Math.abs((await page.evaluate(() => window.scrollY)) - lockedAt)).toBeLessThan(4)
-
-  await page.mouse.wheel(0, -520)
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(lockedAt - 80)
-  await expect(transition).toHaveAttribute('data-gate', 'open')
-
-  await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), target)
+  await page.waitForTimeout(450)
+  expect(Math.abs(await page.evaluate(() => window.scrollY) - beforeForwardScroll)).toBeLessThan(36)
   await expect(transition).toHaveAttribute('data-gate', 'locked')
 
   await metalButton.click()
   await expect(transition).toHaveAttribute('data-gate', 'open')
+  await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-active', 'true')
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#projects')
   await expect.poll(() => page.locator('#projects').evaluate((section) => Math.abs(section.getBoundingClientRect().top - 48))).toBeLessThan(12)
+  await expect(page.locator('#projects .projects__intro')).toHaveAttribute('data-handoff', 'settled')
+  await expect(page.locator('#projects .projects__laser canvas')).toHaveCount(0)
+
+  const rewindTarget = await transition.evaluate((section) => {
+    const rect = section.getBoundingClientRect()
+    return rect.top + scrollY + (rect.height - innerHeight) * 0.9
+  })
+  await page.evaluate((scrollTop) => scrollTo({ top: scrollTop, behavior: 'auto' }), rewindTarget)
+  await expect(transition).toHaveAttribute('data-gate', 'open')
+  await page.evaluate((scrollTop) => scrollTo({ top: scrollTop, behavior: 'auto' }), target)
+  await expect(transition).toHaveAttribute('data-gate', 'locked')
 })
 
 test('archive cursor remains interactive during a Lenis scroll burst', async ({ page }) => {

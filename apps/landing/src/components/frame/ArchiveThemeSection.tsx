@@ -5,6 +5,8 @@ import { ArchiveClusterMarker, ArchiveThemeMarker } from './ArchiveMarkers'
 import ArchiveRail from './ArchiveRail'
 import GradualBlur from '../GradualBlur'
 import useArchiveThemeScroll from './useArchiveThemeScroll'
+import HorizontalBendSurface from './HorizontalBendSurface'
+import type { HorizontalBendHandle } from '../../lib/canvas-ui/horizontalBend'
 
 /**
  * @description Frame 视觉档案的单个主题段落容器，负责把主题 marker、cluster marker 和图片 panel 串成一条横向叙事轨道
@@ -15,7 +17,9 @@ import useArchiveThemeScroll from './useArchiveThemeScroll'
 export default function ArchiveThemeSection({ theme, themeIndex }: { theme: ArchiveTheme; themeIndex: number }) {
   const section = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
-  const active = useArchiveThemeScroll({ section, theme, track })
+  const pin = useRef<HTMLDivElement>(null)
+  const bendHandle = useRef<HorizontalBendHandle | null>(null)
+  const active = useArchiveThemeScroll({ section, theme, track, bendHandle })
   const themeWord = theme.id.toUpperCase()
 
   return (
@@ -27,7 +31,7 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
       data-theme-word={themeWord}
       ref={section}
     >
-      <div className="archive-theme-section__pin">
+      <div className="archive-theme-section__pin" ref={pin}>
         <ArchiveRail active={active} theme={theme} themeIndex={themeIndex} />
 
         {/* Cinematic edge dissolve: the horizontal track's left/right margins fade
@@ -68,6 +72,7 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
             </Fragment>
           ))}
         </div>
+        <HorizontalBendSurface capture={track} viewport={pin} handleRef={bendHandle} />
       </div>
     </section>
   )

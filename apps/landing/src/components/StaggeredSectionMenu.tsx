@@ -32,6 +32,7 @@ export default function StaggeredSectionMenu({
   const panelRef = useRef<HTMLElement>(null)
   const layerRefs = useRef<HTMLDivElement[]>([])
   const openRef = useRef(open)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
 
   const setLayerRef = useCallback((node: HTMLDivElement | null) => {
     if (!node) return
@@ -99,9 +100,58 @@ export default function StaggeredSectionMenu({
   }, [open])
 
   useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+
+    root.inert = !open
+    let focusFrame = 0
+
+    if (open) {
+      const activeElement = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+      const controller = root.id
+        ? document.querySelector<HTMLElement>(`[aria-controls="${root.id}"]`)
+        : null
+      previousFocusRef.current = activeElement && activeElement !== document.body
+        ? activeElement
+        : controller
+      focusFrame = window.requestAnimationFrame(() => {
+        panelRef.current?.querySelector<HTMLButtonElement>('.staggered-section-menu__item')?.focus()
+      })
+    } else {
+      previousFocusRef.current?.focus()
+    }
+
+    return () => window.cancelAnimationFrame(focusFrame)
+  }, [open])
+
+  useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const root = rootRef.current
+      if (!root) return
+      const focusable = Array.from(root.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => element.getClientRects().length > 0)
+      if (focusable.length === 0) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -132,7 +182,13 @@ export default function StaggeredSectionMenu({
           />
         ))}
       </div>
-      <aside className="staggered-section-menu__panel" ref={panelRef} aria-label="Section map">
+      <aside
+        className="staggered-section-menu__panel"
+        ref={panelRef}
+        aria-label="Section map"
+        aria-modal="true"
+        role="dialog"
+      >
         <div className="staggered-section-menu__kicker">Section Map</div>
         <div className="staggered-section-menu__list" role="list">
           {items.map((item) => (

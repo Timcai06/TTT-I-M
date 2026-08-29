@@ -12,6 +12,8 @@ export interface GLSurfaceOptions {
   renderMargin?: string
   /** 挂载卸载 observer 的 rootMargin，默认上下一个 viewport，离开该范围后可卸载 Canvas */
   mountMargin?: string
+  /** Optional/deferred surfaces can start unmounted until their observer resolves. */
+  initiallyMounted?: boolean
 }
 
 export interface GLSurface {
@@ -36,10 +38,11 @@ export interface GLSurface {
 export function useGLSurface({
   renderMargin = '120px',
   mountMargin = '100% 0px',
+  initiallyMounted = true,
 }: GLSurfaceOptions = {}): GLSurface {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(true)
-  const [mounted, setMounted] = useState(true)
+  const [mounted, setMounted] = useState(initiallyMounted)
 
   useEffect(() => {
     const el = ref.current
@@ -55,7 +58,7 @@ export function useGLSurface({
     render.observe(el)
     mount.observe(el)
     return () => { render.disconnect(); mount.disconnect() }
-  }, [renderMargin, mountMargin])
+  }, [initiallyMounted, renderMargin, mountMargin])
 
   return { ref, visible, mounted }
 }

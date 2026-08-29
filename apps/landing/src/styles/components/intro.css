@@ -189,7 +189,7 @@
   left: clamp(20px, 4vw, 56px);
   bottom: clamp(24px, 4vw, 52px);
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-columns: auto auto auto minmax(0, 1fr);
   align-items: end;
   column-gap: 10px;
   width: min(560px, calc(100vw - clamp(40px, 8vw, 112px)));
@@ -228,6 +228,15 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(240, 240, 240, 0.34);
+}
+
+.intro__spinner {
+  align-self: center;
+  width: 2ch;
+  color: var(--accent-warm);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0;
+  white-space: pre;
 }
 
 /* ── Bottom hairline progress ── */

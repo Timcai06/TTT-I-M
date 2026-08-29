@@ -4,6 +4,7 @@ import { revealWordsOnce } from '../../lib/wordReveal'
 import { enqueueImageDecode } from '../../lib/resources/imageDecodeQueue'
 import type { ArchiveTheme } from '../../content'
 import type { ActiveArchiveState } from './ArchiveRail'
+import type { HorizontalBendHandle } from '../../lib/canvas-ui/horizontalBend'
 
 interface ArchiveThemeScrollOptions {
   /** 当前 theme section 根节点，用作 GSAP context、pin trigger 和图片预热查询范围 */
@@ -12,6 +13,8 @@ interface ArchiveThemeScrollOptions {
   theme: ArchiveTheme
   /** 横向移动的 track 节点，scrollWidth 决定 pin 期间需要横移的距离 */
   track: RefObject<HTMLDivElement | null>
+  /** Optional HTML-in-Canvas bend surface. DOM remains the fallback authority. */
+  bendHandle: RefObject<HorizontalBendHandle | null>
 }
 
 /**
@@ -29,6 +32,7 @@ export default function useArchiveThemeScroll({
   section,
   theme,
   track,
+  bendHandle,
 }: ArchiveThemeScrollOptions) {
   const activeClusterIndex = useRef(-1)
   const activeUpdateFrame = useRef(0)
@@ -46,7 +50,7 @@ export default function useArchiveThemeScroll({
      * @performance 每个 src 只预热一次；load 后再进 idle decode 队列，避免和首屏 critical decode 抢主线程
      */
     const warmClusterImages = (clusterIndex: number) => {
-      const clusters = Array.from(sectionEl.querySelectorAll<HTMLElement>('.archive-cluster'))
+      const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>(':scope > .archive-cluster'))
       const nearbyClusters = [clusters[clusterIndex], clusters[clusterIndex + 1]]
 
       nearbyClusters.forEach((clusterEl) => {
@@ -94,8 +98,8 @@ export default function useArchiveThemeScroll({
 
     const mm = gsap.matchMedia()
     const ctx = gsap.context(() => {
-      revealWordsOnce(sectionEl, '.archive-theme-marker__title', { trigger: sectionEl, start: 'top 76%' })
-      revealWordsOnce(sectionEl, '.archive-theme-marker__body', { trigger: sectionEl, start: 'top 72%' })
+      revealWordsOnce(trackEl, '.archive-theme-marker__title', { trigger: sectionEl, start: 'top 76%' })
+      revealWordsOnce(trackEl, '.archive-theme-marker__body', { trigger: sectionEl, start: 'top 72%' })
 
       // 巨型水印（::before 的 attr(data-theme-word)）随滚动从左到右被「擦亮」：
       // 这里只 scrub 一个 CSS 变量，clip-path/透明度的映射在 frame.css，
@@ -133,8 +137,18 @@ export default function useArchiveThemeScroll({
               toggleClass: { targets: sectionEl, className: 'is-frame-theme-active' },
               invalidateOnRefresh: true,
               anticipatePin: 1,
-              onUpdate: (self) => updateActiveCluster(self.progress),
-              onRefresh: (self) => updateActiveCluster(self.progress),
+              onUpdate: (self) => {
+                updateActiveCluster(self.progress)
+                bendHandle.current?.setScrollState({
+                  progress: self.progress,
+                  distance: scrollDistance(),
+                  direction: theme.direction,
+                })
+              },
+              onRefresh: (self) => {
+                updateActiveCluster(self.progress)
+                bendHandle.current?.resize()
+              },
             },
           }
         )
@@ -155,7 +169,7 @@ export default function useArchiveThemeScroll({
       mm.revert()
       ctx.revert()
     }
-  }, [section, theme, track])
+  }, [bendHandle, section, theme, track])
 
   return active
 }

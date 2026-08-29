@@ -10,6 +10,7 @@ import {
   introRiseStagger,
   stepDisplayedProgress,
 } from '../lib/loaderTiming'
+import { DOTS12, advanceLoaderSpinnerFrame, loaderSpinnerGlyph } from '../lib/spinner'
 
 // Lazy so the intro Dither shader (+ three) stays out of the eager index chunk;
 // the static `.intro` gradient is the fallback until it streams in.
@@ -61,14 +62,48 @@ export default function Loader() {
   const [done, setDone] = useState(false)
   const [exiting, setExiting] = useState(false)
   const [introReady, setIntroReady] = useState(false)
+  const [spinnerFrame, setSpinnerFrame] = useState(0)
   const preload = useWholeSitePreload()
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
   const renderPhase = preload.criticalReady ? '02 / ARCHIVE' : '01 / SYSTEM'
   const stageText = preload.renderReady ? 'render ready' : preload.label
+  const reducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const spinnerGlyph = loaderSpinnerGlyph({
+    frameIndex: spinnerFrame,
+    ready: preload.renderReady,
+    reducedMotion,
+  })
 
   useEffect(() => {
     preloadRef.current = preload
   }, [preload])
+
+  useEffect(() => {
+    if (preload.renderReady || reducedMotion) return
+    let interval = 0
+
+    const sync = () => {
+      window.clearInterval(interval)
+      interval = 0
+      if (document.hidden) return
+      interval = window.setInterval(() => {
+        setSpinnerFrame((current) => advanceLoaderSpinnerFrame({
+          index: current,
+          hidden: document.hidden,
+          ready: false,
+          reducedMotion: false,
+        }))
+      }, DOTS12.interval)
+    }
+
+    document.addEventListener('visibilitychange', sync)
+    sync()
+    return () => {
+      document.removeEventListener('visibilitychange', sync)
+      window.clearInterval(interval)
+    }
+  }, [preload.renderReady, reducedMotion])
 
   useEffect(() => {
     if (!panelRef.current) return
@@ -289,6 +324,7 @@ export default function Loader() {
       <div className="intro__counter">
         <span ref={countRef}>00</span>
         <span className="intro__counter-sep">/ 100</span>
+        <span className="intro__spinner" aria-hidden="true">{spinnerGlyph}</span>
         <span className="intro__stage">{stageText}</span>
       </div>
 

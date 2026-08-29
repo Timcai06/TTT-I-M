@@ -24,9 +24,21 @@ test('Staggered section map opens from the retained top nav and jumps to chapter
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
 
   await expect(page.locator('.nav__links')).toBeVisible()
-  await page.getByRole('button', { name: /open section menu/i }).click()
-  await expect(page.locator('.staggered-section-menu.is-open .staggered-section-menu__panel')).toBeVisible()
+  const menuButton = page.getByRole('button', { name: /open section menu/i })
+  await menuButton.click()
+  const menu = page.locator('.staggered-section-menu')
+  await expect(menu.locator('.staggered-section-menu__panel')).toBeVisible()
   await expect(page.locator('.staggered-section-menu__kicker')).toContainText('Section Map')
+  await expect(menu.locator('.staggered-section-menu__item').first()).toBeFocused()
+  expect(await menu.evaluate((node) => node.hasAttribute('inert'))).toBe(false)
+
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveAttribute('aria-hidden', 'true')
+  expect(await menu.evaluate((node) => node.hasAttribute('inert'))).toBe(true)
+  await expect(menuButton).toBeFocused()
+
+  await menuButton.click()
+  await expect(menu.locator('.staggered-section-menu__item').first()).toBeFocused()
 
   await page.locator('.staggered-section-menu__panel').getByRole('button', { name: /Frame/ }).click()
   await page.waitForFunction(() => window.location.hash === '#frame', null, { timeout: 15_000 })

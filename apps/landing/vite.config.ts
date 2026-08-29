@@ -34,26 +34,45 @@ export default defineConfig({
     }),
   ],
   build: {
+    // Three's upstream ESM core is one indivisible ~694 KB minified module.
+    // The build guard below enforces its materially relevant gzip ceiling
+    // (plus a total-JS ceiling), while this limit keeps Vite from reporting the
+    // already-audited raw-size warning after Fiber has been split away.
+    chunkSizeWarningLimit: 720,
     rollupOptions: {
       output: {
         // Split stable framework libs out of the app chunk so a content edit
         // doesn't bust their long-term cache. Precise `/pkg/` paths so we DON'T
-        // pull three.js / @react-three / react-reconciler eager — those stay in
-        // the lazy ParticlePortrait chunk where they already live.
-        manualChunks(id) {
-          if (
-            id.includes('/node_modules/react/') ||
-            id.includes('/node_modules/react-dom/') ||
-            id.includes('/node_modules/scheduler/')
-          ) {
-            return 'react-vendor'
-          }
-          if (id.includes('/node_modules/gsap/') || id.includes('/node_modules/@gsap/')) {
-            return 'gsap-vendor'
-          }
-          if (id.includes('/node_modules/three/') || id.includes('/node_modules/@react-three/')) {
-            return 'three-vendor'
-          }
+          // pull Three or React Three into the generic React cache layer; Hero's
+          // accepted ParticlePortrait preloads the two dedicated chunks below.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react-vendor',
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+              priority: 40,
+            },
+            {
+              name: 'gsap-vendor',
+              test: /node_modules[\\/](?:gsap|@gsap)[\\/]/,
+              priority: 40,
+            },
+            {
+              name: 'three-core',
+              test: /node_modules[\\/]three[\\/]/,
+              priority: 30,
+            },
+            {
+              name: 'react-three-fiber',
+              test: /node_modules[\\/]@react-three[\\/]fiber[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'react-three-vendor',
+              test: /node_modules[\\/]@react-three[\\/]/,
+              priority: 10,
+            },
+          ],
         },
       },
     },

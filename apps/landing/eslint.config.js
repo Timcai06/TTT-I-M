@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'test-results']),
+  globalIgnores(['dist', 'test-results', 'src/lib/canvas-ui/vendor/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

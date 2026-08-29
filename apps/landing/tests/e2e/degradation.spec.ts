@@ -85,6 +85,29 @@ test('a 404 frame image does not strand the loader (A1)', async ({ page }) => {
   await expect(page.locator('#hero')).toBeVisible()
 })
 
+test('a missing Liquid Metal source cannot trap the Work gate', async ({ page }) => {
+  await page.route('**/liquid-metal-button.html*', (route) => {
+    if (route.request().resourceType() === 'fetch') return route.abort()
+    return route.continue()
+  })
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await waitForLive(page)
+  const transition = page.locator('#work-transition')
+  const target = await transition.evaluate((section) => {
+    const rect = section.getBoundingClientRect()
+    return rect.top + scrollY + (rect.height - innerHeight) * 0.995
+  })
+  await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), target)
+
+  await expect(transition).toHaveAttribute('data-gate', 'locked')
+  const fallback = transition.locator('.liquid-metal-button__fallback')
+  await expect(fallback).toBeVisible()
+  await fallback.click()
+  await expect(transition).toHaveAttribute('data-gate', 'open')
+  await expect.poll(() => page.evaluate(() => location.hash)).toBe('#projects')
+})
+
 test('loader hands off after render-ready tasks without downloading every frame variant', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await waitForLive(page)

@@ -105,12 +105,21 @@ export function revealWordsOnce(scope: HTMLElement, selector: string, opts: Reve
  * reverted with the component.
  */
 export function revealWords(scope: HTMLElement, selector: string, opts: RevealOptions = {}) {
-  const noBlur = prefersReducedMotion() || window.matchMedia('(hover: none)').matches
+  const reducedMotion = prefersReducedMotion()
+  const noBlur = reducedMotion || window.matchMedia('(hover: none)').matches
 
   gsap.utils.toArray<HTMLElement>(scope.querySelectorAll(selector)).forEach((target) => {
     splitWords(target)
     const words = target.querySelectorAll<HTMLElement>('.word')
     if (!words.length) return
+
+    // Reduced motion is a static reading mode, not a paused animation frame.
+    // Leaving the scrub at its 0.12-opacity origin makes real copy unreadable
+    // and fails contrast even though the user explicitly opted out of motion.
+    if (reducedMotion) {
+      gsap.set(words, { opacity: 1, filter: 'none' })
+      return
+    }
 
     gsap.fromTo(
       words,

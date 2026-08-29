@@ -8,6 +8,10 @@ import { projects, type Project } from '../content'
 import BorderGlow from './BorderGlow'
 import MaskedHeading from './MaskedHeading'
 import SciScopeFilm from './SciScopeFilm'
+import ProjectLaser from './ProjectLaser'
+import type { LaserHandle } from '../lib/canvas-ui/laser'
+import { prefersReducedMotion } from '../lib/motion'
+import { consumePendingWorkHandoff, WORK_HANDOFF_EVENT } from '../lib/workHandoff'
 
 const projectHeadingSources = projects
   .map((project) => project.media?.shots[0]?.src)
@@ -319,12 +323,17 @@ function ProjectMedia({ project }: { project: Project }) {
  */
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
+  const laserHandle = useRef<LaserHandle | null>(null)
+  const [laserActive, setLaserActive] = useState(false)
 
   useEffect(() => {
     if (!root.current) return
     const ctx = gsap.context(() => {
+      const introContent = root.current?.querySelector<HTMLElement>(
+        '.projects__intro-sticky > .projects__intro-content',
+      )
       // Bento tiles cascade in once (per-tile delay lives in CSS via --tile-i).
-      const bento = root.current?.querySelector<HTMLElement>('.projects__bento')
+      const bento = introContent?.querySelector<HTMLElement>('.projects__bento')
       if (bento) {
         ScrollTrigger.create({
           trigger: bento,
@@ -358,14 +367,63 @@ export default function Projects() {
       .toArray<HTMLElement>(root.current.querySelectorAll('.media-frame'))
       .map((frame) => attachTilt(frame, { damp: 0.22 }))
 
+    const onWorkHandoff = () => {
+      if (!consumePendingWorkHandoff()) return
+      if (!prefersReducedMotion()) setLaserActive(true)
+    }
+    window.addEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
+    onWorkHandoff()
+
     return () => {
+      window.removeEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
       tiltDisposers.forEach((dispose) => dispose())
       ctx.revert()
     }
   }, [])
 
+  useGSAP(() => {
+    if (!laserActive) return
+    const intro = root.current?.querySelector<HTMLElement>('.projects__intro')
+    const content = root.current?.querySelector<HTMLElement>('.projects__intro-content')
+    const laser = root.current?.querySelector<HTMLElement>('.projects__laser')
+    if (!intro || !content || !laser) return
+
+    intro.dataset.handoff = 'active'
+    laserHandle.current?.setScrollActivity({ progress: 0.5, delta: 0.06 })
+    const settle = () => {
+      intro.dataset.handoff = 'settled'
+      setLaserActive(false)
+    }
+    const timeline = gsap.timeline()
+    timeline
+      .fromTo(
+        content,
+        { autoAlpha: 0.14, y: 58, clipPath: 'inset(49% 0 49% 0)' },
+        { autoAlpha: 1, y: 0, clipPath: 'inset(0% 0 0% 0)', duration: 1.08, ease: 'power3.out' },
+        0.08,
+      )
+      .fromTo(
+        laser,
+        { autoAlpha: 0, scaleX: 0.08, yPercent: 24 },
+        { autoAlpha: 0.86, scaleX: 1, yPercent: 0, duration: 0.32, ease: 'power3.out' },
+        0,
+      )
+      .to(laser, { autoAlpha: 0, yPercent: -22, duration: 0.52, ease: 'power2.in' }, 0.62)
+      .call(() => laserHandle.current?.setScrollActivity({ progress: 1, delta: 0 }), [], 0.82)
+      .call(settle, [], 1.45)
+
+    return () => {
+      timeline.kill()
+      intro.dataset.handoff = 'settled'
+    }
+  }, { scope: root, dependencies: [laserActive], revertOnUpdate: true })
+
   return (
     <section className="section projects container" id="projects" ref={root}>
+      <div className="projects__intro">
+        <div className="projects__intro-sticky">
+          <ProjectLaser active={laserActive} handleRef={laserHandle} />
+          <div className="projects__intro-content">
       <div className="projects__header">
         <div className="projects__heading-wrap">
           <div className="section__label">Work — 选作</div>
@@ -387,6 +445,9 @@ export default function Projects() {
       </div>
 
       <ProjectsBento />
+          </div>
+        </div>
+      </div>
 
       <div className="projects__list">
         {projects.map((p) => (

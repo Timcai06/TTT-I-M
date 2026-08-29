@@ -51,10 +51,6 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     colorScheme: 'dark',
     viewport: { width: 1440, height: 900 },
-    launchOptions: {
-      executablePath: findCachedChromiumExecutable(),
-      args: ['--disable-dev-shm-usage'],
-    },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -67,7 +63,28 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-desktop',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: findCachedChromiumExecutable(),
+          args: [
+            '--disable-dev-shm-usage',
+            ...(process.env.HTML_CANVAS_EXPERIMENTAL === '1'
+              ? ['--enable-features=CanvasDrawElement', '--enable-blink-features=CanvasDrawElement']
+              : []),
+          ],
+        },
+      },
+    },
+    {
+      name: 'webkit-desktop',
+      testMatch: /award-readiness\.spec\.ts/,
+      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } },
+    },
+    {
+      name: 'firefox-desktop',
+      testMatch: /award-readiness\.spec\.ts/,
+      use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 900 } },
     },
   ],
 })

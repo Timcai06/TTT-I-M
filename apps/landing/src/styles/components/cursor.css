@@ -65,6 +65,11 @@
   mix-blend-mode: normal;
 }
 
+.cursor.is-over-footer {
+  z-index: 10004;
+  mix-blend-mode: multiply;
+}
+
 .cursor.is-scanning::before {
   border-radius: 0;
   background: var(--accent-warm, #ea412d);

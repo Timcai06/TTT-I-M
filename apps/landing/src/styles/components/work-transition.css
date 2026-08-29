@@ -171,7 +171,7 @@
   position: absolute;
   bottom: 10px;
   left: 50%;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(244, 241, 232, 0.64);
   font: 500 8px/1 var(--font-mono);
   letter-spacing: 0.16em;
   transform: translateX(-50%);
@@ -179,7 +179,7 @@
 }
 
 .work-transition[data-gate='locked'] .work-transition__gate-hint {
-  color: rgba(244, 241, 232, 0.72);
+  color: rgba(244, 241, 232, 0.86);
 }
 
 @media (max-width: 768px) {

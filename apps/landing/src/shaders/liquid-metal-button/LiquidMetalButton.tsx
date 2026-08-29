@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import liquidMetalButtonSource from "./liquid-metal-button.html?raw";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { preloadLiquidMetalButtonSource } from "./liquidMetalSource";
 
 export type LiquidMetalButtonVariant = "pill" | "circle" | "play";
 
@@ -111,12 +110,12 @@ const CIRCLE_RUNTIME_STYLE = `
   }
 </style>`;
 
-function sourceForVariant(variant: Exclude<LiquidMetalButtonVariant, "play">) {
+function sourceForVariant(source: string, variant: Exclude<LiquidMetalButtonVariant, "play">) {
   if (variant === "pill") {
-    return injectBridge(liquidMetalButtonSource);
+    return injectBridge(source);
   }
 
-  return injectBridge(liquidMetalButtonSource
+  return injectBridge(source
     .replace("</head>", `${CIRCLE_RUNTIME_STYLE}\n</head>`)
     .replace("<body>", '<body data-shape="circle">')
     .replace(
@@ -125,7 +124,8 @@ function sourceForVariant(variant: Exclude<LiquidMetalButtonVariant, "play">) {
     ));
 }
 
-const liquidMetalPlayButtonSource = injectBridge(liquidMetalButtonSource
+function sourceForPlayVariant(source: string) {
+  return injectBridge(source
   .replace(
     "--bw: calc(1407 * var(--u));",
     "--bw: var(--h);",
@@ -193,6 +193,7 @@ window.addEventListener('message', event => {
   drawn = null;
 });`,
   ));
+}
 
 function clamp(value: number, min: number, max: number, fallback: number) {
   return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
@@ -223,6 +224,8 @@ export function LiquidMetalButton({
   const intersectsRef = useRef(true);
   const [mounted, setMounted] = useState(true);
   const [ready, setReady] = useState(false);
+  const [source, setSource] = useState<string | null>(null);
+  const [sourceFailed, setSourceFailed] = useState(false);
   const safeVariant: LiquidMetalButtonVariant =
     variant === "circle" || variant === "play" ? variant : "pill";
   const isPlayButton = safeVariant === "play";
@@ -231,20 +234,37 @@ export function LiquidMetalButton({
   const pillWidthUnits = safeVariant === "pill"
     ? Math.min(3000, Math.max(1407, 820 + safeText.length * 94))
     : undefined;
-  const source = useMemo(() => {
-    const variantSource = isPlayButton ? liquidMetalPlayButtonSource : sourceForVariant(safeVariant);
-    if (safeVariant !== "pill") return variantSource;
-    return variantSource.replace(
-      '<span class="lbl">Sign up</span>',
-      `<span class="lbl">${escapeHtml(safeText)}</span>`,
-    );
-  }, [isPlayButton, safeText, safeVariant]);
   const playConfig = {
     diameter: clamp(diameter, 72, 160, 88),
     strokeWidth: clamp(strokeWidth, 1, 8, 3),
     rendering,
     text: safeText,
   } as const;
+
+  useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+    setSource(null);
+    setSourceFailed(false);
+    preloadLiquidMetalButtonSource().then((baseSource) => {
+      if (cancelled) return;
+      const variantSource = isPlayButton
+        ? sourceForPlayVariant(baseSource)
+        : sourceForVariant(baseSource, safeVariant);
+      setSource(safeVariant === "pill"
+        ? variantSource.replace(
+          '<span class="lbl">Sign up</span>',
+          `<span class="lbl">${escapeHtml(safeText)}</span>`,
+        )
+        : variantSource);
+    }).catch(() => {
+      if (!cancelled) {
+        setSource(null);
+        setSourceFailed(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isPlayButton, safeText, safeVariant]);
 
   const syncButtonConfig = useCallback(() => {
     frameRef.current?.contentWindow?.postMessage({
@@ -347,11 +367,20 @@ export function LiquidMetalButton({
     <div
       ref={hostRef}
       className={`liquid-metal-button${className ? ` ${className}` : ""}`}
-      data-state={!mounted ? "paused" : ready ? "ready" : "loading"}
+      data-state={!mounted ? "paused" : sourceFailed ? "fallback" : ready ? "ready" : "loading"}
       data-variant={safeVariant}
       data-cursor-label={cursorLabel}
     >
-      {mounted ? (
+      {mounted && sourceFailed ? (
+        <button
+          type="button"
+          className="liquid-metal-button__fallback"
+          aria-label={safeText}
+          onClick={onClick}
+        >
+          {safeText}
+        </button>
+      ) : mounted && source ? (
         <iframe
           key={safeVariant}
           ref={frameRef}

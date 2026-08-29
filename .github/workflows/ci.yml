@@ -97,7 +97,29 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit firefox
         working-directory: apps/landing
       - run: npm run test:e2e:gates
+        working-directory: apps/landing
+      - run: npm run test:e2e:cross-browser
+        working-directory: apps/landing
+
+  # Chromium's HTML-in-Canvas API is still experimental, so keep its proof in
+  # a separate blocking lane. Stable-browser fallback remains covered above;
+  # this lane verifies that the enhanced Bend/Laser path also renders and that
+  # a lost WebGL context restores the DOM fallback instead of leaking budget.
+  e2e-canvas-experimental:
+    runs-on: ubuntu-latest
+    env:
+      HTML_CANVAS_EXPERIMENTAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/landing
+      - run: npm run test:e2e:canvas-experimental
         working-directory: apps/landing

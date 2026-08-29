@@ -4,7 +4,9 @@ import { gsap, useGSAP } from '../lib/gsap'
 import { getLenis } from '../lib/lenis'
 import { useReducedMotion } from '../lib/motion'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
+import { dispatchWorkHandoff } from '../lib/workHandoff'
 import { LiquidMetalButton } from '../shaders/liquid-metal-button/LiquidMetalButton'
+import { preloadLiquidMetalButtonSource } from '../shaders/liquid-metal-button/liquidMetalSource'
 import { SparkBadge } from '../shaders/spark-badge/SparkBadge'
 import sparkBadgeUrl from '../shaders/spark-badge/spark-badge-portfolio.html?url'
 
@@ -44,7 +46,10 @@ export default function WorkTransition() {
   const ctaMountedRef = useRef(false)
   const gateLockedRef = useRef(false)
   const gateReleasedRef = useRef(false)
+  const gateBypassRef = useRef(false)
   const gateScrollRef = useRef(0)
+  const metalSourceRequestedRef = useRef(false)
+  const observedHashRef = useRef('')
   const timelineRef = useRef<ReturnType<typeof gsap.timeline> | null>(null)
   const [ctaMounted, setCtaMounted] = useState(false)
   const [gateLocked, setGateLocked] = useState(false)
@@ -60,10 +65,10 @@ export default function WorkTransition() {
 
     let lastControlPost = 0
     let focusFrame = 0
-    // ── 滚动门（有意设计）：在 progress 达到 WORK_GATE_PROGRESS 时锁定前进滚动，
-    // 强制用户点击「ENTER THE WORK」进入作品区 —— 这一段是 Stack→Work 的沉浸式叙事桥。
-    // 仅桌面（`!mobile`）启用；只在 gate 锁定期间拦截 wheel/keydown 的前进方向，
-    // 并提供可聚焦的进入按钮作为键盘/读屏用户的绕过路径。若非 gate 锁定会直接放行。 ──
+    observedHashRef.current = window.location.hash
+    gateBypassRef.current = observedHashRef.current === '#projects'
+      || observedHashRef.current === '#contact'
+
     const clampToGate = () => {
       const lenis = getLenis()
       if (lenis) lenis.scrollTo(gateScrollRef.current, { immediate: true, force: true })
@@ -109,7 +114,30 @@ export default function WorkTransition() {
         onUpdate: (self) => {
           postSparkControls(self.progress)
 
+          if (!metalSourceRequestedRef.current && self.progress > 0.82) {
+            metalSourceRequestedRef.current = true
+            void preloadLiquidMetalButtonSource().catch(() => {
+              metalSourceRequestedRef.current = false
+            })
+          }
+
+          const currentHash = window.location.hash
+          if (currentHash !== observedHashRef.current) {
+            observedHashRef.current = currentHash
+            gateBypassRef.current = currentHash === '#projects' || currentHash === '#contact'
+          }
+          if (self.direction < 0 && self.progress < 0.94) {
+            gateReleasedRef.current = false
+            gateBypassRef.current = false
+          }
+          const deliberateChapterJump = gateBypassRef.current
           if (
+            gateLockedRef.current
+            && deliberateChapterJump
+          ) {
+            gateLockedRef.current = false
+            setGateLocked(false)
+          } else if (
             gateLockedRef.current
             && self.direction < 0
             && self.progress < WORK_GATE_PROGRESS - 0.006
@@ -130,8 +158,6 @@ export default function WorkTransition() {
             setCtaMounted(shouldMountCta)
           }
 
-          const deliberateChapterJump = window.location.hash === '#projects'
-            || window.location.hash === '#contact'
           if (
             !mobile
             && !gateReleasedRef.current
@@ -140,8 +166,7 @@ export default function WorkTransition() {
             && self.direction > 0
             && self.progress >= WORK_GATE_PROGRESS
           ) {
-            const gateScroll = self.start + (self.end - self.start) * WORK_GATE_PROGRESS
-            gateScrollRef.current = gateScroll
+            gateScrollRef.current = self.start + (self.end - self.start) * WORK_GATE_PROGRESS
             gateLockedRef.current = true
             setGateLocked(true)
             clampToGate()
@@ -222,6 +247,7 @@ export default function WorkTransition() {
     setGateLocked(false)
     timelineRef.current?.scrollTrigger?.getTween(true)?.kill()
     timelineRef.current?.scrollTrigger?.getTween()?.kill()
+    dispatchWorkHandoff()
     window.history.replaceState(null, '', '#projects')
     const lenis = getLenis()
     if (lenis) {

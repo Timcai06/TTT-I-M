@@ -18,7 +18,7 @@ if (!indexChunk) {
 const indexSource = readFileSync(resolve(distDir, indexChunk), 'utf8')
 const htmlSource = readFileSync(indexHtml, 'utf8')
 
-const requiredHeroPreloads = ['three-vendor']
+const requiredHeroPreloads = ['three-core', 'react-three-fiber']
   .filter((needle) => !htmlSource.includes(needle))
 if (requiredHeroPreloads.length > 0) {
   throw new Error(`Hero WebGL assets are not preloaded from index.html: ${requiredHeroPreloads.join(', ')}`)
@@ -61,16 +61,31 @@ if (!pretextChunk) {
 // of silently regressing load. Raise a budget deliberately when a chunk grows
 // for a real reason.
 const PER_CHUNK_BUDGET_KB = {
-  'three-vendor': 260,
+  'three-core': 220,
+  'react-three-fiber': 60,
   'react-vendor': 72,
   'gsap-vendor': 66,
   'index': 41,
   'layout': 24,
+  'workHandoff': 5,
 }
 const TOTAL_JS_BUDGET_KB = 460
 
 const jsFiles = readdirSync(distDir).filter((file) => file.endsWith('.js'))
 const gzipKb = (file) => gzipSync(readFileSync(resolve(distDir, file))).length / 1024
+
+const liquidSourceAsset = readdirSync(distDir)
+  .find((file) => /^liquid-metal-button-.*\.html$/.test(file))
+if (!liquidSourceAsset) {
+  throw new Error('Liquid Metal source must be emitted as a static HTML asset.')
+}
+const liquidSourceEmbeddedInJs = jsFiles.some((file) => {
+  const source = readFileSync(resolve(distDir, file), 'utf8')
+  return source.includes('<!DOCTYPE html>') && source.includes('<title>Liquid Metal Button</title>')
+})
+if (liquidSourceEmbeddedInJs) {
+  throw new Error('Liquid Metal source regressed into the JavaScript graph instead of loading as an asset.')
+}
 
 const budgetFailures = []
 for (const [prefix, budget] of Object.entries(PER_CHUNK_BUDGET_KB)) {

@@ -4,6 +4,8 @@ const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
 const sectionSource = readFileSync('src/components/frame/ArchiveThemeSection.tsx', 'utf8')
 const hookSource = readFileSync('src/components/frame/useArchiveThemeScroll.ts', 'utf8')
 const slotSource = readFileSync('src/components/frame/ArchiveImageSlot.tsx', 'utf8')
+const bendSource = readFileSync('src/lib/canvas-ui/horizontalBend.ts', 'utf8')
+const bendMathSource = readFileSync('src/lib/canvas-ui/horizontalBendMath.ts', 'utf8')
 // frame.css was split into frame/*.css (archive-theme/cluster/slot/responsive);
 // concatenate the entry + all partials so these contract checks find the rules
 // regardless of which split file they landed in.
@@ -32,6 +34,18 @@ if (!sectionSource.includes('useArchiveThemeScroll')) {
 
 if (!hookSource.includes('warmClusterImages') || !hookSource.includes('scrollTrigger')) {
   throw new Error('useArchiveThemeScroll must own image warmup and ScrollTrigger orchestration.')
+}
+
+for (const token of ['HorizontalBendSurface', 'bendHandle']) {
+  if (!sectionSource.includes(token) && !hookSource.includes(token)) {
+    throw new Error(`Frame horizontal bend is missing ${token}.`)
+  }
+}
+for (const token of ['zone: 240', 'angle: 80', 'perspective: 700', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame']) {
+  if (!bendSource.includes(token)) throw new Error(`Horizontal Bend must keep ${token}.`)
+}
+for (const token of ['right-to-left', 'left-to-right', 'ease / distance', 'smoothstep(0, edgeSpan', 'smoothstep(1 - edgeSpan, 1']) {
+  if (!bendMathSource.includes(token)) throw new Error(`Horizontal Bend math must keep ${token}.`)
 }
 
 if (!slotSource.includes('className=') || !slotSource.includes('archive-slot__media')) {

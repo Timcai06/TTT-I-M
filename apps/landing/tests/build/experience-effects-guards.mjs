@@ -31,10 +31,16 @@ const life = read('src/components/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
 const projects = read('src/components/Projects.tsx')
+const projectLaser = read('src/components/ProjectLaser.tsx')
+const laserRuntime = read('src/lib/canvas-ui/laser.ts')
+const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
 const scrollExpand = read('src/components/ScrollExpand.tsx')
 const scrollExpandStyle = read('src/styles/components/scroll-expand.css')
 const footer = read('src/components/Footer.tsx')
+const footerLiquid = read('src/components/FooterLiquidCursor.tsx')
+const liquidRuntime = read('src/lib/canvas-ui/liquidField.ts')
+const liquidVendor = read('src/lib/canvas-ui/vendor/Liquid/LiquidVanilla.ts')
 const workTransition = read('src/components/WorkTransition.tsx')
 const workTransitionStyle = read('src/styles/components/work-transition.css')
 const liquidMetalButton = read('src/shaders/liquid-metal-button/LiquidMetalButton.tsx')
@@ -112,8 +118,11 @@ for (const copy of ['A stack is still', 'Connect the parts.', 'Six projects.', '
 if (/work-transition__edge/.test(workTransition) || /work-transition__edge/.test(workTransitionStyle)) {
   throw new Error('The retired Stack → Work edge gradients must not return.')
 }
-for (const needle of ['WORK_GATE_PROGRESS', 'preventForwardScroll', 'event.deltaY <= 0', "data-gate={gateLocked ? 'locked' : 'open'}", 'Click to continue']) {
-  if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its click-to-enter gate: ${needle}`)
+for (const needle of ['WORK_GATE_PROGRESS', "data-gate={gateLocked ? 'locked' : 'open'}", 'Click to continue', 'dispatchWorkHandoff', 'enterWork']) {
+  if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its deliberate Liquid Metal handoff: ${needle}`)
+}
+for (const gateToken of ['preventForwardScroll', 'preventForwardKey', 'gateLockedRef', 'event.deltaY <= 0']) {
+  if (!workTransition.includes(gateToken)) throw new Error(`WorkTransition must clamp forward input while preserving reverse travel: ${gateToken}`)
 }
 if (workTransition.includes('lenis.stop()')) {
   throw new Error('WorkTransition must not freeze reverse scrolling at its one-way project gate.')
@@ -124,6 +133,43 @@ if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
 
 if (!projects.includes("p.id === 'sciscope' && <SciScopeFilm />")) {
   throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
+}
+for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'laserActive']) {
+  if (!projects.includes(token)) throw new Error(`Projects laser intro is missing ${token}.`)
+}
+if (projects.includes('--laser-progress')) {
+  throw new Error('Project Laser must respond to the CTA handoff rather than becoming a persistent scroll overlay.')
+}
+for (const token of ['speed: 0.22', 'thickness: 3', 'reveal: 220', 'reactivity: 0.55', 'html-canvas', 'beam-fallback']) {
+  if (!laserRuntime.includes(token) && !projectLaser.includes(token)) {
+    throw new Error(`Project Laser must retain ${token}.`)
+  }
+}
+for (const token of ['drawElementImage', 'uRevealH', 'uShimmer', 'uSparkle', 'setScrollActivity']) {
+  if (!laserVendor.includes(token)) throw new Error(`Vendored Canvas UI Laser must retain ${token}.`)
+}
+for (const forbidden of ['WheelEvent', 'lenis.stop()', 'overflow: scroll']) {
+  if (projectLaser.includes(forbidden) || laserRuntime.includes(forbidden)) {
+    throw new Error(`Project Laser must not create a scroll gate: ${forbidden}`)
+  }
+}
+
+for (const token of ['FooterLiquidCursor', 'progress > 0.88', 'is-over-footer']) {
+  if (!footer.includes(token)) throw new Error(`Footer liquid cursor is missing ${token}.`)
+}
+for (const token of ['position: fixed', 'height: 100svh', 'pointer-events: none', 'mix-blend-mode: multiply']) {
+  if (!read('src/styles/components/footer.css').includes(token)) {
+    throw new Error(`Footer liquid layer must keep ${token}.`)
+  }
+}
+for (const token of ['force: 0.62', 'pressureIterations: 3', 'simResolution: 96', 'dyeResolution: 256', 'rainbow: false']) {
+  if (!liquidRuntime.includes(token)) throw new Error(`Footer liquid field must retain ${token}.`)
+}
+for (const token of ['FRAG_DIVERGENCE', 'FRAG_CURL', 'FRAG_VORTICITY', 'FRAG_PRESSURE', 'FRAG_GRADIENT', 'captureContent']) {
+  if (!liquidVendor.includes(token)) throw new Error(`Vendored Canvas UI Liquid must retain ${token}.`)
+}
+for (const token of ['canAcquireOptionalSurface', 'releaseContext', 'visibilitychange']) {
+  if (!footerLiquid.includes(token)) throw new Error(`Footer liquid lifecycle must retain ${token}.`)
 }
 for (const token of ['<ScrollExpand', 'useWindowScroll={!mobile}', 'enabled={!mobile && !reducedMotion}', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
   if (!sciScopeFilm.includes(token)) throw new Error(`SciScopeFilm entrance is missing ${token}.`)

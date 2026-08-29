@@ -4,6 +4,7 @@ import { transitionToChapter } from '../lib/chapterTransition'
 import { prefersReducedMotion } from '../lib/motion'
 import SignatureMark from './SignatureMark'
 import ASCIIText from './ASCIIText'
+import FooterLiquidCursor, { type FooterLiquidController } from './FooterLiquidCursor'
 
 /**
  * @description Contact/Footer 章节 —— 最后一屏的联系入口与站点收束。
@@ -20,7 +21,7 @@ import ASCIIText from './ASCIIText'
  *     由 footer 自身的 scroll-scrub 驱动，无独立 rAF / 无新增 ScrollTrigger。
  *   - `.footer` 默认纯白底兜底；只有 `is-iris-reveal`（animated）时转透明，让 iris 成为唯一的白色来源，
  *     避免旧版「白叠白」—— 揭示发生在上一章节的深色之上，高对比可见。
- *   - `.contact__blob-wrap` 是 fixed 满视口高层级揭示层，必须同时通过真实 footer rect 和 ScrollTrigger 进度门控；
+ *   - `.contact__blob-wrap` 与 Footer Liquid 都是 fixed 满视口层，必须同时通过真实 footer rect 和 ScrollTrigger 进度门控；
  *     否则 Frame/LifeGallery 的 pin 或图片 relayout 可能让 footer trigger 提前测量，导致白色穿到前面的章节。
  *   - `.contact__btn` 入场只改 opacity，不改 y；hover 保持轻量边框反馈，避免与 ASCIIText 争抢 GPU。
  *   - 时钟 30s 更新一次足够表达「本地时间」，避免每秒 setInterval 造成无意义 React/DOM 压力。
@@ -35,6 +36,7 @@ export default function Footer() {
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const clockRef = useRef<HTMLTimeElement>(null)
+  const liquidRef = useRef<FooterLiquidController | null>(null)
 
   useEffect(() => {
     if (!root.current || !svgRef.current || !wrapRef.current) return
@@ -125,6 +127,9 @@ export default function Footer() {
           renderIris()
         }
         gsap.set(wrapEl, { autoAlpha: isNearContact && progress > 0.001 ? 1 : 0 })
+        const liquidActive = animated && isNearContact && progress > 0.88
+        liquidRef.current?.setActive(liquidActive)
+        document.querySelector('.cursor')?.classList.toggle('is-over-footer', liquidActive)
       }
 
       const tl = gsap.timeline({
@@ -138,6 +143,8 @@ export default function Footer() {
           onUpdate: (self) => updateBlobVisibility(self.progress),
           onLeaveBack: () => {
             gsap.set(wrapEl, { autoAlpha: 0 })
+            liquidRef.current?.setActive(false)
+            document.querySelector('.cursor')?.classList.remove('is-over-footer')
           },
         },
       })
@@ -195,6 +202,7 @@ export default function Footer() {
       window.cancelAnimationFrame(directContactFrame)
       window.clearTimeout(directContactTimer)
       rootEl.classList.remove('is-iris-reveal')
+      document.querySelector('.cursor')?.classList.remove('is-over-footer')
       window.clearInterval(clockId)
       ctx.revert()
     }
@@ -227,6 +235,7 @@ export default function Footer() {
           <circle className="contact__iris-rim" data-iris-rim r="0" />
         </svg>
       </div>
+      <FooterLiquidCursor controllerRef={liquidRef} />
       <div className="container footer__content">
         <div className="footer__ascii" aria-hidden="true">
           <ASCIIText
