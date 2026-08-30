@@ -137,7 +137,18 @@ void main() {
   );
   vec4 base = texture(u_content, vec2(point.x, 1.0 - point.y));
   float coverage = alpha * base.a;
-  outColor = vec4(mix(vec3(0.0), base.rgb, coverage), 1.0);
+  float feather = 12.0 * u_pixel_x;
+  float leftMask = inLeft * (1.0 - smoothstep(u_zone - feather, u_zone, uv.x));
+  float rightMask = inRight * smoothstep(1.0 - u_zone, 1.0 - u_zone + feather, uv.x);
+  float leftActive = smoothstep(0.001, 0.04, u_left_amount);
+  float rightActive = smoothstep(0.001, 0.04, u_right_amount);
+  float edgeMask = max(leftMask * leftActive, rightMask * rightActive);
+  float outputAlpha = coverage * edgeMask;
+
+  // The real DOM rail remains visible and authoritative through the flat
+  // center. Canvas only replaces the folded edges, so an experimental capture
+  // stall can never freeze or blank the whole Frame chapter.
+  outColor = vec4(base.rgb * outputAlpha, outputAlpha);
 }`
 
 function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {

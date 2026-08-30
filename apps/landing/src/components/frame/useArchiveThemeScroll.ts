@@ -5,6 +5,7 @@ import { enqueueImageDecode } from '../../lib/resources/imageDecodeQueue'
 import type { ArchiveTheme } from '../../content'
 import type { ActiveArchiveState } from './ArchiveRail'
 import type { HorizontalBendHandle } from '../../lib/canvas-ui/horizontalBend'
+import { computeFrameScrollDuration } from './frameScrollMath'
 
 interface ArchiveThemeScrollOptions {
   /** 当前 theme section 根节点，用作 GSAP context、pin trigger 和图片预热查询范围 */
@@ -121,7 +122,7 @@ export default function useArchiveThemeScroll({
 
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
         const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)
-        const scrollEndDistance = () => Math.ceil(scrollDistance() + window.innerHeight * 0.8)
+        const scrollEndDistance = () => computeFrameScrollDuration(scrollDistance(), window.innerHeight)
         const tween = gsap.fromTo(
           trackEl,
           { x: () => (theme.direction === 'left-to-right' ? -scrollDistance() : 0) },

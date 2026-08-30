@@ -65,6 +65,23 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
   await page.screenshot({ path: 'test-results/frame-smoke.png', fullPage: false })
 })
 
+test('Frame first theme releases within a bounded wheel distance', async ({ page }) => {
+  await openHome(page)
+  await scrollToFrame(page)
+
+  const pinViewports = await page.locator('#frame-building').evaluate((section) => {
+    const spacer = section.parentElement
+    if (!spacer?.classList.contains('pin-spacer')) {
+      throw new Error('Frame building ScrollTrigger pin spacer is missing')
+    }
+    return spacer.offsetHeight / window.innerHeight
+  })
+
+  // One viewport is the visible section itself; the remaining budget is the
+  // compressed horizontal traversal plus a short exit breath.
+  expect(pinViewports).toBeLessThanOrEqual(7.5)
+})
+
 test('Frame themes show their final clusters before the next chapter takes over', async ({ page }) => {
   await openHome(page)
   await scrollToFrame(page)

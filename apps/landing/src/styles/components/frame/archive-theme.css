@@ -110,9 +110,8 @@
   display: none;
 }
 
-.archive-theme-section__pin:has(> .horizontal-bend.is-enhanced) > .archive-theme-section__track {
-  opacity: 0;
-}
+/* The DOM rail is always the visual and interaction authority. The enhanced
+   Canvas is transparent through the center and paints only the folded edges. */
 
 @media (max-width: 768px), (prefers-reduced-motion: reduce) {
   .horizontal-bend { display: none; }

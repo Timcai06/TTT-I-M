@@ -17,7 +17,39 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   const bend = page.locator('#frame-building [data-horizontal-bend]')
   await expect(bend).toHaveAttribute('data-horizontal-bend', 'active')
   await expect(page.locator('#frame-building .frame-edge-blur').first()).toBeHidden()
+  await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')).toHaveCSS('opacity', '1')
   await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
+
+  const bendCanvas = bend.locator('canvas').first()
+  const pinRange = await page.locator('#frame-building').evaluate((section) => {
+    const spacer = section.parentElement
+    const spacerRect = spacer?.getBoundingClientRect()
+    if (!spacer || !spacerRect) throw new Error('Frame building pin spacer is missing')
+    return {
+      start: spacerRect.top + window.scrollY,
+      distance: Math.max(window.innerHeight, spacer.offsetHeight - window.innerHeight),
+    }
+  })
+  const captureCenter = async () => {
+    const box = await bendCanvas.boundingBox()
+    if (!box) throw new Error('Frame Bend canvas has no visible bounds')
+    return page.screenshot({
+      clip: {
+        x: box.x + box.width * 0.38,
+        y: box.y + box.height * 0.18,
+        width: box.width * 0.24,
+        height: box.height * 0.64,
+      },
+    })
+  }
+
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), pinRange.start + pinRange.distance * 0.2)
+  await page.waitForTimeout(250)
+  const earlyCapture = await captureCenter()
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), pinRange.start + pinRange.distance * 0.7)
+  await page.waitForTimeout(250)
+  const lateCapture = await captureCenter()
+  expect(lateCapture.equals(earlyCapture), 'Bend canvas center must advance with the hidden DOM rail').toBe(false)
 
   await bend.locator('canvas').dispatchEvent('webglcontextlost')
   await expect(bend).toHaveAttribute('data-horizontal-bend', 'fallback')
