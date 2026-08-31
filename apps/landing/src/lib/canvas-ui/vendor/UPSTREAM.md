@@ -14,6 +14,10 @@ changes are deliberately limited to:
 - `LiquidVanilla.ts`: a `captureContent` switch so the Footer can render the
   complete fluid solver as a dye-only layer without distorting real Footer DOM,
   plus the same pause/resume lifecycle hooks.
+- `ParticleScrollVanilla.ts`: a page-progress method that changes only the
+  upstream content element's `scrollTop`, plus a first-capture callback and an
+  application DPR cap. Shaders, opaque composition, formation line, row texture,
+  point grid, stagger, drift, one-second intro and settle solver remain upstream.
 - `@ts-nocheck` headers because the application enables stricter indexed-access
   checks than the upstream build.
 

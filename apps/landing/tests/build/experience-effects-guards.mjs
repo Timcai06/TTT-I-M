@@ -8,10 +8,14 @@ const required = [
   'src/components/DriftWall.tsx',
   'src/components/AccordionGallery.tsx',
   'src/components/WorkTransition.tsx',
+  'src/components/frame/FrameParticleHandoff.tsx',
   'src/components/MaskedHeading.tsx',
   'src/components/ScrollExpand.tsx',
   'src/components/SciScopeFilm.tsx',
   'src/lib/sound/SoundProvider.tsx',
+  'src/lib/canvas-ui/particleScroll.ts',
+  'src/lib/canvas-ui/particleScrollConfig.ts',
+  'src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
   'src/shaders/liquid-metal-button/liquid-metal-button.html',
   'src/shaders/spark-badge/SparkBadge.tsx',
@@ -30,6 +34,13 @@ const app = read('src/App.tsx')
 const life = read('src/components/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
+const frameParticles = read('src/components/frame/FrameParticleHandoff.tsx')
+const frameParticleRuntime = [
+  'src/lib/canvas-ui/particleScroll.ts',
+  'src/lib/canvas-ui/particleScrollConfig.ts',
+].map(read).join('\n')
+const frameParticleVendor = read('src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts')
+const frameStyle = read('src/styles/components/frame.css')
 const projects = [
   'src/chapters/projects/Projects.tsx',
   'src/chapters/projects/ProjectsIntro.tsx',
@@ -38,6 +49,7 @@ const projects = [
 ].map(read).join('\n')
 const projectLaser = read('src/components/ProjectLaser.tsx')
 const laserRuntime = read('src/lib/canvas-ui/laser.ts')
+const laserConfig = read('src/lib/canvas-ui/laserConfig.ts')
 const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
 const scrollExpand = read('src/components/ScrollExpand.tsx')
@@ -120,7 +132,7 @@ for (const token of ['media="print"', 'bridge-ready', 'pointer-bridge', 'portfol
 if (workTransition.includes('cursorLabel=')) {
   throw new Error('The Liquid Metal CTA animation must carry focus without a competing cursor label.')
 }
-for (const copy of ['A stack is still', 'Connect the parts.', 'Six projects.', '哪里还没做完']) {
+for (const copy of ['A stack is still', 'Connect the parts.', 'Six projects.', '我在哪些地方停住']) {
   if (!workTransition.includes(copy)) throw new Error(`WorkTransition must keep its concrete humanized narrative: ${copy}`)
 }
 if (/work-transition__edge/.test(workTransition) || /work-transition__edge/.test(workTransitionStyle)) {
@@ -148,9 +160,14 @@ for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WO
 if (projects.includes('--laser-progress')) {
   throw new Error('Project Laser must respond to the CTA handoff rather than becoming a persistent scroll overlay.')
 }
-for (const token of ['speed: 0.22', 'thickness: 3', 'reveal: 220', 'reactivity: 0.55', 'html-canvas', 'beam-fallback']) {
-  if (!laserRuntime.includes(token) && !projectLaser.includes(token)) {
+for (const token of ['speed: 0.3', 'offset: 140', 'thickness: 6', 'width: 0.68', 'reveal: 400', 'shimmer: 12', 'reactivity: 1', 'html-canvas', 'beam-fallback']) {
+  if (!laserRuntime.includes(token) && !laserConfig.includes(token) && !projectLaser.includes(token)) {
     throw new Error(`Project Laser must retain ${token}.`)
+  }
+}
+for (const token of ['projects__intro-content', 'captureRef', 'lastPreview', 'endTrigger: lastPreview', 'bottom bottom-=', 'syncPortal', 'clipPath', 'progress >= 0.995', 'onLeave: finishPortal', 'onLeaveBack: finishPortal']) {
+  if (!projects.includes(token) && !projectLaser.includes(token)) {
+    throw new Error(`Project Laser redline handoff must retain ${token}.`)
   }
 }
 for (const token of ['drawElementImage', 'uRevealH', 'uShimmer', 'uSparkle', 'setScrollActivity']) {
@@ -159,6 +176,32 @@ for (const token of ['drawElementImage', 'uRevealH', 'uShimmer', 'uSparkle', 'se
 for (const forbidden of ['WheelEvent', 'lenis.stop()', 'overflow: scroll']) {
   if (projectLaser.includes(forbidden) || laserRuntime.includes(forbidden)) {
     throw new Error(`Project Laser must not create a scroll gate: ${forbidden}`)
+  }
+}
+
+for (const token of ['FrameParticleHandoff', "lazy(() => import('./frame/FrameParticleHandoff'))"]) {
+  if (!frame.includes(token)) throw new Error(`Frame → Stack particle handoff is missing ${token}.`)
+}
+for (const token of ['setScrollState', 'data-frame-particles', 'data-frame-particle-capture', 'markDrawableSubtree', 'canAcquireOptionalSurface', 'releaseContext', "start: 'top top'", "end: 'bottom bottom'"]) {
+  if (!frameParticles.includes(token)) throw new Error(`Frame Particle Scroll lifecycle must retain ${token}.`)
+}
+for (const token of ['point: 0.68', 'band: 420', 'density: 2', 'size: 1.25', 'spread: 220', 'gravity: 0.35', 'drift: 0.7', 'swirl: 60', 'settle: 1.2', 'smoothing: 0.6', 'canRenderFrameParticles']) {
+  if (!frameParticleRuntime.includes(token)) throw new Error(`Frame Particle Scroll adapter must retain ${token}.`)
+}
+for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
+  if (!frameParticleVendor.includes(token)) throw new Error(`Vendored Canvas UI Particle Scroll must retain ${token}.`)
+}
+for (const token of ['height: 230svh', 'position: sticky', '.frame-particle-document__contact', 'scrollbar-width: none', '@media (prefers-reduced-motion: reduce)']) {
+  if (!frameStyle.includes(token)) throw new Error(`Frame Particle Scroll fallback must retain ${token}.`)
+}
+for (const forbidden of ['externalProgress', '--particle-front', 'mask-image:', 'frame-particle-handoff__dust', 'frame-particle-handoff__signal']) {
+  if (frameParticleVendor.includes(forbidden) || frameParticles.includes(forbidden) || frameStyle.includes(forbidden)) {
+    throw new Error(`Frame Particle Scroll must not retain the rejected hybrid renderer: ${forbidden}`)
+  }
+}
+for (const forbidden of ['WheelEvent', 'KeyboardEvent', 'lenis.stop()', 'overflow: scroll']) {
+  if (frameParticles.includes(forbidden) || frameParticleRuntime.includes(forbidden)) {
+    throw new Error(`Frame Particle Scroll must remain native-scroll driven: ${forbidden}`)
   }
 }
 

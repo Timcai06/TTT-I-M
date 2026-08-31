@@ -174,8 +174,8 @@ export default function About() {
           <div className="section__label">About — 自述</div>
           <h2 className="about__lead">
             <span className="split-line"><span className="about__lead-line split-line__inner">上海大一在读，</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner">把训练、检索与数据证据</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner"><em>做成能被看见、被验证的</em></span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner">我把模型、数据和交互</span></span>
+            <span className="split-line"><span className="about__lead-line split-line__inner"><em>做成能运行、能复盘的</em></span></span>
             <span className="split-line"><span className="about__lead-line split-line__inner"><em>系统。</em></span></span>
           </h2>
 
@@ -183,11 +183,11 @@ export default function About() {
             {/* Block 1: Vision / Background (Large Serif, Left-aligned) */}
             <div className="about__block about__block--vision">
               <p>
-                今年大一，我把深度学习训练、科研检索、视觉算法和数学建模做成一些能真正运行、能复盘的系统。
-                <span className="highlight-text"> PulseGraph</span> 记录模型图、遥测、事件和推理证据；
-                <span className="highlight-text"> SciScope</span> 把近 16 万篇运行时文献接进混合检索、论断核查与可追溯回答。
-                我关心的不只是模型给了什么结果，更是
-                <span className="highlight-text font-italic">“证据从哪里来、运行中发生了什么、别人能否复现”</span>。
+                大一这一年，我没有只把模型跑通。
+                <span className="highlight-text"> PulseGraph</span> 把模型图、训练遥测和推理结果留在同一次运行里；
+                <span className="highlight-text"> SciScope</span> 把近 16 万篇论文接进检索与论断核查。
+                结果好不好是一件事，我更想知道：
+                <span className="highlight-text font-italic">“证据从哪来，运行时发生了什么，别人能不能复现”</span>。
               </p>
             </div>
 
@@ -213,18 +213,17 @@ export default function About() {
               </div>
               <span className="about__block-label">// TECHNICAL STACK</span>
               <p>
-                界面: React / Next.js / TypeScript / GSAP / R3F<br />
-                AI Runtime: PyTorch / FastAPI / LangGraph / DeepSeek / SSE<br />
-                Data & Systems: PostgreSQL / pgvector / Go / Python / Linux
+                界面：React / Next.js / TypeScript / GSAP / R3F<br />
+                AI Runtime：PyTorch / FastAPI / LangGraph / DeepSeek / SSE<br />
+                Data & Systems：PostgreSQL / pgvector / Go / Python / Linux
               </p>
             </div>
 
             {/* Block 3: Manifesto (Medium Serif, Indented Left, Accent Highlight) */}
             <div className="about__block about__block--manifesto">
               <p>
-                我不把“能跑”当作完成。
-                数据口径、运行证据、失败边界和
-                <span className="highlight-code"> reproduction commands</span>，都应该和界面一起交付。
+                “能跑”不是完成。数据口径、运行记录、失败边界和
+                <span className="highlight-code">复现命令</span>，应该跟界面一起交付。
               </p>
             </div>
           </div>
@@ -256,8 +255,8 @@ export default function About() {
             {/* Block 4: Philosophy moved underneath the portrait frame */}
             <div className="about__block about__block--philosophy">
               <p>
-                这个站也是一件系统作品 — GSAP + R3F + 自定义 GLSL，<br />
-                用同一条滚动叙事连接代码、证据、项目与生活切片。
+                这个站也不是一张静态简历。GSAP、R3F 和自定义 GLSL 串起代码、项目与证据，<br />
+                也留下一点我在镜头外的生活。
               </p>
             </div>
           </div>

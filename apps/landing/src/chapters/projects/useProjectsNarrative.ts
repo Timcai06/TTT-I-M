@@ -3,6 +3,7 @@ import { gsap, ScrollTrigger, useGSAP } from '../../lib/gsap'
 import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
 import { attachTilt } from '../../lib/tilt'
 import type { LaserHandle } from '../../lib/canvas-ui/laser'
+import { LASER_CONFIG } from '../../lib/canvas-ui/laserConfig.ts'
 import { prefersReducedMotion } from '../../lib/motion'
 import { consumePendingWorkHandoff, WORK_HANDOFF_EVENT } from '../../lib/workHandoff'
 
@@ -55,7 +56,8 @@ export function useProjectsNarrative(root: RefObject<HTMLElement | null>): Proje
 
     const onWorkHandoff = () => {
       if (!consumePendingWorkHandoff()) return
-      if (!prefersReducedMotion()) setLaserActive(true)
+      if (prefersReducedMotion()) return
+      setLaserActive(true)
     }
     window.addEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
     onWorkHandoff()
@@ -73,37 +75,79 @@ export function useProjectsNarrative(root: RefObject<HTMLElement | null>): Proje
     const intro = root.current?.querySelector<HTMLElement>('.projects__intro')
     const content = root.current?.querySelector<HTMLElement>('.projects__intro-content')
     const laser = root.current?.querySelector<HTMLElement>('.projects__laser')
-    if (!intro || !content || !laser) return
+    const lastPreview = root.current?.querySelector<HTMLElement>('.projects__bento .bento-glow:last-child')
+    if (!intro || !content || !laser || !lastPreview) return
 
     intro.dataset.handoff = 'active'
-    laserHandle.current?.setScrollActivity({ progress: 0.5, delta: 0.06 })
+    let lastScrollY = window.scrollY
+    let finishing = false
+    let finishTimeline: gsap.core.Timeline | null = null
+
     const settle = () => {
       intro.dataset.handoff = 'settled'
       setLaserActive(false)
     }
-    const timeline = gsap.timeline()
-      .fromTo(
-        content,
-        { autoAlpha: 0.14, y: 58, clipPath: 'inset(49% 0 49% 0)' },
-        { autoAlpha: 1, y: 0, clipPath: 'inset(0% 0 0% 0)', duration: 1.08, ease: 'power3.out' },
-        0.08,
-      )
-      .fromTo(
-        laser,
-        { autoAlpha: 0, scaleX: 0.08, yPercent: 24 },
-        { autoAlpha: 0.86, scaleX: 1, yPercent: 0, duration: 0.32, ease: 'power3.out' },
-        0,
-      )
-      .to(laser, { autoAlpha: 0, yPercent: -22, duration: 0.52, ease: 'power2.in' }, 0.62)
-      .call(() => laserHandle.current?.setScrollActivity({ progress: 1, delta: 0 }), [], 0.82)
-      .call(settle, [], 1.45)
+
+    const syncPortal = (progress = 0) => {
+      if (finishing) return
+      const rect = content.getBoundingClientRect()
+      const height = Math.max(rect.height, 1)
+      const beamY = window.innerHeight - LASER_CONFIG.offset
+      const revealed = Math.min(Math.max(beamY - rect.top, 0), height)
+      const clipped = Math.max(height - revealed, 0)
+      content.style.clipPath = `inset(0px 0px ${clipped}px 0px)`
+
+      const scrollY = window.scrollY
+      laserHandle.current?.setScrollActivity({
+        progress,
+        delta: scrollY - lastScrollY,
+      })
+      lastScrollY = scrollY
+
+      // Lenis can settle a fraction of a pixel before ScrollTrigger's exact
+      // end boundary. Treat the final half-percent as complete so the portal
+      // closes once the sixth preview has fully crossed the seam.
+      if (progress >= 0.995) finishPortal()
+    }
+
+    const finishPortal = () => {
+      if (finishing) return
+      finishing = true
+      finishTimeline = gsap.timeline({ onComplete: settle })
+        .to(content, {
+          clipPath: 'inset(0px 0px 0px 0px)',
+          duration: 0.42,
+          ease: 'power3.out',
+        })
+        .to(laser, { autoAlpha: 0, duration: 0.34, ease: 'power2.out' }, 0.1)
+        .call(() => laserHandle.current?.setScrollActivity({ progress: 1, delta: 0 }), [], 0.24)
+    }
+
+    gsap.set(content, { clipPath: 'inset(0px 0px 100% 0px)' })
+    gsap.fromTo(
+      laser,
+      { autoAlpha: 0 },
+      { autoAlpha: 0.96, duration: 0.22, ease: 'power2.out' },
+    )
+    syncPortal()
+
+    const portalTrigger = ScrollTrigger.create({
+      trigger: intro,
+      start: 'top 100%',
+      endTrigger: lastPreview,
+      end: () => `bottom bottom-=${LASER_CONFIG.offset}px`,
+      onUpdate: (self) => syncPortal(self.progress),
+      onLeave: finishPortal,
+      onLeaveBack: finishPortal,
+    })
 
     return () => {
-      timeline.kill()
+      portalTrigger.kill()
+      finishTimeline?.kill()
+      content.style.removeProperty('clip-path')
       intro.dataset.handoff = 'settled'
     }
   }, { scope: root, dependencies: [laserActive], revertOnUpdate: true })
 
   return { laserActive, laserHandle }
 }
-

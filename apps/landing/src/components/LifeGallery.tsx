@@ -35,8 +35,8 @@ export default function LifeGallery() {
           <span className="life__statement-mask"><span className="life__statement-line"><em>still looking</em> for movement and light.</span></span>
         </h2>
         <p className="life__note">
-          球场上的空当、城市里的光、以及和朋友并肩完成一件事的瞬间——
-          它们塑造了我观察系统与人的方式。
+          我喜欢球场上突然出现的空当，也会停下来拍城市里的一束光。
+          和朋友把一件事做完的那一刻，也值得留着。这些片段最后都会跑回我的界面里。
         </p>
       </div>
 

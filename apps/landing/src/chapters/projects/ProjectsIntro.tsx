@@ -1,4 +1,4 @@
-import type { RefObject } from 'react'
+import { useRef, type RefObject } from 'react'
 import { projects } from '../../content'
 import MaskedHeading from '../../components/MaskedHeading'
 import ProjectLaser from '../../components/ProjectLaser'
@@ -15,11 +15,13 @@ interface ProjectsIntroProps {
 }
 
 export default function ProjectsIntro({ laserActive, laserHandle }: ProjectsIntroProps) {
+  const portalContent = useRef<HTMLDivElement>(null)
+
   return (
     <div className="projects__intro">
       <div className="projects__intro-sticky">
-        <ProjectLaser active={laserActive} handleRef={laserHandle} />
-        <div className="projects__intro-content">
+        <ProjectLaser active={laserActive} handleRef={laserHandle} captureRef={portalContent} />
+        <div className="projects__intro-content" ref={portalContent} data-project-laser-target>
           <div className="projects__header">
             <div className="projects__heading-wrap">
               <div className="section__label">Work — 选作</div>
@@ -35,8 +37,8 @@ export default function ProjectsIntro({ laserActive, laserHandle }: ProjectsIntr
               />
             </div>
             <p className="projects__header-side">
-              项目不只按技术栈排列，也按证据链展开：输入、运行、结果、失败边界和复现方式，
-              都在对应的 GitHub 仓库里留下记录。
+              我不想把项目写成一张技术栈清单。每个仓库里都留着输入、运行结果、
+              踩过的坑和复现方法。
             </p>
           </div>
           <ProjectsBento />
@@ -45,4 +47,3 @@ export default function ProjectsIntro({ laserActive, laserHandle }: ProjectsIntr
     </div>
   )
 }
-

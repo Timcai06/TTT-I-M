@@ -38,38 +38,47 @@
 }
 
 .projects__intro[data-handoff='active'] .projects__intro-content {
-  will-change: transform, clip-path, opacity;
+  will-change: clip-path;
+}
+
+.projects__intro[data-handoff='active'] .projects__bento {
+  pointer-events: none;
 }
 
 .projects__laser {
-  position: absolute;
-  z-index: 3;
-  top: 50%;
-  right: max(-60px, -5vw);
-  left: max(-60px, -5vw);
-  height: min(34svh, 320px);
+  position: fixed;
+  z-index: 9;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
   overflow: hidden;
   visibility: hidden;
   opacity: 0;
-  transform: translateY(-50%);
-  transform-origin: 12% 50%;
   pointer-events: none;
   mix-blend-mode: screen;
-  mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 76%, transparent 100%);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 76%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 34%, #000 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 34%, #000 100%);
 }
 
 .projects__laser::after {
   position: absolute;
   z-index: 4;
-  top: 50%;
-  right: 5%;
-  left: 5%;
-  height: 1px;
+  right: 7vw;
+  bottom: var(--projects-laser-offset, 140px);
+  left: 7vw;
+  height: 3px;
   content: '';
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(216, 189, 134, 0.56) 16%, #fff4d6 50%, rgba(216, 189, 134, 0.56) 84%, transparent);
-  box-shadow: 0 0 7px rgba(255, 229, 177, 0.68), 0 0 24px rgba(216, 189, 134, 0.28);
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 28, 18, 0.82) 8%, #fff 50%, rgba(255, 28, 18, 0.82) 92%, transparent);
+  box-shadow:
+    0 0 8px rgba(255, 244, 240, 0.92),
+    0 0 22px rgba(255, 42, 24, 0.78),
+    0 0 52px rgba(255, 24, 14, 0.42);
+}
+
+.projects__laser[data-mode='unavailable']::after {
+  opacity: 1;
 }
 
 .projects__laser canvas {
@@ -153,44 +162,6 @@
   position: relative;
   margin-top: 72px;
   isolation: isolate;
-}
-
-/* 光束作为「洼地里倾泻而下的光源」存在：整层悬在 bento 网格上方，
-   底缘在触及第一排瓦片之前就被遮罩淡净，因此光绝不会从瓦片缝隙漏出
-   （那正是之前被读成「图片描边」的成因）。 */
-.projects__bento-laser {
-  position: absolute;
-  left: max(-60px, -5vw);
-  right: max(-60px, -5vw);
-  top: clamp(-440px, -33vw, -300px);
-  height: clamp(500px, 41vw, 560px);
-  z-index: 1;
-  overflow: hidden;
-  opacity: 0.92;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black 28%,
-    black 76%,
-    transparent 88%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black 28%,
-    black 76%,
-    transparent 88%
-  );
-}
-
-.projects__bento-laser::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 32%, rgba(207, 158, 255, 0.16), transparent 42%);
-  pointer-events: none;
 }
 
 .projects__bento {
@@ -324,10 +295,6 @@
 }
 
 @media (max-width: 900px) {
-  .projects__bento-laser {
-    display: none;
-  }
-
   .projects__bento {
     grid-template-columns: repeat(2, 1fr);
     grid-auto-rows: clamp(150px, 26vw, 210px);
@@ -482,4 +449,3 @@
     transition: none;
   }
 }
-

@@ -1,6 +1,5 @@
-import { useEffect, useRef, type RefObject } from 'react'
-import { createLaser, type LaserHandle } from '../lib/canvas-ui/laser'
-import { supportsHtmlInCanvas } from '../lib/canvas-ui/runtime'
+import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
+import { createLaser, LASER_CONFIG, type LaserHandle } from '../lib/canvas-ui/laser'
 import { isMobileExperience } from '../lib/device'
 import { prefersReducedMotion } from '../lib/motion'
 import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../lib/webgl/contextRegistry'
@@ -8,9 +7,11 @@ import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../li
 export default function ProjectLaser({
   active,
   handleRef,
+  captureRef,
 }: {
   active: boolean
   handleRef: RefObject<LaserHandle | null>
+  captureRef: RefObject<HTMLElement | null>
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const disabled = prefersReducedMotion() || isMobileExperience()
@@ -23,14 +24,14 @@ export default function ProjectLaser({
     if (!canvas) return
 
     acquireContext()
-    const capture = host.parentElement?.querySelector<HTMLElement>('.projects__intro-content')
+    const capture = captureRef.current
     const handle = createLaser(canvas, capture)
     if (!handle) {
       releaseContext()
       return
     }
     handleRef.current = handle
-    host.dataset.mode = supportsHtmlInCanvas() ? handle.mode : 'beam-fallback'
+    host.dataset.mode = handle.mode
     const resize = () => handle.resize()
     window.addEventListener('resize', resize)
     return () => {
@@ -39,12 +40,19 @@ export default function ProjectLaser({
       handle.destroy()
       releaseContext()
     }
-  }, [active, disabled, handleRef])
+  }, [active, captureRef, disabled, handleRef])
 
   if (disabled) return null
 
   return (
-    <div className="projects__laser" ref={ref} data-active={active ? 'true' : 'false'} data-mode="unavailable" aria-hidden="true">
+    <div
+      className="projects__laser"
+      ref={ref}
+      data-active={active ? 'true' : 'false'}
+      data-mode="unavailable"
+      aria-hidden="true"
+      style={{ '--projects-laser-offset': `${LASER_CONFIG.offset}px` } as CSSProperties}
+    >
       {active && <canvas />}
     </div>
   )

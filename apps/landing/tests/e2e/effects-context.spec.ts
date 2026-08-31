@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { LASER_CONFIG } from '../../src/lib/canvas-ui/laserConfig.ts'
 
 async function waitForLive(page: Page) {
   page.on('pageerror', (error) => {
@@ -41,7 +42,8 @@ test('project bento keeps its outer glow and restores blurred-to-clear focus', a
   await page.evaluate(() => window.history.replaceState(null, '', '#projects'))
   await page.locator('#projects').scrollIntoViewIfNeeded()
 
-  const firstCard = page.locator('.bento-glow').first().locator('.border-glow-card')
+  const firstGlow = page.locator('.bento-glow').first()
+  const firstCard = firstGlow.locator('.border-glow-card')
   await expect(firstCard).toBeVisible()
   const image = firstCard.locator('.bento-tile__img')
   const resting = await image.evaluate((node) => ({
@@ -66,6 +68,51 @@ test('project bento keeps its outer glow and restores blurred-to-clear focus', a
   expect(focused.filter).toContain('blur(0px)')
   expect(focused.transform).not.toBe(resting.transform)
   await expect(firstCard.locator('.pixelated-image-card')).toHaveCount(0)
+
+  await firstCard.click()
+  const projectId = await firstCard.evaluate((button) => {
+    const projects = button.closest('#projects')
+    const firstProject = projects?.querySelector<HTMLElement>('[data-project-id]')
+    return firstProject?.dataset.projectId ?? ''
+  })
+  expect(projectId).not.toBe('')
+  await expect(page.locator(`[data-project-id="${projectId}"]`)).toBeInViewport({ ratio: 0.25 })
+})
+
+test('Frame mirrors the complete Particle Scroll document without a nested scroll gate', async ({ page }) => {
+  await waitForLive(page)
+  const handoff = page.locator('.frame-particle-handoff')
+  await expect(handoff).toHaveAttribute('data-frame-particles', 'fallback')
+  await expect(handoff.locator('canvas')).toHaveCount(0)
+
+  const geometry = await handoff.evaluate((section) => ({
+    height: section.getBoundingClientRect().height,
+    viewport: window.innerHeight,
+    sticky: getComputedStyle(section.querySelector('.frame-particle-handoff__sticky')!).position,
+  }))
+  expect(geometry.height).toBeGreaterThan(geometry.viewport * 2.2)
+  expect(geometry.sticky).toBe('sticky')
+
+  const midpoint = await handoff.evaluate((section) => {
+    const rect = section.getBoundingClientRect()
+    return rect.top + window.scrollY + (rect.height - window.innerHeight) * 0.5
+  })
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), midpoint)
+  await page.waitForTimeout(250)
+  const state = await handoff.evaluate((section) => ({
+    progress: Number(getComputedStyle(section).getPropertyValue('--particle-progress')),
+    documentTransform: getComputedStyle(section.querySelector('.frame-particle-document')!).transform,
+    contactSheets: section.querySelectorAll('.frame-particle-document__contact figure').length,
+    rejectedHybridLayers: section.querySelectorAll('.frame-particle-handoff__dust, .frame-particle-handoff__signal').length,
+  }))
+  expect(state.progress).toBeGreaterThan(0.4)
+  expect(state.progress).toBeLessThan(0.6)
+  expect(state.documentTransform).not.toBe('none')
+  expect(state.contactSheets).toBe(4)
+  expect(state.rejectedHybridLayers).toBe(0)
+
+  await page.locator('#skills').scrollIntoViewIfNeeded()
+  await expect(page.locator('#skills')).toBeInViewport()
 })
 
 test('SciScope opens as one uninterrupted film with its original sound', async ({ page }) => {
@@ -327,6 +374,19 @@ test('desktop stack-to-work holds its final frame until the metal CTA releases W
   await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-active', 'true')
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#projects')
   await expect.poll(() => page.locator('#projects').evaluate((section) => Math.abs(section.getBoundingClientRect().top - 48))).toBeLessThan(12)
+
+  const previews = page.locator('#projects .projects__bento .bento-glow')
+  await expect(previews).toHaveCount(6)
+  await expect(page.locator('#projects .projects__intro')).toHaveAttribute('data-handoff', 'active')
+  // The CTA handoff uses Lenis' 1.15 s arrival tween. Let that ownership end
+  // before simulating the user's next scroll, otherwise the arrival tween can
+  // pull a programmatic scroll back to the top of Work.
+  await page.waitForTimeout(1_250)
+  const portalCrossingTarget = await previews.last().evaluate((preview, offset) => {
+    const rect = preview.getBoundingClientRect()
+    return window.scrollY + rect.bottom - (window.innerHeight - offset) + 24
+  }, LASER_CONFIG.offset)
+  await page.evaluate((scrollTop) => scrollTo({ top: scrollTop, behavior: 'auto' }), portalCrossingTarget)
   await expect(page.locator('#projects .projects__intro')).toHaveAttribute('data-handoff', 'settled')
   await expect(page.locator('#projects .projects__laser canvas')).toHaveCount(0)
 

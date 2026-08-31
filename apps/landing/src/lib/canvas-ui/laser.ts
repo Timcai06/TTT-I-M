@@ -4,6 +4,9 @@ import {
   type LaserInstance,
 } from './vendor/Laser/LaserVanilla'
 import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
+import { LASER_CONFIG } from './laserConfig.ts'
+
+export { LASER_CONFIG } from './laserConfig.ts'
 
 export interface LaserHandle extends EffectLifecycle {
   readonly mode: 'html-canvas' | 'beam-fallback'
@@ -12,24 +15,6 @@ export interface LaserHandle extends EffectLifecycle {
   resize(): void
   destroy(): void
 }
-
-export const LASER_CONFIG = {
-  speed: 0.22,
-  offset: 72,
-  thickness: 3,
-  core: 0.8,
-  radius: 14,
-  glow: 1.2,
-  wave: 3,
-  width: 0.72,
-  flicker: 0.12,
-  reveal: 220,
-  heat: 0.7,
-  shimmer: 3.5,
-  sparkle: 0.08,
-  reactivity: 0.55,
-  color: [0.85, 0.74, 0.53] as [number, number, number],
-} as const
 
 function cloneCapture(capture: HTMLElement): HTMLElement {
   const clone = capture.cloneNode(true) as HTMLElement
@@ -53,8 +38,8 @@ export function createLaser(canvas: HTMLCanvasElement, capture?: HTMLElement | n
   source.className = 'projects__laser-capture'
   source.setAttribute('layoutsubtree', '')
   // Only create a second, paintable DOM surface when the browser can actually
-  // consume it. Stable browsers render the complete beam over the real Bento
-  // and keep that real content as the measurement/interaction source.
+  // consume it. Stable browsers render the same red seam over the real title;
+  // the title animation and every interaction remain owned by the real DOM.
   const content = htmlCanvasMode && capture
     ? cloneCapture(capture)
     : capture ?? document.createElement('div')

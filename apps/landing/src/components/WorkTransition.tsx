@@ -312,7 +312,7 @@ export default function WorkTransition() {
             <div className="work-transition__phase-content">
               <span className="work-transition__index">02 / SEAMS</span>
               <h2><span>Connect the parts.</span><span>Then test <em>the seams.</em></span></h2>
-              <p>界面要解释一次运行，数据也得追得到来源。失败不能藏在漂亮的结果后面。这时，技术才开始像一个产品。</p>
+              <p>界面得讲清一次运行，数据也要追得到来源。漂亮结果不能替失败遮羞。到这里，技术栈才算长成产品。</p>
             </div>
           </div>
 
@@ -320,7 +320,7 @@ export default function WorkTransition() {
             <div className="work-transition__phase-content">
               <span className="work-transition__index">03 / WORK</span>
               <h2><span>Six projects.</span><span>See what <em>held.</em></span></h2>
-              <p>下面六个项目都留着输入与运行记录，失败边界也写在里面。你可以看它们做到了什么，也能看到哪里还没做完。</p>
+              <p>下面六个项目都留着输入、运行记录和没解决的问题。你会看到它们做成了什么，也会看到我在哪些地方停住。</p>
             </div>
           </div>
         </div>

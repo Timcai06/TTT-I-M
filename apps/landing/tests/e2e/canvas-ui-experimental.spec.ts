@@ -67,9 +67,53 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   await expect(page.locator('#projects .projects__laser canvas').first()).toBeAttached()
   await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-mode', 'html-canvas')
   await expect(page.locator('#projects [data-project-laser-capture]')).toHaveCount(1)
+  await expect(page.locator('#projects [data-project-laser-capture].projects__intro-content')).toHaveCount(1)
+  await expect(page.locator('#projects [data-project-laser-capture] .projects__bento')).toHaveCount(1)
   await expect(page.locator('#projects .projects__laser-capture')).toHaveAttribute('data-capture-state', 'ready')
   await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
   await expect(page.locator(
     '#projects .projects__intro-sticky > .projects__intro-content .projects__bento button',
   ).first()).toBeEnabled()
+
+  const lastPreview = page.locator('#projects .projects__bento .bento-glow').last()
+  const settleTarget = await lastPreview.evaluate((node) => {
+    const rect = node.getBoundingClientRect()
+    return rect.bottom + window.scrollY - window.innerHeight + 150
+  })
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), settleTarget)
+  await expect(page.locator('#projects .projects__laser canvas')).toHaveCount(0)
+})
+
+test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+
+  const handoff = page.locator('.frame-particle-handoff')
+  const midpoint = await handoff.evaluate((section) => {
+    const rect = section.getBoundingClientRect()
+    return rect.top + window.scrollY + (rect.height - window.innerHeight) * 0.5
+  })
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), midpoint)
+  await expect(handoff).toHaveAttribute('data-frame-particles', 'active')
+  await expect(handoff.locator('[data-frame-particle-capture]')).toHaveCount(1)
+  await expect(handoff.locator('canvas')).toHaveCount(2)
+  await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
+
+  const captureGeometry = await handoff.locator('[data-frame-particle-capture]').evaluate((content) => ({
+    clientHeight: content.clientHeight,
+    scrollHeight: content.scrollHeight,
+    scrollTop: content.scrollTop,
+  }))
+  expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 2)
+  expect(captureGeometry.scrollTop).toBeGreaterThan(0)
+
+  await page.waitForTimeout(1_100)
+  const before = await handoff.locator('.frame-particle-handoff__output').screenshot()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(250)
+  const after = await handoff.locator('.frame-particle-handoff__output').screenshot()
+  expect(after.equals(before), 'Particle Scroll output must respond to native page progress').toBe(false)
+
+  await page.mouse.wheel(0, 1_800)
+  await expect(handoff.locator('canvas')).toHaveCount(0)
 })

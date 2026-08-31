@@ -36,6 +36,20 @@ function findCachedChromiumExecutable() {
   return undefined
 }
 
+function resolveE2EPort() {
+  const rawPort = process.env.PLAYWRIGHT_PORT ?? '5173'
+  const port = Number(rawPort)
+
+  if (!Number.isInteger(port) || port < 1024 || port > 65_535) {
+    throw new Error(`PLAYWRIGHT_PORT must be an integer between 1024 and 65535; received ${rawPort}`)
+  }
+
+  return port
+}
+
+const e2ePort = resolveE2EPort()
+const e2eBaseURL = `http://127.0.0.1:${e2ePort}`
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 45_000,
@@ -48,15 +62,17 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 3,
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: e2eBaseURL,
     colorScheme: 'dark',
     viewport: { width: 1440, height: 900 },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1',
-    url: 'http://127.0.0.1:5173',
+    // PLAYWRIGHT_PORT lets local/agent runs avoid a developer-owned Vite
+    // process without killing it or accidentally reusing a stale checkout.
+    command: `npm run dev -- --host 127.0.0.1 --port ${e2ePort}`,
+    url: e2eBaseURL,
     reuseExistingServer: true,
     timeout: 90_000,
   },

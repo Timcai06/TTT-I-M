@@ -1,7 +1,10 @@
-import { archiveIntro, archiveOutro, archiveThemes } from '../content'
+import { lazy, Suspense } from 'react'
+import { archiveIntro, archiveThemes } from '../content'
 import ArchiveTextPanel from './frame/ArchiveTextPanel'
 import ArchiveThemeSection from './frame/ArchiveThemeSection'
 import AccordionGallery from './AccordionGallery'
+
+const FrameParticleHandoff = lazy(() => import('./frame/FrameParticleHandoff'))
 
 /**
  * @description Frame 章节入口 —— 将摄影存档组织为横向叙事流。
@@ -17,7 +20,7 @@ import AccordionGallery from './AccordionGallery'
  * @steps
  *   step1: 渲染 intro text panel
  *   step2: 按 archiveThemes 顺序渲染每个主题段落
- *   step3: 渲染 outro text panel，把叙事交还给 Stack 章节
+ *   step3: 渲染 Particle Scroll outro，把摄影像素拆成信号后交还给 Stack 章节
  */
 export default function Frame() {
   return (
@@ -52,7 +55,9 @@ export default function Frame() {
       {archiveThemes.map((theme, index) => (
         <ArchiveThemeSection key={theme.id} theme={theme} themeIndex={index} />
       ))}
-      <ArchiveTextPanel layout="outro" panel={archiveOutro} />
+      <Suspense fallback={null}>
+        <FrameParticleHandoff />
+      </Suspense>
     </section>
   )
 }
