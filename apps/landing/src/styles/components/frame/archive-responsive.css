@@ -17,12 +17,12 @@
   }
 
   .archive-cluster {
-    height: min(66svh, 500px);
-    max-height: calc(100svh - 112px);
+    height: min(62svh, 472px);
+    max-height: calc(100svh - 144px);
   }
 
   .archive-editorial-copy__cluster h3 {
-    font-size: clamp(34px, 3.6vw, 50px);
+    font-size: clamp(26px, 3vw, 38px);
   }
 
   .archive-slot__caption {

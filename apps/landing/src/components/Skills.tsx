@@ -78,9 +78,6 @@ export default function Skills() {
               className="skills__flow-active"
               ref={pathRef}
               d={pathD}
-              pathLength={1}
-              strokeDasharray="0 1"
-              strokeDashoffset="0"
               stroke="#ff3333"
               strokeWidth="46"
               strokeLinecap="round"

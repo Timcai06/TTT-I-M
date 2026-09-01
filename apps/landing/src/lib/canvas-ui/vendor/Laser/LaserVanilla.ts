@@ -39,6 +39,8 @@ export interface LaserElements {
   content: HTMLElement;
   /** Canvas the WebGL effect renders to. */
   output: HTMLCanvasElement;
+  /** Real DOM bounds the beam should be centered beneath. */
+  beamTarget?: HTMLElement;
 }
 
 export interface LaserInstance {
@@ -291,7 +293,7 @@ export function createLaser(
   options: LaserOptions = {},
 ): LaserInstance | null {
   const config = { ...DEFAULTS, ...options };
-  const { source, content, output } = elements;
+  const { source, content, output, beamTarget } = elements;
 
   const gl = output.getContext("webgl2", {
     alpha: true,
@@ -413,18 +415,18 @@ export function createLaser(
       output.width = width;
       output.height = height;
     }
-    contentMaxX = Math.min(
-      1,
-      Math.max(0.05, content.clientWidth / Math.max(output.clientWidth, 1)),
-    );
     const viewW = Math.max(output.clientWidth, 1);
-    beamCX = contentMaxX * 0.5;
-    beamSpan = contentMaxX;
-    const child = content.firstElementChild;
-    if (child instanceof HTMLElement) {
-      const childRect = child.getBoundingClientRect();
-      const outputRect = output.getBoundingClientRect();
-      const style = getComputedStyle(child);
+    const outputRect = output.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+    const contentLeft = Math.max(0, contentRect.left - outputRect.left);
+    const contentRight = Math.min(viewW, contentRect.right - outputRect.left);
+    contentMaxX = Math.min(1, Math.max(0.05, contentRight / viewW));
+    beamCX = ((contentLeft + contentRight) * 0.5) / viewW;
+    beamSpan = Math.max(0.05, (contentRight - contentLeft) / viewW);
+    const beamElement = beamTarget ?? content.firstElementChild;
+    if (beamElement instanceof HTMLElement) {
+      const childRect = beamElement.getBoundingClientRect();
+      const style = getComputedStyle(beamElement);
       const left =
         childRect.left - outputRect.left + (parseFloat(style.paddingLeft) || 0);
       const right =

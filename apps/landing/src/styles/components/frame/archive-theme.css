@@ -65,6 +65,26 @@
   overflow: hidden;
 }
 
+/* Editorial information and the moving rail share one scene. This opaque-to-
+   transparent gutter keeps photographs from reading through the copy while
+   still letting them enter and leave the Canvas bend continuously. */
+.archive-theme-section__pin::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0 auto 0 0;
+  width: clamp(330px, 34vw, 520px);
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 100%) 0%,
+    rgb(0 0 0 / 96%) 48%,
+    rgb(0 0 0 / 70%) 70%,
+    rgb(0 0 0 / 22%) 88%,
+    transparent 100%
+  );
+}
+
 .archive-theme-section__track {
   position: relative;
   z-index: 1;
@@ -154,24 +174,18 @@
 .archive-editorial-copy {
   position: absolute;
   z-index: 4;
-  top: 45%;
+  top: clamp(166px, 20vh, 212px);
   left: clamp(38px, 7vw, 108px);
-  width: clamp(264px, 24vw, 350px);
+  width: clamp(250px, 21vw, 316px);
   padding-left: clamp(14px, 1.4vw, 22px);
   border-left: 1px solid rgb(216 189 134 / 34%);
   color: var(--fg);
   pointer-events: none;
-  transform: translateY(-50%);
+  transform: none;
 }
 
 .archive-editorial-copy::before {
-  position: absolute;
-  z-index: -1;
-  inset: -34px -64px -38px -34px;
-  content: '';
-  background: radial-gradient(ellipse 82% 72% at 28% 50%, rgb(0 0 0 / 82%) 0 42%, rgb(0 0 0 / 46%) 66%, transparent 100%);
-  filter: blur(8px);
-  pointer-events: none;
+  content: none;
 }
 
 .archive-editorial-copy__eyebrow {
@@ -219,7 +233,7 @@
   max-width: 12ch;
   margin: 0;
   color: var(--fg);
-  font: 400 clamp(34px, 3.45vw, 54px)/0.96 var(--font-serif);
+  font: 400 clamp(28px, 2.65vw, 42px)/0.98 var(--font-serif);
   letter-spacing: -0.03em;
 }
 
@@ -227,7 +241,7 @@
   max-width: 32ch;
   margin: clamp(14px, 2vh, 20px) 0 0;
   color: var(--fg-soft);
-  font: 400 clamp(13px, 0.98vw, 16px)/1.5 var(--font-serif);
+  font: 400 clamp(12px, 0.84vw, 14px)/1.55 var(--font-serif);
 }
 
 @keyframes archive-copy-enter {

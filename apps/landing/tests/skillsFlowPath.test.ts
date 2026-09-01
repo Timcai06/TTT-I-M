@@ -4,18 +4,17 @@ import assert from 'node:assert/strict'
 import {
   buildSkillsFlowGeometry,
   buildSkillsFlowPathD,
-  FLOW_EDGE_OVERSCAN,
 } from '../src/lib/skillsFlowPath.ts'
 
 const frame = { viewportWidth: 1440, startY: 200, endY: 2200 }
 
-void test('flow path hides its round caps beyond both viewport edges', () => {
+void test('flow path enters and exits on the viewport edges', () => {
   const { start, segments } = buildSkillsFlowGeometry(frame)
-  assert.equal(start.x, -FLOW_EDGE_OVERSCAN)
+  assert.equal(start.x, 0)
   assert.equal(start.y, frame.startY - 120)
 
   const end = segments[2].to
-  assert.equal(end.x, frame.viewportWidth + FLOW_EDGE_OVERSCAN)
+  assert.equal(end.x, frame.viewportWidth)
   assert.equal(end.y, frame.endY + 120)
 })
 

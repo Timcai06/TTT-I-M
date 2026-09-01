@@ -63,9 +63,9 @@
 .projects__laser::after {
   position: absolute;
   z-index: 4;
-  right: 7vw;
+  right: var(--projects-laser-right, 16vw);
   bottom: var(--projects-laser-offset, 140px);
-  left: 7vw;
+  left: var(--projects-laser-left, 16vw);
   height: 3px;
   content: '';
   pointer-events: none;

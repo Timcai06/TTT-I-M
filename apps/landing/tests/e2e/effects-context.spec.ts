@@ -181,6 +181,7 @@ test('Stack flow enters continuously from outside the viewport', async ({ page }
       const drawn = Number.parseFloat(dash.split(/[ ,]+/)[0] ?? '0')
       return {
         drawn,
+        total: active.getTotalLength(),
         opacity: Number.parseFloat(getComputedStyle(svg).opacity),
       }
     }
@@ -196,6 +197,8 @@ test('Stack flow enters continuously from outside the viewport', async ({ page }
   expect(samples[0]?.drawn).toBeLessThanOrEqual(1)
   expect(samples[1]?.drawn).toBeGreaterThanOrEqual(samples[0]?.drawn ?? 0)
   expect(samples[2]?.drawn).toBeGreaterThan(samples[1]?.drawn ?? 0)
+  expect(samples[1]?.drawn).toBeLessThan((samples[1]?.total ?? 0) * 0.7)
+  expect(samples[2]?.drawn).toBeLessThan((samples[2]?.total ?? 0) * 0.75)
   await expect(page.locator('#skills')).not.toHaveClass(/is-flow-active/)
 })
 
@@ -458,6 +461,25 @@ test('desktop stack-to-work holds its final frame until the metal CTA releases W
   await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-active', 'true')
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#projects')
   await expect.poll(() => page.locator('#projects').evaluate((section) => Math.abs(section.getBoundingClientRect().top - 48))).toBeLessThan(12)
+
+  const laserAlignment = await page.locator('#projects .projects__laser').evaluate((laser, width) => {
+    const bento = document.querySelector<HTMLElement>('#projects .projects__bento')
+    if (!bento) throw new Error('Project bento is missing')
+    const bounds = bento.getBoundingClientRect()
+    const style = getComputedStyle(laser, '::after')
+    const left = Number.parseFloat(style.left)
+    const right = Number.parseFloat(style.right)
+    return {
+      beamCenter: Number.parseFloat((laser as HTMLElement).dataset.beamCenter ?? 'NaN'),
+      bentoCenter: (bounds.left + bounds.right) * 0.5,
+      fallbackCenter: (left + window.innerWidth - right) * 0.5,
+      fallbackWidth: window.innerWidth - left - right,
+      expectedWidth: bounds.width * width,
+    }
+  }, LASER_CONFIG.width)
+  expect(Math.abs(laserAlignment.beamCenter - laserAlignment.bentoCenter)).toBeLessThanOrEqual(1)
+  expect(Math.abs(laserAlignment.fallbackCenter - laserAlignment.bentoCenter)).toBeLessThanOrEqual(1)
+  expect(Math.abs(laserAlignment.fallbackWidth - laserAlignment.expectedWidth)).toBeLessThanOrEqual(2)
 
   const previews = page.locator('#projects .projects__bento .bento-glow')
   await expect(previews).toHaveCount(6)

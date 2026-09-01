@@ -25,12 +25,12 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
     const updatePath = () => {
       const rootEl = root.current
       if (!rootEl) return
-      const firstRowEl = rootEl.querySelector('.skill-row')
+      const titleEl = rootEl.querySelector('.section__title')
       const lastRowEl = rootEl.querySelector('.skill-row:last-child')
-      if (!firstRowEl || !lastRowEl) return
+      if (!titleEl || !lastRowEl) return
 
       const rootRect = rootEl.getBoundingClientRect()
-      const firstRowRect = firstRowEl.getBoundingClientRect()
+      const titleRect = titleEl.getBoundingClientRect()
       const lastRowRect = lastRowEl.getBoundingClientRect()
 
       // SVG 以视口宽度铺满；left 偏移抵消 root 容器自身的水平内边距/margin
@@ -39,7 +39,7 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
 
       setPathD(buildSkillsFlowPathD({
         viewportWidth: window.innerWidth,
-        startY: firstRowRect.top - rootRect.top + firstRowRect.height * 0.5,
+        startY: titleRect.top - rootRect.top,
         endY: lastRowRect.bottom - rootRect.top,
       }))
     }

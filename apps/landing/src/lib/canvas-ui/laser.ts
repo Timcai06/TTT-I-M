@@ -29,7 +29,11 @@ function cloneCapture(capture: HTMLElement): HTMLElement {
   return clone
 }
 
-export function createLaser(canvas: HTMLCanvasElement, capture?: HTMLElement | null): LaserHandle | null {
+export function createLaser(
+  canvas: HTMLCanvasElement,
+  capture?: HTMLElement | null,
+  beamTarget?: HTMLElement | null,
+): LaserHandle | null {
   const host = canvas.parentElement
   if (!host) return null
 
@@ -52,7 +56,7 @@ export function createLaser(canvas: HTMLCanvasElement, capture?: HTMLElement | n
   source.addEventListener('paint', markCaptureReady)
 
   let instance: LaserInstance | null = createCanvasUiLaser(
-    { source, content, output: canvas },
+    { source, content, output: canvas, beamTarget: beamTarget ?? undefined },
     LASER_CONFIG,
   )
   if (!instance) {
