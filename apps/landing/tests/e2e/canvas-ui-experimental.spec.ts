@@ -114,8 +114,8 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
     scrollHeight: content.scrollHeight,
     scrollTop: content.scrollTop,
   }))
-  expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 1.25)
-  expect(captureGeometry.scrollTop).toBeGreaterThan(0)
+  expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 2.05)
+  expect(captureGeometry.scrollTop).toBeGreaterThan(captureGeometry.clientHeight * 0.45)
 
   // The transition used to mount/unmount exactly at its ScrollTrigger edge,
   // which made fast direction changes flash or jump. Exercise both directions

@@ -74,6 +74,10 @@
   gap: clamp(42px, 4.2vw, 76px);
   padding-left: clamp(400px, 35vw, 560px);
   padding-right: clamp(88px, 10vw, 164px);
+  /* The photographic horizon sits slightly above the mathematical viewport
+     centre. `translate` remains independent from GSAP's horizontal transform,
+     so ScrollTrigger can own x without erasing the optical y correction. */
+  translate: 0 clamp(-56px, -6svh, -36px);
   transform: translate3d(0, 0, 0);
 }
 
@@ -146,32 +150,32 @@
   gap: clamp(52px, 5vw, 88px);
 }
 
-/* ── Fixed editorial copy: never enters HTML-in-Canvas capture ── */
+/* ── Rail-attached editorial copy: never enters HTML-in-Canvas capture ── */
 .archive-editorial-copy {
   position: absolute;
   z-index: 4;
-  top: 50%;
-  left: clamp(24px, 5vw, 82px);
-  width: clamp(252px, 25vw, 372px);
+  top: 45%;
+  left: clamp(38px, 7vw, 108px);
+  width: clamp(264px, 24vw, 350px);
+  padding-left: clamp(14px, 1.4vw, 22px);
+  border-left: 1px solid rgb(216 189 134 / 34%);
   color: var(--fg);
   pointer-events: none;
-  transform: translateY(-47%);
+  transform: translateY(-50%);
 }
 
 .archive-editorial-copy::before {
   position: absolute;
   z-index: -1;
-  inset: -92px -126px -128px -64px;
+  inset: -34px -64px -38px -34px;
   content: '';
-  background: linear-gradient(90deg, #000 0 72%, rgb(0 0 0 / 98%) 84%, transparent 100%);
+  background: radial-gradient(ellipse 82% 72% at 28% 50%, rgb(0 0 0 / 82%) 0 42%, rgb(0 0 0 / 46%) 66%, transparent 100%);
+  filter: blur(8px);
   pointer-events: none;
 }
 
 .archive-editorial-copy__eyebrow {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   color: var(--fg-mute);
   font: 500 9px/1.4 var(--font-mono);
   letter-spacing: 0.16em;
@@ -179,39 +183,51 @@
 }
 
 .archive-editorial-copy__theme-title {
-  max-width: 22ch;
+  max-width: 24ch;
   margin: 0;
-  color: var(--fg-soft);
-  font: 400 clamp(17px, 1.45vw, 22px)/1.25 var(--font-serif);
+  color: rgb(245 242 234 / 70%);
+  font: 400 clamp(15px, 1.2vw, 19px)/1.35 var(--font-serif);
   letter-spacing: -0.01em;
 }
 
 .archive-editorial-copy__cluster {
-  margin-top: clamp(24px, 4vh, 38px);
-  animation: archive-copy-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  margin-top: clamp(17px, 2.6vh, 26px);
+  animation: archive-copy-enter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .archive-editorial-copy__rule {
-  display: block;
-  width: 42px;
+  position: relative;
+  display: flex;
+  width: clamp(68px, 7vw, 108px);
   height: 1px;
-  margin-bottom: 18px;
+  align-items: center;
+  margin-bottom: 15px;
   background: rgb(216 189 134 / 72%);
 }
 
+.archive-editorial-copy__rule i {
+  position: absolute;
+  right: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d8bd86;
+  box-shadow: 0 0 0 4px rgb(216 189 134 / 10%);
+}
+
 .archive-editorial-copy__cluster h3 {
-  max-width: 11ch;
+  max-width: 12ch;
   margin: 0;
   color: var(--fg);
-  font: 400 clamp(38px, 4vw, 62px)/0.96 var(--font-serif);
-  letter-spacing: -0.035em;
+  font: 400 clamp(34px, 3.45vw, 54px)/0.96 var(--font-serif);
+  letter-spacing: -0.03em;
 }
 
 .archive-editorial-copy__cluster p {
-  max-width: 36ch;
-  margin: clamp(18px, 2.6vh, 26px) 0 0;
+  max-width: 32ch;
+  margin: clamp(14px, 2vh, 20px) 0 0;
   color: var(--fg-soft);
-  font: 400 clamp(14px, 1.05vw, 17px)/1.55 var(--font-serif);
+  font: 400 clamp(13px, 0.98vw, 16px)/1.5 var(--font-serif);
 }
 
 @keyframes archive-copy-enter {

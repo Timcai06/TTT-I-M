@@ -246,6 +246,9 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
         return {
           title: slot.querySelector('.archive-slot__caption-title')?.textContent ?? '',
           cluster: slot.closest<HTMLElement>('.archive-cluster')?.dataset.cluster ?? '',
+          role: ['primary', 'secondary', 'detail', 'support'].find((role) => (
+            slot.classList.contains(`archive-slot--${role}`)
+          )) ?? '',
           fit: window.getComputedStyle(slot.querySelector<HTMLImageElement>('.archive-slot__media img')!).objectFit,
           mediaWidth: Math.round(mediaRect.width),
           mediaHeight: Math.round(mediaRect.height),
@@ -267,6 +270,7 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
           )),
           captionInsideFigure: captionRect.left >= slotRect.left - 2 && captionRect.right <= slotRect.right + 2,
           captionWidthRatio: Number((captionRect.width / Math.max(1, renderedRect.width)).toFixed(2)),
+          opticalCenterRatio: Number((((renderedRect.top + renderedRect.bottom) / 2) / viewport.height).toFixed(3)),
         }
       })
       .filter((slot): slot is NonNullable<typeof slot> => slot !== null)
@@ -296,6 +300,9 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
       overwideCaptions: visibleBuildingOrCuisine.filter((slot) => slot.captionWidthRatio > 1.35),
       letterboxedMedia: visibleBuildingOrCuisine.filter((slot) => slot.mediaToImageWidthDelta > 12 || slot.mediaToImageHeightDelta > 12),
       croppedSlots: visibleBuildingOrCuisine.filter((slot) => slot.fit !== 'contain').map((slot) => slot.title),
+      lowPrimarySlots: visibleSlots
+        .filter((slot) => slot.role === 'primary' && slot.opticalCenterRatio > 0.56)
+        .map((slot) => ({ title: slot.title, opticalCenterRatio: slot.opticalCenterRatio })),
       overlappingPairs,
     }
   })
@@ -309,6 +316,7 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
   expect(layout.overwideCaptions, JSON.stringify(layout.overwideCaptions)).toHaveLength(0)
   expect(layout.letterboxedMedia, JSON.stringify(layout.letterboxedMedia)).toHaveLength(0)
   expect(layout.croppedSlots, JSON.stringify(layout.croppedSlots)).toHaveLength(0)
+  expect(layout.lowPrimarySlots, JSON.stringify(layout.lowPrimarySlots)).toHaveLength(0)
   expect(layout.overlappingPairs, JSON.stringify(layout.overlappingPairs)).toHaveLength(0)
 })
 

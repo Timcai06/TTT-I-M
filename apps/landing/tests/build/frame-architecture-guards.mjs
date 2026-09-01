@@ -74,6 +74,9 @@ if (!slotSource.includes('--image-aspect') || !frameStyleSource.includes('aspect
 
 const requiredIntrinsicEditorialLayout = [
   'width: max-content',
+  'translate: 0 clamp(-56px, -6svh, -36px)',
+  'border-left: 1px solid rgb(216 189 134 / 34%)',
+  'radial-gradient(ellipse 82% 72% at 28% 50%',
   '--primary-width:',
   '--secondary-width:',
   '--detail-width:',
@@ -102,6 +105,10 @@ if (frameStyleSource.includes('object-fit: cover')) {
 
 if (frameStyleSource.includes('aspect-ratio: 16 / 10')) {
   throw new Error('Frame responsive layouts must never force portrait or scenery images into a 16 / 10 card shell.')
+}
+
+if (frameStyleSource.includes('inset: -92px -126px -128px -64px')) {
+  throw new Error('Frame copy must remain rail-attached and must not restore the detached full-height black shield.')
 }
 
 console.log('[frame-architecture-guards] Frame composition, runtime hook, and slot DOM boundaries are separated.')

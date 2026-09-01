@@ -92,8 +92,8 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
     viewport: window.innerHeight,
     sticky: getComputedStyle(section.querySelector('.frame-particle-handoff__sticky')!).position,
   }))
-  expect(geometry.height).toBeGreaterThan(geometry.viewport * 1.25)
-  expect(geometry.height).toBeLessThan(geometry.viewport * 1.35)
+  expect(geometry.height).toBeGreaterThan(geometry.viewport * 2.05)
+  expect(geometry.height).toBeLessThan(geometry.viewport * 2.15)
   expect(geometry.sticky).toBe('sticky')
 
   const midpoint = await handoff.evaluate((section) => {

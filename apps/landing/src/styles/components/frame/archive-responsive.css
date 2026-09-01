@@ -21,6 +21,10 @@
     max-height: calc(100svh - 112px);
   }
 
+  .archive-theme-section__track {
+    translate: 0 clamp(-38px, -4.5svh, -24px);
+  }
+
   .archive-editorial-copy__cluster h3 {
     font-size: clamp(34px, 3.6vw, 50px);
   }
@@ -100,6 +104,7 @@
     padding-inline: 16px !important;
     width: 100%;
     margin-inline: auto;
+    translate: none;
     transform: none !important;
   }
 

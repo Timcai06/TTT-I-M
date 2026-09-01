@@ -2,9 +2,10 @@ import type { ArchiveTheme } from '../../content'
 import type { ActiveArchiveState } from './ArchiveRail'
 
 /**
- * Stable editorial copy for a pinned Frame theme. It is deliberately outside
- * the moving/captured image rail so typography stays crisp while photographs
- * bend at the viewport edges.
+ * Stable editorial copy for a pinned Frame theme. Typography stays outside the
+ * Bend capture for legibility, but its compact rail-facing treatment keeps it
+ * visually attached to the active photograph group instead of reading as a
+ * separate information panel.
  */
 export default function ArchiveEditorialCopy({
   active,
@@ -18,16 +19,18 @@ export default function ArchiveEditorialCopy({
   if (!cluster) return null
 
   return (
-    <header className="archive-editorial-copy" data-active-cluster={cluster.id}>
+    <header
+      className={`archive-editorial-copy archive-editorial-copy--${theme.direction}`}
+      data-active-cluster={cluster.id}
+    >
       <p className="archive-editorial-copy__eyebrow">
-        <span>{theme.eyebrow}</span>
-        <span>
-          {String(active.clusterIndex + 1).padStart(2, '0')} / {String(theme.clusters.length).padStart(2, '0')}
-        </span>
+        {theme.eyebrow}
       </p>
       <h2 className="archive-editorial-copy__theme-title">{theme.title}</h2>
       <div className="archive-editorial-copy__cluster" key={cluster.id}>
-        <span className="archive-editorial-copy__rule" aria-hidden="true" />
+        <span className="archive-editorial-copy__rule" aria-hidden="true">
+          <i />
+        </span>
         <h3>{cluster.title}</h3>
         <p>{cluster.body ?? theme.body}</p>
       </div>

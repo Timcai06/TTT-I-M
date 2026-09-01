@@ -147,12 +147,15 @@ export default function FrameParticleHandoff() {
       lastScrollY = scrollY
       latestState.current = state
       section.style.setProperty('--particle-progress', progress.toFixed(4))
-      section.style.setProperty('--particle-scroll-y', `${(-30 * progress).toFixed(2)}svh`)
-      const exitOpacity = progress <= 0.78 ? 1 : Math.max(0, 1 - (progress - 0.78) / 0.22)
+      /* The captured document needs a real vertical runway for CanvasUI's
+         formation line to cross the full contact sheet. The previous 30svh
+         mirror compressed the source effect until it was almost imperceptible. */
+      section.style.setProperty('--particle-scroll-y', `${(-110 * progress).toFixed(2)}svh`)
+      const exitOpacity = progress <= 0.94 ? 1 : Math.max(0, 1 - (progress - 0.94) / 0.06)
       section.style.setProperty('--particle-exit-opacity', exitOpacity.toFixed(4))
       section.dataset.handoffPhase = progress < 0.14
         ? 'frame-owned'
-        : progress < 0.78
+        : progress < 0.94
           ? 'canvas-owned'
           : 'stack-preview'
       handleRef.current?.setScrollState(state)

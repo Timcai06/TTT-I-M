@@ -26,15 +26,16 @@
   border-top: 1px solid var(--line);
 }
 
-/* Frame → Stack is a short final-exposure bridge. The last Scenery composition
-   remains the only subject while CanvasUI Particle Scroll dissolves it; Stack
-   owns the next title and the existing red Active Flow owns the next motion. */
+/* Frame → Stack keeps the last Scenery composition as its only subject while
+   CanvasUI Particle Scroll carries it through a full formation line. The
+   runway is long enough for the source effect to read, but contains no second
+   chapter title or Stack-row expansion; Stack still owns those moments. */
 .frame-particle-handoff {
   --particle-progress: 0;
   --particle-scroll-y: 0svh;
   --particle-exit-opacity: 1;
   position: relative;
-  height: 130svh;
+  height: 210svh;
   overflow: clip;
   background: #000;
   contain: layout paint;
@@ -73,7 +74,7 @@
 
 .frame-particle-document {
   position: relative;
-  min-height: 130svh;
+  min-height: 210svh;
   color: var(--fg);
   background:
     radial-gradient(circle at 76% 18%, rgb(122 168 132 / 7%), transparent 30%),
@@ -105,7 +106,7 @@
 
 .frame-particle-document__contact {
   position: relative;
-  min-height: 100svh;
+  min-height: 156svh;
   padding: 0;
 }
 
@@ -121,23 +122,25 @@
 
 .frame-particle-document__figure--lead {
   z-index: 1;
-  top: 18svh;
+  top: 12svh;
   left: clamp(24px, 6vw, 96px);
-  height: min(50svh, 520px);
+  height: min(54svh, 560px);
 }
 
 .frame-particle-document__figure--support {
   z-index: 2;
-  top: 13svh;
+  top: 72svh;
   right: clamp(24px, 8vw, 128px);
-  height: min(30svh, 310px);
+  height: min(32svh, 330px);
 }
 
 .frame-particle-document__figure--detail {
   z-index: 3;
-  right: clamp(42px, 17vw, 270px);
-  bottom: 12svh;
-  height: min(25svh, 260px);
+  top: 118svh;
+  right: auto;
+  left: clamp(54px, 16vw, 250px);
+  bottom: auto;
+  height: min(28svh, 290px);
 }
 
 .frame-particle-document__contact img {
@@ -150,7 +153,7 @@
 .frame-particle-document__bridge {
   position: absolute;
   z-index: 5;
-  top: 108svh;
+  top: 168svh;
   right: clamp(24px, 5vw, 84px);
   left: clamp(24px, 5vw, 84px);
   display: flex;
