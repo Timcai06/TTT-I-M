@@ -231,10 +231,11 @@ if (globalStyleSource.includes('transform: translateZ(0); /* Force GPU composite
 }
 
 if (
-  !skillsSource.includes('const revealTimers: number[] = []') ||
-  !skillsSource.includes('window.clearTimeout(timer)')
+  skillsSource.includes('setTimeout(') ||
+  skillsSource.includes("classList.add('is-visible')") ||
+  !skillsSource.includes('useSkillsFlowLine')
 ) {
-  throw new Error('Skills reveal timers must be tracked and cleared on cleanup to avoid delayed class writes after unmount/HMR.')
+  throw new Error('Skills must remain stable after the Canvas handoff and delegate only the delayed active-flow line to its hook.')
 }
 
 if (projectsSource.includes("document.querySelectorAll<HTMLElement>('.project-card')") ||

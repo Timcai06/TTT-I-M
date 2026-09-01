@@ -382,7 +382,7 @@ test('Mobile navigation collapses chapters behind a menu and lands on Frame cont
   expect(landing.titleVisible || landing.slotVisible).toBe(true)
 })
 
-test('Frame keeps preloaded image and offscreen rendering performance guards', async ({ page }) => {
+test('Frame keeps responsive images and stable intrinsic track geometry', async ({ page }) => {
   await openHome(page)
   await scrollToFrame(page)
 
@@ -417,7 +417,9 @@ test('Frame keeps preloaded image and offscreen rendering performance guards', a
     })
 
     const slots = [...document.querySelectorAll<HTMLElement>('.archive-slot')]
-    const badContentVisibility = slots.filter((slot) => window.getComputedStyle(slot).contentVisibility !== 'auto')
+    const unstableIntrinsicPlaceholders = slots.filter(
+      (slot) => window.getComputedStyle(slot).contentVisibility === 'auto',
+    )
     const inactiveWillChangeTracks = [...document.querySelectorAll<HTMLElement>('.archive-theme-section__track')]
       .filter((track) => !track.closest('.is-frame-theme-active'))
       .filter((track) => window.getComputedStyle(track).willChange.includes('transform'))
@@ -430,7 +432,7 @@ test('Frame keeps preloaded image and offscreen rendering performance guards', a
     return {
       badResponsiveImages,
       badPreloadedImages,
-      badContentVisibilityCount: badContentVisibility.length,
+      unstableIntrinsicPlaceholderCount: unstableIntrinsicPlaceholders.length,
       inactiveWillChangeTrackCount: inactiveWillChangeTracks.length,
       visibleSlotCount: visibleSlots.length,
       totalSlotCount: slots.length,
@@ -439,7 +441,7 @@ test('Frame keeps preloaded image and offscreen rendering performance guards', a
 
   expect(performanceGuards.badResponsiveImages, JSON.stringify(performanceGuards.badResponsiveImages)).toHaveLength(0)
   expect(performanceGuards.badPreloadedImages, JSON.stringify(performanceGuards.badPreloadedImages)).toHaveLength(0)
-  expect(performanceGuards.badContentVisibilityCount).toBe(0)
+  expect(performanceGuards.unstableIntrinsicPlaceholderCount).toBe(0)
   expect(performanceGuards.inactiveWillChangeTrackCount).toBe(0)
   expect(performanceGuards.visibleSlotCount).toBeLessThan(14)
   expect(performanceGuards.totalSlotCount).toBeGreaterThan(40)

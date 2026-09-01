@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react'
-import { gsap, ScrollTrigger } from '../lib/gsap'
+import { useRef } from 'react'
 import { skillRows as rows } from '../content'
 import { useSkillsFlowLine } from './skills/useSkillsFlowLine'
 import SkillRowItem from './skills/SkillRowItem'
@@ -44,58 +43,18 @@ const workingSetLogos: LogoItem[] = workingSet.map(([index, name, kind]) => ({
  *   - 行展示：`skills/SkillRowItem`（无动画状态的纯渲染）
  *   - 本组件：组合 + 标题/逐行 reveal 时间线
  *
- * @dependencies GSAP + ScrollTrigger（标题裂分入场 + 技能行 staggered reveal）
+ * @dependencies useSkillsFlowLine（红色 active flow 在 Frame → Stack 完成接棒后启动）
  * @steps
  *   step1: useSkillsFlowLine — 蛇形曲线测量、resize 重建、视口中心 dasharray 同步
- *   step2: Effect — 标题裂分入场 + 技能行逐行 reveal（120ms 间隔，双向回退）
+ *   step2: 标题与首屏技能行保持稳定，避免 Canvas 接棒后再次整体展开
  */
 export default function Skills() {
   const root = useRef<HTMLElement>(null)
   const { pathRef, pathD, svgLeft, svgWidth } = useSkillsFlowLine(root)
 
-  // 标题与技能行的 reveal 时间线
-  useEffect(() => {
-    if (!root.current) return
-    const revealTimers: number[] = []
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.section__title .split-line__inner',
-        { yPercent: 110, skewY: 6 },
-        {
-          yPercent: 0,
-          skewY: 0,
-          duration: 1.4,
-          ease: 'expo.out',
-          stagger: 0.12,
-          scrollTrigger: { trigger: '.section__title', start: 'top 88%', toggleActions: 'play none none reverse' },
-        }
-      )
-
-      gsap.utils.toArray<HTMLElement>('.skill-row').forEach((row, index) => {
-        ScrollTrigger.create({
-          trigger: '.skills__list',
-          start: 'top 85%',
-          onEnter: () => {
-            const timer = window.setTimeout(() => {
-              row.classList.add('is-visible')
-            }, index * 120)
-            revealTimers.push(timer)
-          },
-          onLeaveBack: () => {
-            row.classList.remove('is-visible') // 双向回退触发
-          }
-        })
-      })
-    }, root)
-    return () => {
-      revealTimers.forEach((timer) => window.clearTimeout(timer))
-      ctx.revert()
-    }
-  }, [])
-
   return (
     <section className="section skills container" id="skills" ref={root} style={{ position: 'relative' }}>
-      {/* 80px 宽的红色平滑流动背景曲线 */}
+      {/* Stack 深处的红色 active flow；入口由 Canvas UI 独占。 */}
       <svg
         className="skills__flow-svg"
         style={{ left: svgLeft, width: svgWidth }}
@@ -109,16 +68,16 @@ export default function Skills() {
             <path
               d={pathD}
               stroke="rgba(255, 51, 51, 0.05)"
-              strokeWidth="80"
+              strokeWidth="46"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            {/* 80px 红色 active 流动高亮粗线 */}
+            {/* active 流动高亮 */}
             <path
               ref={pathRef}
               d={pathD}
               stroke="#ff3333"
-              strokeWidth="80"
+              strokeWidth="46"
               strokeLinecap="round"
               strokeLinejoin="round"
             />

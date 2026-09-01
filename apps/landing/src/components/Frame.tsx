@@ -4,7 +4,13 @@ import ArchiveTextPanel from './frame/ArchiveTextPanel'
 import ArchiveThemeSection from './frame/ArchiveThemeSection'
 import AccordionGallery from './AccordionGallery'
 
-const FrameParticleHandoff = lazy(() => import('./frame/FrameParticleHandoff'))
+const loadFrameParticleHandoff = () => import('./frame/FrameParticleHandoff')
+const FrameParticleHandoff = lazy(loadFrameParticleHandoff)
+
+// Frame itself is already a deferred chapter. Start fetching the heavier
+// Particle Scroll adapter as soon as the chapter chunk evaluates so the final
+// scenery movement never reaches an empty transition boundary.
+void loadFrameParticleHandoff()
 
 /**
  * @description Frame 章节入口 —— 将摄影存档组织为横向叙事流。
@@ -55,7 +61,7 @@ export default function Frame() {
       {archiveThemes.map((theme, index) => (
         <ArchiveThemeSection key={theme.id} theme={theme} themeIndex={index} />
       ))}
-      <Suspense fallback={null}>
+      <Suspense fallback={<div className="frame-particle-handoff frame-particle-handoff--loading" aria-hidden="true" />}>
         <FrameParticleHandoff />
       </Suspense>
     </section>

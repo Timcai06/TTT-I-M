@@ -1,17 +1,21 @@
-/* ── Archive cluster — grid layout system for image panels ── */
+/* ── Archive cluster — intrinsic-ratio editorial strips ── */
 .archive-cluster {
   --cluster-label-x: 0px;
   --cluster-label-y: 0px;
-  width: clamp(1280px, 116vw, 2060px);
-  height: min(96vh, 960px);
-  max-height: calc(100vh - 12px);
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-  gap: clamp(6px, 0.72vw, 14px);
-  align-items: stretch;
+  --primary-height: min(72vh, 720px);
+  --secondary-height: min(55vh, 550px);
+  --detail-height: min(43vh, 430px);
+  --support-height: min(49vh, 490px);
+  position: relative;
+  display: flex;
+  width: max-content;
+  height: min(92vh, 920px);
+  max-height: calc(100vh - 20px);
   flex: 0 0 auto;
-  opacity: 1;
+  align-items: center;
+  gap: clamp(28px, 3vw, 62px);
+  padding-inline: clamp(12px, 1.6vw, 30px);
+  overflow: visible;
   isolation: isolate;
 }
 
@@ -19,18 +23,16 @@
   content: attr(data-cluster-title);
   position: absolute;
   z-index: 4;
-  left: calc(clamp(6px, 1.2vw, 18px) + var(--cluster-label-x));
-  top: calc(clamp(-24px, -2.3vh, -16px) + var(--cluster-label-y));
+  top: calc(clamp(14px, 2.2vh, 26px) + var(--cluster-label-y));
+  left: calc(clamp(12px, 1.6vw, 30px) + var(--cluster-label-x));
   max-width: 32ch;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-mono);
-  font-size: clamp(8px, 0.6vw, 10px);
-  line-height: 1;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--fg-mute);
+  font: 500 clamp(8px, 0.6vw, 10px)/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
   pointer-events: none;
 }
 
@@ -38,460 +40,112 @@
   display: none;
 }
 
-/* ── Layout variants: feature, stack ── */
-.archive-cluster--feature-left,
-.archive-cluster--feature-right {
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-.archive-cluster--feature-left .archive-slot:nth-child(1) {
-  grid-column: 1 / 9;
-  grid-row: 1 / 11;
-}
-
-.archive-cluster--feature-left .archive-slot:nth-child(2) {
-  grid-column: 9 / 13;
-  grid-row: 1 / 6;
-}
-
-.archive-cluster--feature-left .archive-slot:nth-child(3) {
-  grid-column: 9 / 13;
-  grid-row: 6 / 11;
-}
-
-.archive-cluster--feature-right .archive-slot:nth-child(1) {
-  grid-column: 5 / 13;
-  grid-row: 1 / 11;
-}
-
-.archive-cluster--feature-right .archive-slot:nth-child(2) {
-  grid-column: 1 / 5;
-  grid-row: 1 / 6;
-}
-
-.archive-cluster--feature-right .archive-slot:nth-child(3) {
-  grid-column: 1 / 5;
-  grid-row: 6 / 11;
-}
-
-.archive-cluster--stack-left,
-.archive-cluster--stack-right {
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-.archive-cluster--stack-left .archive-slot:nth-child(1) {
-  grid-column: 4 / 13;
-  grid-row: 1 / 10;
-}
-
-.archive-cluster--stack-left .archive-slot:nth-child(2) {
-  grid-column: 1 / 4;
-  grid-row: 1 / 6;
-}
-
-.archive-cluster--stack-left .archive-slot:nth-child(3) {
-  grid-column: 1 / 4;
-  grid-row: 7 / 11;
-}
-
-.archive-cluster--stack-right .archive-slot:nth-child(1) {
-  grid-column: 1 / 10;
-  grid-row: 1 / 10;
-}
-
-.archive-cluster--stack-right .archive-slot:nth-child(2) {
-  grid-column: 10 / 13;
-  grid-row: 1 / 6;
-}
-
-.archive-cluster--stack-right .archive-slot:nth-child(3) {
-  grid-column: 10 / 13;
-  grid-row: 6 / 11;
-}
-
-/* ── Layout variants: panorama, mosaic ── */
-.archive-cluster--panorama {
-  width: clamp(1380px, 124vw, 2180px);
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-.archive-cluster--panorama .archive-slot:nth-child(1) {
-  grid-column: 1 / 10;
-  grid-row: 1 / 11;
-}
-
-.archive-cluster--panorama .archive-slot:nth-child(2) {
-  grid-column: 10 / 13;
-  grid-row: 1 / 6;
-}
-
-.archive-cluster--panorama .archive-slot:nth-child(3) {
-  grid-column: 10 / 13;
-  grid-row: 6 / 11;
-}
-
-.archive-cluster--mosaic-left,
+/* Right-handed layouts reverse the editorial reading order without changing
+   image geometry. The photograph remains the box; the layout never invents a
+   second aspect ratio around it. */
+.archive-cluster--feature-right,
+.archive-cluster--stack-right,
 .archive-cluster--mosaic-right {
-  width: clamp(2380px, 196vw, 3500px);
-  grid-template-columns: repeat(22, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-/* ── Theme sizing overrides ── */
-.archive-cluster--theme-cuisine {
-  width: clamp(1360px, 122vw, 2060px);
-  gap: clamp(6px, 0.72vw, 14px);
-}
-
-.archive-cluster--theme-scenery {
-  width: clamp(1260px, 114vw, 1940px);
-  gap: clamp(10px, 1vw, 20px);
+  flex-direction: row-reverse;
 }
 
 .archive-cluster--rhythm-dense {
-  gap: clamp(5px, 0.58vw, 12px);
+  gap: clamp(20px, 2.1vw, 42px);
 }
 
 .archive-cluster--rhythm-open {
-  gap: clamp(12px, 1.25vw, 24px);
+  gap: clamp(42px, 4.6vw, 92px);
 }
 
 .archive-cluster--rhythm-architectural {
-  gap: clamp(8px, 0.9vw, 18px);
+  gap: clamp(30px, 3.2vw, 66px);
 }
 
-/* ── Mosaic slot placements ── */
-.archive-cluster--mosaic-left .archive-slot:nth-child(1) {
-  grid-column: 1 / 6;
-  grid-row: 1 / 11;
+/* Building: tall structural studies followed by broad skyline releases. */
+.archive-cluster--theme-building {
+  --primary-height: min(74vh, 742px);
+  --secondary-height: min(61vh, 610px);
+  --detail-height: min(48vh, 480px);
+  --support-height: min(56vh, 560px);
 }
 
-.archive-cluster--mosaic-left .archive-slot:nth-child(2) {
-  grid-column: 6 / 10;
-  grid-row: 1 / 11;
+.archive-cluster--theme-building.archive-cluster--panorama {
+  --primary-height: min(67vh, 670px);
+  --secondary-height: min(47vh, 470px);
+  --detail-height: min(42vh, 420px);
 }
 
-.archive-cluster--mosaic-left .archive-slot:nth-child(3) {
-  grid-column: 10 / 14;
-  grid-row: 1 / 11;
+[data-cluster='building-surface-memory'] {
+  padding-inline: clamp(32px, 4vw, 78px);
 }
 
-.archive-cluster--mosaic-left .archive-slot:nth-child(4) {
-  grid-column: 14 / 18;
-  grid-row: 1 / 11;
+[data-cluster='building-skyline-weather'],
+[data-cluster='building-night-current'] {
+  gap: clamp(34px, 3.8vw, 78px);
 }
 
-.archive-cluster--mosaic-left .archive-slot:nth-child(5) {
-  grid-column: 18 / 23;
-  grid-row: 1 / 11;
+/* Cuisine: close, warm diptychs and triptychs with a common optical scale. */
+.archive-cluster--theme-cuisine {
+  --primary-height: min(68vh, 680px);
+  --secondary-height: min(54vh, 540px);
+  --detail-height: min(47vh, 470px);
+  --support-height: min(50vh, 500px);
+  gap: clamp(26px, 2.7vw, 52px);
 }
 
-.archive-cluster--mosaic-right .archive-slot:nth-child(1) {
-  grid-column: 17 / 23;
-  grid-row: 1 / 11;
+.archive-cluster--theme-cuisine.archive-cluster--rhythm-open {
+  gap: clamp(40px, 4.2vw, 82px);
 }
 
-.archive-cluster--mosaic-right .archive-slot:nth-child(2) {
-  grid-column: 13 / 17;
-  grid-row: 1 / 11;
-}
-
-.archive-cluster--mosaic-right .archive-slot:nth-child(3) {
-  grid-column: 9 / 13;
-  grid-row: 1 / 11;
-}
-
-.archive-cluster--mosaic-right .archive-slot:nth-child(4) {
-  grid-column: 5 / 9;
-  grid-row: 1 / 11;
-}
-
-.archive-cluster--mosaic-right .archive-slot:nth-child(5) {
-  grid-column: 1 / 5;
-  grid-row: 1 / 11;
-}
-
-/* ── Scenery theme cluster overrides ── */
+/* Scenery: large, quiet horizons with fewer and more generous companions. */
 .archive-cluster--theme-scenery {
-  width: clamp(1320px, 120vw, 2020px);
-  height: min(94vh, 920px);
-  gap: clamp(10px, 1.05vw, 22px);
+  --primary-height: min(76vh, 760px);
+  --secondary-height: min(55vh, 550px);
+  --detail-height: min(50vh, 500px);
+  --support-height: min(52vh, 520px);
+  gap: clamp(48px, 5.2vw, 104px);
+  padding-inline: clamp(32px, 5vw, 96px);
 }
 
 .archive-theme-section--scenery .archive-theme-section__track {
-  gap: clamp(24px, 3.2vw, 64px);
+  gap: clamp(48px, 5vw, 96px);
   padding-left: clamp(220px, 26vw, 420px);
   padding-right: clamp(108px, 13vw, 240px);
 }
 
-.archive-cluster--theme-scenery.archive-cluster--panorama {
-  width: clamp(1260px, 112vw, 1960px);
+[data-cluster='scenery-panorama'],
+[data-cluster='scenery-close'] {
+  --primary-height: min(72vh, 720px);
 }
 
-.archive-cluster--theme-scenery::before {
-  top: clamp(8px, 1.2vh, 16px);
-  left: clamp(8px, 1.2vw, 18px);
+/* Small photographs move vertically to retain the archive's asymmetry without
+   resizing or cropping their composition. */
+.archive-cluster .archive-slot--secondary {
+  align-self: flex-start;
+  margin-top: clamp(68px, 9vh, 112px);
 }
 
-[data-cluster='scenery-panorama'] {
-  --cluster-label-x: clamp(20px, 5vw, 72px);
+.archive-cluster .archive-slot--detail {
+  align-self: flex-end;
+  margin-bottom: clamp(58px, 7vh, 96px);
 }
 
-[data-cluster='scenery-panorama'] .archive-slot:nth-child(1) {
-  grid-column: 1 / 10;
-  grid-row: 1 / 11;
+.archive-cluster .archive-slot--support:nth-of-type(even) {
+  align-self: flex-start;
+  margin-top: clamp(84px, 11vh, 132px);
 }
 
-[data-cluster='scenery-panorama'] .archive-slot:nth-child(2) {
-  grid-column: 10 / 13;
-  grid-row: 1 / 6;
+.archive-cluster .archive-slot--support:nth-of-type(odd) {
+  align-self: flex-end;
+  margin-bottom: clamp(70px, 8vh, 108px);
 }
 
-[data-cluster='scenery-memory'] .archive-slot:nth-child(1) {
-  grid-column: 1 / 7;
-  grid-row: 1 / 11;
-}
-
-[data-cluster='scenery-memory'] .archive-slot:nth-child(2) {
-  grid-column: 7 / 13;
-  grid-row: 1 / 5;
-}
-
-[data-cluster='scenery-memory'] .archive-slot:nth-child(3) {
-  grid-column: 7 / 13;
-  grid-row: 6 / 11;
-}
-
-[data-cluster='scenery-release'] .archive-slot:nth-child(1) {
-  grid-column: 4 / 13;
-  grid-row: 1 / 11;
-}
-
-[data-cluster='scenery-release'] .archive-slot:nth-child(2) {
-  grid-column: 1 / 4;
-  grid-row: 1 / 5;
-}
-
-[data-cluster='scenery-release'] .archive-slot:nth-child(3) {
-  grid-column: 1 / 4;
-  grid-row: 6 / 11;
-}
-
-[data-cluster='scenery-close'] .archive-slot:nth-child(1) {
-  grid-column: 1 / 10;
-  grid-row: 1 / 11;
-}
-
-[data-cluster='scenery-close'] .archive-slot:nth-child(2) {
-  grid-column: 10 / 13;
-  grid-row: 1 / 6;
-}
-
-[data-cluster='scenery-close'] .archive-slot:nth-child(3) {
-  grid-column: 10 / 13;
-  grid-row: 6 / 11;
-}
-
-/* ── Building theme cluster overrides ── */
-.archive-cluster--theme-building.archive-cluster--mosaic-left,
-.archive-cluster--theme-building.archive-cluster--mosaic-right {
-  width: clamp(2240px, 182vw, 3120px);
-}
-
-.archive-cluster--theme-building.archive-cluster--panorama {
-  width: clamp(1420px, 122vw, 2120px);
-}
-
-.archive-cluster--theme-building .archive-slot__media img {
-  object-fit: contain;
-}
-
-.archive-cluster--theme-building .archive-slot:hover .archive-slot__media img {
-  object-fit: contain;
-}
-
-.archive-slot:hover .archive-slot__media img {
-  object-fit: contain;
-}
-
-[data-cluster='building-surface-memory'] {
-  grid-template-columns: repeat(20, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-[data-cluster='building-surface-memory'] .archive-slot:nth-child(1) {
-  grid-column: 1 / 6;
-  grid-row: 1 / 10;
-}
-
-[data-cluster='building-surface-memory'] .archive-slot:nth-child(2) {
-  grid-column: 11 / 15;
-  grid-row: 3 / 10;
-}
-
-[data-cluster='building-surface-memory'] .archive-slot:nth-child(3) {
-  grid-column: 15 / 18;
-  grid-row: 1 / 7;
-}
-
-[data-cluster='building-surface-memory'] .archive-slot:nth-child(4) {
-  grid-column: 18 / 21;
-  grid-row: 2 / 10;
-}
-
-[data-cluster='building-surface-memory'] .archive-slot:nth-child(5) {
-  grid-column: 6 / 11;
-  grid-row: 1 / 10;
-}
-
-[data-cluster='building-skyline-weather'] {
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-[data-cluster='building-skyline-weather'] .archive-slot:nth-child(1) {
-  grid-column: 1 / 9;
-  grid-row: 2 / 10;
-}
-
-[data-cluster='building-skyline-weather'] .archive-slot:nth-child(2) {
-  grid-column: 9 / 13;
-  grid-row: 1 / 6;
-}
-
-[data-cluster='building-skyline-weather'] .archive-slot:nth-child(3) {
-  grid-column: 9 / 13;
-  grid-row: 7 / 11;
-}
-
-[data-cluster='building-interior-routes'] {
-  grid-template-columns: repeat(20, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-[data-cluster='building-interior-routes'] .archive-slot:nth-child(1) {
-  grid-column: 16 / 21;
-  grid-row: 2 / 10;
-}
-
-[data-cluster='building-interior-routes'] .archive-slot:nth-child(2) {
-  grid-column: 7 / 13;
-  grid-row: 1 / 6;
-}
-
-[data-cluster='building-interior-routes'] .archive-slot:nth-child(3) {
-  grid-column: 5 / 10;
-  grid-row: 6 / 11;
-}
-
-[data-cluster='building-interior-routes'] .archive-slot:nth-child(4) {
-  grid-column: 1 / 5;
-  grid-row: 2 / 9;
-}
-
-[data-cluster='building-interior-routes'] .archive-slot:nth-child(5) {
-  grid-column: 13 / 16;
-  grid-row: 4 / 9;
-}
-
-[data-cluster='building-night-current'] {
-  grid-template-columns: repeat(20, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-[data-cluster='building-night-current'] .archive-slot:nth-child(1) {
-  grid-column: 1 / 10;
-  grid-row: 2 / 10;
-}
-
-[data-cluster='building-night-current'] .archive-slot:nth-child(2) {
-  grid-column: 10 / 15;
-  grid-row: 1 / 6;
-}
-
-[data-cluster='building-night-current'] .archive-slot:nth-child(3) {
-  grid-column: 15 / 19;
-  grid-row: 4 / 10;
-}
-
-[data-cluster='building-night-current'] .archive-slot:nth-child(4) {
-  grid-column: 10 / 15;
-  grid-row: 7 / 11;
-}
-
-[data-cluster='building-night-current'] .archive-slot:nth-child(5) {
-  grid-column: 19 / 21;
-  grid-row: 1 / 5;
-}
-
-/* ── Cuisine theme cluster overrides ── */
-.archive-cluster--theme-cuisine.archive-cluster--feature-left,
-.archive-cluster--theme-cuisine.archive-cluster--feature-right,
-.archive-cluster--theme-cuisine.archive-cluster--stack-left,
-.archive-cluster--theme-cuisine.archive-cluster--stack-right {
-  grid-template-columns: repeat(14, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--feature-left .archive-slot:nth-child(1) {
-  grid-column: 1 / 9;
-  grid-row: 1 / 10;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--feature-left .archive-slot:nth-child(2) {
-  grid-column: 9 / 15;
-  grid-row: 1 / 5;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--feature-left .archive-slot:nth-child(3) {
-  grid-column: 10 / 15;
-  grid-row: 6 / 11;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--feature-right .archive-slot:nth-child(1) {
-  grid-column: 6 / 15;
-  grid-row: 1 / 10;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--feature-right .archive-slot:nth-child(2) {
-  grid-column: 1 / 6;
-  grid-row: 1 / 5;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--feature-right .archive-slot:nth-child(3) {
-  grid-column: 1 / 5;
-  grid-row: 6 / 11;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--stack-left .archive-slot:nth-child(1) {
-  grid-column: 5 / 15;
-  grid-row: 1 / 10;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--stack-left .archive-slot:nth-child(2) {
-  grid-column: 1 / 5;
-  grid-row: 1 / 5;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--stack-left .archive-slot:nth-child(3) {
-  grid-column: 2 / 5;
-  grid-row: 6 / 11;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--stack-right .archive-slot:nth-child(1) {
-  grid-column: 1 / 11;
-  grid-row: 1 / 10;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--stack-right .archive-slot:nth-child(2) {
-  grid-column: 11 / 15;
-  grid-row: 2 / 6;
-}
-
-.archive-cluster--theme-cuisine.archive-cluster--stack-right .archive-slot:nth-child(3) {
-  grid-column: 11 / 14;
-  grid-row: 7 / 11;
+@media (max-height: 760px) and (min-width: 769px) {
+  .archive-cluster {
+    --primary-height: min(66vh, 520px);
+    --secondary-height: min(52vh, 410px);
+    --detail-height: min(42vh, 330px);
+    --support-height: min(46vh, 360px);
+    height: min(84vh, 650px);
+  }
 }

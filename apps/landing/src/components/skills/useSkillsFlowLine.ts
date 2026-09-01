@@ -25,12 +25,12 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
     const updatePath = () => {
       const rootEl = root.current
       if (!rootEl) return
-      const titleEl = rootEl.querySelector('.section__title')
+      const firstRowEl = rootEl.querySelector('.skill-row')
       const lastRowEl = rootEl.querySelector('.skill-row:last-child')
-      if (!titleEl || !lastRowEl) return
+      if (!firstRowEl || !lastRowEl) return
 
       const rootRect = rootEl.getBoundingClientRect()
-      const titleRect = titleEl.getBoundingClientRect()
+      const firstRowRect = firstRowEl.getBoundingClientRect()
       const lastRowRect = lastRowEl.getBoundingClientRect()
 
       // SVG 以视口宽度铺满；left 偏移抵消 root 容器自身的水平内边距/margin
@@ -39,7 +39,7 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
 
       setPathD(buildSkillsFlowPathD({
         viewportWidth: window.innerWidth,
-        startY: titleRect.top - rootRect.top,
+        startY: firstRowRect.top - rootRect.top + firstRowRect.height * 0.5,
         endY: lastRowRect.bottom - rootRect.top,
       }))
     }
@@ -55,7 +55,8 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
   // 红线前端始终跟随视口中心线，而不是按整条 path 的总进度硬画完。
   useEffect(() => {
     const path = pathRef.current
-    if (!path || !pathD) return
+    const rootEl = root.current
+    if (!path || !pathD || !rootEl) return
 
     const ctx = gsap.context(() => {
       const length = path.getTotalLength()
@@ -90,10 +91,11 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
       }
 
       const syncLineToViewportCenter = () => {
-        const rootEl = root.current
-        if (!rootEl) return
-
         const rootRect = rootEl.getBoundingClientRect()
+        rootEl.classList.toggle(
+          'is-flow-active',
+          rootRect.top <= -window.innerHeight * 0.28 && rootRect.bottom > 0,
+        )
         const centerYInSection = window.innerHeight * 0.5 - rootRect.top
         const drawnLength = lengthAtY(centerYInSection)
         setDash(`${drawnLength} ${length}`)
@@ -103,7 +105,7 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
       syncLineToViewportCenter()
 
       ScrollTrigger.create({
-        trigger: root.current,
+        trigger: rootEl,
         start: 'top bottom',
         end: 'bottom top',
         onUpdate: syncLineToViewportCenter,
@@ -111,7 +113,10 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
       })
     }, root)
 
-    return () => ctx.revert()
+    return () => {
+      rootEl.classList.remove('is-flow-active')
+      ctx.revert()
+    }
   }, [pathD, root])
 
   return { pathRef, pathD, svgLeft, svgWidth }

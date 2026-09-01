@@ -179,7 +179,7 @@ for (const forbidden of ['WheelEvent', 'lenis.stop()', 'overflow: scroll']) {
   }
 }
 
-for (const token of ['FrameParticleHandoff', "lazy(() => import('./frame/FrameParticleHandoff'))"]) {
+for (const token of ['FrameParticleHandoff', 'lazy(loadFrameParticleHandoff)', 'frame-particle-handoff--loading']) {
   if (!frame.includes(token)) throw new Error(`Frame → Stack particle handoff is missing ${token}.`)
 }
 for (const token of ['setScrollState', 'data-frame-particles', 'data-frame-particle-capture', 'markDrawableSubtree', 'canAcquireOptionalSurface', 'releaseContext', "start: 'top top'", "end: 'bottom bottom'"]) {

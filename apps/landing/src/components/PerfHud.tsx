@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { supportsHtmlInCanvas } from '../lib/canvas-ui/runtime'
 
 /**
  * Dev-only performance HUD: live FPS (with a rolling worst-case) and a
@@ -13,6 +14,7 @@ export default function PerfHud() {
   const fpsRef = useRef<HTMLSpanElement>(null)
   const worstRef = useRef<HTMLSpanElement>(null)
   const ltRef = useRef<HTMLSpanElement>(null)
+  const canvasRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     let raf = 0
@@ -64,6 +66,13 @@ export default function PerfHud() {
       /* longtask API unsupported (Safari/Firefox) — FPS still works */
     }
 
+    if (canvasRef.current) {
+      const active = supportsHtmlInCanvas()
+      canvasRef.current.textContent = active ? 'Canvas HTML on' : 'Canvas HTML fallback'
+      canvasRef.current.style.color = active ? '#60a5fa' : '#fbbf24'
+      document.documentElement.dataset.htmlCanvas = active ? 'active' : 'fallback'
+    }
+
     return () => {
       cancelAnimationFrame(raf)
       root?.removeEventListener('click', resetWorst)
@@ -95,6 +104,7 @@ export default function PerfHud() {
       <span ref={fpsRef}>– fps</span>
       <span ref={worstRef} style={{ opacity: 0.85 }}>min –</span>
       <span ref={ltRef} style={{ color: '#94a3b8' }}>LT 0</span>
+      <span ref={canvasRef}>Canvas HTML …</span>
     </div>
   )
 }

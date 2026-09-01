@@ -10,6 +10,7 @@
   "scripts": {
     "setup": "npm run setup --workspace @timcai/landing",
     "dev": "npm run dev --workspace @timcai/landing",
+    "dev:canvas": "npm run dev:canvas --workspace @timcai/landing",
     "dev:landing": "npm run dev --workspace @timcai/landing",
     "dev:studio": "npm run dev --workspace @timcai/studio",
     "build": "npm run build --workspace @timcai/landing",

@@ -1,35 +1,40 @@
 /* ── Archive slot — individual image cell ── */
 .archive-slot {
+  --slot-media-height: var(--support-height, min(49vh, 490px));
   min-width: 0;
   min-height: 0;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  display: flex;
+  width: max-content;
+  flex: 0 0 auto;
+  flex-direction: column;
   justify-items: center;
-  overflow: hidden;
+  overflow: visible;
   contain: layout paint;
-  /* The horizontal rail holds ~50 image slots; only a few are ever on screen.
-     content-visibility skips layout/paint/decode for the off-screen ones, so
-     fast scrubbing through the rail stops repainting dozens of photos per
-     frame. The cluster grid tracks keep each slot's box size when skipped, and
-     `auto` remembers the last rendered size to avoid any reveal pop. */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
+  /* Width is derived from the real aspect ratio and role height. Do not use a
+     generic contain-intrinsic-size here: replacing an offscreen photograph with
+     a square estimate changes track.scrollWidth when it becomes visible and
+     destabilises the pinned ScrollTrigger. */
   transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0);
   transform-origin: center;
 }
+
+.archive-slot--primary { --slot-media-height: var(--primary-height, min(72vh, 720px)); }
+.archive-slot--secondary { --slot-media-height: var(--secondary-height, min(55vh, 550px)); }
+.archive-slot--detail { --slot-media-height: var(--detail-height, min(43vh, 430px)); }
+.archive-slot--support { --slot-media-height: var(--support-height, min(49vh, 490px)); }
 
 /* ── Slot media ── */
 .archive-slot__media {
   position: relative;
   display: block;
-  min-height: 0;
-  width: 100%;
-  height: auto;
-  max-height: 100%;
+  width: auto;
+  height: var(--slot-media-height);
+  max-width: none;
+  max-height: none;
   aspect-ratio: var(--image-aspect, 4 / 3);
   justify-self: center;
   align-self: end;
-  overflow: hidden;
+  overflow: clip;
   border-radius: 0;
   background: transparent;
   color: inherit;
@@ -40,25 +45,6 @@
 .archive-slot__open:focus-visible {
   outline: 2px solid var(--accent, #d8bd86);
   outline-offset: 5px;
-}
-
-.archive-slot--portrait .archive-slot__media,
-.archive-slot--tall .archive-slot__media {
-  width: auto;
-  max-width: 100%;
-  height: 100%;
-}
-
-.archive-slot--landscape .archive-slot__media {
-  aspect-ratio: var(--image-aspect, 4 / 3);
-}
-
-.archive-slot--wide .archive-slot__media {
-  aspect-ratio: var(--image-aspect, 16 / 9);
-}
-
-.archive-slot--square .archive-slot__media {
-  aspect-ratio: var(--image-aspect, 1 / 1);
 }
 
 .archive-slot__media img {
@@ -74,9 +60,9 @@
   display: flex;
   flex-direction: column;
   justify-self: center;
-  text-align: center;
+  text-align: left;
   gap: 3px;
-  width: min(100%, 32ch);
+  width: 100%;
   max-width: 100%;
   min-height: 0;
   margin-top: 9px;

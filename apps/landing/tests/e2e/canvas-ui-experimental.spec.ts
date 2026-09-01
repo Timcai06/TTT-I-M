@@ -89,11 +89,17 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
 
   const handoff = page.locator('.frame-particle-handoff')
-  const midpoint = await handoff.evaluate((section) => {
+  const handoffRange = await handoff.evaluate((section) => {
     const rect = section.getBoundingClientRect()
-    return rect.top + window.scrollY + (rect.height - window.innerHeight) * 0.5
+    return {
+      start: rect.top + window.scrollY,
+      distance: rect.height - window.innerHeight,
+    }
   })
-  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), midpoint)
+  await page.evaluate(
+    ({ start, distance }) => window.scrollTo({ top: start + distance * 0.5, behavior: 'auto' }),
+    handoffRange,
+  )
   await expect(handoff).toHaveAttribute('data-frame-particles', 'active')
   await expect(handoff.locator('[data-frame-particle-capture]')).toHaveCount(1)
   await expect(handoff.locator('canvas')).toHaveCount(2)
@@ -106,6 +112,24 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
   }))
   expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 2)
   expect(captureGeometry.scrollTop).toBeGreaterThan(0)
+
+  // The transition used to mount/unmount exactly at its ScrollTrigger edge,
+  // which made fast direction changes flash or jump. Exercise both directions
+  // inside the pinned range and require the enhanced surface to stay complete.
+  for (const progress of [0.22, 0.76, 0.34, 0.88, 0.48]) {
+    await page.evaluate(
+      ({ start, distance, progress }) => window.scrollTo({
+        top: start + distance * progress,
+        behavior: 'auto',
+      }),
+      { ...handoffRange, progress },
+    )
+    await page.waitForTimeout(120)
+    await expect(handoff).toHaveAttribute('data-frame-particles', 'active')
+    await expect(handoff.locator('canvas')).toHaveCount(2)
+    await expect(handoff.locator('.frame-particle-handoff__surface')).toHaveCSS('opacity', '1')
+    await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
+  }
 
   await page.waitForTimeout(1_100)
   const before = await handoff.locator('.frame-particle-handoff__output').screenshot()

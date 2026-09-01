@@ -108,11 +108,41 @@ test('Frame mirrors the complete Particle Scroll document without a nested scrol
   expect(state.progress).toBeGreaterThan(0.4)
   expect(state.progress).toBeLessThan(0.6)
   expect(state.documentTransform).not.toBe('none')
-  expect(state.contactSheets).toBe(4)
+  expect(state.contactSheets).toBe(3)
   expect(state.rejectedHybridLayers).toBe(0)
 
-  await page.locator('#skills').scrollIntoViewIfNeeded()
+  const composition = await handoff.locator('.frame-particle-document__contact').evaluate((contact) => {
+    return [...contact.querySelectorAll<HTMLElement>('figure')].map((figure) => {
+      const image = figure.querySelector<HTMLImageElement>('img')!
+      const rect = figure.getBoundingClientRect()
+      const naturalAspect = image.naturalWidth / Math.max(1, image.naturalHeight)
+      return {
+        aspectDelta: Math.abs(rect.width / Math.max(1, rect.height) - naturalAspect),
+        borderWidth: Number.parseFloat(getComputedStyle(figure).borderWidth),
+        background: getComputedStyle(figure).backgroundColor,
+      }
+    })
+  })
+  expect(composition.every((item) => item.aspectDelta < 0.02)).toBe(true)
+  expect(composition.every((item) => item.borderWidth === 0)).toBe(true)
+  expect(composition.every((item) => item.background === 'rgba(0, 0, 0, 0)')).toBe(true)
+
+  const skillsTop = await page.locator('#skills').evaluate((skills) => {
+    const rect = skills.getBoundingClientRect()
+    return rect.top + window.scrollY
+  })
+  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), skillsTop)
   await expect(page.locator('#skills')).toBeInViewport()
+  const stackEntry = await page.locator('#skills').evaluate((skills) => ({
+    flowOpacity: Number.parseFloat(getComputedStyle(skills.querySelector('.skills__flow-svg')!).opacity),
+    rows: [...skills.querySelectorAll<HTMLElement>('.skill-row')].slice(0, 3).map((row) => ({
+      opacity: Number.parseFloat(getComputedStyle(row).opacity),
+      transform: getComputedStyle(row).transform,
+      repeatedEntrance: row.classList.contains('is-visible'),
+    })),
+  }))
+  expect(stackEntry.flowOpacity).toBe(0)
+  expect(stackEntry.rows.every((row) => row.opacity === 1 && row.transform === 'none' && !row.repeatedEntrance)).toBe(true)
 })
 
 test('SciScope opens as one uninterrupted film with its original sound', async ({ page }) => {

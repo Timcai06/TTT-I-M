@@ -64,20 +64,22 @@ if (!slotSource.includes('--image-aspect') || !frameStyleSource.includes('aspect
   throw new Error('Archive slots must bind media boxes to the real image aspect ratio so captions stay attached to the visible photo.')
 }
 
-if (!frameStyleSource.includes('.archive-cluster--theme-building.archive-cluster--mosaic-left') || !frameStyleSource.includes('width: clamp(2240px, 182vw, 3120px)')) {
-  throw new Error('Building mosaic clusters must keep the enlarged but not over-wide track-level composition.')
-}
-
-const requiredBuildingLayeredClusters = [
+const requiredIntrinsicEditorialLayout = [
+  'width: max-content',
+  '--primary-height:',
+  '--secondary-height:',
+  '--detail-height:',
+  '--support-height:',
+  '.archive-cluster--theme-building',
+  '.archive-cluster--theme-cuisine',
+  '.archive-cluster--theme-scenery',
   "[data-cluster='building-surface-memory']",
   "[data-cluster='building-skyline-weather']",
-  "[data-cluster='building-interior-routes']",
   "[data-cluster='building-night-current']",
-  'grid-template-rows: repeat(10, minmax(0, 1fr))',
 ]
-const missingBuildingLayers = requiredBuildingLayeredClusters.filter((needle) => !frameStyleSource.includes(needle))
-if (missingBuildingLayers.length > 0) {
-  throw new Error(`Building archive must keep bespoke layered cluster layouts: ${missingBuildingLayers.join(', ')}`)
+const missingEditorialTokens = requiredIntrinsicEditorialLayout.filter((needle) => !frameStyleSource.includes(needle))
+if (missingEditorialTokens.length > 0) {
+  throw new Error(`Frame archive must keep intrinsic-ratio editorial strips: ${missingEditorialTokens.join(', ')}`)
 }
 
 if (frameStyleSource.includes('scale(var(--slot-scale') || frameStyleSource.includes('scale(calc(var(--slot-scale')) {
@@ -88,8 +90,8 @@ if (frameStyleSource.includes('object-fit: cover')) {
   throw new Error('Frame archive images must preserve their source proportions; do not use object-fit: cover.')
 }
 
-if (!frameStyleSource.includes('.archive-cluster--theme-cuisine.archive-cluster--feature-left') || !frameStyleSource.includes('width: clamp(1360px, 122vw, 2060px)')) {
-  throw new Error('Cuisine archive must keep proportional, staggered table layouts.')
+if (frameStyleSource.includes('aspect-ratio: 16 / 10')) {
+  throw new Error('Frame responsive layouts must never force portrait or scenery images into a 16 / 10 card shell.')
 }
 
 console.log('[frame-architecture-guards] Frame composition, runtime hook, and slot DOM boundaries are separated.')

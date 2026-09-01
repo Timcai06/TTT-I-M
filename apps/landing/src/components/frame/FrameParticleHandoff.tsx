@@ -11,7 +11,6 @@ import { prefersReducedMotion } from '../../lib/motion'
 import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { markDrawableSubtree } from '../../lib/canvas-ui/runtime'
-import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
 
 type ArchiveImage = (typeof archiveThemes)[number]['clusters'][number]['slots'][number]['image']
 
@@ -38,7 +37,11 @@ function ParticleDocument({
 
       <section className="frame-particle-document__contact" aria-label="Archive contact sheet">
         {images.map((image, index) => (
-          <figure key={`${capture ? 'capture' : 'fallback'}-${image.src}`}>
+          <figure
+            className={`frame-particle-document__figure frame-particle-document__figure--${index === 0 ? 'lead' : index === 1 ? 'support' : 'detail'}`}
+            key={`${capture ? 'capture' : 'fallback'}-${image.src}`}
+            style={{ '--particle-image-aspect': `${image.width} / ${image.height}` } as CSSProperties}
+          >
             <img
               src={image.src}
               alt={capture ? '' : image.title}
@@ -56,9 +59,9 @@ function ParticleDocument({
       </section>
 
       <footer className="frame-particle-document__handoff">
-        <p>What the frame notices</p>
-        <strong>the stack has to make repeatable.</strong>
-        <span aria-hidden="true">SCROLL / REASSEMBLE / CONTINUE</span>
+        <p>03 / Stack · 技术栈</p>
+        <strong>The stack <em>I work</em> with.</strong>
+        <span aria-hidden="true">TOOLS / SYSTEMS / DELIVERY</span>
       </footer>
     </div>
   )
@@ -72,10 +75,9 @@ export default function FrameParticleHandoff() {
   const handleRef = useRef<FrameParticleHandle | null>(null)
   const latestState = useRef({ progress: 0, delta: 0 })
   const [enhanced, setEnhanced] = useState(false)
-  const [completed, setCompleted] = useState(false)
   const { ref: surfaceRef, visible, mounted } = useGLSurface({
-    renderMargin: '0px',
-    mountMargin: '0px',
+    renderMargin: '80% 0px',
+    mountMargin: '160% 0px',
     initiallyMounted: false,
   })
   const disabled = prefersReducedMotion() || isMobileExperience()
@@ -85,20 +87,21 @@ export default function FrameParticleHandoff() {
     const lastTheme = archiveThemes[archiveThemes.length - 1]
     return lastTheme?.clusters
       .flatMap((cluster) => cluster.slots.map((slot) => slot.image))
-      .slice(-4) ?? []
+      .slice(-3) ?? []
   }, [])
 
   useEffect(() => {
     const capture = captureRef.current
     const source = sourceRef.current
     const output = outputRef.current
-    if (!mounted || !visible || completed || !capture || !source || !output) return
+    if (!mounted || !visible || !capture || !source || !output) return
     if (disabled || !supported || !canAcquireOptionalSurface()) return
 
     const unmarkDrawable = markDrawableSubtree(source, capture)
     let handle: FrameParticleHandle | null = null
     let released = false
-    const captureTimer = window.setTimeout(() => cleanup(), 2_500)
+    let acquired = false
+    const captureTimer = window.setTimeout(() => cleanup(), 4_000)
     const cleanup = () => {
       if (released) return
       released = true
@@ -106,36 +109,41 @@ export default function FrameParticleHandoff() {
       unmarkDrawable()
       handle?.destroy()
       if (handleRef.current === handle) handleRef.current = null
-      releaseContext()
+      if (acquired) releaseContext()
       setEnhanced(false)
     }
 
-    acquireContext()
-    handle = createFrameParticles({
-      source,
-      content: capture,
-      output,
-      onReady: () => {
-        window.clearTimeout(captureTimer)
-        setEnhanced(true)
-        handle?.setScrollState(latestState.current)
-      },
-      onFailure: cleanup,
-    })
-    if (!handle) {
-      cleanup()
-      return
-    }
+    const images = [...capture.querySelectorAll('img')]
+    void Promise.allSettled(images.map((image) => image.decode())).then(() => {
+      if (released) return
+      acquireContext()
+      acquired = true
+      handle = createFrameParticles({
+        source,
+        content: capture,
+        output,
+        onReady: () => {
+          window.clearTimeout(captureTimer)
+          setEnhanced(true)
+          handle?.setScrollState(latestState.current)
+        },
+        onFailure: cleanup,
+      })
+      if (!handle) {
+        cleanup()
+        return
+      }
 
-    handleRef.current = handle
-    handle.setScrollState(latestState.current)
+      handleRef.current = handle
+      handle.setScrollState(latestState.current)
+    })
     const resize = () => handle?.resize()
     window.addEventListener('resize', resize)
     return () => {
       window.removeEventListener('resize', resize)
       cleanup()
     }
-  }, [completed, disabled, mounted, supported, visible])
+  }, [disabled, mounted, supported, visible])
 
   useGSAP(() => {
     const section = root.current
@@ -149,6 +157,11 @@ export default function FrameParticleHandoff() {
       latestState.current = state
       section.style.setProperty('--particle-progress', progress.toFixed(4))
       section.style.setProperty('--particle-scroll-y', `${(-130 * progress).toFixed(2)}svh`)
+      section.dataset.handoffPhase = progress < 0.12
+        ? 'frame-owned'
+        : progress < 0.84
+          ? 'canvas-owned'
+          : 'stack-preview'
       handleRef.current?.setScrollState(state)
     }
 
@@ -157,25 +170,19 @@ export default function FrameParticleHandoff() {
       trigger: section,
       start: 'top top',
       end: 'bottom bottom',
-      scrub: true,
+      scrub: 0.24,
       refreshPriority: -100,
       invalidateOnRefresh: true,
       onUpdate: (self) => sync(self.progress),
-      onLeave: () => {
-        sync(1)
-        setCompleted(true)
-      },
-      onEnterBack: (self) => {
-        setCompleted(false)
-        sync(self.progress)
-      },
+      onLeave: () => sync(1),
+      onEnterBack: (self) => sync(self.progress),
       onLeaveBack: () => sync(0),
     })
-    requestScrollRefresh()
     return () => {
       trigger.kill()
       section.style.removeProperty('--particle-progress')
       section.style.removeProperty('--particle-scroll-y')
+      delete section.dataset.handoffPhase
     }
   }, { scope: root, dependencies: [disabled], revertOnUpdate: true })
 
@@ -198,7 +205,7 @@ export default function FrameParticleHandoff() {
 
         {!disabled && supported && (
           <div className="frame-particle-handoff__surface" ref={surfaceRef} aria-hidden="true">
-            {mounted && visible && !completed && (
+            {mounted && visible && (
               <>
                 <canvas className="frame-particle-handoff__source" ref={sourceRef}>
                   <div

@@ -2,7 +2,7 @@ import type { SkillRow } from '../../content'
 
 /**
  * @description 单行简历技术栈 —— 序号 / 分类 / 技术标签。
- *   `.is-visible` 入场 class 由 Skills 的 reveal effect 控制，此组件不持有动画状态。
+ *   Frame → Stack 交接后保持稳定渲染；本组件不持有重复入场动画状态。
  * @dependencies content 层的 SkillRow 契约
  */
 export default function SkillRowItem({ row }: { row: SkillRow }) {
