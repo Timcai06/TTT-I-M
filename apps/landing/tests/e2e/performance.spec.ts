@@ -301,7 +301,7 @@ test('chapter-scoped React Bits effects keep p95 frame time within budget', asyn
 
   const sections = [
     { id: 'life', label: 'Life/DriftWall' },
-    { id: 'frame', label: 'Frame/AccordionGallery' },
+    { id: 'frame', label: 'Frame/Archive rails' },
     { id: 'projects', label: 'Work/BorderGlow focus cards' },
     { id: 'contact', label: 'Contact/ASCIIText' },
   ]

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { archiveOutro, archiveThemes } from '../../content'
+import { archiveThemes } from '../../content'
 import { ScrollTrigger, useGSAP } from '../../lib/gsap'
 import {
   canRenderFrameParticles,
@@ -25,17 +25,12 @@ function ParticleDocument({
 }) {
   return (
     <div className="frame-particle-document">
-      <header className="frame-particle-document__opening">
-        <div className="frame-particle-document__index" aria-hidden="true">
-          <span>FRAME / 03</span>
-          <span>ARCHIVE → SYSTEM</span>
-        </div>
-        <p className="frame-panel__eyebrow">{archiveOutro.eyebrow}</p>
-        <h2>{archiveOutro.title}</h2>
-        <p className="frame-panel__body">{archiveOutro.body}</p>
+      <header className="frame-particle-document__chrome" aria-hidden="true">
+        <span>FRAME / FINAL EXPOSURE</span>
+        <span>03 · SCENERY</span>
       </header>
 
-      <section className="frame-particle-document__contact" aria-label="Archive contact sheet">
+      <section className="frame-particle-document__contact" aria-label="Final Scenery frame">
         {images.map((image, index) => (
           <figure
             className={`frame-particle-document__figure frame-particle-document__figure--${index === 0 ? 'lead' : index === 1 ? 'support' : 'detail'}`}
@@ -50,18 +45,14 @@ function ParticleDocument({
               onLoad={onMediaReady}
               style={{ '--particle-image-i': index } as CSSProperties}
             />
-            <figcaption>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <span>{image.title}</span>
-            </figcaption>
           </figure>
         ))}
       </section>
 
-      <footer className="frame-particle-document__handoff">
-        <p>FRAME / ARCHIVE COMPLETE</p>
-        <strong>From observation <em>to system.</em></strong>
-        <span aria-hidden="true">NEXT / 03 · STACK</span>
+      <footer className="frame-particle-document__bridge" aria-hidden="true">
+        <span>FRAME / 03</span>
+        <strong>FINAL HORIZON</strong>
+        <span>NEXT / STACK</span>
       </footer>
     </div>
   )
@@ -156,10 +147,12 @@ export default function FrameParticleHandoff() {
       lastScrollY = scrollY
       latestState.current = state
       section.style.setProperty('--particle-progress', progress.toFixed(4))
-      section.style.setProperty('--particle-scroll-y', `${(-130 * progress).toFixed(2)}svh`)
-      section.dataset.handoffPhase = progress < 0.12
+      section.style.setProperty('--particle-scroll-y', `${(-30 * progress).toFixed(2)}svh`)
+      const exitOpacity = progress <= 0.78 ? 1 : Math.max(0, 1 - (progress - 0.78) / 0.22)
+      section.style.setProperty('--particle-exit-opacity', exitOpacity.toFixed(4))
+      section.dataset.handoffPhase = progress < 0.14
         ? 'frame-owned'
-        : progress < 0.84
+        : progress < 0.78
           ? 'canvas-owned'
           : 'stack-preview'
       handleRef.current?.setScrollState(state)
@@ -182,6 +175,7 @@ export default function FrameParticleHandoff() {
       trigger.kill()
       section.style.removeProperty('--particle-progress')
       section.style.removeProperty('--particle-scroll-y')
+      section.style.removeProperty('--particle-exit-opacity')
       delete section.dataset.handoffPhase
     }
   }, { scope: root, dependencies: [disabled], revertOnUpdate: true })

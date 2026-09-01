@@ -11,71 +11,7 @@
   border-top: 1px solid var(--line);
 }
 
-.frame-accordion {
-  position: relative;
-  padding-top: clamp(56px, 8vw, 110px);
-  padding-bottom: clamp(100px, 14vw, 190px);
-}
-
-.frame-accordion::before {
-  position: absolute;
-  z-index: 0;
-  inset: 2% -18% 8%;
-  content: '';
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 20% 38%, rgb(216 189 134 / 8%), transparent 34%),
-    radial-gradient(circle at 78% 62%, rgb(104 128 148 / 7%), transparent 38%);
-  filter: blur(24px);
-}
-
-.frame-accordion > * { position: relative; z-index: 1; }
-
-.frame-accordion__meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-  color: var(--fg-mute);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
-}
-
-.frame-accordion__meta p {
-  max-width: 360px;
-  margin: 0;
-  color: var(--fg-soft);
-  line-height: 1.7;
-  letter-spacing: 0.08em;
-  text-transform: none;
-}
-
-.frame-accordion__meta p i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 9px;
-  border-radius: 50%;
-  background: #d8bd86;
-  box-shadow: 0 0 0 5px rgb(216 189 134 / 10%);
-  animation: archive-hint-pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes archive-hint-pulse {
-  50% { box-shadow: 0 0 0 9px rgb(216 189 134 / 0%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .frame-accordion__meta p i { animation: none; }
-}
-
 .archive-theme-section { scroll-margin-top: 56px; }
-
-@media (max-width: 640px) {
-  .frame-accordion__meta { flex-direction: column; }
-}
 
 .archive-frame-text {
   min-height: min(82vh, 820px);
@@ -90,14 +26,15 @@
   border-top: 1px solid var(--line);
 }
 
-/* Frame → Stack uses CanvasUI Particle Scroll's original model: one complete,
-   scrollable HTML document is captured by layoutsubtree and progressively
-   reassembles above the formation line. Page scroll only mirrors scrollTop. */
+/* Frame → Stack is a short final-exposure bridge. The last Scenery composition
+   remains the only subject while CanvasUI Particle Scroll dissolves it; Stack
+   owns the next title and the existing red Active Flow owns the next motion. */
 .frame-particle-handoff {
   --particle-progress: 0;
   --particle-scroll-y: 0svh;
+  --particle-exit-opacity: 1;
   position: relative;
-  height: 230svh;
+  height: 130svh;
   overflow: clip;
   background: #000;
   contain: layout paint;
@@ -127,8 +64,7 @@
 .frame-particle-handoff__fallback {
   z-index: 1;
   overflow: hidden;
-  opacity: 1;
-  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: var(--particle-exit-opacity);
 }
 
 .frame-particle-handoff.is-enhanced .frame-particle-handoff__fallback {
@@ -136,11 +72,12 @@
 }
 
 .frame-particle-document {
-  min-height: 230svh;
+  position: relative;
+  min-height: 130svh;
   color: var(--fg);
   background:
-    radial-gradient(circle at 78% 24%, rgb(142 164 173 / 8%), transparent 26%),
-    radial-gradient(circle at 16% 58%, rgb(216 189 134 / 7%), transparent 24%),
+    radial-gradient(circle at 76% 18%, rgb(122 168 132 / 7%), transparent 30%),
+    radial-gradient(circle at 18% 62%, rgb(216 189 134 / 5%), transparent 28%),
     #000;
   transform: translate3d(0, var(--particle-scroll-y), 0);
   will-change: transform;
@@ -151,48 +88,25 @@
   will-change: auto;
 }
 
-.frame-particle-document__opening {
-  position: relative;
-  display: flex;
-  min-height: 84svh;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: clamp(96px, 14vh, 150px) clamp(24px, 7vw, 116px) clamp(72px, 10vh, 110px);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.frame-particle-document__index {
+.frame-particle-document__chrome {
   position: absolute;
-  top: clamp(34px, 6vh, 68px);
-  right: clamp(24px, 7vw, 116px);
-  left: clamp(24px, 7vw, 116px);
+  z-index: 5;
+  top: clamp(30px, 5vh, 54px);
+  right: clamp(24px, 5vw, 84px);
+  left: clamp(24px, 5vw, 84px);
   display: flex;
   justify-content: space-between;
-  color: rgb(245 242 234 / 45%);
+  color: rgb(245 242 234 / 42%);
   font-family: var(--font-mono);
   font-size: 8px;
   letter-spacing: 0.18em;
-}
-
-.frame-particle-document__opening h2 {
-  max-width: 980px;
-  margin: 14px 0 24px;
-  font-family: var(--font-serif);
-  font-size: clamp(58px, 9vw, 144px);
-  font-weight: 400;
-  line-height: 0.88;
-  letter-spacing: -0.055em;
-}
-
-.frame-particle-document__opening .frame-panel__body {
-  max-width: 590px;
+  text-transform: uppercase;
 }
 
 .frame-particle-document__contact {
   position: relative;
-  min-height: 88svh;
+  min-height: 100svh;
   padding: 0;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .frame-particle-document__contact figure {
@@ -207,82 +121,54 @@
 
 .frame-particle-document__figure--lead {
   z-index: 1;
-  top: 8svh;
-  left: clamp(24px, 6vw, 104px);
-  height: min(58svh, 620px);
+  top: 18svh;
+  left: clamp(24px, 6vw, 96px);
+  height: min(50svh, 520px);
 }
 
 .frame-particle-document__figure--support {
   z-index: 2;
-  top: 9svh;
-  right: clamp(24px, 7vw, 116px);
-  height: min(34svh, 350px);
+  top: 13svh;
+  right: clamp(24px, 8vw, 128px);
+  height: min(30svh, 310px);
 }
 
 .frame-particle-document__figure--detail {
   z-index: 3;
-  right: clamp(42px, 14vw, 230px);
-  bottom: 8svh;
-  height: min(30svh, 310px);
+  right: clamp(42px, 17vw, 270px);
+  bottom: 12svh;
+  height: min(25svh, 260px);
 }
 
 .frame-particle-document__contact img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: grayscale(0.46) brightness(0.72) contrast(1.08);
+  filter: grayscale(0.36) brightness(0.78) contrast(1.06);
 }
 
-.frame-particle-document__contact figcaption {
+.frame-particle-document__bridge {
   position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  bottom: auto;
-  left: 0;
+  z-index: 5;
+  top: 108svh;
+  right: clamp(24px, 5vw, 84px);
+  left: clamp(24px, 5vw, 84px);
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  color: rgb(245 242 234 / 54%);
+  gap: 24px;
+  color: rgb(245 242 234 / 46%);
   font-family: var(--font-mono);
   font-size: 8px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.frame-particle-document__handoff {
-  display: flex;
-  min-height: 58svh;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(72px, 11vh, 120px) clamp(24px, 7vw, 116px);
-}
-
-.frame-particle-document__handoff p,
-.frame-particle-document__handoff span {
-  margin: 0;
-  color: var(--fg-mute);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
-}
-
-.frame-particle-document__handoff strong {
-  max-width: 940px;
-  margin: 14px 0 34px;
-  font-family: var(--font-serif);
-  font-size: clamp(46px, 7vw, 108px);
-  font-weight: 400;
-  line-height: 0.94;
-  letter-spacing: -0.045em;
-}
-
-.frame-particle-document__handoff em {
+.frame-particle-document__bridge strong {
   color: #d8bd86;
-  font-weight: inherit;
+  font: 500 9px/1 var(--font-mono);
+  letter-spacing: 0.2em;
 }
-
-.frame-particle-document__handoff span { color: #d8bd86; }
 
 .frame-particle-handoff__surface {
   z-index: 2;
@@ -292,7 +178,7 @@
 }
 
 .frame-particle-handoff.is-enhanced .frame-particle-handoff__surface {
-  opacity: 1;
+  opacity: var(--particle-exit-opacity);
 }
 
 .frame-particle-handoff__source,
@@ -339,16 +225,7 @@
     will-change: auto;
   }
 
-  .frame-particle-document__opening {
-    min-height: 76svh;
-    padding: 104px 18px 68px;
-  }
-
-  .frame-particle-document__opening h2 {
-    font-size: clamp(46px, 14vw, 74px);
-  }
-
-  .frame-particle-document__index {
+  .frame-particle-document__chrome {
     top: 36px;
     right: 18px;
     left: 18px;
@@ -360,11 +237,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: auto auto;
     gap: 32px 12px;
-    padding: 18px 18px 56px;
+    padding: 96px 18px 64px;
   }
 
   .frame-particle-document__contact figure:nth-child(n) {
     position: relative;
+    inset: auto;
     grid-area: auto;
     width: 100%;
     height: auto;
@@ -375,13 +253,12 @@
     grid-column: 1 / -1;
   }
 
-  .frame-particle-document__handoff {
-    min-height: 58svh;
-    padding: 80px 18px;
-  }
-
-  .frame-particle-document__handoff strong {
-    font-size: clamp(42px, 12vw, 66px);
+  .frame-particle-document__bridge {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    padding: 0 18px 72px;
   }
 
   .frame-particle-handoff__surface {

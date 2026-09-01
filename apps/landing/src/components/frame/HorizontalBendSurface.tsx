@@ -9,10 +9,12 @@ export default function HorizontalBendSurface({
   capture,
   viewport,
   handleRef,
+  onEnhancedChange,
 }: {
   capture: RefObject<HTMLDivElement | null>
   viewport: RefObject<HTMLDivElement | null>
   handleRef: RefObject<HorizontalBendHandle | null>
+  onEnhancedChange: (enhanced: boolean) => void
 }) {
   const { ref, visible, mounted } = useGLSurface({
     renderMargin: '0px',
@@ -42,6 +44,7 @@ export default function HorizontalBendSurface({
       handle?.destroy()
       releaseContext()
       setEnhanced(false)
+      onEnhancedChange(false)
     }
 
     acquireContext()
@@ -49,7 +52,10 @@ export default function HorizontalBendSurface({
       canvas,
       capture: captureEl,
       viewport: viewportEl,
-      onFirstFrame: () => setEnhanced(true),
+      onFirstFrame: () => {
+        setEnhanced(true)
+        onEnhancedChange(true)
+      },
       onFailure: cleanup,
     })
     if (!handle) {
@@ -59,7 +65,7 @@ export default function HorizontalBendSurface({
     handleRef.current = handle
     window.addEventListener('resize', resize)
     return cleanup
-  }, [capture, disabled, handleRef, mounted, ref, viewport, visible])
+  }, [capture, disabled, handleRef, mounted, onEnhancedChange, ref, viewport, visible])
 
   if (disabled) return null
 

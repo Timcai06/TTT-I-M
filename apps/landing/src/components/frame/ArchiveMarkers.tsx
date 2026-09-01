@@ -4,7 +4,7 @@ export function ArchiveThemeMarker({ theme }: { theme: ArchiveTheme }) {
   return (
     <article className="frame-panel frame-panel--theme archive-theme-marker" data-theme={theme.id}>
       <p className="frame-panel__eyebrow">{theme.eyebrow}</p>
-      <h2 className="archive-theme-marker__title" id={`frame-${theme.id}-title`}>{theme.title}</h2>
+      <h2 className="archive-theme-marker__title">{theme.title}</h2>
       <p className="frame-panel__body archive-theme-marker__body">{theme.body}</p>
     </article>
   )

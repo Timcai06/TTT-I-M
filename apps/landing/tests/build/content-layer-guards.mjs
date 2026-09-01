@@ -30,7 +30,6 @@ const dataImport = /from\s+['"][./]*data\//
 const lifeGallerySource = readFileSync('src/components/LifeGallery.tsx', 'utf8')
 const gradualBlurSource = readFileSync('src/components/GradualBlur.tsx', 'utf8')
 const driftWallSource = readFileSync('src/components/DriftWall.tsx', 'utf8')
-const accordionSource = readFileSync('src/components/AccordionGallery.tsx', 'utf8')
 const borderGlowSource = readFileSync('src/components/BorderGlow.tsx', 'utf8')
 const asciiTextSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
 const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
@@ -65,11 +64,8 @@ for (const needle of ['requestAnimationFrame', 'IntersectionObserver', 'translat
   if (!driftWallSource.includes(needle)) throw new Error(`DriftWall must preserve ${needle}.`)
 }
 
-if (!frameSource.includes('AccordionGallery') || !frameSource.includes('data-frame-accordion')) {
-  throw new Error('Frame must expose the React Bits AccordionGallery archive index.')
-}
-for (const needle of ['flexGrow', 'rotationY', 'parallax', 'stagger', 'ResizeObserver']) {
-  if (!accordionSource.includes(needle)) throw new Error(`AccordionGallery must preserve ${needle}.`)
+if (frameSource.includes('AccordionGallery') || frameSource.includes('data-frame-accordion')) {
+  throw new Error('Frame must not repeat its three themes in a pre-archive AccordionGallery.')
 }
 
 if (!gradualBlurSource.includes('CURVE_FUNCTIONS') || !appStyleSource.includes("./components/gradual-blur.css") || !packageManifest.dependencies?.mathjs) {

@@ -6,7 +6,6 @@ const required = [
   'src/components/BorderGlow.tsx',
   'src/components/ASCIIText.tsx',
   'src/components/DriftWall.tsx',
-  'src/components/AccordionGallery.tsx',
   'src/components/WorkTransition.tsx',
   'src/components/frame/FrameParticleHandoff.tsx',
   'src/components/MaskedHeading.tsx',
@@ -191,7 +190,7 @@ for (const token of ['point: 0.68', 'band: 420', 'density: 2', 'size: 1.25', 'sp
 for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
   if (!frameParticleVendor.includes(token)) throw new Error(`Vendored Canvas UI Particle Scroll must retain ${token}.`)
 }
-for (const token of ['height: 230svh', 'position: sticky', '.frame-particle-document__contact', 'scrollbar-width: none', '@media (prefers-reduced-motion: reduce)']) {
+for (const token of ['height: 130svh', 'position: sticky', '.frame-particle-document__contact', '.frame-particle-document__bridge', 'scrollbar-width: none', '(prefers-reduced-motion: reduce)']) {
   if (!frameStyle.includes(token)) throw new Error(`Frame Particle Scroll fallback must retain ${token}.`)
 }
 for (const forbidden of ['externalProgress', '--particle-front', 'mask-image:', 'frame-particle-handoff__dust', 'frame-particle-handoff__signal']) {
@@ -280,7 +279,6 @@ for (const [path, expected] of Object.entries(canonicalScenes)) {
 
 for (const [source, component, owner] of [
   [life, 'DriftWall', 'Life'],
-  [frame, 'AccordionGallery', 'Frame'],
   [projects, 'BorderGlow', 'Projects'],
   [footer, 'ASCIIText', 'Contact'],
 ]) {

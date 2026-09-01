@@ -137,18 +137,12 @@ void main() {
   );
   vec4 base = texture(u_content, vec2(point.x, 1.0 - point.y));
   float coverage = alpha * base.a;
-  float feather = 12.0 * u_pixel_x;
-  float leftMask = inLeft * (1.0 - smoothstep(u_zone - feather, u_zone, uv.x));
-  float rightMask = inRight * smoothstep(1.0 - u_zone, 1.0 - u_zone + feather, uv.x);
-  float leftActive = smoothstep(0.001, 0.04, u_left_amount);
-  float rightActive = smoothstep(0.001, 0.04, u_right_amount);
-  float edgeMask = max(leftMask * leftActive, rightMask * rightActive);
-  float outputAlpha = coverage * edgeMask;
 
-  // The real DOM rail remains visible and authoritative through the flat
-  // center. Canvas only replaces the folded edges, so an experimental capture
-  // stall can never freeze or blank the whole Frame chapter.
-  outColor = vec4(base.rgb * outputAlpha, outputAlpha);
+  // After the first verified capture this surface becomes the only visual
+  // owner of the moving image rail: a flat, faithful centre plus folded edges.
+  // The semantic DOM stays underneath for hit-testing and is restored on any
+  // capture or context failure by HorizontalBendSurface.
+  outColor = vec4(base.rgb * coverage, coverage);
 }`
 
 function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {

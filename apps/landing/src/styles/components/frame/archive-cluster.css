@@ -1,43 +1,20 @@
 /* ── Archive cluster — intrinsic-ratio editorial strips ── */
 .archive-cluster {
-  --cluster-label-x: 0px;
-  --cluster-label-y: 0px;
-  --primary-width: clamp(320px, 36vw, 540px);
-  --secondary-width: clamp(250px, 27vw, 400px);
-  --detail-width: clamp(200px, 20vw, 300px);
-  --support-width: clamp(230px, 24vw, 360px);
+  --primary-width: clamp(300px, 31vw, 460px);
+  --secondary-width: clamp(220px, 22vw, 330px);
+  --detail-width: clamp(170px, 17vw, 250px);
+  --support-width: clamp(200px, 20vw, 300px);
   position: relative;
   display: flex;
   width: max-content;
-  height: min(80vh, 760px);
-  max-height: calc(100vh - 72px);
+  height: min(70svh, 620px);
+  max-height: calc(100svh - 128px);
   flex: 0 0 auto;
   align-items: center;
-  gap: clamp(28px, 3vw, 62px);
+  gap: clamp(26px, 2.8vw, 52px);
   padding-inline: clamp(12px, 1.6vw, 30px);
   overflow: visible;
   isolation: isolate;
-}
-
-.archive-cluster::before {
-  content: attr(data-cluster-title);
-  position: absolute;
-  z-index: 4;
-  top: calc(clamp(14px, 2.2vh, 26px) + var(--cluster-label-y));
-  left: calc(clamp(12px, 1.6vw, 30px) + var(--cluster-label-x));
-  max-width: 32ch;
-  overflow: hidden;
-  color: var(--fg-mute);
-  font: 500 clamp(8px, 0.6vw, 10px)/1 var(--font-mono);
-  letter-spacing: 0.14em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.archive-cluster--theme-building::before {
-  display: none;
 }
 
 /* Right-handed layouts reverse the editorial reading order without changing
@@ -54,98 +31,71 @@
 }
 
 .archive-cluster--rhythm-open {
-  gap: clamp(42px, 4.6vw, 92px);
+  gap: clamp(38px, 4vw, 72px);
 }
 
 .archive-cluster--rhythm-architectural {
   gap: clamp(30px, 3.2vw, 66px);
 }
 
-/* Building: tall structural studies followed by broad skyline releases. */
+/* Themes vary in rhythm, never in image scale. Keeping one optical table is
+   what prevents later chapters from looking progressively larger. */
 .archive-cluster--theme-building {
-  --primary-width: clamp(340px, 38vw, 560px);
-  --secondary-width: clamp(250px, 27vw, 400px);
-  --detail-width: clamp(200px, 20vw, 300px);
-  --support-width: clamp(230px, 24vw, 360px);
-}
-
-.archive-cluster--theme-building.archive-cluster--panorama {
-  --primary-width: clamp(380px, 42vw, 600px);
-  --secondary-width: clamp(260px, 29vw, 420px);
-  --detail-width: clamp(210px, 21vw, 310px);
+  gap: clamp(28px, 3vw, 56px);
 }
 
 [data-cluster='building-surface-memory'] {
-  padding-inline: clamp(32px, 4vw, 78px);
+  padding-inline: clamp(18px, 2.4vw, 42px);
 }
 
 [data-cluster='building-skyline-weather'],
 [data-cluster='building-night-current'] {
-  gap: clamp(34px, 3.8vw, 78px);
+  gap: clamp(32px, 3.4vw, 62px);
 }
 
 /* Cuisine: close, warm diptychs and triptychs with a common optical scale. */
 .archive-cluster--theme-cuisine {
-  --primary-width: clamp(310px, 34vw, 500px);
-  --secondary-width: clamp(240px, 26vw, 380px);
-  --detail-width: clamp(200px, 20vw, 290px);
-  --support-width: clamp(220px, 23vw, 340px);
-  gap: clamp(26px, 2.7vw, 52px);
+  gap: clamp(24px, 2.5vw, 46px);
 }
 
 .archive-cluster--theme-cuisine.archive-cluster--rhythm-open {
-  gap: clamp(40px, 4.2vw, 82px);
+  gap: clamp(36px, 3.8vw, 68px);
 }
 
 /* Scenery: large, quiet horizons with fewer and more generous companions. */
 .archive-cluster--theme-scenery {
-  --primary-width: clamp(360px, 40vw, 580px);
-  --secondary-width: clamp(260px, 29vw, 420px);
-  --detail-width: clamp(210px, 21vw, 310px);
-  --support-width: clamp(240px, 25vw, 370px);
-  gap: clamp(48px, 5.2vw, 104px);
-  padding-inline: clamp(32px, 5vw, 96px);
-}
-
-.archive-theme-section--scenery .archive-theme-section__track {
-  gap: clamp(48px, 5vw, 96px);
-  padding-left: clamp(220px, 26vw, 420px);
-  padding-right: clamp(108px, 13vw, 240px);
-}
-
-[data-cluster='scenery-panorama'],
-[data-cluster='scenery-close'] {
-  --primary-width: clamp(380px, 42vw, 600px);
+  gap: clamp(42px, 4.5vw, 78px);
+  padding-inline: clamp(24px, 3.6vw, 64px);
 }
 
 /* Small photographs move vertically to retain the archive's asymmetry without
    resizing or cropping their composition. */
 .archive-cluster .archive-slot--secondary {
   align-self: flex-start;
-  margin-top: clamp(68px, 9vh, 112px);
+  margin-top: clamp(42px, 6vh, 72px);
 }
 
 .archive-cluster .archive-slot--detail {
   align-self: flex-end;
-  margin-bottom: clamp(58px, 7vh, 96px);
+  margin-bottom: clamp(38px, 5vh, 64px);
 }
 
 .archive-cluster .archive-slot--support:nth-of-type(even) {
   align-self: flex-start;
-  margin-top: clamp(84px, 11vh, 132px);
+  margin-top: clamp(48px, 7vh, 82px);
 }
 
 .archive-cluster .archive-slot--support:nth-of-type(odd) {
   align-self: flex-end;
-  margin-bottom: clamp(70px, 8vh, 108px);
+  margin-bottom: clamp(44px, 6vh, 72px);
 }
 
 @media (max-height: 760px) and (min-width: 769px) {
   .archive-cluster {
-    --primary-width: clamp(300px, 34vw, 500px);
-    --secondary-width: clamp(230px, 25vw, 360px);
-    --detail-width: clamp(190px, 18vw, 270px);
-    --support-width: clamp(210px, 22vw, 320px);
-    height: min(76vh, 580px);
+    --primary-width: clamp(280px, 29vw, 420px);
+    --secondary-width: clamp(205px, 21vw, 300px);
+    --detail-width: clamp(215px, 18vw, 240px);
+    --support-width: clamp(190px, 19vw, 280px);
+    height: min(68svh, 520px);
   }
 }

@@ -14,8 +14,6 @@ interface ArchiveSlotStyle extends CSSProperties {
   '--slot-x'?: string
   /** 设计层次位移 Y，来自内容层 slot.offset.y，并在组件内做安全钳制 */
   '--slot-y'?: string
-  /** 设计层次缩放，限制在 0.9–1.08，防止图片过窄、过宽或互相重叠 */
-  '--slot-scale'?: number
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -26,7 +24,7 @@ function clamp(value: number, min: number, max: number): number {
  * @description 渲染 Frame archive 里的单张摄影卡槽，保持原始比例、caption 对位和轻微层次偏移
  * @dependencies 依赖 ArchiveClusterSlot 内容结构、responsive srcSet/sizes 和 frame.css 中的 CSS 变量布局
  * @performance 所有图片保持 eager fetch 以支撑 Frame 快速滚入的可信展示；只有首图通过 fetchPriority=high 提升优先级
- * @caveats offset 在组件内钳制，内容层不能通过异常 scale/位移破坏图片说明文字和图片的空间关系
+ * @caveats x/y offset 在组件内钳制；内容层 scale 不参与渲染，视觉层级统一由 role × orientation 尺度表控制
  */
 export default function ArchiveImageSlot({
   eager,
@@ -44,7 +42,6 @@ export default function ArchiveImageSlot({
     '--image-aspect': `${image.width} / ${image.height}`,
     '--slot-x': `${clamp(slot.offset?.x ?? 0, -10, 10)}px`,
     '--slot-y': `${clamp(slot.offset?.y ?? 0, -12, 12)}px`,
-    '--slot-scale': clamp(slot.offset?.scale ?? 1, 0.9, 1.08),
   }
   const openImage = (event: MouseEvent<HTMLAnchorElement>) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return

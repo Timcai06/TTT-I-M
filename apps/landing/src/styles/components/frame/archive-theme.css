@@ -68,13 +68,20 @@
 .archive-theme-section__track {
   position: relative;
   z-index: 1;
-  height: 100vh;
+  height: 100svh;
   display: flex;
   align-items: center;
-  gap: clamp(24px, 3.2vw, 64px);
-  padding-left: clamp(220px, 25vw, 380px);
-  padding-right: clamp(96px, 12vw, 210px);
+  gap: clamp(42px, 4.2vw, 76px);
+  padding-left: clamp(400px, 35vw, 560px);
+  padding-right: clamp(88px, 10vw, 164px);
   transform: translate3d(0, 0, 0);
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+  .archive-theme-section__track > .archive-theme-marker,
+  .archive-theme-section__track > .archive-cluster-marker {
+    display: none;
+  }
 }
 
 .horizontal-bend {
@@ -110,8 +117,22 @@
   display: none;
 }
 
-/* The DOM rail is always the visual and interaction authority. The enhanced
-   Canvas is transparent through the center and paints only the folded edges. */
+/* Once a complete frame has been uploaded, Canvas owns the moving rail's
+   pixels. The original DOM remains in place for links, semantics and geometry;
+   context loss removes this class and restores it immediately. */
+.archive-theme-section.is-bend-enhanced .archive-theme-section__pin > .archive-theme-section__track {
+  opacity: 0;
+}
+
+/* Keyboard focus temporarily returns visual authority to the real DOM so its
+   native focus ring remains precise and the Canvas copy cannot double-paint. */
+.archive-theme-section__pin:has(> .archive-theme-section__track:focus-within) > .archive-theme-section__track {
+  opacity: 1;
+}
+
+.archive-theme-section__pin:has(> .archive-theme-section__track:focus-within) > .horizontal-bend {
+  visibility: hidden;
+}
 
 @media (max-width: 768px), (prefers-reduced-motion: reduce) {
   .horizontal-bend { display: none; }
@@ -121,48 +142,109 @@
   will-change: transform;
 }
 
-.archive-theme-section--cuisine .archive-theme-section__track {
-  padding-left: clamp(96px, 12vw, 210px);
-  padding-right: clamp(220px, 25vw, 380px);
+.archive-theme-section--scenery .archive-theme-section__track {
+  gap: clamp(52px, 5vw, 88px);
 }
 
-.archive-theme-section--scenery .archive-theme-section__track {
-  gap: clamp(24px, 3vw, 60px);
+/* ── Fixed editorial copy: never enters HTML-in-Canvas capture ── */
+.archive-editorial-copy {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: clamp(24px, 5vw, 82px);
+  width: clamp(252px, 25vw, 372px);
+  color: var(--fg);
+  pointer-events: none;
+  transform: translateY(-47%);
+}
+
+.archive-editorial-copy::before {
+  position: absolute;
+  z-index: -1;
+  inset: -92px -126px -128px -64px;
+  content: '';
+  background: linear-gradient(90deg, #000 0 72%, rgb(0 0 0 / 98%) 84%, transparent 100%);
+  pointer-events: none;
+}
+
+.archive-editorial-copy__eyebrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 16px;
+  color: var(--fg-mute);
+  font: 500 9px/1.4 var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.archive-editorial-copy__theme-title {
+  max-width: 22ch;
+  margin: 0;
+  color: var(--fg-soft);
+  font: 400 clamp(17px, 1.45vw, 22px)/1.25 var(--font-serif);
+  letter-spacing: -0.01em;
+}
+
+.archive-editorial-copy__cluster {
+  margin-top: clamp(24px, 4vh, 38px);
+  animation: archive-copy-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.archive-editorial-copy__rule {
+  display: block;
+  width: 42px;
+  height: 1px;
+  margin-bottom: 18px;
+  background: rgb(216 189 134 / 72%);
+}
+
+.archive-editorial-copy__cluster h3 {
+  max-width: 11ch;
+  margin: 0;
+  color: var(--fg);
+  font: 400 clamp(38px, 4vw, 62px)/0.96 var(--font-serif);
+  letter-spacing: -0.035em;
+}
+
+.archive-editorial-copy__cluster p {
+  max-width: 36ch;
+  margin: clamp(18px, 2.6vh, 26px) 0 0;
+  color: var(--fg-soft);
+  font: 400 clamp(14px, 1.05vw, 17px)/1.55 var(--font-serif);
+}
+
+@keyframes archive-copy-enter {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 /* ── Rail HUD (title / count overlay, fixed top-left of each theme section) ── */
 .frame-horizontal__rail {
   position: absolute;
-  z-index: 4;
-  left: clamp(20px, 3vw, 48px);
-  top: clamp(76px, 9vh, 112px);
+  z-index: 5;
+  left: clamp(24px, 5vw, 82px);
+  top: clamp(78px, 10vh, 104px);
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: min(250px, 32vw);
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+  width: clamp(252px, 25vw, 372px);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--fg-mute);
   pointer-events: none;
-  mix-blend-mode: difference;
+  mix-blend-mode: normal;
 }
 
-.frame-horizontal__rail-title,
-.frame-horizontal__rail-count {
+.frame-horizontal__rail-kicker {
   color: var(--fg);
 }
 
 .frame-horizontal__rail-subcount {
   color: var(--fg-dim);
-}
-
-.frame-horizontal__rail-current {
-  margin-top: 12px;
-  color: var(--fg-soft);
-  line-height: 1.5;
-  letter-spacing: 0.1em;
 }
 
 /* ── Panels and editorial markers ── */

@@ -47,6 +47,8 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
 
   await expect(page.locator('#frame')).toBeVisible()
   await expect(page.locator('.archive-theme-section')).toHaveCount(3)
+  await expect(page.locator('.frame-accordion')).toHaveCount(0)
+  await expect(page.locator('.archive-editorial-copy')).toHaveCount(3)
   await expect(page.locator('.archive-theme-section__track').first()).toBeVisible()
   await expect(page.locator('.archive-cluster-marker')).toHaveCount(4)
   await expect(page.locator("[data-cluster-marker='building-surface-memory']")).toContainText('Surface Memory')
@@ -318,7 +320,9 @@ test('Frame handoff does not repeat the Stack chapter title', async ({ page }) =
   })
 
   expect(copies).toBe(1)
-  await expect(page.locator('.frame-particle-document__handoff').first()).toContainText('From observation to system.')
+  await expect(page.locator('.frame-particle-document__bridge').first()).toContainText('FINAL HORIZON')
+  await expect(page.locator('.frame-particle-document__opening')).toHaveCount(0)
+  await expect(page.locator('.frame-particle-document__handoff')).toHaveCount(0)
 })
 
 test('Frame falls back to a stable vertical layout on mobile', async ({ page }) => {

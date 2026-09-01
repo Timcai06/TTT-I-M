@@ -17,7 +17,7 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   const bend = page.locator('#frame-building [data-horizontal-bend]')
   await expect(bend).toHaveAttribute('data-horizontal-bend', 'active')
   await expect(page.locator('#frame-building .frame-edge-blur').first()).toBeHidden()
-  await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')).toHaveCSS('opacity', '1')
+  await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')).toHaveCSS('opacity', '0')
   await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
 
   const bendCanvas = bend.locator('canvas').first()
@@ -54,6 +54,7 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   await bend.locator('canvas').dispatchEvent('webglcontextlost')
   await expect(bend).toHaveAttribute('data-horizontal-bend', 'fallback')
   await expect(page.locator('#frame-building .frame-edge-blur').first()).toBeVisible()
+  await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')).toHaveCSS('opacity', '1')
 
   const transition = page.locator('#work-transition')
   const gateTarget = await transition.evaluate((section) => {
@@ -113,7 +114,7 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
     scrollHeight: content.scrollHeight,
     scrollTop: content.scrollTop,
   }))
-  expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 2)
+  expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 1.25)
   expect(captureGeometry.scrollTop).toBeGreaterThan(0)
 
   // The transition used to mount/unmount exactly at its ScrollTrigger edge,
@@ -130,7 +131,9 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
     await page.waitForTimeout(120)
     await expect(handoff).toHaveAttribute('data-frame-particles', 'active')
     await expect(handoff.locator('canvas')).toHaveCount(2)
-    await expect(handoff.locator('.frame-particle-handoff__surface')).toHaveCSS('opacity', '1')
+    await expect.poll(async () => Number.parseFloat(
+      await handoff.locator('.frame-particle-handoff__surface').evaluate((node) => getComputedStyle(node).opacity),
+    )).toBeGreaterThan(0.25)
     await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
   }
 

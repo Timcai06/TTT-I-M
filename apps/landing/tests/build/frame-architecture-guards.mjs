@@ -36,13 +36,21 @@ if (!hookSource.includes('warmClusterImages') || !hookSource.includes('scrollTri
   throw new Error('useArchiveThemeScroll must own image warmup and ScrollTrigger orchestration.')
 }
 
-for (const token of ['HorizontalBendSurface', 'bendHandle']) {
+for (const token of ['HorizontalBendSurface', 'bendHandle', 'ArchiveEditorialCopy', 'is-bend-enhanced']) {
   if (!sectionSource.includes(token) && !hookSource.includes(token)) {
     throw new Error(`Frame horizontal bend is missing ${token}.`)
   }
 }
 for (const token of ['zone: 180', 'angle: 46', 'rounding: 130', 'perspective: 1250', 'ease: 180', 'smoothing: 0.14', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame']) {
   if (!bendSource.includes(token)) throw new Error(`Horizontal Bend must keep ${token}.`)
+}
+if (!bendSource.includes('outColor = vec4(base.rgb * coverage, coverage)') || bendSource.includes('edgeMask')) {
+  throw new Error('Horizontal Bend must own one complete captured rail instead of double-painting edge fragments over DOM.')
+}
+for (const token of ['onEnhancedChange', 'is-bend-enhanced', '> .archive-theme-section__track', 'focus-within']) {
+  if (!sectionSource.includes(token) && !frameStyleSource.includes(token)) {
+    throw new Error(`Frame Bend single-owner fallback contract is missing ${token}.`)
+  }
 }
 for (const token of ['right-to-left', 'left-to-right', 'ease / distance', 'smoothstep(0, edgeSpan', 'smoothstep(1 - edgeSpan, 1']) {
   if (!bendMathSource.includes(token)) throw new Error(`Horizontal Bend math must keep ${token}.`)

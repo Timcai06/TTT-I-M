@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { ArchiveCluster, ArchiveTheme } from '../../content'
 import type { ImageLightboxItem } from '../../shared/media/openImageLightbox'
 import ArchiveImageSlot from './ArchiveImageSlot'
@@ -5,10 +6,12 @@ import ArchiveImageSlot from './ArchiveImageSlot'
 export default function ArchiveClusterPanel({
   cluster,
   eagerFirstImage,
+  narrativeIndex,
   theme,
 }: {
   cluster: ArchiveCluster
   eagerFirstImage: boolean
+  narrativeIndex: number
   theme: ArchiveTheme
 }) {
   const lightboxItems: readonly ImageLightboxItem[] = cluster.slots.map(({ image }) => ({
@@ -34,6 +37,7 @@ export default function ArchiveClusterPanel({
       data-cluster={cluster.id}
       data-cluster-title={cluster.title}
       data-direction={theme.direction}
+      style={{ '--archive-mobile-order': narrativeIndex + 1 } as CSSProperties}
     >
       {cluster.slots.map((slot, index) => (
         <ArchiveImageSlot

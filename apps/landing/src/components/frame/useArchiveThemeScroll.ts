@@ -14,7 +14,7 @@ interface ArchiveThemeScrollOptions {
   theme: ArchiveTheme
   /** 横向移动的 track 节点，scrollWidth 决定 pin 期间需要横移的距离 */
   track: RefObject<HTMLDivElement | null>
-  /** Optional HTML-in-Canvas bend surface. DOM remains the fallback authority. */
+  /** Optional HTML-in-Canvas bend surface. DOM remains the semantic and failure fallback authority. */
   bendHandle: RefObject<HorizontalBendHandle | null>
 }
 
@@ -52,7 +52,10 @@ export default function useArchiveThemeScroll({
      */
     const warmClusterImages = (clusterIndex: number) => {
       const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>(':scope > .archive-cluster'))
-      const nearbyClusters = [clusters[clusterIndex], clusters[clusterIndex + 1]]
+      const nearbyClusters = [clusterIndex, clusterIndex + 1].map((index) => {
+        const clusterId = theme.clusters[index]?.id
+        return clusters.find((cluster) => cluster.dataset.cluster === clusterId)
+      })
 
       nearbyClusters.forEach((clusterEl) => {
         if (!clusterEl) return
@@ -99,8 +102,7 @@ export default function useArchiveThemeScroll({
 
     const mm = gsap.matchMedia()
     const ctx = gsap.context(() => {
-      revealWordsOnce(trackEl, '.archive-theme-marker__title', { trigger: sectionEl, start: 'top 76%' })
-      revealWordsOnce(trackEl, '.archive-theme-marker__body', { trigger: sectionEl, start: 'top 72%' })
+      revealWordsOnce(sectionEl, '.archive-editorial-copy__theme-title', { trigger: sectionEl, start: 'top 76%' })
 
       // 巨型水印（::before 的 attr(data-theme-word)）随滚动从左到右被「擦亮」：
       // 这里只 scrub 一个 CSS 变量，clip-path/透明度的映射在 frame.css，

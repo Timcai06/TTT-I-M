@@ -14,7 +14,9 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
   await waitForLive(page)
   await expect(page.locator('.particle-continuum')).toHaveCount(0)
   await expect(page.locator('[data-drift-wall]')).toHaveCount(1)
-  await expect(page.locator('[data-frame-accordion]')).toHaveCount(1)
+  await expect(page.locator('[data-frame-accordion]')).toHaveCount(0)
+  await expect(page.locator('.archive-editorial-copy')).toHaveCount(3)
+  await expect(page.locator('.archive-theme-section__track')).toHaveCount(3)
   await expect(page.locator('.bento-glow')).toHaveCount(6)
   await expect(page.locator('.sciscope-film')).toHaveCount(1)
   await expect(page.locator('.nav__sound-button')).toHaveAttribute('aria-pressed', 'false')
@@ -79,7 +81,7 @@ test('project bento keeps its outer glow and restores blurred-to-clear focus', a
   await expect(page.locator(`[data-project-id="${projectId}"]`)).toBeInViewport({ ratio: 0.25 })
 })
 
-test('Frame mirrors the complete Particle Scroll document without a nested scroll gate', async ({ page }) => {
+test('Frame final exposure mirrors Particle Scroll without a nested scroll gate', async ({ page }) => {
   await waitForLive(page)
   const handoff = page.locator('.frame-particle-handoff')
   await expect(handoff).toHaveAttribute('data-frame-particles', 'fallback')
@@ -90,7 +92,8 @@ test('Frame mirrors the complete Particle Scroll document without a nested scrol
     viewport: window.innerHeight,
     sticky: getComputedStyle(section.querySelector('.frame-particle-handoff__sticky')!).position,
   }))
-  expect(geometry.height).toBeGreaterThan(geometry.viewport * 2.2)
+  expect(geometry.height).toBeGreaterThan(geometry.viewport * 1.25)
+  expect(geometry.height).toBeLessThan(geometry.viewport * 1.35)
   expect(geometry.sticky).toBe('sticky')
 
   const midpoint = await handoff.evaluate((section) => {
@@ -432,20 +435,31 @@ test('desktop stack-to-work holds its final frame until the metal CTA releases W
 
 test('archive cursor remains interactive during a Lenis scroll burst', async ({ page }) => {
   await waitForLive(page)
-  const gallery = page.locator('[data-frame-accordion]')
-  await gallery.scrollIntoViewIfNeeded()
+  const section = page.locator('#frame-building')
+  const target = await section.evaluate((node) => {
+    const spacer = node.parentElement
+    const rect = spacer?.getBoundingClientRect()
+    if (!spacer || !rect) throw new Error('Frame building pin spacer is missing')
+    return rect.top + scrollY + (spacer.offsetHeight - innerHeight) * 0.18
+  })
+  await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), target)
+  await page.waitForTimeout(250)
 
-  const panel = gallery.locator('.ag-panel').first()
-  const box = await panel.boundingBox()
-  expect(box).not.toBeNull()
+  const point = await section.evaluate((node) => {
+    const media = [...node.querySelectorAll<HTMLElement>('.archive-slot__open')]
+      .map((item) => item.getBoundingClientRect())
+      .find((rect) => rect.left > 410 && rect.right < innerWidth - 80 && rect.top > 80 && rect.bottom < innerHeight - 40)
+    if (!media) throw new Error('No visible Frame archive image is available for cursor QA')
+    return { x: media.left + media.width / 2, y: media.top + media.height / 2 }
+  })
 
   await page.evaluate(() => document.body.classList.add('disable-hover'))
   expect(await page.evaluate(() => getComputedStyle(document.body).pointerEvents)).not.toBe('none')
 
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
-  await expect(page.locator('.cursor')).toHaveClass(/is-labeled/)
+  await page.mouse.move(point.x, point.y)
+  await expect(page.locator('.cursor')).toHaveClass(/is-hover/)
 
   await page.mouse.wheel(0, 80)
-  await expect(page.locator('.cursor')).toHaveClass(/is-labeled/)
+  await expect(page.locator('.cursor')).toHaveClass(/is-hover/)
   await page.evaluate(() => document.body.classList.remove('disable-hover'))
 })

@@ -46,29 +46,38 @@
    receive a narrower measure so they keep their full composition without
    becoming taller than the chapter. Wide images may breathe horizontally but
    never inherit an artificial height. */
-.archive-slot--portrait .archive-slot__media,
+.archive-slot--portrait .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(210px, 19vw, 270px));
+}
+
 .archive-slot--tall .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(220px, 22vw, 310px));
+  width: min(var(--slot-media-width), clamp(175px, 15vw, 215px));
 }
 
 .archive-slot--secondary.archive-slot--portrait .archive-slot__media,
-.archive-slot--secondary.archive-slot--tall .archive-slot__media,
-.archive-slot--support.archive-slot--portrait .archive-slot__media,
-.archive-slot--support.archive-slot--tall .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(190px, 18vw, 250px));
+.archive-slot--support.archive-slot--portrait .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(185px, 17vw, 225px));
 }
 
-.archive-slot--detail.archive-slot--portrait .archive-slot__media,
+.archive-slot--secondary.archive-slot--tall .archive-slot__media,
+.archive-slot--support.archive-slot--tall .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(165px, 14vw, 190px));
+}
+
+.archive-slot--detail.archive-slot--portrait .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(165px, 15vw, 205px));
+}
+
 .archive-slot--detail.archive-slot--tall .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(170px, 16vw, 220px));
+  width: min(var(--slot-media-width), clamp(160px, 13vw, 180px));
 }
 
 .archive-slot--square .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(240px, 28vw, 390px));
+  width: min(var(--slot-media-width), clamp(220px, 24vw, 340px));
 }
 
 .archive-slot--wide .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(360px, 44vw, 600px));
+  width: min(var(--slot-media-width), clamp(320px, 38vw, 520px));
 }
 
 .archive-slot__open:focus-visible {

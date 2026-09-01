@@ -17,8 +17,12 @@
   }
 
   .archive-cluster {
-    height: min(82vh, 690px);
-    max-height: calc(100vh - 72px);
+    height: min(66svh, 500px);
+    max-height: calc(100svh - 112px);
+  }
+
+  .archive-editorial-copy__cluster h3 {
+    font-size: clamp(34px, 3.6vw, 50px);
   }
 
   .archive-slot__caption {
@@ -28,18 +32,8 @@
 
 @media (max-width: 1024px) and (min-width: 769px) {
   .archive-theme-section__track {
-    padding-left: clamp(220px, 28vw, 320px);
+    padding-left: clamp(330px, 38vw, 400px);
     padding-right: clamp(72px, 10vw, 140px);
-  }
-
-  .archive-cluster,
-  .archive-cluster--mosaic-left,
-  .archive-cluster--mosaic-right,
-  .archive-cluster--panorama,
-  .archive-cluster--theme-building,
-  .archive-cluster--theme-cuisine,
-  .archive-cluster--theme-scenery {
-    width: clamp(760px, 88vw, 980px);
   }
 }
 
@@ -54,9 +48,12 @@
     display: none;
   }
 
+  .archive-editorial-copy {
+    display: none;
+  }
+
   .archive-theme-section::before,
-  .archive-theme-section::after,
-  .archive-cluster::before {
+  .archive-theme-section::after {
     display: none;
   }
 
@@ -104,6 +101,10 @@
     width: 100%;
     margin-inline: auto;
     transform: none !important;
+  }
+
+  .archive-theme-section--cuisine .archive-cluster {
+    order: var(--archive-mobile-order, 0);
   }
 
   .archive-theme-section--building .archive-theme-section__track,
@@ -219,6 +220,7 @@
   }
 
   .archive-theme-marker {
+    display: flex;
     padding-top: clamp(18px, 5vw, 36px);
     border-left: 1px solid var(--line-strong);
     padding-left: 18px;
@@ -228,6 +230,7 @@
   }
 
   .archive-cluster-marker {
+    display: flex;
     max-height: none;
     padding-right: 0;
   }
@@ -252,5 +255,9 @@
   .archive-slot:nth-child(3n) {
     transform: translateX(-6px) !important;
     width: calc(100% - 6px);
+  }
+
+  .archive-editorial-copy__cluster {
+    animation: none;
   }
 }
