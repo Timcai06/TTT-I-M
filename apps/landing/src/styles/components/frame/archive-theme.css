@@ -77,7 +77,7 @@
   /* The photographic horizon sits slightly above the mathematical viewport
      centre. `translate` remains independent from GSAP's horizontal transform,
      so ScrollTrigger can own x without erasing the optical y correction. */
-  translate: 0 clamp(-56px, -6svh, -36px);
+  translate: 0 clamp(-78px, -8svh, -50px);
   transform: translate3d(0, 0, 0);
 }
 

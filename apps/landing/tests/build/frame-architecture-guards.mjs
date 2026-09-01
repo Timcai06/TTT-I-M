@@ -74,7 +74,7 @@ if (!slotSource.includes('--image-aspect') || !frameStyleSource.includes('aspect
 
 const requiredIntrinsicEditorialLayout = [
   'width: max-content',
-  'translate: 0 clamp(-56px, -6svh, -36px)',
+  'translate: 0 clamp(-78px, -8svh, -50px)',
   'border-left: 1px solid rgb(216 189 134 / 34%)',
   'radial-gradient(ellipse 82% 72% at 28% 50%',
   '--primary-width:',

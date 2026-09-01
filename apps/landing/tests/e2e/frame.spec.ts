@@ -301,7 +301,7 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
       letterboxedMedia: visibleBuildingOrCuisine.filter((slot) => slot.mediaToImageWidthDelta > 12 || slot.mediaToImageHeightDelta > 12),
       croppedSlots: visibleBuildingOrCuisine.filter((slot) => slot.fit !== 'contain').map((slot) => slot.title),
       lowPrimarySlots: visibleSlots
-        .filter((slot) => slot.role === 'primary' && slot.opticalCenterRatio > 0.56)
+        .filter((slot) => slot.role === 'primary' && slot.opticalCenterRatio > 0.54)
         .map((slot) => ({ title: slot.title, opticalCenterRatio: slot.opticalCenterRatio })),
       overlappingPairs,
     }

@@ -96,6 +96,21 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
   expect(geometry.height).toBeLessThan(geometry.viewport * 2.15)
   expect(geometry.sticky).toBe('sticky')
 
+  const leadFormation = await handoff.evaluate((section) => {
+    const sticky = section.querySelector<HTMLElement>('.frame-particle-handoff__sticky')
+    const lead = section.querySelector<HTMLElement>('.frame-particle-document__figure--lead')
+    if (!sticky || !lead) throw new Error('Frame handoff lead composition is missing')
+    const stickyRect = sticky.getBoundingClientRect()
+    const leadRect = lead.getBoundingClientRect()
+    return {
+      formationY: stickyRect.top + stickyRect.height * 0.68,
+      leadTop: leadRect.top,
+      leadBottom: leadRect.bottom,
+    }
+  })
+  expect(leadFormation.leadTop).toBeLessThan(leadFormation.formationY)
+  expect(leadFormation.leadBottom).toBeGreaterThan(leadFormation.formationY)
+
   const midpoint = await handoff.evaluate((section) => {
     const rect = section.getBoundingClientRect()
     return rect.top + window.scrollY + (rect.height - window.innerHeight) * 0.5

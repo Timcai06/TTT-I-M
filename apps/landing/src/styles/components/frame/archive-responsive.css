@@ -22,7 +22,7 @@
   }
 
   .archive-theme-section__track {
-    translate: 0 clamp(-38px, -4.5svh, -24px);
+    translate: 0 clamp(-52px, -6svh, -36px);
   }
 
   .archive-editorial-copy__cluster h3 {

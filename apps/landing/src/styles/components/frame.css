@@ -122,21 +122,24 @@
 
 .frame-particle-document__figure--lead {
   z-index: 1;
-  top: 12svh;
+  /* CanvasUI's formation line sits at 68% of the viewport. The lead image
+     deliberately straddles that line so its lower half enters as particles
+     instead of appearing fully assembled before the effect begins. */
+  top: 38svh;
   left: clamp(24px, 6vw, 96px);
   height: min(54svh, 560px);
 }
 
 .frame-particle-document__figure--support {
   z-index: 2;
-  top: 72svh;
+  top: 92svh;
   right: clamp(24px, 8vw, 128px);
   height: min(32svh, 330px);
 }
 
 .frame-particle-document__figure--detail {
   z-index: 3;
-  top: 118svh;
+  top: 134svh;
   right: auto;
   left: clamp(54px, 16vw, 250px);
   bottom: auto;
