@@ -59,9 +59,9 @@ function ParticleDocument({
       </section>
 
       <footer className="frame-particle-document__handoff">
-        <p>03 / Stack · 技术栈</p>
-        <strong>The stack <em>I work</em> with.</strong>
-        <span aria-hidden="true">TOOLS / SYSTEMS / DELIVERY</span>
+        <p>FRAME / ARCHIVE COMPLETE</p>
+        <strong>From observation <em>to system.</em></strong>
+        <span aria-hidden="true">NEXT / 03 · STACK</span>
       </footer>
     </div>
   )

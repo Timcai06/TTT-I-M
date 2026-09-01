@@ -1,6 +1,6 @@
 /* ── Archive slot — individual image cell ── */
 .archive-slot {
-  --slot-media-height: var(--support-height, min(49vh, 490px));
+  --slot-media-width: var(--support-width, clamp(240px, 24vw, 370px));
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -10,27 +10,27 @@
   justify-items: center;
   overflow: visible;
   contain: layout paint;
-  /* Width is derived from the real aspect ratio and role height. Do not use a
-     generic contain-intrinsic-size here: replacing an offscreen photograph with
-     a square estimate changes track.scrollWidth when it becomes visible and
-     destabilises the pinned ScrollTrigger. */
+  /* Each editorial role owns a bounded optical width. The media aspect ratio
+     then derives its height, so portrait photographs cannot silently grow to
+     near-viewport height as later themes enter the rail. Do not use a generic
+     contain-intrinsic-size here: a square estimate changes track.scrollWidth
+     when the real photograph becomes visible and destabilises ScrollTrigger. */
   transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0);
   transform-origin: center;
 }
 
-.archive-slot--primary { --slot-media-height: var(--primary-height, min(72vh, 720px)); }
-.archive-slot--secondary { --slot-media-height: var(--secondary-height, min(55vh, 550px)); }
-.archive-slot--detail { --slot-media-height: var(--detail-height, min(43vh, 430px)); }
-.archive-slot--support { --slot-media-height: var(--support-height, min(49vh, 490px)); }
+.archive-slot--primary { --slot-media-width: var(--primary-width, clamp(320px, 36vw, 540px)); }
+.archive-slot--secondary { --slot-media-width: var(--secondary-width, clamp(250px, 27vw, 400px)); }
+.archive-slot--detail { --slot-media-width: var(--detail-width, clamp(200px, 20vw, 300px)); }
+.archive-slot--support { --slot-media-width: var(--support-width, clamp(230px, 24vw, 360px)); }
 
 /* ── Slot media ── */
 .archive-slot__media {
   position: relative;
   display: block;
-  width: auto;
-  height: var(--slot-media-height);
-  max-width: none;
-  max-height: none;
+  width: var(--slot-media-width);
+  height: auto;
+  max-width: min(56vw, 620px);
   aspect-ratio: var(--image-aspect, 4 / 3);
   justify-self: center;
   align-self: end;
@@ -40,6 +40,35 @@
   color: inherit;
   cursor: zoom-in;
   text-decoration: none;
+}
+
+/* A role describes hierarchy; orientation controls optical mass. Portraits
+   receive a narrower measure so they keep their full composition without
+   becoming taller than the chapter. Wide images may breathe horizontally but
+   never inherit an artificial height. */
+.archive-slot--portrait .archive-slot__media,
+.archive-slot--tall .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(220px, 22vw, 310px));
+}
+
+.archive-slot--secondary.archive-slot--portrait .archive-slot__media,
+.archive-slot--secondary.archive-slot--tall .archive-slot__media,
+.archive-slot--support.archive-slot--portrait .archive-slot__media,
+.archive-slot--support.archive-slot--tall .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(190px, 18vw, 250px));
+}
+
+.archive-slot--detail.archive-slot--portrait .archive-slot__media,
+.archive-slot--detail.archive-slot--tall .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(170px, 16vw, 220px));
+}
+
+.archive-slot--square .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(240px, 28vw, 390px));
+}
+
+.archive-slot--wide .archive-slot__media {
+  width: min(var(--slot-media-width), clamp(360px, 44vw, 600px));
 }
 
 .archive-slot__open:focus-visible {

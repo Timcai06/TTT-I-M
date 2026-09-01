@@ -198,7 +198,7 @@ test('Frame and Work navigation active states stay aligned with scroll targets',
   await expect(page.locator('#projects')).toBeInViewport()
 })
 
-test('Visible Frame images remain large and captions stay attached below media', async ({ page }) => {
+test('Visible Frame images keep their optical hierarchy, source ratio, and attached captions', async ({ page }) => {
   await openHome(page)
   await scrollToFrame(page)
   await page.mouse.wheel(0, 1800)
@@ -249,6 +249,8 @@ test('Visible Frame images remain large and captions stay attached below media',
           mediaHeight: Math.round(mediaRect.height),
           imageWidth: Math.round(renderedRect.width),
           imageHeight: Math.round(renderedRect.height),
+          sourceAspect: Number(naturalAspect.toFixed(4)),
+          renderedAspect: Number((renderedRect.width / Math.max(1, renderedRect.height)).toFixed(4)),
           mediaToImageWidthDelta: Math.round(Math.abs(imageRect.width - renderedRect.width)),
           mediaToImageHeightDelta: Math.round(Math.abs(imageRect.height - renderedRect.height)),
           mediaRect: {
@@ -282,7 +284,11 @@ test('Visible Frame images remain large and captions stay attached below media',
 
     return {
       visibleSlots,
-      tinySlots: visibleSlots.filter((slot) => slot.imageWidth < 240 || slot.imageHeight < 300),
+      illegibleSlots: visibleSlots.filter((slot) => slot.imageWidth < 160 || slot.imageHeight < 160),
+      oversizedSlots: visibleSlots.filter((slot) => (
+        slot.imageWidth > viewport.width * 0.5 || slot.imageHeight > viewport.height * 0.65
+      )),
+      distortedSlots: visibleSlots.filter((slot) => Math.abs(slot.sourceAspect - slot.renderedAspect) > 0.01),
       detachedCaptions: visibleSlots.filter((slot) => !slot.captionBelowMedia || !slot.captionInsideFigure),
       misalignedCaptions: visibleSlots.filter((slot) => slot.captionCenterDelta > 18),
       overwideCaptions: visibleBuildingOrCuisine.filter((slot) => slot.captionWidthRatio > 1.35),
@@ -293,13 +299,26 @@ test('Visible Frame images remain large and captions stay attached below media',
   })
 
   expect(layout.visibleSlots.length).toBeGreaterThan(0)
-  expect(layout.tinySlots, JSON.stringify(layout.tinySlots)).toHaveLength(0)
+  expect(layout.illegibleSlots, JSON.stringify(layout.illegibleSlots)).toHaveLength(0)
+  expect(layout.oversizedSlots, JSON.stringify(layout.oversizedSlots)).toHaveLength(0)
+  expect(layout.distortedSlots, JSON.stringify(layout.distortedSlots)).toHaveLength(0)
   expect(layout.detachedCaptions, JSON.stringify(layout.detachedCaptions)).toHaveLength(0)
   expect(layout.misalignedCaptions, JSON.stringify(layout.misalignedCaptions)).toHaveLength(0)
   expect(layout.overwideCaptions, JSON.stringify(layout.overwideCaptions)).toHaveLength(0)
   expect(layout.letterboxedMedia, JSON.stringify(layout.letterboxedMedia)).toHaveLength(0)
   expect(layout.croppedSlots, JSON.stringify(layout.croppedSlots)).toHaveLength(0)
   expect(layout.overlappingPairs, JSON.stringify(layout.overlappingPairs)).toHaveLength(0)
+})
+
+test('Frame handoff does not repeat the Stack chapter title', async ({ page }) => {
+  await openHome(page)
+
+  const copies = await page.evaluate(() => {
+    return document.body.innerText.match(/The stack\s+I work\s+with\./gi)?.length ?? 0
+  })
+
+  expect(copies).toBe(1)
+  await expect(page.locator('.frame-particle-document__handoff').first()).toContainText('From observation to system.')
 })
 
 test('Frame falls back to a stable vertical layout on mobile', async ({ page }) => {

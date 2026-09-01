@@ -2,15 +2,15 @@
 .archive-cluster {
   --cluster-label-x: 0px;
   --cluster-label-y: 0px;
-  --primary-height: min(72vh, 720px);
-  --secondary-height: min(55vh, 550px);
-  --detail-height: min(43vh, 430px);
-  --support-height: min(49vh, 490px);
+  --primary-width: clamp(320px, 36vw, 540px);
+  --secondary-width: clamp(250px, 27vw, 400px);
+  --detail-width: clamp(200px, 20vw, 300px);
+  --support-width: clamp(230px, 24vw, 360px);
   position: relative;
   display: flex;
   width: max-content;
-  height: min(92vh, 920px);
-  max-height: calc(100vh - 20px);
+  height: min(80vh, 760px);
+  max-height: calc(100vh - 72px);
   flex: 0 0 auto;
   align-items: center;
   gap: clamp(28px, 3vw, 62px);
@@ -63,16 +63,16 @@
 
 /* Building: tall structural studies followed by broad skyline releases. */
 .archive-cluster--theme-building {
-  --primary-height: min(74vh, 742px);
-  --secondary-height: min(61vh, 610px);
-  --detail-height: min(48vh, 480px);
-  --support-height: min(56vh, 560px);
+  --primary-width: clamp(340px, 38vw, 560px);
+  --secondary-width: clamp(250px, 27vw, 400px);
+  --detail-width: clamp(200px, 20vw, 300px);
+  --support-width: clamp(230px, 24vw, 360px);
 }
 
 .archive-cluster--theme-building.archive-cluster--panorama {
-  --primary-height: min(67vh, 670px);
-  --secondary-height: min(47vh, 470px);
-  --detail-height: min(42vh, 420px);
+  --primary-width: clamp(380px, 42vw, 600px);
+  --secondary-width: clamp(260px, 29vw, 420px);
+  --detail-width: clamp(210px, 21vw, 310px);
 }
 
 [data-cluster='building-surface-memory'] {
@@ -86,10 +86,10 @@
 
 /* Cuisine: close, warm diptychs and triptychs with a common optical scale. */
 .archive-cluster--theme-cuisine {
-  --primary-height: min(68vh, 680px);
-  --secondary-height: min(54vh, 540px);
-  --detail-height: min(47vh, 470px);
-  --support-height: min(50vh, 500px);
+  --primary-width: clamp(310px, 34vw, 500px);
+  --secondary-width: clamp(240px, 26vw, 380px);
+  --detail-width: clamp(200px, 20vw, 290px);
+  --support-width: clamp(220px, 23vw, 340px);
   gap: clamp(26px, 2.7vw, 52px);
 }
 
@@ -99,10 +99,10 @@
 
 /* Scenery: large, quiet horizons with fewer and more generous companions. */
 .archive-cluster--theme-scenery {
-  --primary-height: min(76vh, 760px);
-  --secondary-height: min(55vh, 550px);
-  --detail-height: min(50vh, 500px);
-  --support-height: min(52vh, 520px);
+  --primary-width: clamp(360px, 40vw, 580px);
+  --secondary-width: clamp(260px, 29vw, 420px);
+  --detail-width: clamp(210px, 21vw, 310px);
+  --support-width: clamp(240px, 25vw, 370px);
   gap: clamp(48px, 5.2vw, 104px);
   padding-inline: clamp(32px, 5vw, 96px);
 }
@@ -115,7 +115,7 @@
 
 [data-cluster='scenery-panorama'],
 [data-cluster='scenery-close'] {
-  --primary-height: min(72vh, 720px);
+  --primary-width: clamp(380px, 42vw, 600px);
 }
 
 /* Small photographs move vertically to retain the archive's asymmetry without
@@ -142,10 +142,10 @@
 
 @media (max-height: 760px) and (min-width: 769px) {
   .archive-cluster {
-    --primary-height: min(66vh, 520px);
-    --secondary-height: min(52vh, 410px);
-    --detail-height: min(42vh, 330px);
-    --support-height: min(46vh, 360px);
-    height: min(84vh, 650px);
+    --primary-width: clamp(300px, 34vw, 500px);
+    --secondary-width: clamp(230px, 25vw, 360px);
+    --detail-width: clamp(190px, 18vw, 270px);
+    --support-width: clamp(210px, 22vw, 320px);
+    height: min(76vh, 580px);
   }
 }

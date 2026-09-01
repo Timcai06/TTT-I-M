@@ -66,10 +66,12 @@ if (!slotSource.includes('--image-aspect') || !frameStyleSource.includes('aspect
 
 const requiredIntrinsicEditorialLayout = [
   'width: max-content',
-  '--primary-height:',
-  '--secondary-height:',
-  '--detail-height:',
-  '--support-height:',
+  '--primary-width:',
+  '--secondary-width:',
+  '--detail-width:',
+  '--support-width:',
+  '.archive-slot--portrait .archive-slot__media',
+  '.archive-slot--wide .archive-slot__media',
   '.archive-cluster--theme-building',
   '.archive-cluster--theme-cuisine',
   '.archive-cluster--theme-scenery',
