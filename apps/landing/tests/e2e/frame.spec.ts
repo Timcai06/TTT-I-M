@@ -320,6 +320,55 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
   expect(layout.overlappingPairs, JSON.stringify(layout.overlappingPairs)).toHaveLength(0)
 })
 
+test('Frame capture plane and every archive slot keep a safe vertical band across desktop heights', async ({ page }) => {
+  for (const height of [720, 900, 1080]) {
+    await page.setViewportSize({ width: 1440, height })
+    await openHome(page)
+
+    const sections = page.locator('.archive-theme-section')
+    const sectionCount = await sections.count()
+    expect(sectionCount).toBe(3)
+
+    for (let index = 0; index < sectionCount; index += 1) {
+      const section = sections.nth(index)
+      await section.evaluate((node) => node.scrollIntoView({ block: 'start' }))
+      await page.waitForTimeout(120)
+
+      const geometry = await section.evaluate((node) => {
+        const pin = node.querySelector<HTMLElement>('.archive-theme-section__pin')
+        const track = node.querySelector<HTMLElement>('.archive-theme-section__track')
+        if (!pin || !track) throw new Error('Frame capture structure is missing')
+
+        const pinRect = pin.getBoundingClientRect()
+        const trackRect = track.getBoundingClientRect()
+        const slots = [...node.querySelectorAll<HTMLElement>('.archive-slot')].map((slot) => {
+          const rect = slot.getBoundingClientRect()
+          return {
+            title: slot.querySelector('.archive-slot__caption-title')?.textContent ?? '',
+            top: Math.round(rect.top - pinRect.top),
+            bottomGap: Math.round(pinRect.bottom - rect.bottom),
+          }
+        })
+
+        return {
+          trackTranslate: getComputedStyle(track).translate,
+          trackTopDelta: Math.round(trackRect.top - pinRect.top),
+          trackBottomDelta: Math.round(trackRect.bottom - pinRect.bottom),
+          slots,
+        }
+      })
+
+      expect(geometry.trackTranslate).toBe('none')
+      expect(Math.abs(geometry.trackTopDelta)).toBeLessThanOrEqual(2)
+      expect(Math.abs(geometry.trackBottomDelta)).toBeLessThanOrEqual(2)
+      expect(
+        geometry.slots.filter(({ top, bottomGap }) => top < 48 || bottomGap < 28),
+        `height=${height}, theme=${index}: ${JSON.stringify(geometry.slots)}`,
+      ).toHaveLength(0)
+    }
+  }
+})
+
 test('Frame handoff does not repeat the Stack chapter title', async ({ page }) => {
   await openHome(page)
 

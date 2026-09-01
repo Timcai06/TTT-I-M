@@ -15,7 +15,11 @@
      near-viewport height as later themes enter the rail. Do not use a generic
      contain-intrinsic-size here: a square estimate changes track.scrollWidth
      when the real photograph becomes visible and destabilises ScrollTrigger. */
-  transform: translate3d(var(--slot-x, 0), var(--slot-y, 0), 0);
+  transform: translate3d(
+    var(--slot-x, 0),
+    calc(var(--slot-y, 0px) + var(--archive-slot-optical-y, 0px)),
+    0
+  );
   transform-origin: center;
 }
 

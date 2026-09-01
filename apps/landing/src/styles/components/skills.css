@@ -24,13 +24,7 @@
   z-index: 0;
   overflow: visible;
   mix-blend-mode: screen;
-  opacity: 0;
-  transition: none;
-}
-
-.skills.is-flow-active .skills__flow-svg {
   opacity: 1;
-  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .skills__list,

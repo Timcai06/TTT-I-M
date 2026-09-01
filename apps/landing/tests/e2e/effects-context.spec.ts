@@ -153,14 +153,50 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
   await expect(page.locator('#skills')).toBeInViewport()
   const stackEntry = await page.locator('#skills').evaluate((skills) => ({
     flowOpacity: Number.parseFloat(getComputedStyle(skills.querySelector('.skills__flow-svg')!).opacity),
+    activeDash: getComputedStyle(skills.querySelector('.skills__flow-active')!).strokeDasharray,
     rows: [...skills.querySelectorAll<HTMLElement>('.skill-row')].slice(0, 3).map((row) => ({
       opacity: Number.parseFloat(getComputedStyle(row).opacity),
       transform: getComputedStyle(row).transform,
       repeatedEntrance: row.classList.contains('is-visible'),
     })),
   }))
-  expect(stackEntry.flowOpacity).toBe(0)
+  expect(stackEntry.flowOpacity).toBe(1)
+  expect(stackEntry.activeDash).not.toBe('none')
   expect(stackEntry.rows.every((row) => row.opacity === 1 && row.transform === 'none' && !row.repeatedEntrance)).toBe(true)
+})
+
+test('Stack flow enters continuously from outside the viewport', async ({ page }) => {
+  await waitForLive(page)
+
+  const samples = await page.locator('#skills').evaluate(async (skills) => {
+    const absoluteTop = skills.getBoundingClientRect().top + window.scrollY
+    const active = skills.querySelector<SVGPathElement>('.skills__flow-active')
+    const svg = skills.querySelector<SVGSVGElement>('.skills__flow-svg')
+    if (!active || !svg) throw new Error('Stack flow path is missing')
+
+    const sampleAt = async (rootTopRatio: number) => {
+      window.scrollTo({ top: absoluteTop - window.innerHeight * rootTopRatio, behavior: 'auto' })
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+      const dash = getComputedStyle(active).strokeDasharray
+      const drawn = Number.parseFloat(dash.split(/[ ,]+/)[0] ?? '0')
+      return {
+        drawn,
+        opacity: Number.parseFloat(getComputedStyle(svg).opacity),
+      }
+    }
+
+    return [
+      await sampleAt(1),
+      await sampleAt(0),
+      await sampleAt(-0.4),
+    ]
+  })
+
+  expect(samples.every(({ opacity }) => opacity === 1)).toBe(true)
+  expect(samples[0]?.drawn).toBeLessThanOrEqual(1)
+  expect(samples[1]?.drawn).toBeGreaterThanOrEqual(samples[0]?.drawn ?? 0)
+  expect(samples[2]?.drawn).toBeGreaterThan(samples[1]?.drawn ?? 0)
+  await expect(page.locator('#skills')).not.toHaveClass(/is-flow-active/)
 })
 
 test('SciScope opens as one uninterrupted film with its original sound', async ({ page }) => {

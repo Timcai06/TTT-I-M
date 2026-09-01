@@ -92,10 +92,6 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
 
       const syncLineToViewportCenter = () => {
         const rootRect = rootEl.getBoundingClientRect()
-        rootEl.classList.toggle(
-          'is-flow-active',
-          rootRect.top <= -window.innerHeight * 0.28 && rootRect.bottom > 0,
-        )
         const centerYInSection = window.innerHeight * 0.5 - rootRect.top
         const drawnLength = lengthAtY(centerYInSection)
         setDash(`${drawnLength} ${length}`)
@@ -114,7 +110,6 @@ export function useSkillsFlowLine(root: RefObject<HTMLElement | null>) {
     }, root)
 
     return () => {
-      rootEl.classList.remove('is-flow-active')
       ctx.revert()
     }
   }, [pathD, root])

@@ -74,10 +74,10 @@
   gap: clamp(42px, 4.2vw, 76px);
   padding-left: clamp(400px, 35vw, 560px);
   padding-right: clamp(88px, 10vw, 164px);
-  /* The photographic horizon sits slightly above the mathematical viewport
-     centre. `translate` remains independent from GSAP's horizontal transform,
-     so ScrollTrigger can own x without erasing the optical y correction. */
-  translate: 0 clamp(-78px, -8svh, -50px);
+  /* GSAP owns only the horizontal transform. Keep the capture plane locked to
+     the full viewport: moving this 100svh layer vertically makes both the DOM
+     rail and its CanvasDrawElement copy disappear behind the pin's clip. */
+  translate: none;
   transform: translate3d(0, 0, 0);
 }
 

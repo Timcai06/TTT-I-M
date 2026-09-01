@@ -54,7 +54,7 @@ export default function Skills() {
 
   return (
     <section className="section skills container" id="skills" ref={root} style={{ position: 'relative' }}>
-      {/* Stack 深处的红色 active flow；入口由 Canvas UI 独占。 */}
+      {/* Stack 深处的红色 active flow；从视口外连续接入，不再阈值式整段显现。 */}
       <svg
         className="skills__flow-svg"
         style={{ left: svgLeft, width: svgWidth }}
@@ -66,6 +66,7 @@ export default function Skills() {
           <>
             {/* 红色背景引导轨道 */}
             <path
+              className="skills__flow-guide"
               d={pathD}
               stroke="rgba(255, 51, 51, 0.05)"
               strokeWidth="46"
@@ -74,8 +75,12 @@ export default function Skills() {
             />
             {/* active 流动高亮 */}
             <path
+              className="skills__flow-active"
               ref={pathRef}
               d={pathD}
+              pathLength={1}
+              strokeDasharray="0 1"
+              strokeDashoffset="0"
               stroke="#ff3333"
               strokeWidth="46"
               strokeLinecap="round"

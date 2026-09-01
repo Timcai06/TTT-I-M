@@ -37,19 +37,22 @@ export interface SkillsFlowGeometry {
 
 /** 拐点垂直切线因子 —— 保证相邻段在 P1/P2 处一阶连续（切线均为竖直方向）。 */
 const TANGENT_K = 0.38
+/** Keep the 46px round line cap outside the viewport so its entry is seamless. */
+export const FLOW_EDGE_OVERSCAN = 32
 
 /**
  * 计算蛇形曲线的四个锚点与六个控制点。
- * P0 屏幕左缘入场（标题上方 120px）→ P1 右弯（72% 宽）→ P2 左弯（28% 宽）
- * → P3 屏幕右缘出场（末行下方 120px）。
+ * P0 从屏幕左缘外入场（标题上方 120px）→ P1 右弯（72% 宽）→ P2 左弯（28% 宽）
+ * → P3 从屏幕右缘外出场（末行下方 120px）。边缘 overscan 会把粗描边的圆头藏在
+ * 视口外，滚动时看到的是一条连续流入的线，而不是突然出现的端帽。
  */
 export function buildSkillsFlowGeometry({ viewportWidth, startY, endY }: SkillsFlowFrame): SkillsFlowGeometry {
   const height = endY - startY
 
-  const P0: FlowPoint = { x: 0, y: startY - 120 }
+  const P0: FlowPoint = { x: -FLOW_EDGE_OVERSCAN, y: startY - 120 }
   const P1: FlowPoint = { x: viewportWidth * 0.72, y: startY + height * 0.3 }
   const P2: FlowPoint = { x: viewportWidth * 0.28, y: startY + height * 0.7 }
-  const P3: FlowPoint = { x: viewportWidth, y: endY + 120 }
+  const P3: FlowPoint = { x: viewportWidth + FLOW_EDGE_OVERSCAN, y: endY + 120 }
 
   return {
     start: P0,

@@ -4,11 +4,16 @@
   --secondary-width: clamp(220px, 22vw, 330px);
   --detail-width: clamp(170px, 17vw, 250px);
   --support-width: clamp(200px, 20vw, 300px);
+  /* Raise the photographs inside the capture plane, never the 100svh track.
+     The bounded optical correction preserves the slightly high editorial
+     horizon while leaving a stable top/bottom safety band at every desktop
+     viewport height. */
+  --archive-slot-optical-y: clamp(-26px, -2.6svh, -16px);
   position: relative;
   display: flex;
   width: max-content;
   height: min(70svh, 620px);
-  max-height: calc(100svh - 128px);
+  max-height: calc(100svh - 160px);
   flex: 0 0 auto;
   align-items: center;
   gap: clamp(26px, 2.8vw, 52px);
@@ -96,6 +101,7 @@
     --secondary-width: clamp(205px, 21vw, 300px);
     --detail-width: clamp(215px, 18vw, 240px);
     --support-width: clamp(190px, 19vw, 280px);
+    --archive-slot-optical-y: clamp(-18px, -2.2svh, -12px);
     height: min(68svh, 520px);
   }
 }

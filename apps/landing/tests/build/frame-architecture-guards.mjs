@@ -74,7 +74,9 @@ if (!slotSource.includes('--image-aspect') || !frameStyleSource.includes('aspect
 
 const requiredIntrinsicEditorialLayout = [
   'width: max-content',
-  'translate: 0 clamp(-78px, -8svh, -50px)',
+  'translate: none',
+  '--archive-slot-optical-y:',
+  'calc(var(--slot-y, 0px) + var(--archive-slot-optical-y, 0px))',
   'border-left: 1px solid rgb(216 189 134 / 34%)',
   'radial-gradient(ellipse 82% 72% at 28% 50%',
   '--primary-width:',
@@ -97,6 +99,10 @@ if (missingEditorialTokens.length > 0) {
 
 if (frameStyleSource.includes('scale(var(--slot-scale') || frameStyleSource.includes('scale(calc(var(--slot-scale')) {
   throw new Error('Archive slot captions must not drift under scaled slot/media transforms; enlarge slots through layout.')
+}
+
+if (/\.archive-theme-section__track\s*\{[^}]*translate:\s*0\s+(?!0)/s.test(frameStyleSource)) {
+  throw new Error('Frame capture tracks must stay vertically locked; move only bounded archive slots.')
 }
 
 if (frameStyleSource.includes('object-fit: cover')) {
