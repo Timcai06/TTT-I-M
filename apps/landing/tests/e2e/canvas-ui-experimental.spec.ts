@@ -78,7 +78,10 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   const lastPreview = page.locator('#projects .projects__bento .bento-glow').last()
   const settleTarget = await lastPreview.evaluate((node) => {
     const rect = node.getBoundingClientRect()
-    return rect.bottom + window.scrollY - window.innerHeight + 150
+    // Move clearly beyond the ScrollTrigger end instead of sampling its exact
+    // threshold. Linux CI and macOS resolve fonts/images to slightly different
+    // card heights, and a boundary sample can leave the reversible portal live.
+    return rect.bottom + window.scrollY - window.innerHeight + 150 + window.innerHeight * 0.35
   })
   await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), settleTarget)
   await expect(page.locator('#projects .projects__laser canvas')).toHaveCount(0)

@@ -65,6 +65,14 @@ test('Footer liquid stays pointer-transparent and reduced motion mounts no optio
 })
 
 test('Footer liquid acquires a fresh context after leaving and re-entering Contact', async ({ page }) => {
+  // Headless Linux can expose four logical cores, which intentionally selects
+  // the low-tier one-context budget already occupied by the required Hero.
+  // This test targets lifecycle reacquisition, so pin a deterministic high-tier
+  // profile; low-tier fallback is covered by the degradation tests.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'hardwareConcurrency', { configurable: true, get: () => 8 })
+    Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 8 })
+  })
   await waitForLive(page)
   const liquid = page.locator('.footer-liquid')
 
