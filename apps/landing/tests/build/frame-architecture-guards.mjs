@@ -41,7 +41,7 @@ for (const token of ['HorizontalBendSurface', 'bendHandle', 'ArchiveEditorialCop
     throw new Error(`Frame horizontal bend is missing ${token}.`)
   }
 }
-for (const token of ['zone: 240', 'angle: 80', 'rounding: 150', 'perspective: 700', 'ease: 240', 'smoothing: 0.1', 'tumble: 0.5', 'tilt: 0.5', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame', 'calculateHorizontalBendGeometry', 'tipPlane', 'u_tilt_x', 'u_tilt_y', 'u_phi', 'float foldLighting = 1.0 - foldAmount * foldShade * 0.24', "drawable.style.background = '#08090a'"]) {
+for (const token of ['zone: 240', 'angle: 80', 'rounding: 150', 'perspective: 700', 'ease: 240', 'smoothing: 0.1', 'tumble: 0.5', 'tilt: 0.5', 'crossAxisPerspective: 0.5', 'crossAxisMinScale: 0.92', 'crossAxisMaxScale: 1.06', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame', 'calculateHorizontalBendGeometry', 'tipPlane', 'u_tilt_x', 'u_tilt_y', 'u_phi', 'u_cross_axis_min_scale', 'float foldLighting = 1.0 - foldAmount * foldShade * 0.24', "drawable.style.background = '#08090a'"]) {
   if (!bendSource.includes(token)) throw new Error(`Horizontal Bend must keep ${token}.`)
 }
 if (!bendSource.includes('outColor = vec4(mix(u_background, base.rgb * foldLighting, coverage), 1.0)') || bendSource.includes('edgeMask')) {
@@ -55,7 +55,7 @@ for (const token of ['onEnhancedChange', 'is-bend-enhanced', '> .archive-theme-s
     throw new Error(`Frame Bend single-owner fallback contract is missing ${token}.`)
   }
 }
-for (const token of ['right-to-left', 'left-to-right', 'ease / distance', 'smoothstep(0, edgeSpan', 'smoothstep(1 - edgeSpan, 1', 'referenceSpan = Math.max(height, 1)']) {
+for (const token of ['right-to-left', 'left-to-right', 'ease / distance', 'smoothstep(0, edgeSpan', 'smoothstep(1 - edgeSpan, 1', 'referenceSpan = Math.max(height, 1)', 'calculateCrossAxisScale', 'projectedScale']) {
   if (!bendMathSource.includes(token)) throw new Error(`Horizontal Bend math must keep ${token}.`)
 }
 

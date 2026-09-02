@@ -8,6 +8,11 @@ async function openHome(page: Page) {
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('networkidle')
+  // Chapter links intentionally defer their jump until the real loader handoff
+  // flips the shared stage to `live`. DOM availability alone is therefore not
+  // an interaction-ready signal: wait for the intro overlay to unmount before
+  // clicking an archive preview or sampling pinned geometry.
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
   await waitForFrameReady(page)
 }
 
@@ -358,7 +363,7 @@ test('Visible Frame images keep their optical hierarchy, source ratio, and attac
 })
 
 test('Frame capture plane and every archive slot keep a safe vertical band across desktop heights', async ({ page }) => {
-  for (const height of [720, 900, 1080]) {
+  for (const height of [667, 720, 760, 900, 1080]) {
     await page.setViewportSize({ width: 1440, height })
     await openHome(page)
 

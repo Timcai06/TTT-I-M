@@ -1,19 +1,19 @@
 /* ── Archive cluster — intrinsic-ratio editorial strips ── */
 .archive-cluster {
-  --primary-width: clamp(290px, 29vw, 430px);
-  --secondary-width: clamp(210px, 21vw, 305px);
-  --detail-width: clamp(170px, 16vw, 230px);
-  --support-width: clamp(195px, 19vw, 280px);
+  --primary-width: clamp(282px, 28vw, 416px);
+  --secondary-width: clamp(204px, 20vw, 294px);
+  --detail-width: clamp(166px, 15.5vw, 222px);
+  --support-width: clamp(188px, 18.25vw, 268px);
   /* Raise the photographs inside the capture plane, never the 100svh track.
      The bounded optical correction preserves the slightly high editorial
      horizon while leaving a stable top/bottom safety band at every desktop
      viewport height. */
-  --archive-slot-optical-y: clamp(-48px, -4.8svh, -34px);
+  --archive-slot-optical-y: clamp(-52px, -5.2svh, -38px);
   position: relative;
   display: flex;
   width: max-content;
-  height: min(64svh, 560px);
-  max-height: calc(100svh - 176px);
+  height: min(62svh, 540px);
+  max-height: calc(100svh - 188px);
   flex: 0 0 auto;
   align-items: center;
   gap: clamp(26px, 2.8vw, 52px);
@@ -97,11 +97,11 @@
 
 @media (max-height: 760px) and (min-width: 769px) {
   .archive-cluster {
-    --primary-width: clamp(280px, 29vw, 420px);
-    --secondary-width: clamp(205px, 21vw, 300px);
-    --detail-width: clamp(215px, 18vw, 240px);
-    --support-width: clamp(190px, 19vw, 280px);
-    --archive-slot-optical-y: clamp(-42px, -4.8svh, -32px);
-    height: min(68svh, 520px);
+    --primary-width: clamp(268px, 27vw, 390px);
+    --secondary-width: clamp(194px, 19.5vw, 280px);
+    --detail-width: clamp(160px, 14.5vw, 208px);
+    --support-width: clamp(180px, 17.5vw, 254px);
+    --archive-slot-optical-y: clamp(-46px, -5.2svh, -36px);
+    height: min(64svh, 488px);
   }
 }

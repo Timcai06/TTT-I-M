@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Keyb
 import { gsap } from '../lib/gsap'
 import { scrollToChapter } from '../lib/chapterScroll'
 import { requestParticlePortal, type ParticlePortalMode } from '../lib/particlePortal'
+import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
 
 export interface AccordionGalleryItem {
   image: string
@@ -192,12 +193,18 @@ export default function AccordionGallery({
         if (particleNavigation && source) {
           const keyboardActivation = event.detail === 0
           const commit = () => {
+            // The preview sits before lazily measured ScrollTrigger pins. Land
+            // against a freshly measured spacer, then re-assert once after the
+            // refresh frame so Lenis cannot restore its pre-click scroll value.
+            requestScrollRefresh(true)
             scrollToChapter(chapterId, { immediate: true, updateHash: true })
-            if (keyboardActivation) {
-              window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+              requestScrollRefresh(true)
+              scrollToChapter(chapterId, { immediate: true })
+              if (keyboardActivation) {
                 document.getElementById(chapterId)?.focus({ preventScroll: true })
-              })
-            }
+              }
+            })
           }
           const accepted = requestParticlePortal({
             source,

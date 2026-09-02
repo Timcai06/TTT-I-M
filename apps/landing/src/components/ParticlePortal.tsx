@@ -178,6 +178,18 @@ export default function ParticlePortal() {
       // creates a blank source.
       source.style.visibility = 'hidden'
 
+      // The particle handoff is enhancement, never the owner of navigation.
+      // If a background-tab/ticker stall prevents the detach timeline from
+      // completing, land the semantic jump and force the transient surface to
+      // its cleanup path instead of leaving the user at the archive index.
+      const semanticWatchdog = window.setTimeout(() => {
+        if (committed) return
+        failed = true
+        void commit().finally(() => {
+          timelineRef.current?.progress(1)
+        })
+      }, 1400)
+
       const speedUpOnIntent = () => {
         timelineRef.current?.timeScale(2.6)
       }
@@ -251,6 +263,7 @@ export default function ParticlePortal() {
             .to(canvas, { opacity: 0, duration: 0.14, ease: 'power1.out' }, 'assemble+=0.5')
         })
       } finally {
+        window.clearTimeout(semanticWatchdog)
         window.removeEventListener('wheel', speedUpOnIntent)
         window.removeEventListener('touchmove', speedUpOnIntent)
         window.removeEventListener('keydown', speedUpOnIntent)

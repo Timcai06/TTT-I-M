@@ -51,37 +51,37 @@
    becoming taller than the chapter. Wide images may breathe horizontally but
    never inherit an artificial height. */
 .archive-slot--portrait .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(210px, 19vw, 270px));
+  width: min(var(--slot-media-width), clamp(204px, 18.5vw, 260px));
 }
 
 .archive-slot--tall .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(175px, 15vw, 215px));
+  width: min(var(--slot-media-width), clamp(170px, 14.5vw, 208px));
 }
 
 .archive-slot--secondary.archive-slot--portrait .archive-slot__media,
 .archive-slot--support.archive-slot--portrait .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(185px, 17vw, 225px));
+  width: min(var(--slot-media-width), clamp(180px, 16.5vw, 218px));
 }
 
 .archive-slot--secondary.archive-slot--tall .archive-slot__media,
 .archive-slot--support.archive-slot--tall .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(165px, 14vw, 190px));
+  width: min(var(--slot-media-width), clamp(162px, 13.5vw, 184px));
 }
 
 .archive-slot--detail.archive-slot--portrait .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(165px, 15vw, 205px));
+  width: min(var(--slot-media-width), clamp(162px, 14.5vw, 198px));
 }
 
 .archive-slot--detail.archive-slot--tall .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(160px, 13vw, 180px));
+  width: min(var(--slot-media-width), clamp(158px, 12.5vw, 176px));
 }
 
 .archive-slot--square .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(220px, 24vw, 340px));
+  width: min(var(--slot-media-width), clamp(212px, 23vw, 326px));
 }
 
 .archive-slot--wide .archive-slot__media {
-  width: min(var(--slot-media-width), clamp(320px, 38vw, 520px));
+  width: min(var(--slot-media-width), clamp(308px, 36vw, 496px));
 }
 
 .archive-slot__open:focus-visible {

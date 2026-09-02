@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   bendEdgeStrengths,
+  calculateCrossAxisScale,
   calculateHorizontalBendGeometry,
   mapPointerToHorizontalBend,
 } from '../src/lib/canvas-ui/horizontalBendMath.ts'
@@ -51,4 +52,14 @@ void test('horizontal geometry remains finite and clamps its fold region', () =>
   assert.equal(geometry.rounding, 0.49)
   assert.equal(geometry.perspective, 0.5)
   assert.equal(geometry.pixelX, 1.5)
+})
+
+void test('cross-axis perspective preserves depth while bounding vertical crop', () => {
+  assert.equal(calculateCrossAxisScale(0, 0.78, 0.5, 0.92, 1.06), 1)
+  assert.equal(calculateCrossAxisScale(-0.4, 0.78, 0.5, 0.92, 1.06), 0.92)
+  assert.equal(calculateCrossAxisScale(0.4, 0.78, 0.5, 0.92, 1.06), 1.06)
+
+  const subtleDepth = calculateCrossAxisScale(-0.08, 0.78, 0.5, 0.92, 1.06)
+  assert.ok(subtleDepth < 1)
+  assert.ok(subtleDepth > 0.92)
 })
