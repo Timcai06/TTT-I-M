@@ -176,17 +176,21 @@ export default function FrameParticleHandoff() {
         duration: 0.24,
         ease: 'power2.inOut',
       }, 'condense')
-      .addLabel('handoff', 0.82)
+      // Keep the material surface authoritative through the last reverse-safe
+      // sample. Fading from 0.82 made Linux/slow-frame scrubs expose a nearly
+      // transparent frame around 0.88; the final 14% is still enough to hand
+      // the scene to Stack without carrying a Canvas across the boundary.
+      .addLabel('handoff', 0.86)
       .to(section, {
         '--particle-exit-opacity': 0,
-        duration: 0.16,
+        duration: 0.14,
         ease: 'power2.out',
       }, 'handoff')
       .to(section, {
         '--scan-opacity': 0,
-        duration: 0.12,
+        duration: 0.1,
         ease: 'power2.out',
-      }, 0.88)
+      }, 0.9)
 
     timeline.progress(0)
     sync()

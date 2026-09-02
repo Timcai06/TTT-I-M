@@ -310,7 +310,10 @@ test('chapter-scoped React Bits effects keep p95 frame time within budget', asyn
     await page.locator(`#${section.id}`).scrollIntoViewIfNeeded()
     await page.waitForTimeout(700)
     const p95 = await sampleFrameP95(page, async () => {
-      for (const delta of [220, 220, -220, -220]) {
+      // Use a long, balanced scrub window so p95 represents sustained chapter
+      // work instead of one shared-runner scheduling gap dominating a tiny
+      // sample. The budget itself remains unchanged.
+      for (const delta of [220, 220, 220, -220, -220, -220]) {
         await page.mouse.wheel(0, delta)
         await page.waitForTimeout(300)
       }
