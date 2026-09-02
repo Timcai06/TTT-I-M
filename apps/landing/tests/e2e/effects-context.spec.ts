@@ -14,7 +14,7 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
   await waitForLive(page)
   await expect(page.locator('.particle-continuum')).toHaveCount(0)
   await expect(page.locator('[data-drift-wall]')).toHaveCount(1)
-  await expect(page.locator('[data-frame-accordion]')).toHaveCount(0)
+  await expect(page.locator('[data-frame-accordion]')).toHaveCount(1)
   await expect(page.locator('.archive-editorial-copy')).toHaveCount(3)
   await expect(page.locator('.archive-theme-section__track')).toHaveCount(3)
   await expect(page.locator('.bento-glow')).toHaveCount(6)

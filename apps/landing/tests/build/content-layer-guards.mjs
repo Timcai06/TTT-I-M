@@ -64,8 +64,10 @@ for (const needle of ['requestAnimationFrame', 'IntersectionObserver', 'translat
   if (!driftWallSource.includes(needle)) throw new Error(`DriftWall must preserve ${needle}.`)
 }
 
-if (frameSource.includes('AccordionGallery') || frameSource.includes('data-frame-accordion')) {
-  throw new Error('Frame must not repeat its three themes in a pre-archive AccordionGallery.')
+for (const token of ['AccordionGallery', 'data-frame-accordion', 'link: `#frame-${theme.id}`']) {
+  if (!frameSource.includes(token)) {
+    throw new Error(`Frame must retain its clickable three-theme archive index: ${token}`)
+  }
 }
 
 if (!gradualBlurSource.includes('CURVE_FUNCTIONS') || !appStyleSource.includes("./components/gradual-blur.css") || !packageManifest.dependencies?.mathjs) {

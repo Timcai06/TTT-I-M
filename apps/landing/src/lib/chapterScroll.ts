@@ -24,20 +24,27 @@ export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) 
   const el = document.getElementById(id)
   if (!el) return
 
+  // GSAP wraps pinned chapter triggers in a generated spacer. Once pinned, the
+  // section itself can carry a transform/fixed position, so asking Lenis to
+  // resolve that element produces a stale or viewport-relative destination.
+  // The spacer remains in normal document flow and is the stable chapter start.
+  const parent = el.parentElement
+  const target = parent?.classList.contains('pin-spacer') ? parent : el
+
   if (options.updateHash) {
     window.history.replaceState(null, '', `#${id}`)
   }
 
   const lenis = getLenis()
   if (lenis) {
-    lenis.scrollTo(el, {
+    lenis.scrollTo(target, {
       offset: -40,
       duration: options.immediate ? 0 : 1.4,
       force: options.immediate,
       immediate: options.immediate,
     })
   } else {
-    const top = el.getBoundingClientRect().top + window.scrollY - 40
+    const top = target.getBoundingClientRect().top + window.scrollY - 40
     window.scrollTo({
       top,
       behavior: options.immediate ? 'auto' : 'smooth',

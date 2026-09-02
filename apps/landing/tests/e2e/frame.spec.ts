@@ -47,7 +47,12 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
 
   await expect(page.locator('#frame')).toBeVisible()
   await expect(page.locator('.archive-theme-section')).toHaveCount(3)
-  await expect(page.locator('.frame-accordion')).toHaveCount(0)
+  await expect(page.locator('.frame-accordion')).toHaveCount(1)
+  const archiveIndexLinks = page.locator('[data-frame-accordion] .ag-panel')
+  await expect(archiveIndexLinks).toHaveCount(3)
+  await expect(archiveIndexLinks.nth(0)).toHaveAttribute('href', '#frame-building')
+  await expect(archiveIndexLinks.nth(1)).toHaveAttribute('href', '#frame-cuisine')
+  await expect(archiveIndexLinks.nth(2)).toHaveAttribute('href', '#frame-scenery')
   await expect(page.locator('.archive-editorial-copy')).toHaveCount(3)
   await expect(page.locator('.archive-theme-section__track').first()).toBeVisible()
   await expect(page.locator('.archive-cluster-marker')).toHaveCount(4)
@@ -84,6 +89,19 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
 
   await page.mouse.wheel(0, 1600)
   await page.waitForTimeout(500)
+})
+
+test('Frame archive index enters the selected photography theme', async ({ page }) => {
+  await openHome(page)
+
+  const buildingPreview = page.locator('[data-frame-accordion] .ag-panel[href="#frame-building"]')
+  await expect(buildingPreview).toBeVisible()
+  await buildingPreview.click()
+
+  await expect(page).toHaveURL(/#frame-building$/)
+  await expect.poll(() => page.locator('#frame-building').evaluate((section) => {
+    return Math.abs(section.getBoundingClientRect().top)
+  })).toBeLessThan(80)
 })
 
 test('Frame first theme releases within a bounded wheel distance', async ({ page }) => {

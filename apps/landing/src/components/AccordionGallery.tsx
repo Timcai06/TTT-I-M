@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import { gsap } from '../lib/gsap'
+import { scrollToChapter } from '../lib/chapterScroll'
 
 export interface AccordionGalleryItem {
   image: string
@@ -148,7 +149,19 @@ export default function AccordionGallery({
     if (index !== active) {
       setActive(index)
     }
-    if (!items[index]?.link) event.preventDefault()
+    const link = items[index]?.link
+    if (!link) {
+      event.preventDefault()
+      return
+    }
+
+    if (link.startsWith('#')) {
+      const chapterId = decodeURIComponent(link.slice(1))
+      if (chapterId && document.getElementById(chapterId)) {
+        event.preventDefault()
+        scrollToChapter(chapterId, { updateHash: true })
+      }
+    }
   }
   const handleKeyDown = (index: number, event: KeyboardEvent) => {
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
