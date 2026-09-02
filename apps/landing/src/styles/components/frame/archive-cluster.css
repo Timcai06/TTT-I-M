@@ -8,7 +8,7 @@
      The bounded optical correction preserves the slightly high editorial
      horizon while leaving a stable top/bottom safety band at every desktop
      viewport height. */
-  --archive-slot-optical-y: clamp(-22px, -2.2svh, -14px);
+  --archive-slot-optical-y: clamp(-48px, -4.8svh, -34px);
   position: relative;
   display: flex;
   width: max-content;
@@ -101,7 +101,7 @@
     --secondary-width: clamp(205px, 21vw, 300px);
     --detail-width: clamp(215px, 18vw, 240px);
     --support-width: clamp(190px, 19vw, 280px);
-    --archive-slot-optical-y: clamp(-18px, -2.2svh, -12px);
+    --archive-slot-optical-y: clamp(-42px, -4.8svh, -32px);
     height: min(68svh, 520px);
   }
 }

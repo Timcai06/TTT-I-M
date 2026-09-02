@@ -124,7 +124,14 @@ void main() {
   sourceX = mix(sourceX, 1.0 - leftFold.x, inLeft);
   float depth = inRight * rightFold.y + inLeft * leftFold.y;
   float alpha = mix(1.0, rightFold.z, inRight) * mix(1.0, leftFold.z, inLeft);
-  float sourceY = 0.5 + (uv.y - 0.5) * (u_perspective + depth) / u_perspective;
+  // This is a horizontal archive fold, so its orthogonal Y axis must remain a
+  // complete viewing plane. CanvasUI's inward perspective can make the folded
+  // surface larger than the viewport; applying that scale to Y crops the top
+  // and bottom of photographs and captions exactly while they enter/leave.
+  // Preserve Y for inward depth, while still allowing an outward fold to
+  // recede. The X solver, rounded crease and depth response remain unchanged.
+  float orthogonalScale = max(1.0, (u_perspective + depth) / u_perspective);
+  float sourceY = 0.5 + (uv.y - 0.5) * orthogonalScale;
 
   alpha *= smoothstep(-2.0 * u_pixel_x, 0.0, sourceX);
   alpha *= 1.0 - smoothstep(1.0, 1.0 + 2.0 * u_pixel_x, sourceX);
@@ -208,6 +215,13 @@ export function createHorizontalBend(options: {
   })
   drawable.querySelectorAll<HTMLElement>('.archive-slot').forEach((slot) => {
     slot.style.contentVisibility = 'visible'
+  })
+  // Photography owns the fold; metadata stays in the semantic DOM so small
+  // type never collapses into the rounded crease at either viewport edge.
+  // visibility preserves each figure's measured height and therefore keeps
+  // the cloned media pixel-aligned with its real caption.
+  drawable.querySelectorAll<HTMLElement>('.archive-slot__caption').forEach((caption) => {
+    caption.style.visibility = 'hidden'
   })
   const originalImages = capture.querySelectorAll<HTMLImageElement>('img')
   drawable.querySelectorAll<HTMLImageElement>('img').forEach((image, index) => {

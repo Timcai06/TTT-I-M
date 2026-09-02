@@ -361,8 +361,12 @@ test('Frame capture plane and every archive slot keep a safe vertical band acros
       expect(geometry.trackTranslate).toBe('none')
       expect(Math.abs(geometry.trackTopDelta)).toBeLessThanOrEqual(2)
       expect(Math.abs(geometry.trackBottomDelta)).toBeLessThanOrEqual(2)
+      const minimumTopGap = Math.max(72, height * 0.1)
+      const minimumBottomGap = Math.max(104, height * 0.14)
       expect(
-        geometry.slots.filter(({ top, bottomGap }) => top < 48 || bottomGap < 28),
+        geometry.slots.filter(({ top, bottomGap }) => (
+          top < minimumTopGap || bottomGap < minimumBottomGap
+        )),
         `height=${height}, theme=${index}: ${JSON.stringify(geometry.slots)}`,
       ).toHaveLength(0)
     }

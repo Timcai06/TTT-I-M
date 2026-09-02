@@ -41,7 +41,7 @@ for (const token of ['HorizontalBendSurface', 'bendHandle', 'ArchiveEditorialCop
     throw new Error(`Frame horizontal bend is missing ${token}.`)
   }
 }
-for (const token of ['zone: 180', 'angle: 46', 'rounding: 130', 'perspective: 1250', 'ease: 180', 'smoothing: 0.14', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame']) {
+for (const token of ['zone: 180', 'angle: 46', 'rounding: 130', 'perspective: 1250', 'ease: 180', 'smoothing: 0.14', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame', 'float orthogonalScale = max(1.0', "querySelectorAll<HTMLElement>('.archive-slot__caption')"]) {
   if (!bendSource.includes(token)) throw new Error(`Horizontal Bend must keep ${token}.`)
 }
 if (!bendSource.includes('outColor = vec4(base.rgb * coverage, coverage)') || bendSource.includes('edgeMask')) {
