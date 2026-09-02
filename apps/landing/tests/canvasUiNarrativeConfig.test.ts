@@ -3,19 +3,22 @@ import assert from 'node:assert/strict'
 
 import { FRAME_PARTICLE_CONFIG } from '../src/lib/canvas-ui/particleScrollConfig.ts'
 
-void test('Frame Particle Scroll retains the CanvasUI demo values', () => {
+void test('Frame Particle Scroll converts the final exposure into a responsive signal', () => {
   assert.deepEqual(FRAME_PARTICLE_CONFIG, {
-    point: 0.68,
-    band: 420,
+    mode: 'dissolve',
+    point: 0.61,
+    band: 320,
     density: 2,
-    size: 1.25,
-    spread: 220,
-    gravity: 0.35,
-    drift: 0.7,
-    swirl: 60,
-    stagger: 0.7,
-    fade: 0.85,
-    settle: 1.2,
-    smoothing: 0.6,
+    size: 1.1,
+    spread: 260,
+    gravity: 0.08,
+    drift: 0.4,
+    swirl: 80,
+    stagger: 0.58,
+    fade: 0.82,
+    settle: 0.82,
+    smoothing: 0.26,
+    frontStart: 0.18,
+    frontEnd: 1.28,
   })
 })

@@ -184,13 +184,13 @@ for (const token of ['FrameParticleHandoff', 'lazy(loadFrameParticleHandoff)', '
 for (const token of ['setScrollState', 'data-frame-particles', 'data-frame-particle-capture', 'markDrawableSubtree', 'canAcquireOptionalSurface', 'releaseContext', "start: 'top top'", "end: 'bottom bottom'"]) {
   if (!frameParticles.includes(token)) throw new Error(`Frame Particle Scroll lifecycle must retain ${token}.`)
 }
-for (const token of ['point: 0.68', 'band: 420', 'density: 2', 'size: 1.25', 'spread: 220', 'gravity: 0.35', 'drift: 0.7', 'swirl: 60', 'settle: 1.2', 'smoothing: 0.6', 'canRenderFrameParticles']) {
+for (const token of ["mode: 'dissolve'", 'point: 0.61', 'band: 320', 'density: 2', 'size: 1.1', 'spread: 260', 'gravity: 0.08', 'drift: 0.4', 'swirl: 80', 'settle: 0.82', 'smoothing: 0.26', 'frontStart: 0.18', 'frontEnd: 1.28', 'canRenderFrameParticles']) {
   if (!frameParticleRuntime.includes(token)) throw new Error(`Frame Particle Scroll adapter must retain ${token}.`)
 }
-for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
+for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'config.mode === "dissolve"', 'signalProgress', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
   if (!frameParticleVendor.includes(token)) throw new Error(`Vendored Canvas UI Particle Scroll must retain ${token}.`)
 }
-for (const token of ['height: 210svh', 'position: sticky', '.frame-particle-document__contact', '.frame-particle-document__bridge', 'scrollbar-width: none', '(prefers-reduced-motion: reduce)']) {
+for (const token of ['height: 190svh', 'position: sticky', '.frame-particle-document__contact', '.frame-particle-handoff__scanline', '.frame-particle-handoff__caption', '.frame-particle-handoff__status', 'clip-path: inset(calc(var(--dissolve-progress)', 'scrollbar-width: none', '(prefers-reduced-motion: reduce)']) {
   if (!frameStyle.includes(token)) throw new Error(`Frame Particle Scroll fallback must retain ${token}.`)
 }
 for (const forbidden of ['externalProgress', '--particle-front', 'mask-image:', 'frame-particle-handoff__dust', 'frame-particle-handoff__signal']) {

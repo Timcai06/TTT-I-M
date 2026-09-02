@@ -70,18 +70,20 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
       width: Math.round(rect.width),
       background: copyStyle.backgroundImage,
       backdrop: copyStyle.backdropFilter,
+      borderLeftWidth: copyStyle.borderLeftWidth,
+      borderLeftStyle: copyStyle.borderLeftStyle,
       gutterContent: gutterStyle?.content ?? '',
     }
   })
   expect(floatingCopy.width).toBeLessThanOrEqual(352)
-  expect(floatingCopy.background).not.toBe('none')
-  expect(floatingCopy.backdrop).toContain('blur(10px)')
+  expect(floatingCopy.background).toBe('none')
+  expect(floatingCopy.backdrop).toBe('none')
+  expect(floatingCopy.borderLeftWidth).toBe('1px')
+  expect(floatingCopy.borderLeftStyle).toBe('solid')
   expect(floatingCopy.gutterContent).toBe('none')
 
   await page.mouse.wheel(0, 1600)
   await page.waitForTimeout(500)
-
-  await page.screenshot({ path: 'test-results/frame-smoke.png', fullPage: false })
 })
 
 test('Frame first theme releases within a bounded wheel distance', async ({ page }) => {
@@ -398,7 +400,8 @@ test('Frame handoff does not repeat the Stack chapter title', async ({ page }) =
   })
 
   expect(copies).toBe(1)
-  await expect(page.locator('.frame-particle-document__bridge').first()).toContainText('FINAL HORIZON')
+  await expect(page.locator('.frame-particle-handoff__caption').first()).toContainText('FINAL HORIZON')
+  await expect(page.locator('.frame-particle-document__figure')).toHaveCount(1)
   await expect(page.locator('.frame-particle-document__opening')).toHaveCount(0)
   await expect(page.locator('.frame-particle-document__handoff')).toHaveCount(0)
 })

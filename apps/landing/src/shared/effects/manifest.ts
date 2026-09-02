@@ -24,8 +24,8 @@ export const visualEffectManifest = [
   {
     id: 'frame-particle-scroll',
     chapter: 'frame',
-    trigger: 'page progress mirrors the dedicated Frame document scrollTop',
-    fallback: 'the same complete editorial document scrolls without the particle shader',
+    trigger: 'the final Scenery exposure dissolves into the Stack signal as page progress advances',
+    fallback: 'the same exposure is scanned away in DOM while the real red handoff line remains visible',
     reducedMotion: 'static',
     contextCost: 1,
     license: 'MIT + Commons Clause',

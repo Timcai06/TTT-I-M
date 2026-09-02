@@ -1,5 +1,7 @@
 // @ts-nocheck -- vendored source is checked upstream with a looser TS config.
 export interface ParticleScrollOptions {
+  /** Keep the upstream document-scroll assembly, or dissolve one fixed exposure from top to bottom. */
+  mode?: "scroll" | "dissolve";
   /** Local integration cap for device pixel ratio. Upstream defaults to 2. */
   dprMax?: number;
   /** Viewport fraction of the formation line. Content assembles as it scrolls up past this line and dissolves back below it. */
@@ -26,6 +28,10 @@ export interface ParticleScrollOptions {
   settle?: number;
   /** Seconds the damped scroll takes to catch up with the real scroll. Higher feels more fluid. */
   smoothing?: number;
+  /** Viewport fraction where fixed-exposure dissolution begins. */
+  frontStart?: number;
+  /** Viewport fraction where fixed-exposure dissolution fully clears the image. */
+  frontEnd?: number;
 }
 
 export interface ParticleScrollElements {
@@ -51,6 +57,7 @@ export interface ParticleScrollInstance {
 }
 
 const DEFAULTS: Required<ParticleScrollOptions> = {
+  mode: "scroll",
   dprMax: 2,
   point: 0.68,
   band: 420,
@@ -64,6 +71,8 @@ const DEFAULTS: Required<ParticleScrollOptions> = {
   fade: 0.85,
   settle: 1.2,
   smoothing: 0.6,
+  frontStart: 0,
+  frontEnd: 1,
 };
 
 type PaintableCanvas = HTMLCanvasElement & {
@@ -414,6 +423,7 @@ export function createParticleScroll(
   let introWait = 0;
   let introReady = false;
   let scrollSmooth = content.scrollTop;
+  let signalProgress = 0;
   let captureReadySent = false;
   syncCanvasSize();
   syncBgColor();
@@ -443,6 +453,12 @@ export function createParticleScroll(
     if (reducedMotion || !introDone) return 1;
     const h = Math.max(output.clientHeight, 1);
     const band = Math.max(config.band, 1);
+    if (config.mode === "dissolve") {
+      const start = config.frontStart * h;
+      const end = config.frontEnd * h;
+      const scanY = start + (end - start) * signalProgress;
+      return Math.min(Math.max((docRowY - (scanY - band)) / band, 0), 1);
+    }
     const max = content.scrollHeight - content.clientHeight;
     let line = Math.min(Math.max(config.point, 0), 1) * h;
     if (max <= 1) {
@@ -676,6 +692,11 @@ export function createParticleScroll(
 
   return {
     setScrollState(progress, _delta) {
+      if (config.mode === "dissolve") {
+        signalProgress = Math.min(Math.max(progress, 0), 1);
+        start();
+        return;
+      }
       const max = Math.max(content.scrollHeight - content.clientHeight, 0);
       content.scrollTop = Math.min(Math.max(progress, 0), 1) * max;
       if (htmlInCanvas) paintable.requestPaint!();

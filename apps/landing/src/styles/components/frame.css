@@ -26,16 +26,19 @@
   border-top: 1px solid var(--line);
 }
 
-/* Frame → Stack keeps the last Scenery composition as its only subject while
-   CanvasUI Particle Scroll carries it through a full formation line. The
-   runway is long enough for the source effect to read, but contains no second
-   chapter title or Stack-row expansion; Stack still owns those moments. */
+/* Frame → Stack is one continuous sentence: the final Scenery exposure is
+   scanned into particles, the scan contracts to the left edge, and Stack's
+   existing red active flow starts from that exact boundary. */
 .frame-particle-handoff {
   --particle-progress: 0;
-  --particle-scroll-y: 0svh;
+  --dissolve-progress: 0;
   --particle-exit-opacity: 1;
+  --scan-y: 18svh;
+  --scan-scale: 1;
+  --scan-red: 0;
+  --scan-opacity: 1;
   position: relative;
-  height: 210svh;
+  height: 190svh;
   overflow: clip;
   background: #000;
   contain: layout paint;
@@ -56,6 +59,17 @@
   background: #000;
 }
 
+.frame-particle-handoff__sticky::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(122 168 132 / 6%), transparent 34%),
+    radial-gradient(circle at 12% 88%, rgb(216 189 134 / 4%), transparent 26%);
+}
+
 .frame-particle-handoff__fallback,
 .frame-particle-handoff__surface {
   position: absolute;
@@ -74,22 +88,16 @@
 
 .frame-particle-document {
   position: relative;
-  min-height: 210svh;
+  min-height: 100svh;
   color: var(--fg);
-  background:
-    radial-gradient(circle at 76% 18%, rgb(122 168 132 / 7%), transparent 30%),
-    radial-gradient(circle at 18% 62%, rgb(216 189 134 / 5%), transparent 28%),
-    #000;
-  transform: translate3d(0, var(--particle-scroll-y), 0);
-  will-change: transform;
+  background: transparent;
 }
 
 .frame-particle-handoff__scroll .frame-particle-document {
-  transform: none;
-  will-change: auto;
+  min-height: 100%;
 }
 
-.frame-particle-document__chrome {
+.frame-particle-handoff__chrome {
   position: absolute;
   z-index: 5;
   top: clamp(30px, 5vh, 54px);
@@ -106,74 +114,93 @@
 
 .frame-particle-document__contact {
   position: relative;
-  min-height: 156svh;
+  height: 100svh;
   padding: 0;
 }
 
 .frame-particle-document__contact figure {
   position: absolute;
+  top: 18svh;
+  left: 50%;
   min-width: 0;
   min-height: 0;
   overflow: visible;
   margin: 0;
+  height: min(62svh, 42vw, 620px);
   aspect-ratio: var(--particle-image-aspect, 4 / 3);
   background: transparent;
-}
-
-.frame-particle-document__figure--lead {
-  z-index: 1;
-  /* CanvasUI's formation line sits at 68% of the viewport. The lead image
-     deliberately straddles that line so its lower half enters as particles
-     instead of appearing fully assembled before the effect begins. */
-  top: 38svh;
-  left: clamp(24px, 6vw, 96px);
-  height: min(54svh, 560px);
-}
-
-.frame-particle-document__figure--support {
-  z-index: 2;
-  top: 92svh;
-  right: clamp(24px, 8vw, 128px);
-  height: min(32svh, 330px);
-}
-
-.frame-particle-document__figure--detail {
-  z-index: 3;
-  top: 134svh;
-  right: auto;
-  left: clamp(54px, 16vw, 250px);
-  bottom: auto;
-  height: min(28svh, 290px);
+  transform: translate3d(-50%, 0, 0);
 }
 
 .frame-particle-document__contact img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: grayscale(0.36) brightness(0.78) contrast(1.06);
+  filter: grayscale(0.22) brightness(0.84) contrast(1.04);
 }
 
-.frame-particle-document__bridge {
+.frame-particle-handoff__fallback .frame-particle-document__figure {
+  clip-path: inset(calc(var(--dissolve-progress) * 100%) 0 0 0);
+  will-change: clip-path;
+}
+
+.frame-particle-handoff__scroll .frame-particle-document__figure {
+  clip-path: none;
+}
+
+.frame-particle-handoff__caption {
   position: absolute;
   z-index: 5;
-  top: 168svh;
-  right: clamp(24px, 5vw, 84px);
-  left: clamp(24px, 5vw, 84px);
+  top: min(83svh, calc(18svh + 650px));
+  left: 50%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  justify-content: center;
+  gap: clamp(16px, 3vw, 42px);
+  width: min(76vw, 920px);
   color: rgb(245 242 234 / 46%);
   font-family: var(--font-mono);
   font-size: 8px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  opacity: calc(1 - var(--dissolve-progress));
+  transform: translate3d(-50%, 0, 0);
+  will-change: opacity;
 }
 
-.frame-particle-document__bridge strong {
+.frame-particle-handoff__caption strong {
   color: #d8bd86;
   font: 500 9px/1 var(--font-mono);
   letter-spacing: 0.2em;
+}
+
+.frame-particle-handoff__status {
+  position: absolute;
+  z-index: 5;
+  bottom: clamp(42px, 7vh, 72px);
+  left: clamp(24px, 5vw, 84px);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: rgb(245 242 234 / 40%);
+  font: 500 8px/1 var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: var(--scan-red);
+}
+
+.frame-particle-handoff__status::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  content: '';
+  background: #ff3333;
+  box-shadow: 0 0 12px rgb(255 51 51 / 58%);
+}
+
+.frame-particle-handoff__status strong {
+  color: #ff3333;
+  font: inherit;
 }
 
 .frame-particle-handoff__surface {
@@ -185,6 +212,40 @@
 
 .frame-particle-handoff.is-enhanced .frame-particle-handoff__surface {
   opacity: var(--particle-exit-opacity);
+}
+
+.frame-particle-handoff__scanline {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  opacity: var(--scan-opacity);
+  pointer-events: none;
+  transform: translate3d(0, var(--scan-y), 0) scaleX(var(--scan-scale));
+  transform-origin: left center;
+  will-change: transform, opacity;
+}
+
+.frame-particle-handoff__scanline::before,
+.frame-particle-handoff__scanline::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.frame-particle-handoff__scanline::before {
+  background: linear-gradient(90deg, transparent, rgb(216 189 134 / 88%) 12% 88%, transparent);
+  box-shadow: 0 0 18px rgb(216 189 134 / 24%);
+  opacity: calc(1 - var(--scan-red));
+}
+
+.frame-particle-handoff__scanline::after {
+  min-width: 3px;
+  background: #ff3333;
+  box-shadow: 0 0 14px rgb(255 51 51 / 54%);
+  opacity: var(--scan-red);
 }
 
 .frame-particle-handoff__source,
@@ -227,47 +288,47 @@
 
   .frame-particle-document {
     min-height: 0;
-    transform: none;
-    will-change: auto;
   }
 
-  .frame-particle-document__chrome {
+  .frame-particle-handoff__chrome {
     top: 36px;
     right: 18px;
     left: 18px;
   }
 
   .frame-particle-document__contact {
-    display: grid;
-    min-height: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto auto;
-    gap: 32px 12px;
+    height: auto;
     padding: 96px 18px 64px;
   }
 
   .frame-particle-document__contact figure:nth-child(n) {
     position: relative;
     inset: auto;
-    grid-area: auto;
     width: 100%;
     height: auto;
     aspect-ratio: var(--particle-image-aspect, 4 / 3);
+    clip-path: none;
+    transform: none;
   }
 
-  .frame-particle-document__figure--lead {
-    grid-column: 1 / -1;
-  }
-
-  .frame-particle-document__bridge {
+  .frame-particle-handoff__caption {
     position: relative;
     top: auto;
     right: auto;
     left: auto;
+    justify-content: space-between;
+    width: auto;
     padding: 0 18px 72px;
+    opacity: 1;
+    transform: none;
   }
 
-  .frame-particle-handoff__surface {
+  .frame-particle-handoff__status {
+    display: none;
+  }
+
+  .frame-particle-handoff__surface,
+  .frame-particle-handoff__scanline {
     display: none;
   }
 }

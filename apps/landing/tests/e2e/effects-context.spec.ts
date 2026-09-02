@@ -92,24 +92,29 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
     viewport: window.innerHeight,
     sticky: getComputedStyle(section.querySelector('.frame-particle-handoff__sticky')!).position,
   }))
-  expect(geometry.height).toBeGreaterThan(geometry.viewport * 2.05)
-  expect(geometry.height).toBeLessThan(geometry.viewport * 2.15)
+  expect(geometry.height).toBeGreaterThan(geometry.viewport * 1.85)
+  expect(geometry.height).toBeLessThan(geometry.viewport * 1.95)
   expect(geometry.sticky).toBe('sticky')
 
-  const leadFormation = await handoff.evaluate((section) => {
+  const exposureComposition = await handoff.evaluate((section) => {
     const sticky = section.querySelector<HTMLElement>('.frame-particle-handoff__sticky')
-    const lead = section.querySelector<HTMLElement>('.frame-particle-document__figure--lead')
-    if (!sticky || !lead) throw new Error('Frame handoff lead composition is missing')
+    const exposure = section.querySelector<HTMLElement>('.frame-particle-document__figure')
+    const scanline = section.querySelector<HTMLElement>('.frame-particle-handoff__scanline')
+    if (!sticky || !exposure || !scanline) throw new Error('Frame handoff exposure composition is missing')
     const stickyRect = sticky.getBoundingClientRect()
-    const leadRect = lead.getBoundingClientRect()
+    const exposureRect = exposure.getBoundingClientRect()
+    const scanRect = scanline.getBoundingClientRect()
     return {
-      formationY: stickyRect.top + stickyRect.height * 0.68,
-      leadTop: leadRect.top,
-      leadBottom: leadRect.bottom,
+      exposureTop: exposureRect.top,
+      exposureBottom: exposureRect.bottom,
+      scanY: scanRect.top,
+      stickyTop: stickyRect.top,
+      stickyBottom: stickyRect.bottom,
     }
   })
-  expect(leadFormation.leadTop).toBeLessThan(leadFormation.formationY)
-  expect(leadFormation.leadBottom).toBeGreaterThan(leadFormation.formationY)
+  expect(exposureComposition.exposureTop).toBeGreaterThanOrEqual(exposureComposition.stickyTop)
+  expect(exposureComposition.exposureBottom).toBeLessThan(exposureComposition.stickyBottom)
+  expect(Math.abs(exposureComposition.scanY - exposureComposition.exposureTop)).toBeLessThanOrEqual(2)
 
   const midpoint = await handoff.evaluate((section) => {
     const rect = section.getBoundingClientRect()
@@ -119,14 +124,16 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
   await page.waitForTimeout(250)
   const state = await handoff.evaluate((section) => ({
     progress: Number(getComputedStyle(section).getPropertyValue('--particle-progress')),
-    documentTransform: getComputedStyle(section.querySelector('.frame-particle-document')!).transform,
+    dissolveProgress: Number(getComputedStyle(section).getPropertyValue('--dissolve-progress')),
+    scanTransform: getComputedStyle(section.querySelector('.frame-particle-handoff__scanline')!).transform,
     contactSheets: section.querySelectorAll('.frame-particle-document__contact figure').length,
     rejectedHybridLayers: section.querySelectorAll('.frame-particle-handoff__dust, .frame-particle-handoff__signal').length,
   }))
   expect(state.progress).toBeGreaterThan(0.4)
   expect(state.progress).toBeLessThan(0.6)
-  expect(state.documentTransform).not.toBe('none')
-  expect(state.contactSheets).toBe(3)
+  expect(state.dissolveProgress).toBeGreaterThan(0.35)
+  expect(state.scanTransform).not.toBe('none')
+  expect(state.contactSheets).toBe(1)
   expect(state.rejectedHybridLayers).toBe(0)
 
   const composition = await handoff.locator('.frame-particle-document__contact').evaluate((contact) => {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { archiveThemes } from '../../content'
-import { ScrollTrigger, useGSAP } from '../../lib/gsap'
+import { gsap, useGSAP } from '../../lib/gsap'
 import {
   canRenderFrameParticles,
   createFrameParticles,
@@ -15,45 +15,33 @@ import { markDrawableSubtree } from '../../lib/canvas-ui/runtime'
 type ArchiveImage = (typeof archiveThemes)[number]['clusters'][number]['slots'][number]['image']
 
 function ParticleDocument({
-  images,
+  image,
   capture = false,
   onMediaReady,
 }: {
-  images: ArchiveImage[]
+  image?: ArchiveImage
   capture?: boolean
   onMediaReady?: () => void
 }) {
+  if (!image) return null
+
   return (
     <div className="frame-particle-document">
-      <header className="frame-particle-document__chrome" aria-hidden="true">
-        <span>FRAME / FINAL EXPOSURE</span>
-        <span>03 · SCENERY</span>
-      </header>
-
       <section className="frame-particle-document__contact" aria-label="Final Scenery frame">
-        {images.map((image, index) => (
-          <figure
-            className={`frame-particle-document__figure frame-particle-document__figure--${index === 0 ? 'lead' : index === 1 ? 'support' : 'detail'}`}
-            key={`${capture ? 'capture' : 'fallback'}-${image.src}`}
-            style={{ '--particle-image-aspect': `${image.width} / ${image.height}` } as CSSProperties}
-          >
-            <img
-              src={image.src}
-              alt={capture ? '' : image.title}
-              loading={capture ? 'eager' : 'lazy'}
-              decoding="async"
-              onLoad={onMediaReady}
-              style={{ '--particle-image-i': index } as CSSProperties}
-            />
-          </figure>
-        ))}
+        <figure
+          className="frame-particle-document__figure"
+          key={`${capture ? 'capture' : 'fallback'}-${image.src}`}
+          style={{ '--particle-image-aspect': `${image.width} / ${image.height}` } as CSSProperties}
+        >
+          <img
+            src={image.src}
+            alt={capture ? '' : image.title}
+            loading={capture ? 'eager' : 'lazy'}
+            decoding="async"
+            onLoad={onMediaReady}
+          />
+        </figure>
       </section>
-
-      <footer className="frame-particle-document__bridge" aria-hidden="true">
-        <span>FRAME / 03</span>
-        <strong>FINAL HORIZON</strong>
-        <span>NEXT / STACK</span>
-      </footer>
     </div>
   )
 }
@@ -74,11 +62,10 @@ export default function FrameParticleHandoff() {
   const disabled = prefersReducedMotion() || isMobileExperience()
   const supported = canRenderFrameParticles()
 
-  const images = useMemo(() => {
+  const image = useMemo(() => {
     const lastTheme = archiveThemes[archiveThemes.length - 1]
-    return lastTheme?.clusters
-      .flatMap((cluster) => cluster.slots.map((slot) => slot.image))
-      .slice(-3) ?? []
+    const lastCluster = lastTheme?.clusters[lastTheme.clusters.length - 1]
+    return lastCluster?.slots[0]?.image
   }, [])
 
   useEffect(() => {
@@ -104,8 +91,8 @@ export default function FrameParticleHandoff() {
       setEnhanced(false)
     }
 
-    const images = [...capture.querySelectorAll('img')]
-    void Promise.allSettled(images.map((image) => image.decode())).then(() => {
+    const captureImages = [...capture.querySelectorAll('img')]
+    void Promise.allSettled(captureImages.map((captureImage) => captureImage.decode())).then(() => {
       if (released) return
       acquireContext()
       acquired = true
@@ -140,44 +127,78 @@ export default function FrameParticleHandoff() {
     const section = root.current
     if (!section || disabled) return
 
+    const particleState = { progress: 0 }
     let lastScrollY = window.scrollY
-    const sync = (progress: number) => {
+    const sync = () => {
+      const progress = timeline.progress()
       const scrollY = window.scrollY
-      const state = { progress, delta: scrollY - lastScrollY }
+      const state = { progress: particleState.progress, delta: scrollY - lastScrollY }
       lastScrollY = scrollY
       latestState.current = state
       section.style.setProperty('--particle-progress', progress.toFixed(4))
-      /* The captured document needs a real vertical runway for CanvasUI's
-         formation line to cross the full contact sheet. The previous 30svh
-         mirror compressed the source effect until it was almost imperceptible. */
-      section.style.setProperty('--particle-scroll-y', `${(-110 * progress).toFixed(2)}svh`)
-      const exitOpacity = progress <= 0.94 ? 1 : Math.max(0, 1 - (progress - 0.94) / 0.06)
-      section.style.setProperty('--particle-exit-opacity', exitOpacity.toFixed(4))
-      section.dataset.handoffPhase = progress < 0.14
+      section.dataset.handoffPhase = progress < 0.12
         ? 'frame-owned'
-        : progress < 0.94
+        : progress < 0.82
           ? 'canvas-owned'
           : 'stack-preview'
       handleRef.current?.setScrollState(state)
     }
 
-    sync(0)
-    const trigger = ScrollTrigger.create({
-      trigger: section,
-      start: 'top top',
-      end: 'bottom bottom',
-      scrub: 0.24,
-      refreshPriority: -100,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => sync(self.progress),
-      onLeave: () => sync(1),
-      onEnterBack: (self) => sync(self.progress),
-      onLeaveBack: () => sync(0),
+    const timeline = gsap.timeline({
+      defaults: { ease: 'none' },
+      onUpdate: sync,
+      scrollTrigger: {
+        trigger: section,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.2,
+        refreshPriority: -100,
+        invalidateOnRefresh: true,
+      },
     })
+      .addLabel('hold', 0)
+      .addLabel('dissolve', 0.12)
+      .to(particleState, {
+        progress: 1,
+        duration: 0.56,
+        ease: 'power1.inOut',
+      }, 'dissolve')
+      .to(section, {
+        '--dissolve-progress': 1,
+        '--scan-y': '92svh',
+        duration: 0.56,
+        ease: 'power1.inOut',
+      }, 'dissolve')
+      .addLabel('condense', 0.64)
+      .to(section, {
+        '--scan-scale': 0.003,
+        '--scan-red': 1,
+        duration: 0.24,
+        ease: 'power2.inOut',
+      }, 'condense')
+      .addLabel('handoff', 0.82)
+      .to(section, {
+        '--particle-exit-opacity': 0,
+        duration: 0.16,
+        ease: 'power2.out',
+      }, 'handoff')
+      .to(section, {
+        '--scan-opacity': 0,
+        duration: 0.12,
+        ease: 'power2.out',
+      }, 0.88)
+
+    timeline.progress(0)
+    sync()
     return () => {
-      trigger.kill()
+      timeline.scrollTrigger?.kill()
+      timeline.kill()
       section.style.removeProperty('--particle-progress')
-      section.style.removeProperty('--particle-scroll-y')
+      section.style.removeProperty('--dissolve-progress')
+      section.style.removeProperty('--scan-y')
+      section.style.removeProperty('--scan-scale')
+      section.style.removeProperty('--scan-red')
+      section.style.removeProperty('--scan-opacity')
       section.style.removeProperty('--particle-exit-opacity')
       delete section.dataset.handoffPhase
     }
@@ -196,8 +217,24 @@ export default function FrameParticleHandoff() {
       aria-label="Frame to Stack transition"
     >
       <div className="frame-particle-handoff__sticky">
+        <header className="frame-particle-handoff__chrome" aria-hidden="true">
+          <span>FRAME / FINAL EXPOSURE</span>
+          <span>03 · SCENERY</span>
+        </header>
+
+        <div className="frame-particle-handoff__caption" aria-hidden="true">
+          <span>FRAME / 03</span>
+          <strong>{image?.title ?? 'Final Horizon'}</strong>
+          <span>IMAGE → SIGNAL → STACK</span>
+        </div>
+
+        <div className="frame-particle-handoff__status" aria-hidden="true">
+          <span>Signal acquired</span>
+          <strong>Next / Stack</strong>
+        </div>
+
         <div className="frame-particle-handoff__fallback">
-          <ParticleDocument images={images} />
+          <ParticleDocument image={image} />
         </div>
 
         {!disabled && supported && (
@@ -218,7 +255,7 @@ export default function FrameParticleHandoff() {
                       overflow: 'auto',
                     }}
                   >
-                    <ParticleDocument images={images} capture onMediaReady={requestCapture} />
+                    <ParticleDocument image={image} capture onMediaReady={requestCapture} />
                   </div>
                 </canvas>
                 <canvas className="frame-particle-handoff__output" ref={outputRef} />
@@ -226,6 +263,8 @@ export default function FrameParticleHandoff() {
             )}
           </div>
         )}
+
+        <div className="frame-particle-handoff__scanline" aria-hidden="true" />
       </div>
     </section>
   )

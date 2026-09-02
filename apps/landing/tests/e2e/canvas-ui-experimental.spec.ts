@@ -118,9 +118,11 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
     clientHeight: content.clientHeight,
     scrollHeight: content.scrollHeight,
     scrollTop: content.scrollTop,
+    exposures: content.querySelectorAll('.frame-particle-document__figure').length,
   }))
-  expect(captureGeometry.scrollHeight).toBeGreaterThan(captureGeometry.clientHeight * 2.05)
-  expect(captureGeometry.scrollTop).toBeGreaterThan(captureGeometry.clientHeight * 0.45)
+  expect(captureGeometry.scrollHeight).toBeLessThanOrEqual(captureGeometry.clientHeight * 1.05)
+  expect(captureGeometry.scrollTop).toBe(0)
+  expect(captureGeometry.exposures).toBe(1)
 
   // The transition used to mount/unmount exactly at its ScrollTrigger edge,
   // which made fast direction changes flash or jump. Exercise both directions
@@ -142,12 +144,17 @@ test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', 
     await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
   }
 
-  await page.waitForTimeout(1_100)
-  const before = await handoff.locator('.frame-particle-handoff__output').screenshot()
-  await page.mouse.wheel(0, 120)
-  await page.waitForTimeout(250)
-  const after = await handoff.locator('.frame-particle-handoff__output').screenshot()
-  expect(after.equals(before), 'Particle Scroll output must respond to native page progress').toBe(false)
+  const beforeProgress = await handoff.evaluate((section) => Number.parseFloat(
+    getComputedStyle(section).getPropertyValue('--particle-progress'),
+  ))
+  await page.evaluate(
+    ({ start, distance }) => window.scrollTo({ top: start + distance * 0.58, behavior: 'auto' }),
+    handoffRange,
+  )
+  await expect.poll(async () => handoff.evaluate((section) => Number.parseFloat(
+    getComputedStyle(section).getPropertyValue('--particle-progress'),
+  ))).toBeGreaterThan(beforeProgress)
+  await expect(handoff).toHaveAttribute('data-handoff-phase', 'canvas-owned')
 
   await page.mouse.wheel(0, 1_800)
   await expect(handoff.locator('canvas')).toHaveCount(0)
