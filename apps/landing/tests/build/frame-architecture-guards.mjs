@@ -41,10 +41,10 @@ for (const token of ['HorizontalBendSurface', 'bendHandle', 'ArchiveEditorialCop
     throw new Error(`Frame horizontal bend is missing ${token}.`)
   }
 }
-for (const token of ['zone: 180', 'angle: 46', 'rounding: 130', 'perspective: 1250', 'ease: 180', 'smoothing: 0.14', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame', 'float orthogonalScale = max(1.0', "querySelectorAll<HTMLElement>('.archive-slot__caption')"]) {
+for (const token of ['zone: 210', 'angle: 58', 'rounding: 150', 'perspective: 1050', 'ease: 220', 'smoothing: 0.11', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame', 'float orthogonalScale = max(1.0', 'float foldLighting = 1.0 - foldAmount * foldDepth * 0.24', "querySelectorAll<HTMLElement>('.archive-slot__caption')"]) {
   if (!bendSource.includes(token)) throw new Error(`Horizontal Bend must keep ${token}.`)
 }
-if (!bendSource.includes('outColor = vec4(base.rgb * coverage, coverage)') || bendSource.includes('edgeMask')) {
+if (!bendSource.includes('outColor = vec4(base.rgb * foldLighting * coverage, coverage)') || bendSource.includes('edgeMask')) {
   throw new Error('Horizontal Bend must own one complete captured rail instead of double-painting edge fragments over DOM.')
 }
 for (const token of ['onEnhancedChange', 'is-bend-enhanced', '> .archive-theme-section__track', 'focus-within']) {
@@ -77,9 +77,10 @@ const requiredIntrinsicEditorialLayout = [
   'translate: none',
   '--archive-slot-optical-y:',
   'calc(var(--slot-y, 0px) + var(--archive-slot-optical-y, 0px))',
-  'border-left: 1px solid rgb(216 189 134 / 34%)',
+  'border-left-color: rgb(216 189 134 / 48%)',
   '.archive-theme-section__pin::after',
-  'rgb(0 0 0 / 96%) 48%',
+  'content: none',
+  'backdrop-filter: blur(10px) saturate(0.82)',
   '--primary-width:',
   '--secondary-width:',
   '--detail-width:',

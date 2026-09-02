@@ -10,12 +10,12 @@ export interface HorizontalBendHandle extends EffectLifecycle {
 }
 
 export const HORIZONTAL_BEND_CONFIG = {
-  zone: 180,
-  angle: 46,
-  rounding: 130,
-  perspective: 1250,
-  ease: 180,
-  smoothing: 0.14,
+  zone: 210,
+  angle: 58,
+  rounding: 150,
+  perspective: 1050,
+  ease: 220,
+  smoothing: 0.11,
   tumble: 0,
   tilt: 0,
 } as const
@@ -144,12 +144,15 @@ void main() {
   );
   vec4 base = texture(u_content, vec2(point.x, 1.0 - point.y));
   float coverage = alpha * base.a;
+  float foldAmount = max(inLeft * u_left_amount, inRight * u_right_amount);
+  float foldDepth = clamp(abs(depth) / max(u_zone, 0.0001), 0.0, 1.0);
+  float foldLighting = 1.0 - foldAmount * foldDepth * 0.24;
 
   // After the first verified capture this surface becomes the only visual
   // owner of the moving image rail: a flat, faithful centre plus folded edges.
   // The semantic DOM stays underneath for hit-testing and is restored on any
   // capture or context failure by HorizontalBendSurface.
-  outColor = vec4(base.rgb * coverage, coverage);
+  outColor = vec4(base.rgb * foldLighting * coverage, coverage);
 }`
 
 function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {

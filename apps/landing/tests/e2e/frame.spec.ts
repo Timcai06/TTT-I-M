@@ -61,6 +61,23 @@ test('Frame keeps the horizontal archive structure available', async ({ page }) 
   expect(trackTransform).not.toBe('none')
   await expect(page.locator('.archive-slot__media img').first()).toBeVisible()
 
+  const floatingCopy = await page.locator('.archive-editorial-copy').first().evaluate((copy) => {
+    const section = copy.closest('.archive-theme-section__pin')
+    const copyStyle = getComputedStyle(copy)
+    const gutterStyle = section ? getComputedStyle(section, '::after') : null
+    const rect = copy.getBoundingClientRect()
+    return {
+      width: Math.round(rect.width),
+      background: copyStyle.backgroundImage,
+      backdrop: copyStyle.backdropFilter,
+      gutterContent: gutterStyle?.content ?? '',
+    }
+  })
+  expect(floatingCopy.width).toBeLessThanOrEqual(352)
+  expect(floatingCopy.background).not.toBe('none')
+  expect(floatingCopy.backdrop).toContain('blur(10px)')
+  expect(floatingCopy.gutterContent).toBe('none')
+
   await page.mouse.wheel(0, 1600)
   await page.waitForTimeout(500)
 
