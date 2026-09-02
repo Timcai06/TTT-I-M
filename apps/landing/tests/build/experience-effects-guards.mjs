@@ -85,6 +85,12 @@ if (/ParticleContinuum|lib\/continuum/.test(app) || existsSync('src/lib/continuu
 for (const token of ['onParticlePortalRequest', 'canAcquireOptionalSurface', 'releaseContext', 'visibilitychange', 'waitForTarget']) {
   if (!particlePortal.includes(token)) throw new Error(`Particle Portal lifecycle is missing ${token}.`)
 }
+for (const token of ["document.createElement('canvas')", 'root.append(canvas)', 'canvas.remove()', 'canvasRef.current = null']) {
+  if (!particlePortal.includes(token)) throw new Error(`Particle Portal transient Canvas contract is missing ${token}.`)
+}
+if (/<canvas\s+className="particle-portal__canvas"/.test(particlePortal)) {
+  throw new Error('Particle Portal must not keep an idle page-level Canvas in its React tree.')
+}
 for (const token of ['uSourceRect', 'uTargetRect', 'uSourceUv', 'uTargetUv', 'gl.drawArrays(gl.POINTS', 'measureImagePlacement']) {
   if (!particlePortalRuntime.includes(token)) throw new Error(`Particle Portal runtime is missing ${token}.`)
 }

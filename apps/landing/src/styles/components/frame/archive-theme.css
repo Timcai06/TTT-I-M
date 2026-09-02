@@ -128,25 +128,16 @@
   display: none;
 }
 
-/* Once a complete frame has been uploaded, Canvas owns only the photographs.
-   Captions stay in the real moving DOM: tiny metadata must remain readable and
-   must not be compressed into the rounded fold. Context loss removes this
-   class and restores the real photographs immediately. */
+/* Once a complete frame has been uploaded, Canvas owns the coherent rail —
+   photography and its attached metadata — exactly like the Canvas UI source.
+   Context loss removes this class and restores the semantic DOM immediately. */
 .archive-theme-section.is-bend-enhanced .archive-theme-section__pin > .archive-theme-section__track {
-  opacity: 1;
-}
-
-.archive-theme-section.is-bend-enhanced .archive-theme-section__pin > .archive-theme-section__track .archive-slot__media {
   opacity: 0;
 }
 
 /* Keyboard focus temporarily returns visual authority to the real DOM so its
    native focus ring remains precise and the Canvas copy cannot double-paint. */
 .archive-theme-section__pin:has(> .archive-theme-section__track:focus-within) > .archive-theme-section__track {
-  opacity: 1;
-}
-
-.archive-theme-section__pin:has(> .archive-theme-section__track:focus-within) > .archive-theme-section__track .archive-slot__media {
   opacity: 1;
 }
 

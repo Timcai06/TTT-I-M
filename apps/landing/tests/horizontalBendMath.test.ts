@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   bendEdgeStrengths,
+  calculateHorizontalBendGeometry,
   mapPointerToHorizontalBend,
 } from '../src/lib/canvas-ui/horizontalBendMath.ts'
 
@@ -23,4 +24,31 @@ void test('pointer mapping preserves the central seventy percent', () => {
   assert.equal(mapPointerToHorizontalBend(150, 1000), 150)
   assert.notEqual(mapPointerToHorizontalBend(20, 1000), 20)
   assert.notEqual(mapPointerToHorizontalBend(980, 1000), 980)
+})
+
+void test('horizontal port preserves Canvas UI physical geometry on wide screens', () => {
+  const geometry = calculateHorizontalBendGeometry(1440, 900, {
+    zone: 240,
+    rounding: 150,
+    perspective: 700,
+  })
+
+  assert.equal(geometry.zone, 240 / 900)
+  assert.equal(geometry.rounding, 150 / 900)
+  assert.equal(geometry.perspective, 700 / 900)
+  assert.equal(geometry.pixelX, 1.5 / 1440)
+  assert.equal(geometry.pixelY, 1.5 / 900)
+})
+
+void test('horizontal geometry remains finite and clamps its fold region', () => {
+  const geometry = calculateHorizontalBendGeometry(0, 100, {
+    zone: 240,
+    rounding: 480,
+    perspective: 20,
+  })
+
+  assert.equal(geometry.zone, 0.49)
+  assert.equal(geometry.rounding, 0.49)
+  assert.equal(geometry.perspective, 0.5)
+  assert.equal(geometry.pixelX, 1.5)
 })

@@ -18,10 +18,9 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   await expect(bend).toHaveAttribute('data-horizontal-bend', 'active')
   await expect(page.locator('#frame-building .frame-edge-blur').first()).toBeHidden()
   const semanticTrack = page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')
-  await expect(semanticTrack).toHaveCSS('opacity', '1')
-  await expect(semanticTrack.locator('.archive-slot__media').first()).toHaveCSS('opacity', '0')
+  await expect(semanticTrack).toHaveCSS('opacity', '0')
   await expect(semanticTrack.locator('.archive-slot__caption').first()).toHaveCSS('visibility', 'visible')
-  await expect(page.locator('#frame-building [data-horizontal-bend-capture] .archive-slot__caption').first()).toHaveCSS('visibility', 'hidden')
+  await expect(page.locator('#frame-building [data-horizontal-bend-capture] .archive-slot__caption').first()).toHaveCSS('visibility', 'visible')
   await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
 
   const bendCanvas = bend.locator('canvas').first()

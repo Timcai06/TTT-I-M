@@ -205,8 +205,8 @@
     box-shadow: none;
   }
 
-  .archive-slot--portrait .archive-slot__media,
-  .archive-slot--tall .archive-slot__media {
+  .archive-theme-section .archive-slot--portrait .archive-slot__media,
+  .archive-theme-section .archive-slot--tall .archive-slot__media {
     width: 100%;
     max-width: 100%;
     height: auto;

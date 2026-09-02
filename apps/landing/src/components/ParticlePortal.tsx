@@ -99,13 +99,20 @@ export default function ParticlePortal() {
       }
 
       const root = rootRef.current
-      const canvas = canvasRef.current
       const veil = veilRef.current
       const sourcePlacement = measureImagePlacement(source)
-      if (!root || !canvas || !veil || !sourcePlacement) {
+      if (!root || !veil || !sourcePlacement) {
         await runSemanticFallback()
         return
       }
+
+      // This is a transient material handoff, not a page-level renderer. Keep
+      // the DOM and GPU budget at zero while idle and allocate only for a
+      // request that has already passed every capability and placement gate.
+      const canvas = document.createElement('canvas')
+      canvas.className = 'particle-portal__canvas'
+      root.append(canvas)
+      canvasRef.current = canvas
 
       let contextRegistered = false
       const sourceVisibility = source.style.visibility
@@ -132,6 +139,8 @@ export default function ParticlePortal() {
         delete document.body.dataset.particlePortal
         gsap.set(root, { autoAlpha: 0, clearProps: 'backgroundColor' })
         gsap.set(veil, { opacity: 0 })
+        canvas.remove()
+        if (canvasRef.current === canvas) canvasRef.current = null
         busyRef.current = false
         cleanupRef.current = null
       }
@@ -267,7 +276,6 @@ export default function ParticlePortal() {
   return (
     <div className="particle-portal" ref={rootRef} aria-hidden="true">
       <div className="particle-portal__veil" ref={veilRef} />
-      <canvas className="particle-portal__canvas" ref={canvasRef} />
     </div>
   )
 }

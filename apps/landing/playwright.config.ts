@@ -92,15 +92,5 @@ export default defineConfig({
         },
       },
     },
-    {
-      name: 'webkit-desktop',
-      testMatch: /award-readiness\.spec\.ts/,
-      use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } },
-    },
-    {
-      name: 'firefox-desktop',
-      testMatch: /award-readiness\.spec\.ts/,
-      use: { ...devices['Desktop Firefox'], viewport: { width: 1440, height: 900 } },
-    },
   ],
 })

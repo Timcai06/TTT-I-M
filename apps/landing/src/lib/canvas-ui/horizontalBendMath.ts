@@ -6,6 +6,14 @@ export interface HorizontalBendState {
   direction: HorizontalDirection
 }
 
+export interface HorizontalBendGeometry {
+  zone: number
+  rounding: number
+  perspective: number
+  pixelX: number
+  pixelY: number
+}
+
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 
 export function smoothstep(edge0: number, edge1: number, value: number): number {
@@ -47,4 +55,27 @@ export function mapPointerToHorizontalBend(
     return x - Math.sin(t * Math.PI * 0.255) * safeZone * 0.24 * strengths.right
   }
   return x
+}
+
+/**
+ * Canvas UI expresses Bend's physical dimensions against the viewport height.
+ * Keep that reference span after exchanging the fold axis from Y to X: using
+ * the width here makes a wide desktop fold much shallower than the source demo.
+ */
+export function calculateHorizontalBendGeometry(
+  width: number,
+  height: number,
+  values: { zone: number; rounding: number; perspective: number },
+): HorizontalBendGeometry {
+  const safeWidth = Math.max(width, 1)
+  const referenceSpan = Math.max(height, 1)
+  const zone = Math.min(Math.max(values.zone, 8) / referenceSpan, 0.49)
+
+  return {
+    zone,
+    rounding: Math.min(Math.max(values.rounding, 0) / referenceSpan, zone),
+    perspective: Math.max(values.perspective, 50) / referenceSpan,
+    pixelX: 1.5 / safeWidth,
+    pixelY: 1.5 / referenceSpan,
+  }
 }

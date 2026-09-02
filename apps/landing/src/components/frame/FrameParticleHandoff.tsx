@@ -224,7 +224,7 @@ export default function FrameParticleHandoff() {
 
         <div className="frame-particle-handoff__caption" aria-hidden="true">
           <span>FRAME / 03</span>
-          <strong>{image?.title ?? 'Final Horizon'}</strong>
+          <strong>{(image?.title ?? 'Final Horizon').toUpperCase()}</strong>
           <span>IMAGE → SIGNAL → STACK</span>
         </div>
 

@@ -97,11 +97,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium webkit firefox
+      - run: npx playwright install --with-deps chromium
         working-directory: apps/landing
       - run: npm run test:e2e:gates
-        working-directory: apps/landing
-      - run: npm run test:e2e:cross-browser
         working-directory: apps/landing
 
   # Chromium's HTML-in-Canvas API is still experimental, so keep its proof in

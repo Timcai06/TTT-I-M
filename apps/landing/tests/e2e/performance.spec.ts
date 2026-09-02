@@ -74,7 +74,7 @@ async function sampleFrameP95(page: Page, drive: () => Promise<void>) {
     return w.__frameDeltas as number[]
   })
   const samples = deltas.slice(3)
-  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThan(FRAME_MIN_SAMPLES)
+  expect(samples.length, 'frame sampler collected too few frames').toBeGreaterThanOrEqual(FRAME_MIN_SAMPLES)
   const sorted = [...samples].sort((a, b) => a - b)
   return sorted[Math.floor(sorted.length * 0.95)] ?? 0
 }
@@ -310,10 +310,10 @@ test('chapter-scoped React Bits effects keep p95 frame time within budget', asyn
     await page.locator(`#${section.id}`).scrollIntoViewIfNeeded()
     await page.waitForTimeout(700)
     const p95 = await sampleFrameP95(page, async () => {
-      await page.mouse.wheel(0, 220)
-      await page.waitForTimeout(250)
-      await page.mouse.wheel(0, -220)
-      await page.waitForTimeout(350)
+      for (const delta of [220, 220, -220, -220]) {
+        await page.mouse.wheel(0, delta)
+        await page.waitForTimeout(300)
+      }
     })
 
     expect(

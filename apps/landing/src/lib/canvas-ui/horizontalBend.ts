@@ -1,5 +1,9 @@
 import { markDrawableSubtree, resizeCanvasToDisplaySize, supportsHtmlInCanvas } from './runtime'
-import { bendEdgeStrengths, type HorizontalBendState } from './horizontalBendMath'
+import {
+  bendEdgeStrengths,
+  calculateHorizontalBendGeometry,
+  type HorizontalBendState,
+} from './horizontalBendMath'
 import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
 
 export interface HorizontalBendHandle extends EffectLifecycle {
@@ -10,14 +14,14 @@ export interface HorizontalBendHandle extends EffectLifecycle {
 }
 
 export const HORIZONTAL_BEND_CONFIG = {
-  zone: 210,
-  angle: 58,
+  zone: 240,
+  angle: 80,
   rounding: 150,
-  perspective: 1050,
-  ease: 220,
-  smoothing: 0.11,
-  tumble: 0,
-  tilt: 0,
+  perspective: 700,
+  ease: 240,
+  smoothing: 0.1,
+  tumble: 0.5,
+  tilt: 0.5,
 } as const
 
 const VERTEX_SHADER = `#version 300 es
@@ -46,6 +50,10 @@ uniform float u_right_amount;
 uniform float u_pixel_x;
 uniform float u_pixel_y;
 uniform float u_rounding;
+uniform float u_tilt_x;
+uniform float u_tilt_y;
+uniform float u_phi;
+uniform vec3 u_background;
 
 vec3 foldEdge(float screenX, float amount) {
   float foldStart = 1.0 - u_zone;
@@ -112,8 +120,34 @@ vec3 foldEdge(float screenX, float amount) {
   return vec3(foldStart + bestAlong, bestDepth, 1.0);
 }
 
+vec2 tipPlane(float screenX, float phi) {
+  float sine = sin(phi);
+  float cosine = cos(phi);
+  float denominator = max(cosine * u_perspective + sine * (screenX - 0.5), 1e-4);
+  float distance = u_perspective * (1.0 - screenX) / denominator;
+  return vec2(1.0 - distance, distance * sine);
+}
+
 void main() {
   vec2 uv = v_uv;
+  float depthSum = 0.0;
+
+  if (abs(u_phi) > 1e-4) {
+    if (u_phi > 0.0) {
+      vec2 tipped = tipPlane(uv.x, u_phi);
+      uv.x = tipped.x;
+      depthSum += tipped.y;
+    } else {
+      vec2 tipped = tipPlane(1.0 - uv.x, -u_phi);
+      uv.x = 1.0 - tipped.x;
+      depthSum += tipped.y;
+    }
+  }
+
+  float globalDepth = u_tilt_x * (uv.x - 0.5) + u_tilt_y * (uv.y - 0.5);
+  depthSum += globalDepth;
+  uv.x = 0.5 + (uv.x - 0.5) * (u_perspective + globalDepth) / u_perspective;
+
   float inRight = step(1.0 - u_zone, uv.x);
   float inLeft = step(uv.x, u_zone);
   vec3 rightFold = foldEdge(uv.x, u_right_amount);
@@ -122,16 +156,10 @@ void main() {
   float sourceX = uv.x;
   sourceX = mix(sourceX, rightFold.x, inRight);
   sourceX = mix(sourceX, 1.0 - leftFold.x, inLeft);
-  float depth = inRight * rightFold.y + inLeft * leftFold.y;
+  float foldDepth = inRight * rightFold.y + inLeft * leftFold.y;
+  depthSum += foldDepth;
   float alpha = mix(1.0, rightFold.z, inRight) * mix(1.0, leftFold.z, inLeft);
-  // This is a horizontal archive fold, so its orthogonal Y axis must remain a
-  // complete viewing plane. CanvasUI's inward perspective can make the folded
-  // surface larger than the viewport; applying that scale to Y crops the top
-  // and bottom of photographs and captions exactly while they enter/leave.
-  // Preserve Y for inward depth, while still allowing an outward fold to
-  // recede. The X solver, rounded crease and depth response remain unchanged.
-  float orthogonalScale = max(1.0, (u_perspective + depth) / u_perspective);
-  float sourceY = 0.5 + (uv.y - 0.5) * orthogonalScale;
+  float sourceY = 0.5 + (uv.y - 0.5) * (u_perspective + depthSum) / u_perspective;
 
   alpha *= smoothstep(-2.0 * u_pixel_x, 0.0, sourceX);
   alpha *= 1.0 - smoothstep(1.0, 1.0 + 2.0 * u_pixel_x, sourceX);
@@ -145,14 +173,14 @@ void main() {
   vec4 base = texture(u_content, vec2(point.x, 1.0 - point.y));
   float coverage = alpha * base.a;
   float foldAmount = max(inLeft * u_left_amount, inRight * u_right_amount);
-  float foldDepth = clamp(abs(depth) / max(u_zone, 0.0001), 0.0, 1.0);
-  float foldLighting = 1.0 - foldAmount * foldDepth * 0.24;
+  float foldShade = clamp(abs(foldDepth) / max(u_zone, 0.0001), 0.0, 1.0);
+  float foldLighting = 1.0 - foldAmount * foldShade * 0.24;
 
   // After the first verified capture this surface becomes the only visual
   // owner of the moving image rail: a flat, faithful centre plus folded edges.
   // The semantic DOM stays underneath for hit-testing and is restored on any
   // capture or context failure by HorizontalBendSurface.
-  outColor = vec4(base.rgb * foldLighting * coverage, coverage);
+  outColor = vec4(mix(u_background, base.rgb * foldLighting, coverage), 1.0);
 }`
 
 function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {
@@ -209,6 +237,7 @@ export function createHorizontalBend(options: {
 
   const drawable = capture.cloneNode(true) as HTMLElement
   drawable.style.transform = 'none'
+  drawable.style.background = '#08090a'
   drawable.setAttribute('aria-hidden', 'true')
   drawable.setAttribute('inert', '')
   drawable.setAttribute('data-horizontal-bend-capture', '')
@@ -218,13 +247,6 @@ export function createHorizontalBend(options: {
   })
   drawable.querySelectorAll<HTMLElement>('.archive-slot').forEach((slot) => {
     slot.style.contentVisibility = 'visible'
-  })
-  // Photography owns the fold; metadata stays in the semantic DOM so small
-  // type never collapses into the rounded crease at either viewport edge.
-  // visibility preserves each figure's measured height and therefore keeps
-  // the cloned media pixel-aligned with its real caption.
-  drawable.querySelectorAll<HTMLElement>('.archive-slot__caption').forEach((caption) => {
-    caption.style.visibility = 'hidden'
   })
   const originalImages = capture.querySelectorAll<HTMLImageElement>('img')
   drawable.querySelectorAll<HTMLImageElement>('img').forEach((image, index) => {
@@ -257,6 +279,12 @@ export function createHorizontalBend(options: {
   let targetRight = 1
   let currentLeft = 0
   let currentRight = 1
+  let overscroll = 0
+  let currentPhi = 0
+  let targetTiltX = 0
+  let targetTiltY = 0
+  let currentTiltX = 0
+  let currentTiltY = 0
   let previousTime = performance.now()
   let state: HorizontalBendState = { progress: 0, distance: 0, direction: 'right-to-left' }
 
@@ -291,6 +319,12 @@ export function createHorizontalBend(options: {
     return uniforms.get(name) ?? null
   }
 
+  const scheduleRender = () => {
+    if (destroyed || failed || paused || frame) return
+    previousTime = performance.now()
+    frame = window.requestAnimationFrame(render)
+  }
+
   const drawCapture = () => {
     try {
       const dpr = source.width / Math.max(1, source.clientWidth)
@@ -300,7 +334,7 @@ export function createHorizontalBend(options: {
       const viewportRect = viewport.getBoundingClientRect()
       drawElementImage(drawable, captureRect.left - viewportRect.left, captureRect.top - viewportRect.top)
       contentDirty = true
-      if (!frame) frame = window.requestAnimationFrame(render)
+      scheduleRender()
     } catch {
       if (!firstFrame) {
         failed = true
@@ -322,6 +356,18 @@ export function createHorizontalBend(options: {
     if (Math.abs(currentLeft - targetLeft) < 0.001) currentLeft = targetLeft
     if (Math.abs(currentRight - targetRight) < 0.001) currentRight = targetRight
 
+    overscroll *= Math.exp(-delta / 0.22)
+    if (Math.abs(overscroll) < 0.5) overscroll = 0
+    const phiTarget = Math.tanh(overscroll / 500) * 0.4 * HORIZONTAL_BEND_CONFIG.tumble
+    currentPhi += (phiTarget - currentPhi) * Math.min(delta / 0.09, 1)
+    if (phiTarget === 0 && Math.abs(currentPhi) < 0.0001) currentPhi = 0
+
+    const tiltSettle = Math.min(delta / 0.15, 1)
+    currentTiltX += (targetTiltX - currentTiltX) * tiltSettle
+    currentTiltY += (targetTiltY - currentTiltY) * tiltSettle
+    if (Math.abs(targetTiltX - currentTiltX) < 0.0001) currentTiltX = targetTiltX
+    if (Math.abs(targetTiltY - currentTiltY) < 0.0001) currentTiltY = targetTiltY
+
     resizeCanvasToDisplaySize(canvas)
     if (resizeCanvasToDisplaySize(source)) source.requestPaint?.()
     if (contentDirty) {
@@ -334,7 +380,7 @@ export function createHorizontalBend(options: {
 
     const width = Math.max(canvas.clientWidth, 1)
     const height = Math.max(canvas.clientHeight, 1)
-    const zone = Math.min(Math.max(HORIZONTAL_BEND_CONFIG.zone, 8) / width, 0.49)
+    const geometry = calculateHorizontalBendGeometry(width, height, HORIZONTAL_BEND_CONFIG)
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT)
@@ -342,31 +388,39 @@ export function createHorizontalBend(options: {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.uniform1i(uniform('u_content'), 0)
-    gl.uniform1f(uniform('u_zone'), zone)
+    gl.uniform1f(uniform('u_zone'), geometry.zone)
     gl.uniform1f(uniform('u_angle'), HORIZONTAL_BEND_CONFIG.angle * Math.PI / 180)
-    gl.uniform1f(uniform('u_perspective'), HORIZONTAL_BEND_CONFIG.perspective / width)
+    gl.uniform1f(uniform('u_perspective'), geometry.perspective)
     gl.uniform1f(uniform('u_direction'), -1)
     gl.uniform1f(uniform('u_left_amount'), currentLeft)
     gl.uniform1f(uniform('u_right_amount'), currentRight)
-    gl.uniform1f(uniform('u_pixel_x'), 1.5 / width)
-    gl.uniform1f(uniform('u_pixel_y'), 1.5 / height)
-    gl.uniform1f(uniform('u_rounding'), Math.min(HORIZONTAL_BEND_CONFIG.rounding / width, zone))
+    gl.uniform1f(uniform('u_pixel_x'), geometry.pixelX)
+    gl.uniform1f(uniform('u_pixel_y'), geometry.pixelY)
+    gl.uniform1f(uniform('u_rounding'), geometry.rounding)
+    gl.uniform1f(uniform('u_tilt_x'), currentTiltX)
+    gl.uniform1f(uniform('u_tilt_y'), currentTiltY)
+    gl.uniform1f(uniform('u_phi'), currentPhi)
+    gl.uniform3f(uniform('u_background'), 0.031, 0.035, 0.039)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
 
     if (!firstFrame && hasUploadedContent && gl.getError() === gl.NO_ERROR) {
       firstFrame = true
       onFirstFrame?.()
     }
-    if (currentLeft !== targetLeft || currentRight !== targetRight) frame = window.requestAnimationFrame(render)
+    if (
+      currentLeft !== targetLeft
+      || currentRight !== targetRight
+      || overscroll !== 0
+      || currentPhi !== 0
+      || currentTiltX !== targetTiltX
+      || currentTiltY !== targetTiltY
+    ) frame = window.requestAnimationFrame(render)
   }
 
   const invalidate = () => {
     if (destroyed || failed || paused) return
     source.requestPaint?.()
-    if (!frame) {
-      previousTime = performance.now()
-      frame = window.requestAnimationFrame(render)
-    }
+    scheduleRender()
   }
   const pause = () => {
     if (destroyed || paused) return
@@ -390,8 +444,36 @@ export function createHorizontalBend(options: {
     frame = 0
     onFailure?.()
   }
+  const onPointerMove = (event: PointerEvent) => {
+    if (!event.isPrimary || HORIZONTAL_BEND_CONFIG.tilt <= 0) return
+    const rect = viewport.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return
+    const normalizedX = (event.clientX - rect.left) / rect.width - 0.5
+    const normalizedY = 0.5 - (event.clientY - rect.top) / rect.height
+    const amplitude = Math.min(HORIZONTAL_BEND_CONFIG.tilt, 1) * 0.14
+    targetTiltX = -normalizedX * amplitude
+    targetTiltY = -normalizedY * amplitude
+    scheduleRender()
+  }
+  const onPointerLeave = () => {
+    targetTiltX = 0
+    targetTiltY = 0
+    scheduleRender()
+  }
+  const onWheel = (event: WheelEvent) => {
+    if (HORIZONTAL_BEND_CONFIG.tumble <= 0) return
+    const atStart = state.progress <= 0.002 && event.deltaY < 0
+    const atEnd = state.progress >= 0.998 && event.deltaY > 0
+    if (!atStart && !atEnd) return
+    const exitSign = state.direction === 'left-to-right' ? 1 : -1
+    overscroll = Math.min(900, Math.max(-900, overscroll + event.deltaY * exitSign))
+    scheduleRender()
+  }
   document.addEventListener('visibilitychange', onVisibility)
   canvas.addEventListener('webglcontextlost', onContextLost)
+  viewport.addEventListener('pointermove', onPointerMove, { passive: true })
+  viewport.addEventListener('pointerleave', onPointerLeave)
+  viewport.addEventListener('wheel', onWheel, { passive: true })
   source.requestPaint()
   invalidate()
 
@@ -413,6 +495,9 @@ export function createHorizontalBend(options: {
       window.cancelAnimationFrame(frame)
       document.removeEventListener('visibilitychange', onVisibility)
       canvas.removeEventListener('webglcontextlost', onContextLost)
+      viewport.removeEventListener('pointermove', onPointerMove)
+      viewport.removeEventListener('pointerleave', onPointerLeave)
+      viewport.removeEventListener('wheel', onWheel)
       source.removeEventListener('paint', drawCapture)
       unmark()
       source.remove()
