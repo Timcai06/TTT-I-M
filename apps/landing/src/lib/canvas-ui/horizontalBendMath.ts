@@ -16,24 +16,6 @@ export interface HorizontalBendGeometry {
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 
-/**
- * Preserve Bend's orthogonal perspective without letting an inward fold crop
- * the capture plane's top or bottom. The fold itself remains untouched on X;
- * only the secondary Y projection is blended toward a bounded safe scale.
- */
-export function calculateCrossAxisScale(
-  depth: number,
-  perspective: number,
-  intensity: number,
-  minimum: number,
-  maximum: number,
-): number {
-  const safePerspective = Math.max(Math.abs(perspective), 0.0001)
-  const rawScale = (safePerspective + depth) / safePerspective
-  const projectedScale = 1 + (rawScale - 1) * clamp01(intensity)
-  return Math.min(Math.max(projectedScale, minimum), maximum)
-}
-
 export function smoothstep(edge0: number, edge1: number, value: number): number {
   const t = clamp01((value - edge0) / Math.max(0.0001, edge1 - edge0))
   return t * t * (3 - 2 * t)

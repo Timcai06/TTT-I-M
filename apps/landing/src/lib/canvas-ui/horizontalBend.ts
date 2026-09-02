@@ -22,9 +22,6 @@ export const HORIZONTAL_BEND_CONFIG = {
   smoothing: 0.1,
   tumble: 0.5,
   tilt: 0.5,
-  crossAxisPerspective: 0.5,
-  crossAxisMinScale: 0.92,
-  crossAxisMaxScale: 1.06,
 } as const
 
 const VERTEX_SHADER = `#version 300 es
@@ -56,9 +53,6 @@ uniform float u_rounding;
 uniform float u_tilt_x;
 uniform float u_tilt_y;
 uniform float u_phi;
-uniform float u_cross_axis_perspective;
-uniform float u_cross_axis_min_scale;
-uniform float u_cross_axis_max_scale;
 uniform vec3 u_background;
 
 vec3 foldEdge(float screenX, float amount) {
@@ -165,13 +159,7 @@ void main() {
   float foldDepth = inRight * rightFold.y + inLeft * leftFold.y;
   depthSum += foldDepth;
   float alpha = mix(1.0, rightFold.z, inRight) * mix(1.0, leftFold.z, inLeft);
-  float rawCrossAxisScale = (u_perspective + depthSum) / u_perspective;
-  float crossAxisScale = clamp(
-    mix(1.0, rawCrossAxisScale, u_cross_axis_perspective),
-    u_cross_axis_min_scale,
-    u_cross_axis_max_scale
-  );
-  float sourceY = 0.5 + (uv.y - 0.5) * crossAxisScale;
+  float sourceY = 0.5 + (uv.y - 0.5) * (u_perspective + depthSum) / u_perspective;
 
   alpha *= smoothstep(-2.0 * u_pixel_x, 0.0, sourceX);
   alpha *= 1.0 - smoothstep(1.0, 1.0 + 2.0 * u_pixel_x, sourceX);
@@ -412,9 +400,6 @@ export function createHorizontalBend(options: {
     gl.uniform1f(uniform('u_tilt_x'), currentTiltX)
     gl.uniform1f(uniform('u_tilt_y'), currentTiltY)
     gl.uniform1f(uniform('u_phi'), currentPhi)
-    gl.uniform1f(uniform('u_cross_axis_perspective'), HORIZONTAL_BEND_CONFIG.crossAxisPerspective)
-    gl.uniform1f(uniform('u_cross_axis_min_scale'), HORIZONTAL_BEND_CONFIG.crossAxisMinScale)
-    gl.uniform1f(uniform('u_cross_axis_max_scale'), HORIZONTAL_BEND_CONFIG.crossAxisMaxScale)
     gl.uniform3f(uniform('u_background'), 0.031, 0.035, 0.039)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
 
