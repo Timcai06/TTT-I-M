@@ -1,4 +1,4 @@
-import { useEffect, Suspense } from 'react'
+import { lazy, useEffect, Suspense } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useLenis } from './lib/lenis'
@@ -18,6 +18,8 @@ import ChapterThemeDriver from './components/ChapterThemeDriver'
 import ChapterTransition from './components/ChapterTransition'
 import { chapters } from './chapters/registry'
 import './styles/app.css'
+
+const ParticlePortal = lazy(() => import('./components/ParticlePortal'))
 
 export default function App() {
   // Smooth scroll + scroll-driven side effects (incl. the disable-hover
@@ -113,6 +115,9 @@ export default function App() {
           <ChapterThemeDriver />
         </ChapterStateProvider>
         <ChapterTransition />
+        <Suspense fallback={null}>
+          <ParticlePortal />
+        </Suspense>
         <main>
           {chapters.map(({ id, Component }) => (
             // One boundary pair per chapter: Suspense so a still-loading section

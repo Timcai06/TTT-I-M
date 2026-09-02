@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import { gsap } from '../lib/gsap'
 import { scrollToChapter } from '../lib/chapterScroll'
+import { requestParticlePortal, type ParticlePortalMode } from '../lib/particlePortal'
 
 export interface AccordionGalleryItem {
   image: string
@@ -29,6 +30,32 @@ interface AccordionGalleryProps {
   showLabels?: boolean
   grayscale?: boolean
   className?: string
+  /** Frame index only: replace the visible smooth-scroll path with a particle portal and atomic landing. */
+  particleNavigation?: boolean
+}
+
+function framePortalMode(chapterId: string): ParticlePortalMode {
+  if (chapterId.endsWith('building')) return 'frame-building'
+  if (chapterId.endsWith('cuisine')) return 'frame-cuisine'
+  return 'frame-scenery'
+}
+
+function resolveVisibleChapterImage(chapterId: string): HTMLImageElement | null {
+  const chapter = document.getElementById(chapterId)
+  if (!chapter) return null
+  const candidates = [...chapter.querySelectorAll<HTMLImageElement>('.archive-slot__media img')]
+    .filter((image) => image.complete && image.naturalWidth > 0)
+  if (candidates.length === 0) return null
+
+  return candidates.reduce((best, candidate) => {
+    const bestRect = best.getBoundingClientRect()
+    const candidateRect = candidate.getBoundingClientRect()
+    const visibleArea = (rect: DOMRect) => (
+      Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0))
+      * Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0))
+    )
+    return visibleArea(candidateRect) > visibleArea(bestRect) ? candidate : best
+  })
 }
 
 export default function AccordionGallery({
@@ -51,6 +78,7 @@ export default function AccordionGallery({
   showLabels = true,
   grayscale = true,
   className = '',
+  particleNavigation = false,
 }: AccordionGalleryProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const panelRefs = useRef<(HTMLElement | null)[]>([])
@@ -159,6 +187,30 @@ export default function AccordionGallery({
       const chapterId = decodeURIComponent(link.slice(1))
       if (chapterId && document.getElementById(chapterId)) {
         event.preventDefault()
+        const source = mediaRefs.current[index]?.querySelector<HTMLImageElement>('img') ?? null
+        const panel = panelRefs.current[index]
+        if (particleNavigation && source) {
+          const keyboardActivation = event.detail === 0
+          const commit = () => {
+            scrollToChapter(chapterId, { immediate: true, updateHash: true })
+            if (keyboardActivation) {
+              window.requestAnimationFrame(() => {
+                document.getElementById(chapterId)?.focus({ preventScroll: true })
+              })
+            }
+          }
+          const accepted = requestParticlePortal({
+            source,
+            sourceContainer: panel,
+            resolveTarget: () => resolveVisibleChapterImage(chapterId),
+            commit,
+            mode: framePortalMode(chapterId),
+            label: items[index]?.label ?? chapterId,
+          })
+          if (accepted) return
+          commit()
+          return
+        }
         scrollToChapter(chapterId, { updateHash: true })
       }
     }

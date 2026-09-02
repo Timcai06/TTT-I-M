@@ -22,6 +22,7 @@
 @import './components/accordion-gallery.css' layer(primitives);
 @import './components/ascii-text.css' layer(effects);
 @import './components/border-glow.css' layer(effects);
+@import './components/particle-portal.css' layer(effects);
 
 @layer utilities {
   @media (max-width: 768px) {

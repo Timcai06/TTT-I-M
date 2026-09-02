@@ -8,12 +8,15 @@ const required = [
   'src/components/DriftWall.tsx',
   'src/components/WorkTransition.tsx',
   'src/components/frame/FrameParticleHandoff.tsx',
+  'src/components/ParticlePortal.tsx',
   'src/components/MaskedHeading.tsx',
   'src/components/ScrollExpand.tsx',
   'src/components/SciScopeFilm.tsx',
   'src/lib/sound/SoundProvider.tsx',
   'src/lib/canvas-ui/particleScroll.ts',
   'src/lib/canvas-ui/particleScrollConfig.ts',
+  'src/lib/canvas-ui/particlePortal.ts',
+  'src/lib/canvas-ui/particlePortalMath.ts',
   'src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
   'src/shaders/liquid-metal-button/liquid-metal-button.html',
@@ -39,6 +42,8 @@ const frameParticleRuntime = [
   'src/lib/canvas-ui/particleScrollConfig.ts',
 ].map(read).join('\n')
 const frameParticleVendor = read('src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts')
+const particlePortal = read('src/components/ParticlePortal.tsx')
+const particlePortalRuntime = read('src/lib/canvas-ui/particlePortal.ts')
 const frameStyle = read('src/styles/components/frame.css')
 const projects = [
   'src/chapters/projects/Projects.tsx',
@@ -75,6 +80,16 @@ const studioContent = read('../studio/content/index.ts')
 
 if (/ParticleContinuum|lib\/continuum/.test(app) || existsSync('src/lib/continuum/ParticleContinuum.tsx')) {
   throw new Error('The retired global Particle Continuum must not remain in the Landing runtime.')
+}
+
+for (const token of ['onParticlePortalRequest', 'canAcquireOptionalSurface', 'releaseContext', 'visibilitychange', 'waitForTarget']) {
+  if (!particlePortal.includes(token)) throw new Error(`Particle Portal lifecycle is missing ${token}.`)
+}
+for (const token of ['uSourceRect', 'uTargetRect', 'uSourceUv', 'uTargetUv', 'gl.drawArrays(gl.POINTS', 'measureImagePlacement']) {
+  if (!particlePortalRuntime.includes(token)) throw new Error(`Particle Portal runtime is missing ${token}.`)
+}
+if (!frame.includes('particleNavigation') || !projects.includes('requestParticlePortal')) {
+  throw new Error('Frame and Projects must both route their explicit media transitions through Particle Portal.')
 }
 
 if (!workTransition.includes('variant="browser"') || !workTransition.includes('LiquidMetalButton')) {

@@ -1,26 +1,114 @@
 import { Fragment, lazy, Suspense, useCallback, useRef, useState } from 'react'
-import { projects, type Project } from '../../content'
+import { projects, type Project, type ProjectShot } from '../../content'
 import SciScopeFilm from '../../components/SciScopeFilm'
+import { requestParticlePortal } from '../../lib/particlePortal'
 import ProjectCard from './ProjectCard'
 import ProjectsIntro from './ProjectsIntro'
 import { useProjectsNarrative } from './useProjectsNarrative'
 
-const ProjectCaseDialog = lazy(() => import('./ProjectCaseDialog'))
+const loadProjectCaseDialog = () => import('./ProjectCaseDialog')
+const ProjectCaseDialog = lazy(loadProjectCaseDialog)
+
+// Projects is already a below-the-fold lazy chapter. Warm the dialog chunk at
+// chapter evaluation so the particle cloud never waits on a network boundary.
+void loadProjectCaseDialog()
 
 interface ActiveCaseStudy {
   project: Project
   trigger: HTMLButtonElement
+  sourceImage: HTMLImageElement | null
+  heroShot: ProjectShot
   open: boolean
+  closing: boolean
+}
+
+function projectShots(project: Project): readonly ProjectShot[] {
+  if (project.caseStudies?.length) return project.caseStudies.map((study) => study.shot)
+  return project.media?.shots ?? []
+}
+
+function resolveHeroShot(project: Project, source: HTMLImageElement | null): ProjectShot | null {
+  const shots = projectShots(project)
+  const sourcePath = source?.getAttribute('src')
+  return shots.find((shot) => shot.src === sourcePath) ?? shots[0] ?? null
+}
+
+function isVisibleImage(image: HTMLImageElement | null): image is HTMLImageElement {
+  if (!image?.isConnected || !image.complete || image.naturalWidth <= 0) return false
+  const rect = image.getBoundingClientRect()
+  return rect.width > 1
+    && rect.height > 1
+    && rect.right > 0
+    && rect.bottom > 0
+    && rect.left < window.innerWidth
+    && rect.top < window.innerHeight
 }
 
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
   const [activeCaseStudy, setActiveCaseStudy] = useState<ActiveCaseStudy | null>(null)
   const { laserActive, laserHandle } = useProjectsNarrative(root)
-  const openCaseStudy = useCallback((project: Project, trigger: HTMLButtonElement) => {
+  const openCaseStudy = useCallback((
+    project: Project,
+    trigger: HTMLButtonElement,
+    sourceImage: HTMLImageElement | null,
+  ) => {
     void import('./ProjectCaseContent')
-    setActiveCaseStudy({ project, trigger, open: true })
+    const heroShot = resolveHeroShot(project, sourceImage)
+    if (!heroShot) return
+
+    const commit = () => {
+      setActiveCaseStudy({ project, trigger, sourceImage, heroShot, open: true, closing: false })
+    }
+    if (!sourceImage) {
+      commit()
+      return
+    }
+
+    const accepted = requestParticlePortal({
+      source: sourceImage,
+      sourceContainer: sourceImage.closest<HTMLElement>('.media-frame'),
+      resolveTarget: () => document.querySelector<HTMLImageElement>(
+        `[data-project-dialog="${project.id}"] [data-particle-portal-target] img`,
+      ),
+      commit,
+      mode: 'case-expand',
+      label: project.name,
+    })
+    if (!accepted) commit()
   }, [])
+
+  const changeCaseStudyOpen = useCallback((open: boolean) => {
+    const current = activeCaseStudy
+    if (!current) return
+    if (open) {
+      setActiveCaseStudy({ ...current, open: true, closing: false })
+      return
+    }
+    if (current.closing) return
+
+    const commit = () => {
+      setActiveCaseStudy((latest) => latest ? { ...latest, open: false, closing: true } : latest)
+    }
+    const hero = document.querySelector<HTMLImageElement>(
+      `[data-project-dialog="${current.project.id}"] [data-particle-portal-target] img`,
+    )
+    if (!hero || !isVisibleImage(current.sourceImage)) {
+      commit()
+      return
+    }
+
+    setActiveCaseStudy({ ...current, closing: true })
+    const accepted = requestParticlePortal({
+      source: hero,
+      sourceContainer: hero.closest<HTMLElement>('[data-particle-portal-target]'),
+      resolveTarget: () => current.sourceImage,
+      commit,
+      mode: 'case-collapse',
+      label: current.project.name,
+    })
+    if (!accepted) commit()
+  }, [activeCaseStudy])
 
   return (
     <section className="section projects container" id="projects" ref={root}>
@@ -42,11 +130,10 @@ export default function Projects() {
         <Suspense fallback={<span className="project-dialog__loading" role="status">Loading case study…</span>}>
           <ProjectCaseDialog
             project={activeCaseStudy.project}
+            heroShot={activeCaseStudy.heroShot}
             trigger={activeCaseStudy.trigger}
             open={activeCaseStudy.open}
-            onOpenChange={(open) => {
-              setActiveCaseStudy((current) => current ? { ...current, open } : current)
-            }}
+            onOpenChange={changeCaseStudyOpen}
             onOpenChangeComplete={(open) => {
               if (!open) setActiveCaseStudy(null)
             }}

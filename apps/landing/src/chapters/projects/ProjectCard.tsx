@@ -6,13 +6,19 @@ const ProjectMetrics = lazy(() => import('./ProjectMetrics'))
 
 interface ProjectCardProps {
   project: Project
-  onOpenCaseStudy: (project: Project, trigger: HTMLButtonElement) => void
+  onOpenCaseStudy: (
+    project: Project,
+    trigger: HTMLButtonElement,
+    sourceImage: HTMLImageElement | null,
+  ) => void
 }
 
 export default function ProjectCard({ project, onOpenCaseStudy }: ProjectCardProps) {
   const hasCaseStudy = Boolean(project.media || project.caseStudies?.length || project.detail)
   const openCaseStudy = (event: MouseEvent<HTMLButtonElement>) => {
-    onOpenCaseStudy(project, event.currentTarget)
+    const card = event.currentTarget.closest<HTMLElement>('[data-project-id]')
+    const sourceImage = card?.querySelector<HTMLImageElement>('.media-frame__img.is-active') ?? null
+    onOpenCaseStudy(project, event.currentTarget, sourceImage)
   }
 
   return (
@@ -79,4 +85,3 @@ export default function ProjectCard({ project, onOpenCaseStudy }: ProjectCardPro
     </article>
   )
 }
-

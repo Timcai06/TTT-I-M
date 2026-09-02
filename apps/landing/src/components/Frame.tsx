@@ -57,6 +57,7 @@ export default function Frame() {
           grayscale
           showLabels
           trigger="hover"
+          particleNavigation
         />
       </div>
       {archiveThemes.map((theme, index) => (

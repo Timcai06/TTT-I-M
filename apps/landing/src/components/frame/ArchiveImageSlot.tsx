@@ -69,6 +69,7 @@ export default function ArchiveImageSlot({
     >
       <a
         className="archive-slot__media archive-slot__open"
+        data-particle-portal-target
         href={image.src}
         target="_blank"
         rel="noopener noreferrer"

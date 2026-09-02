@@ -32,6 +32,16 @@ export const visualEffectManifest = [
     sourceUrl: 'https://github.com/DavidHDev/canvas-ui',
   },
   {
+    id: 'particle-portal',
+    chapter: 'frame + projects',
+    trigger: 'explicit Frame archive entry or project case-study activation',
+    fallback: 'atomic chapter landing or semantic dialog open without a visible intermediate scroll path',
+    reducedMotion: 'static',
+    contextCost: 1,
+    license: 'MIT + Commons Clause',
+    sourceUrl: 'https://github.com/DavidHDev/canvas-ui',
+  },
+  {
     id: 'footer-liquid-cursor',
     chapter: 'contact',
     trigger: 'footer visible after iris reveal on fine pointer',

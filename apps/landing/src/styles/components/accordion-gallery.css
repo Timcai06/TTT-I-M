@@ -32,7 +32,19 @@
   background: #0a0b0c;
   box-shadow: 0 10px 30px -18px rgb(0 0 0 / 80%);
   will-change: flex-grow, transform;
+  transition: opacity 240ms ease;
   -webkit-tap-highlight-color: transparent;
+}
+
+body[data-particle-portal^='frame-'] .accordion-gallery .ag-panel:not(.is-particle-departing) {
+  opacity: 0.26;
+}
+
+.ag-panel.is-particle-departing .ag-panel__overlay,
+.ag-panel.is-particle-departing .ag-panel__label,
+.ag-panel.is-particle-departing::after {
+  opacity: 0;
+  transition: opacity 160ms ease;
 }
 
 .ag-panel::after {

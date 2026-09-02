@@ -23,3 +23,8 @@ changes are deliberately limited to:
 
 The horizontal Bend adapter does not modify the vendored engine. Its Shader is
 a direct X-axis port of the upstream rounded 40-sample fold solver.
+
+`../particlePortal.ts` is an application-owned finite-transition adaptation of
+the ParticleScroll UV sampling and point-rendering approach. It does not alter
+the pinned upstream file: source/target rect mapping, object-fit crop math and
+the four narrative vector fields remain isolated in the local adapter.

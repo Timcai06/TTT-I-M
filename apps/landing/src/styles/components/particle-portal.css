@@ -1,0 +1,37 @@
+.particle-portal {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  contain: strict;
+}
+
+.particle-portal__veil,
+.particle-portal__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.particle-portal__veil {
+  background: #08090a;
+  opacity: 0;
+}
+
+.particle-portal__canvas {
+  display: block;
+}
+
+.is-particle-departing,
+.is-particle-arriving {
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle-portal { display: none; }
+}
+

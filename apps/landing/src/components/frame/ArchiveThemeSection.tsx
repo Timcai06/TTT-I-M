@@ -35,6 +35,7 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
       data-archive-theme={theme.id}
       data-theme-word={themeWord}
       ref={section}
+      tabIndex={-1}
     >
       <div className="archive-theme-section__pin" ref={pin}>
         <ArchiveRail active={active} theme={theme} themeIndex={themeIndex} />

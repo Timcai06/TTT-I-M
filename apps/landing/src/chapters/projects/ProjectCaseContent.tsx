@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 import type { Project, ProjectShot } from '../../content'
 import ProjectMetrics from './ProjectMetrics'
 import { openProjectLightbox } from './lightbox'
@@ -8,8 +8,17 @@ function projectShots(project: Project): readonly ProjectShot[] {
   return project.media?.shots ?? []
 }
 
-export default function ProjectCaseContent({ project }: { project: Project }) {
+export default function ProjectCaseContent({
+  project,
+  heroShot,
+}: {
+  project: Project
+  heroShot: ProjectShot
+}) {
   const shots = projectShots(project)
+  const galleryShots = shots
+    .map((shot, index) => ({ shot, index }))
+    .filter(({ shot }) => shot.src !== heroShot.src)
   const openShot = (event: MouseEvent<HTMLAnchorElement>, index: number) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
     event.preventDefault()
@@ -34,11 +43,11 @@ export default function ProjectCaseContent({ project }: { project: Project }) {
         </section>
       ))}
 
-      {shots.length ? (
+      {galleryShots.length ? (
         <section className="project-dialog__gallery" aria-label="项目证据图库">
           <h3>Evidence gallery</h3>
           <div className="project-dialog__shots">
-            {shots.map((shot, index) => (
+            {galleryShots.map(({ shot, index }) => (
               <a
                 key={shot.src}
                 href={shot.src}
@@ -46,6 +55,7 @@ export default function ProjectCaseContent({ project }: { project: Project }) {
                 rel="noopener noreferrer"
                 onClick={(event) => openShot(event, index)}
                 aria-label={`全屏查看：${shot.label}`}
+                style={{ '--shot-aspect': `${shot.width} / ${shot.height}` } as CSSProperties}
               >
                 <img src={shot.src} alt={shot.alt} loading="lazy" decoding="async" />
                 <span>{shot.label}</span>
@@ -67,4 +77,3 @@ export default function ProjectCaseContent({ project }: { project: Project }) {
     </div>
   )
 }
-
