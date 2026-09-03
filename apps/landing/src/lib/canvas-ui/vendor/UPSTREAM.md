@@ -27,8 +27,10 @@ changes are deliberately limited to:
 - `@ts-nocheck` headers because the application enables stricter indexed-access
   checks than the upstream build.
 - `DecryptRevealVanilla.ts` and `GlassVanilla.ts`: first-captured-frame callbacks,
-  idempotent destroy, and pause/resume hooks. Their shaders, render passes,
-  pointer solvers, defaults and HTML capture path remain upstream.
+  idempotent destroy, and pause/resume hooks. Glass additionally requests a new
+  HTML capture after pointer/scroll input so CSS hover state cannot leave its
+  texture stale. Their shaders, render passes, pointer solvers, defaults and
+  HTML capture path remain upstream.
 
 The horizontal Bend adapter does not modify the vendored engine. Its Shader is
 a direct X-axis port of the upstream rounded 40-sample fold solver.

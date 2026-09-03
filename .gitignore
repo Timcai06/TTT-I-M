@@ -16,6 +16,7 @@ apps/*/.next
 apps/*/test-results
 apps/*/tsconfig.tsbuildinfo
 apps/*/.playwright-cli
+.playwright-cli/
 apps/*/output
 output
 tmp

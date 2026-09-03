@@ -515,6 +515,10 @@ function applyParticleCounts(){
 
 addEventListener('message', event => {
   if (!event.data) return;
+  if (event.data.type === 'spark-badge-ready-request') {
+    window.parent.postMessage({ type: 'spark-badge-ready' }, '*');
+    return;
+  }
   if (event.data.type === 'spark-badge-activity') {
     renderActive = event.data.active !== false;
     last = 0;
@@ -929,6 +933,7 @@ if (params.get('debug') === 'mask'){                  // silhouette check while 
   scheduleFrame();
 }
 window.__ready = true;
+window.parent.postMessage({ type: 'spark-badge-ready' }, '*');
 })();
 </script>
 </body>

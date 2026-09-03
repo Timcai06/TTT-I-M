@@ -115,6 +115,21 @@ export function SparkBadge({
   useEffect(() => setReady(false), [frameSource]);
 
   useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      const data: unknown = event.data;
+      if (
+        typeof data === "object"
+        && data !== null
+        && "type" in data
+        && data.type === "spark-badge-ready"
+      ) setReady(true);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  useEffect(() => {
     postControls();
   }, [postControls]);
 
@@ -136,7 +151,9 @@ export function SparkBadge({
           onLoad={() => {
             postControls();
             postActivity(active);
-            setReady(true);
+            iframeRef.current?.contentWindow?.postMessage({
+              type: "spark-badge-ready-request",
+            }, "*");
           }}
         />
       ) : null}

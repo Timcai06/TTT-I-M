@@ -199,7 +199,8 @@
     box-shadow 0.4s ease;
 }
 
-.projects__bento.is-visible .bento-tile {
+.projects__bento.is-visible .bento-tile,
+.project-glass--overview.is-visible .bento-tile {
   opacity: 1;
   transform: translateY(0);
 }
@@ -346,7 +347,8 @@
 .bento-glow:nth-child(1),
 .bento-glow:nth-child(5) { grid-column: span 2; }
 
-.projects__bento.is-visible .bento-glow {
+.projects__bento.is-visible .bento-glow,
+.project-glass--overview.is-visible .bento-glow {
   opacity: 1;
   transform: translateY(0);
 }

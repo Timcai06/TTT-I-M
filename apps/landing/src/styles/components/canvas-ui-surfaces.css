@@ -17,6 +17,29 @@
   z-index: 0;
 }
 
+/* Glass prepares its native Canvas UI subtree above a persistent semantic
+   fallback. The fallback owns layout and remains visible until the captured
+   source has produced a complete first frame, eliminating black hand-off
+   frames without changing the active source-backed effect. */
+.canvas-ui-html--retained-fallback > .canvas-ui-html__fallback {
+  position: relative;
+  z-index: 0;
+}
+
+.canvas-ui-html--retained-fallback[data-canvas-ui-state='loading'] > .canvas-ui-html__source {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.canvas-ui-html--retained-fallback[data-canvas-ui-state='active'] > .canvas-ui-html__fallback {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.canvas-ui-html--retained-fallback[data-canvas-ui-state='active'] > .canvas-ui-html__source {
+  opacity: 1;
+}
+
 .canvas-ui-html__output {
   z-index: 1;
   opacity: 0;

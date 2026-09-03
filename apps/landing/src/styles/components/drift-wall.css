@@ -38,6 +38,11 @@
   transform-style: preserve-3d;
 }
 
+.drift-wall:not(.is-render-active) .drift-wall__plane,
+.drift-wall:not(.is-render-active) .drift-wall__track {
+  will-change: auto;
+}
+
 .drift-wall__tile {
   position: relative;
   display: block;

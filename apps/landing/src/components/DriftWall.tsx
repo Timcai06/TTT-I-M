@@ -78,13 +78,13 @@ export default function DriftWall({
   const wallHoveredRef = useRef(false)
   const pointerRef = useRef({ x: 0, y: 0 })
   const pointerDampedRef = useRef({ x: 0, y: 0 })
-  const visibleRef = useRef(false)
   const frameRef = useRef(0)
   const lastTimeRef = useRef<number | null>(null)
   const activeIdRef = useRef<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [height, setHeight] = useState(620)
   const [reducedMotion, setReducedMotion] = useState(false)
+  const [renderActive, setRenderActive] = useState(false)
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -101,17 +101,23 @@ export default function DriftWall({
       const entry = entries[0]
       if (entry) setHeight(entry.contentRect.height || 620)
     })
+    let inView = false
+    const syncActivity = () => {
+      setRenderActive(inView && document.visibilityState !== 'hidden')
+    }
     const visibility = new IntersectionObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
-      visibleRef.current = entry.isIntersecting
-      lastTimeRef.current = null
+      inView = entry.isIntersecting
+      syncActivity()
     }, { rootMargin: '20% 0px', threshold: 0.01 })
     resize.observe(root)
     visibility.observe(root)
+    document.addEventListener('visibilitychange', syncActivity)
     return () => {
       resize.disconnect()
       visibility.disconnect()
+      document.removeEventListener('visibilitychange', syncActivity)
     }
   }, [])
 
@@ -173,9 +179,12 @@ export default function DriftWall({
   }, [depth, roll, scale, tilt, turn])
 
   useEffect(() => {
+    if (!renderActive) {
+      lastTimeRef.current = null
+      return
+    }
     const animate = (time: number) => {
       frameRef.current = requestAnimationFrame(animate)
-      if (!visibleRef.current || document.hidden) return
       if (lastTimeRef.current === null) lastTimeRef.current = time
       const delta = Math.min(0.05, Math.max(0, time - lastTimeRef.current) / 1000)
       lastTimeRef.current = time
@@ -203,9 +212,10 @@ export default function DriftWall({
     frameRef.current = requestAnimationFrame(animate)
     return () => {
       cancelAnimationFrame(frameRef.current)
+      frameRef.current = 0
       lastTimeRef.current = null
     }
-  }, [applyPlaneTransform, baseVelocities, columnMeta, parallax, pauseOnHover, reducedMotion])
+  }, [applyPlaneTransform, baseVelocities, columnMeta, parallax, pauseOnHover, reducedMotion, renderActive])
 
   const activate = (id: string, column: number) => {
     activeIdRef.current = id
@@ -271,7 +281,7 @@ export default function DriftWall({
   return (
     <div
       ref={containerRef}
-      className={`drift-wall${reducedMotion ? ' drift-wall--reduced' : ''}${className ? ` ${className}` : ''}`}
+      className={`drift-wall${renderActive ? ' is-render-active' : ''}${reducedMotion ? ' drift-wall--reduced' : ''}${className ? ` ${className}` : ''}`}
       style={cssVars}
       onPointerMove={(event) => {
         const rect = containerRef.current?.getBoundingClientRect()

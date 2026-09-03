@@ -564,6 +564,7 @@ export function createGlass(
       config.zoom > 1 && target?.closest?.(config.targets)
         ? Math.min(Math.max(config.zoom, 1), 4)
         : 1;
+    if (htmlInCanvas) paintable.requestPaint!();
     start();
   }
 
@@ -571,6 +572,7 @@ export function createGlass(
     presenceTarget = 0;
     zoomTarget = 1;
     hasPointer = false;
+    if (htmlInCanvas) paintable.requestPaint!();
     start();
   }
 
@@ -578,6 +580,7 @@ export function createGlass(
   content.addEventListener("pointerleave", onPointerLeave, { passive: true });
 
   function onScroll() {
+    if (htmlInCanvas) paintable.requestPaint!();
     start();
   }
   content.addEventListener("scroll", onScroll, { passive: true });

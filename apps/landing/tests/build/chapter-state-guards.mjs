@@ -239,8 +239,9 @@ if (
 }
 
 if (projectsSource.includes("document.querySelectorAll<HTMLElement>('.project-card')") ||
-  !projectsSource.includes("section.querySelectorAll<HTMLElement>('[data-motion=\"project-card\"]')")) {
-  throw new Error('Projects must scope project-card DOM writes to its root section, not document-wide queries.')
+  !projectsSource.includes("section.querySelectorAll<HTMLElement>('.project-glass--card')") ||
+  !projectsSource.includes("surface.querySelector<HTMLElement>('[data-motion=\"project-card\"]')")) {
+  throw new Error('Projects must scope stable Glass host and project-card DOM writes to its root section.')
 }
 
 const directActiveReaders = consumers

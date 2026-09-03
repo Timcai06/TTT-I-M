@@ -42,6 +42,7 @@ const app = read('src/App.tsx')
 const life = read('src/components/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
+const archiveThemeScroll = read('src/components/frame/useArchiveThemeScroll.ts')
 const frameParticles = read('src/components/frame/FrameParticleHandoff.tsx')
 const frameParticleRuntime = [
   'src/lib/canvas-ui/particleScroll.ts',
@@ -57,6 +58,8 @@ const projects = [
   'src/chapters/projects/ProjectsBento.tsx',
   'src/chapters/projects/useProjectsNarrative.ts',
 ].map(read).join('\n')
+const projectsIntroStyle = read('src/chapters/projects/styles/intro-bento.css')
+const projectsCardStyle = read('src/chapters/projects/styles/card-media.css')
 const projectLaser = read('src/components/ProjectLaser.tsx')
 const laserRuntime = read('src/lib/canvas-ui/laser.ts')
 const laserConfig = read('src/lib/canvas-ui/laserConfig.ts')
@@ -64,6 +67,7 @@ const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
 const about = read('src/components/About.tsx')
 const aboutStyle = read('src/styles/components/about.css')
 const canvasHtmlSurface = read('src/components/effects/CanvasUiHtmlSurface.tsx')
+const canvasHtmlStyle = read('src/styles/components/canvas-ui-surfaces.css')
 const decryptSurface = read('src/components/effects/AboutDecryptReveal.tsx')
 const decryptConfig = read('src/lib/canvas-ui/decryptRevealConfig.ts')
 const decryptVendor = read('src/lib/canvas-ui/vendor/DecryptReveal/DecryptRevealVanilla.ts')
@@ -170,6 +174,9 @@ for (const token of ['keepMounted', 'spark-badge-activity', 'postActivity(active
     throw new Error(`Stack → Work must preload and pause its right-side Spark resource: ${token}`)
   }
 }
+for (const token of ['sparkControlFrame', 'pendingSparkProgress', 'requestAnimationFrame(flushSparkControls)']) {
+  if (!workTransition.includes(token)) throw new Error(`Stack → Work controls must coalesce to one frame: ${token}`)
+}
 if (workTransition.includes('cursorLabel=')) {
   throw new Error('The Liquid Metal CTA animation must carry focus without a competing cursor label.')
 }
@@ -213,6 +220,12 @@ for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
 for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
+for (const token of ['retainFallbackUntilReady', 'failureCount', "addEventListener('canvas-ui:invalidate'", 'initialImagesReady', '1600']) {
+  if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
+}
+for (const token of ['canvas-ui-html--retained-fallback', "data-canvas-ui-state='loading'", "data-canvas-ui-state='active'", 'visibility: hidden']) {
+  if (!canvasHtmlStyle.includes(token)) throw new Error(`Glass seamless handoff CSS is missing ${token}.`)
+}
 for (const forbidden of ['preserveDom', 'captureRef', 'MutationObserver']) {
   if (canvasHtmlSurface.includes(forbidden)) {
     throw new Error(`Canvas UI effects must capture and interact with the same live subtree: ${forbidden}`)
@@ -224,6 +237,9 @@ for (const token of ['size: 140', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflec
 for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', 'ggx', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
   if (!glassVendor.includes(token)) throw new Error(`Vendored Glass is missing ${token}.`)
 }
+for (const token of ['onPointerMove', 'onPointerLeave', 'onScroll', 'paintable.requestPaint!()']) {
+  if (!glassVendor.includes(token)) throw new Error(`Project Glass capture invalidation is missing ${token}.`)
+}
 if (glassVendor.includes('interaction = content')) {
   throw new Error('Glass pointer mapping must remain attached to its captured content subtree.')
 }
@@ -233,8 +249,17 @@ for (const token of ['ProjectGlassSurface', 'glassReady', 'glassSuppressed', 'gl
 for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data-glass-target']) {
   if (!projects.includes(token)) throw new Error(`Project Glass overview discovery is missing ${token}.`)
 }
-for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="0px"', 'surfaceId']) {
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="35% 0px"', 'surfaceId', 'retainFallbackUntilReady', 'preloadProjectGlass']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
+}
+for (const token of ['setRevealState', "'.project-glass--overview'", "'.project-glass--card'", 'onEnterBack', "new Event('canvas-ui:invalidate')"]) {
+  if (!projects.includes(token)) throw new Error(`Projects reveal state must survive Glass subtree replacement: ${token}.`)
+}
+if (!projectsIntroStyle.includes('.project-glass--overview.is-visible .bento-glow')) {
+  throw new Error('All six Work previews must inherit reveal state from the stable Glass host.')
+}
+for (const token of ['.project-glass--card.is-visible .project-card', '.project-glass--card.is-visible .media-frame']) {
+  if (!projectsCardStyle.includes(token)) throw new Error(`Project cards must inherit stable Glass reveal state: ${token}.`)
 }
 for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot']) {
   if (!canvasSurfaceSlots.includes(token)) throw new Error(`Canvas surface slot governor is missing ${token}.`)
@@ -352,6 +377,17 @@ if (!sparkPortfolio.includes("set('particleAmount', 0.08, 1.4)")) {
 for (const token of ['spark-badge-activity', 'renderActive', 'scheduleFrame()', 'cancelAnimationFrame(renderFrame)']) {
   if (!sparkPortfolio.includes(token)) throw new Error(`The warmed Spark scene must pause cleanly offscreen: ${token}`)
 }
+for (const token of ["postMessage({ type: 'spark-badge-ready' }", "event.data.type === 'spark-badge-ready-request'"]) {
+  if (!sparkPortfolio.includes(token)) {
+    throw new Error(`The warmed Spark scene must keep its readiness handshake: ${token}`)
+  }
+}
+const sparkBadge = read('src/shaders/spark-badge/SparkBadge.tsx')
+for (const token of ['event.data', 'spark-badge-ready-request']) {
+  if (!sparkBadge.includes(token)) {
+    throw new Error(`SparkBadge must wait for and recover its iframe readiness handshake: ${token}`)
+  }
+}
 const skillsIndex = registry.indexOf("id: 'skills'")
 const transitionIndex = registry.indexOf("id: 'work-transition'")
 const projectsIndex = registry.indexOf("id: 'projects'")
@@ -396,6 +432,12 @@ if (
 }
 for (const token of ['Math.min(safeItems.length, 5)', 'column * 5 + slot * 3', 'TONE_SEQUENCE', 'toneBuckets', "'data-tone'", "'--dw-card-position'"]) {
   if (!driftWall.includes(token)) throw new Error(`DriftWall must preserve varied equal-width image distribution: ${token}`)
+}
+for (const token of ['renderActive', "document.addEventListener('visibilitychange'", "drift-wall${renderActive ? ' is-render-active' : ''}"]) {
+  if (!driftWall.includes(token)) throw new Error(`DriftWall must stop its offscreen frame loop: ${token}`)
+}
+for (const token of ['clusterElements', 'imagesByCluster', 'latestProgress', 'measuredScrollDistance']) {
+  if (!archiveThemeScroll.includes(token)) throw new Error(`Frame scroll hot path must cache stable layout data: ${token}`)
 }
 if (driftWall.includes("'--dw-card-w'")) {
   throw new Error('DriftWall must not reintroduce per-card width variance.')

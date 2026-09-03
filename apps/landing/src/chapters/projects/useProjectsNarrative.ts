@@ -25,22 +25,34 @@ export function useProjectsNarrative(
     if (!root.current) return
     const section = root.current
     const context = gsap.context(() => {
+      const setRevealState = (surface: HTMLElement, revealed: boolean) => {
+        surface.classList.toggle('is-visible', revealed)
+        surface.querySelector<HTMLElement>('.projects__bento, .project-card')
+          ?.classList.toggle('is-visible', revealed)
+        surface.dispatchEvent(new Event('canvas-ui:invalidate'))
+      }
+
+      const bentoSurface = section.querySelector<HTMLElement>('.project-glass--overview')
       const bento = section.querySelector<HTMLElement>('.projects__bento')
-      if (bento) {
+      if (bentoSurface && bento) {
         ScrollTrigger.create({
-          trigger: bento,
+          trigger: bentoSurface,
           start: 'top 86%',
-          onEnter: () => bento.classList.add('is-visible'),
-          onLeaveBack: () => bento.classList.remove('is-visible'),
+          onEnter: () => setRevealState(bentoSurface, true),
+          onEnterBack: () => setRevealState(bentoSurface, true),
+          onLeaveBack: () => setRevealState(bentoSurface, false),
         })
       }
 
-      section.querySelectorAll<HTMLElement>('[data-motion="project-card"]').forEach((card) => {
+      section.querySelectorAll<HTMLElement>('.project-glass--card').forEach((surface) => {
+        const card = surface.querySelector<HTMLElement>('[data-motion="project-card"]')
+        if (!card) return
         ScrollTrigger.create({
-          trigger: card,
+          trigger: surface,
           start: 'top 85%',
-          onEnter: () => card.classList.add('is-visible'),
-          onLeaveBack: () => card.classList.remove('is-visible'),
+          onEnter: () => setRevealState(surface, true),
+          onEnterBack: () => setRevealState(surface, true),
+          onLeaveBack: () => setRevealState(surface, false),
         })
         card.style.setProperty('--accent', card.dataset.accent || '#6b8fb5')
       })
@@ -92,8 +104,17 @@ export function useProjectsNarrative(
 
     intro.dataset.handoff = 'active'
     let lastScrollY = window.scrollY
+    let contentDocumentTop = 0
+    let contentHeight = 1
+    let latestProgress = 0
     let finishing = false
     let finishTimeline: gsap.core.Timeline | null = null
+
+    const measurePortal = () => {
+      const rect = content.getBoundingClientRect()
+      contentDocumentTop = rect.top + window.scrollY
+      contentHeight = Math.max(rect.height, 1)
+    }
 
     const settle = () => {
       intro.dataset.handoff = 'settled'
@@ -103,11 +124,11 @@ export function useProjectsNarrative(
 
     const syncPortal = (progress = 0) => {
       if (finishing) return
-      const rect = content.getBoundingClientRect()
-      const height = Math.max(rect.height, 1)
+      latestProgress = progress
       const beamY = window.innerHeight - LASER_CONFIG.offset
-      const revealed = Math.min(Math.max(beamY - rect.top, 0), height)
-      const clipped = Math.max(height - revealed, 0)
+      const contentTop = contentDocumentTop - window.scrollY
+      const revealed = Math.min(Math.max(beamY - contentTop, 0), contentHeight)
+      const clipped = Math.max(contentHeight - revealed, 0)
       content.style.clipPath = `inset(0px 0px ${clipped}px 0px)`
 
       const scrollY = window.scrollY
@@ -142,19 +163,29 @@ export function useProjectsNarrative(
       { autoAlpha: 0 },
       { autoAlpha: 0.96, duration: 0.22, ease: 'power2.out' },
     )
+    measurePortal()
     syncPortal()
+
+    const resizeObserver = new ResizeObserver(() => {
+      measurePortal()
+      syncPortal(latestProgress)
+    })
+    resizeObserver.observe(content)
 
     const portalTrigger = ScrollTrigger.create({
       trigger: intro,
       start: 'top 100%',
       endTrigger: lastPreview,
       end: () => `bottom bottom-=${LASER_CONFIG.offset}px`,
+      onRefreshInit: measurePortal,
+      onRefresh: (self) => syncPortal(self.progress),
       onUpdate: (self) => syncPortal(self.progress),
       onLeave: finishPortal,
       onLeaveBack: finishPortal,
     })
 
     return () => {
+      resizeObserver.disconnect()
       portalTrigger.kill()
       finishTimeline?.kill()
       content.style.removeProperty('clip-path')

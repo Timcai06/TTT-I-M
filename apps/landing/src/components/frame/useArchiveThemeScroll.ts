@@ -43,23 +43,29 @@ export default function useArchiveThemeScroll({
     const sectionEl = section.current
     const trackEl = track.current
     if (!sectionEl || !trackEl) return
+    activeClusterIndex.current = -1
 
     const warmedImages = new Set<string>()
+    const clusterElements = Array.from(trackEl.querySelectorAll<HTMLElement>(':scope > .archive-cluster'))
+    const clustersById = new Map(clusterElements.map((cluster) => [cluster.dataset.cluster, cluster]))
+    const imagesByCluster = new Map(clusterElements.map((cluster) => [
+      cluster.dataset.cluster,
+      Array.from(cluster.querySelectorAll<HTMLImageElement>('.archive-slot img')),
+    ]))
     /**
      * @description 低优先级预热当前 cluster 和下一个 cluster 的图片，减少快速滑到 Frame 时的空白
      * @dependencies 依赖 DOM 中已渲染的 .archive-cluster/.archive-slot img 和 imageDecodeQueue
      * @performance 每个 src 只预热一次；load 后再进 idle decode 队列，避免和首屏 critical decode 抢主线程
      */
     const warmClusterImages = (clusterIndex: number) => {
-      const clusters = Array.from(trackEl.querySelectorAll<HTMLElement>(':scope > .archive-cluster'))
       const nearbyClusters = [clusterIndex, clusterIndex + 1].map((index) => {
         const clusterId = theme.clusters[index]?.id
-        return clusters.find((cluster) => cluster.dataset.cluster === clusterId)
+        return clusterId ? clustersById.get(clusterId) : undefined
       })
 
       nearbyClusters.forEach((clusterEl) => {
         if (!clusterEl) return
-        const images = Array.from(clusterEl.querySelectorAll<HTMLImageElement>('.archive-slot img'))
+        const images = imagesByCluster.get(clusterEl.dataset.cluster) ?? []
         images.forEach((img) => {
           const key = img.src
           if (warmedImages.has(key)) return
@@ -84,16 +90,16 @@ export default function useArchiveThemeScroll({
      * @dependencies 依赖 theme.clusters.length 和 ScrollTrigger progress
      * @performance rAF 合并同一帧内的多次 progress 更新，避免滚动时 React state 过度刷新
      */
+    let latestProgress = 0
     const updateActiveCluster = (progress = 0) => {
-      window.cancelAnimationFrame(activeUpdateFrame.current)
+      latestProgress = progress
+      if (activeUpdateFrame.current) return
       activeUpdateFrame.current = window.requestAnimationFrame(() => {
+        activeUpdateFrame.current = 0
         const clusterCount = theme.clusters.length
-        const clusterIndex = Math.min(clusterCount - 1, Math.max(0, Math.floor(progress * clusterCount)))
+        const clusterIndex = Math.min(clusterCount - 1, Math.max(0, Math.floor(latestProgress * clusterCount)))
 
-        if (clusterIndex === activeClusterIndex.current) {
-          warmClusterImages(clusterIndex)
-          return
-        }
+        if (clusterIndex === activeClusterIndex.current) return
         activeClusterIndex.current = clusterIndex
         warmClusterImages(clusterIndex)
         setActive({ clusterIndex })
@@ -123,13 +129,17 @@ export default function useArchiveThemeScroll({
       )
 
       mm.add('(min-width: 769px) and (prefers-reduced-motion: no-preference)', () => {
-        const scrollDistance = () => Math.max(1, trackEl.scrollWidth - window.innerWidth)
-        const scrollEndDistance = () => computeFrameScrollDuration(scrollDistance(), window.innerHeight)
+        let measuredScrollDistance = Math.max(1, trackEl.scrollWidth - window.innerWidth)
+        const measureScrollDistance = () => {
+          measuredScrollDistance = Math.max(1, trackEl.scrollWidth - window.innerWidth)
+          return measuredScrollDistance
+        }
+        const scrollEndDistance = () => computeFrameScrollDuration(measureScrollDistance(), window.innerHeight)
         const tween = gsap.fromTo(
           trackEl,
-          { x: () => (theme.direction === 'left-to-right' ? -scrollDistance() : 0) },
+          { x: () => (theme.direction === 'left-to-right' ? -measureScrollDistance() : 0) },
           {
-            x: () => (theme.direction === 'left-to-right' ? 0 : -scrollDistance()),
+            x: () => (theme.direction === 'left-to-right' ? 0 : -measuredScrollDistance),
             ease: 'none',
             scrollTrigger: {
               trigger: sectionEl,
@@ -144,11 +154,12 @@ export default function useArchiveThemeScroll({
                 updateActiveCluster(self.progress)
                 bendHandle.current?.setScrollState({
                   progress: self.progress,
-                  distance: scrollDistance(),
+                  distance: measuredScrollDistance,
                   direction: theme.direction,
                 })
               },
               onRefresh: (self) => {
+                measureScrollDistance()
                 updateActiveCluster(self.progress)
                 bendHandle.current?.resize()
               },
@@ -169,6 +180,7 @@ export default function useArchiveThemeScroll({
 
     return () => {
       window.cancelAnimationFrame(activeUpdateFrame.current)
+      activeUpdateFrame.current = 0
       mm.revert()
       ctx.revert()
     }

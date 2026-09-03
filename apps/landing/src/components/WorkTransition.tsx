@@ -75,8 +75,10 @@ export default function WorkTransition() {
       return
     }
 
-    let lastControlPost = 0
     let focusFrame = 0
+    let sparkControlFrame = 0
+    let pendingSparkProgress = 0
+    let sparkFrameElement: HTMLIFrameElement | null = null
     observedHashRef.current = window.location.hash
     gateBypassRef.current = observedHashRef.current === '#projects'
       || observedHashRef.current === '#contact'
@@ -104,15 +106,19 @@ export default function WorkTransition() {
     window.addEventListener('wheel', preventForwardScroll, { passive: false, capture: true })
     window.addEventListener('keydown', preventForwardKey, { capture: true })
 
-    const postSparkControls = (progress: number) => {
-      const now = performance.now()
-      if (now - lastControlPost < 34 && progress > 0 && progress < 1) return
-      lastControlPost = now
-      const frame = section.querySelector<HTMLIFrameElement>('.spark-badge__frame')
-      frame?.contentWindow?.postMessage({
+    const flushSparkControls = () => {
+      sparkControlFrame = 0
+      if (!sparkFrameElement?.isConnected) {
+        sparkFrameElement = section.querySelector<HTMLIFrameElement>('.spark-badge__frame')
+      }
+      sparkFrameElement?.contentWindow?.postMessage({
         type: 'spark-badge-controls',
-        controls: controlsForProgress(progress, mobile),
+        controls: controlsForProgress(pendingSparkProgress, mobile),
       }, '*')
+    }
+    const postSparkControls = (progress: number) => {
+      pendingSparkProgress = progress
+      if (!sparkControlFrame) sparkControlFrame = window.requestAnimationFrame(flushSparkControls)
     }
 
     const timeline = gsap.timeline({
@@ -245,6 +251,7 @@ export default function WorkTransition() {
 
     return () => {
       window.cancelAnimationFrame(focusFrame)
+      window.cancelAnimationFrame(sparkControlFrame)
       window.removeEventListener('wheel', preventForwardScroll, { capture: true })
       window.removeEventListener('keydown', preventForwardKey, { capture: true })
       gateLockedRef.current = false

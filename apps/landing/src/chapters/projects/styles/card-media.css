@@ -14,31 +14,6 @@
   margin-top: 72px;
 }
 
-/* Native Canvas UI keeps the real subtree inside the source canvas. React
-   remounts that subtree when the surface acquires its slot, so restore the
-   reveal end-state that ScrollTrigger had applied to the former DOM nodes.
-   This keeps the official Glass capture path without feeding it transparent
-   cards or clipped media. */
-.project-glass--overview:is(
-  [data-canvas-ui-state='loading'],
-  [data-canvas-ui-state='active']
-) .bento-tile,
-.project-glass--card:is(
-  [data-canvas-ui-state='loading'],
-  [data-canvas-ui-state='active']
-) .project-card {
-  visibility: visible;
-  opacity: 1;
-  transform: none;
-}
-
-.project-glass--card:is(
-  [data-canvas-ui-state='loading'],
-  [data-canvas-ui-state='active']
-) .media-frame {
-  clip-path: inset(0 0 0 0);
-}
-
 .project-glass--overview[data-canvas-ui-state='active']::after {
   content: 'OPTICAL GLASS / MOVE';
   position: absolute;
@@ -87,7 +62,8 @@
   transition: opacity 1.4s var(--ease-out), transform 1.4s var(--ease-out);
 }
 
-.project-card.is-visible {
+.project-card.is-visible,
+.project-glass--card.is-visible .project-card {
   opacity: 1;
   transform: translateY(0);
 }
@@ -271,7 +247,8 @@
               box-shadow 0.42s var(--ease-out);
 }
 
-.project-card.is-visible .media-frame {
+.project-card.is-visible .media-frame,
+.project-glass--card.is-visible .media-frame {
   clip-path: inset(0 0 0 0);
 }
 
