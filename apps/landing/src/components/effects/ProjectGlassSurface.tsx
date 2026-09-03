@@ -77,6 +77,7 @@ export default function ProjectGlassSurface({
       loadFactory={loadGlass}
       onActiveChange={reportActive}
       onHostChange={bindHost}
+      portalOutput
       retainFallbackUntilReady
       renderMargin="25% 0px"
       mountMargin="220% 0px"

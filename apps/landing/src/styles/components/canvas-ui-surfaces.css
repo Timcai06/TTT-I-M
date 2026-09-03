@@ -51,6 +51,18 @@
   opacity: 1;
 }
 
+/* Viewport effects render through a body portal. Keeping the display plane out
+   of the captured chapter tree prevents overflow, contain and transformed
+   ancestors from clipping the optical lens at any viewport edge. */
+.canvas-ui-html__output--viewport {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  transition: none;
+}
+
 [data-canvas-ui-state='fallback'] > .canvas-ui-html__output,
 [data-canvas-ui-state='deferred'] > .canvas-ui-html__output {
   display: none;

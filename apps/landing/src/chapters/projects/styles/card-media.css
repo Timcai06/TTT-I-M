@@ -9,22 +9,6 @@
   overflow: visible;
 }
 
-/* Work owns one viewport-sized optical plane. The captured HTML stays local to
-   each project, but the lens is never clipped by that project's layout box.
-   Source mapping in GlassVanilla keeps refraction aligned with the live DOM. */
-.project-glass[data-canvas-ui-state='active'] {
-  z-index: 20;
-}
-
-.project-glass > .canvas-ui-html__output {
-  position: fixed;
-  z-index: 20;
-  inset: 0;
-  width: 100vw;
-  height: 100svh;
-  transition: none;
-}
-
 .project-glass--overview {
   z-index: 3;
 }

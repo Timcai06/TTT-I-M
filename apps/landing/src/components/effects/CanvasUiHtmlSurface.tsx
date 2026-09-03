@@ -9,6 +9,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { supportsHtmlInCanvas } from '../../lib/canvas-ui/runtime'
 import { useCanvasSurfaceSlot } from '../../lib/canvas-ui/canvasSurfaceSlots'
 import { useMobileExperience } from '../../lib/device'
@@ -54,6 +55,7 @@ interface CanvasUiHtmlSurfaceProps<Options extends object> {
   loadFactory: () => Promise<CanvasUiHtmlFactory<Options>>
   onActiveChange?: (active: boolean) => void
   onHostChange?: (element: HTMLDivElement | null) => void
+  portalOutput?: boolean
   retainFallbackUntilReady?: boolean
   renderMargin?: string
   mountMargin?: string
@@ -77,6 +79,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   loadFactory,
   onActiveChange,
   onHostChange,
+  portalOutput = false,
   retainFallbackUntilReady = false,
   renderMargin = '160px 0px',
   mountMargin = '80% 0px',
@@ -315,49 +318,59 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     ? { height: `${contentHeight}px` } satisfies CSSProperties
     : undefined
 
-  const nativeCanvases = native ? (
-    <>
-      <canvas
-        ref={sourceRef}
-        // @ts-expect-error Chromium's experimental HTML-in-Canvas attribute is not in React types.
-        layoutsubtree="true"
-        suppressHydrationWarning
-        className="canvas-ui-html__source"
-        aria-hidden={retainFallbackUntilReady && !ready ? true : undefined}
-      >
-        <div ref={contentRef} className={contentClassName}>{children}</div>
-      </canvas>
-      <canvas
-        ref={outputRef}
-        className={`canvas-ui-html__output${ready ? ' is-ready' : ''}`}
-        aria-hidden="true"
-      />
-    </>
+  const nativeSource = native ? (
+    <canvas
+      ref={sourceRef}
+      // @ts-expect-error Chromium's experimental HTML-in-Canvas attribute is not in React types.
+      layoutsubtree="true"
+      suppressHydrationWarning
+      className="canvas-ui-html__source"
+      aria-hidden={retainFallbackUntilReady && !ready ? true : undefined}
+    >
+      <div ref={contentRef} className={contentClassName}>{children}</div>
+    </canvas>
   ) : null
-
-  return (
-    <div
-      ref={bindHost}
-      className={`canvas-ui-html${retainFallbackUntilReady ? ' canvas-ui-html--retained-fallback' : ''} ${className}`}
+  const nativeOutput = native ? (
+    <canvas
+      ref={outputRef}
+      className={`canvas-ui-html__output${portalOutput ? ' canvas-ui-html__output--viewport' : ''}${ready ? ' is-ready' : ''}`}
       data-canvas-ui-effect={effectId}
       data-canvas-ui-state={state}
-      style={hostStyle}
-    >
-      {retainFallbackUntilReady ? (
-        <>
-          <div
-            className={`canvas-ui-html__fallback ${contentClassName ?? ''}`}
-            aria-hidden={native && ready ? true : undefined}
-          >
-            {children}
-          </div>
-          {nativeCanvases}
-        </>
-      ) : native ? (
-        nativeCanvases
-      ) : (
-        <div ref={contentRef} className={contentClassName}>{children}</div>
-      )}
-    </div>
+      aria-hidden="true"
+    />
+  ) : null
+  const portaledOutput = portalOutput && nativeOutput && typeof document !== 'undefined'
+    ? createPortal(nativeOutput, document.body)
+    : null
+  const localOutput = portalOutput ? null : nativeOutput
+  const nativeCanvases = native ? <>{nativeSource}{localOutput}</> : null
+
+  return (
+    <>
+      <div
+        ref={bindHost}
+        className={`canvas-ui-html${retainFallbackUntilReady ? ' canvas-ui-html--retained-fallback' : ''} ${className}`}
+        data-canvas-ui-effect={effectId}
+        data-canvas-ui-state={state}
+        style={hostStyle}
+      >
+        {retainFallbackUntilReady ? (
+          <>
+            <div
+              className={`canvas-ui-html__fallback ${contentClassName ?? ''}`}
+              aria-hidden={native && ready ? true : undefined}
+            >
+              {children}
+            </div>
+            {nativeCanvases}
+          </>
+        ) : native ? (
+          nativeCanvases
+        ) : (
+          <div ref={contentRef} className={contentClassName}>{children}</div>
+        )}
+      </div>
+      {portaledOutput}
+    </>
   )
 }

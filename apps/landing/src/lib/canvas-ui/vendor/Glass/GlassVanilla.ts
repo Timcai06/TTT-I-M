@@ -447,7 +447,7 @@ export function createGlass(
   const outputRectCache = createRectCache(output);
   const sourceRectCache = createRectCache(source);
   const scopeElement = config.scopeSelector
-    ? output.closest(config.scopeSelector)
+    ? source.closest(config.scopeSelector)
     : null;
   const scopeRectCache = scopeElement ? createRectCache(scopeElement) : outputRectCache;
   const initialPointer = getPointerSnapshot();

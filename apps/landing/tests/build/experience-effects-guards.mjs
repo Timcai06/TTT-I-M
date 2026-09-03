@@ -263,7 +263,7 @@ for (const token of ['projects__header', '<ProjectsBento />']) {
     throw new Error(`Project Glass overview must capture the complete Work opening: ${token}.`)
   }
 }
-for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'retainFallbackUntilReady', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'portalOutput', 'retainFallbackUntilReady', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
 }
 for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemove'", "addEventListener('scroll'", 'elementFromPoint', 'portfolio:iframe-pointer']) {
@@ -287,8 +287,17 @@ if (!projectsIntroStyle.includes('.project-glass--overview.is-visible .bento-glo
 for (const token of ['.project-glass--card.is-visible .project-card', '.project-glass--card.is-visible .media-frame']) {
   if (!projectsCardStyle.includes(token)) throw new Error(`Project cards must inherit stable Glass reveal state: ${token}.`)
 }
-for (const token of [".project-glass[data-canvas-ui-state='active']", '.project-glass > .canvas-ui-html__output', 'position: fixed', 'width: 100vw', 'height: 100svh']) {
-  if (!projectsCardStyle.includes(token)) throw new Error(`Project Glass viewport continuity is missing ${token}.`)
+for (const token of ['createPortal', 'document.body', 'canvas-ui-html__output--viewport']) {
+  if (!canvasHtmlSurface.includes(token)) throw new Error(`Canvas UI viewport portal is missing ${token}.`)
+}
+for (const token of ['.canvas-ui-html__output--viewport', 'position: fixed', 'width: 100vw', 'height: 100svh']) {
+  if (!canvasHtmlStyle.includes(token)) throw new Error(`Project Glass viewport continuity is missing ${token}.`)
+}
+if (projectsCardStyle.includes('.project-glass > .canvas-ui-html__output')) {
+  throw new Error('Project Glass output must not remain inside a chapter clipping boundary.')
+}
+if (!glassVendor.includes('source.closest(config.scopeSelector)') || glassVendor.includes('output.closest(config.scopeSelector)')) {
+  throw new Error('Portaled Glass must derive its Work scope from the local capture source.')
 }
 for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot']) {
   if (!canvasSurfaceSlots.includes(token)) throw new Error(`Canvas surface slot governor is missing ${token}.`)
