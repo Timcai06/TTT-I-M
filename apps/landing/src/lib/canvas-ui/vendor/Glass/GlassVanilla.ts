@@ -1,5 +1,10 @@
 // @ts-nocheck -- vendored upstream source is intentionally kept on its original compiler contract.
 import { createRectCache } from "../rect-cache";
+import {
+  getPointerSnapshot,
+  subscribePointer,
+  type PointerSnapshot,
+} from "../../../pointerCoordinator";
 
 export interface GlassOptions {
   /** Lens shape. */
@@ -35,6 +40,8 @@ export interface GlassOptions {
   targets?: string;
   /** How quickly the lens follows the cursor (0 to 1). 1 snaps to it. */
   follow?: number;
+  /** Optional shared kinematic channel used to preserve motion between surfaces. */
+  continuityKey?: string;
 }
 
 export interface GlassElements {
@@ -77,7 +84,18 @@ const DEFAULTS: Required<GlassOptions> = {
   zoom: 1.5,
   targets: "[data-glass-target]",
   follow: 0.2,
+  continuityKey: "",
 };
+
+interface GlassContinuityState {
+  viewportX: number;
+  viewportY: number;
+  presence: number;
+  zoom: number;
+  updatedAt: number;
+}
+
+const continuityStates = new Map<string, GlassContinuityState>();
 
 type PaintableCanvas = HTMLCanvasElement & {
   onpaint?: (() => void) | null;
@@ -411,15 +429,44 @@ export function createGlass(
     gl!.generateMipmap(gl!.TEXTURE_2D);
   }
 
-  let posX = output.clientWidth / 2;
-  let posY = output.clientHeight / 2;
-  let presence = 0;
-  let presenceTarget = 0;
-  let targetX = posX;
-  let targetY = posY;
-  let zoom = 1;
+  const rectCache = createRectCache(output);
+  const initialPointer = getPointerSnapshot();
+  const initialRect = rectCache.current;
+  const initialInside = initialPointer.hasMoved && initialPointer.active
+    && initialPointer.clientX >= initialRect.left
+    && initialPointer.clientX <= initialRect.right
+    && initialPointer.clientY >= initialRect.top
+    && initialPointer.clientY <= initialRect.bottom;
+  const continuity = config.continuityKey
+    ? continuityStates.get(config.continuityKey)
+    : undefined;
+  const recentContinuity = continuity && performance.now() - continuity.updatedAt < 900;
+  let targetX = initialPointer.hasMoved
+    ? initialPointer.clientX - initialRect.left
+    : output.clientWidth / 2;
+  let targetY = initialPointer.hasMoved
+    ? initialPointer.clientY - initialRect.top
+    : output.clientHeight / 2;
+  let posX = recentContinuity ? continuity.viewportX - initialRect.left : targetX;
+  let posY = recentContinuity ? continuity.viewportY - initialRect.top : targetY;
+  let presence = recentContinuity && initialInside ? continuity.presence : 0;
+  let presenceTarget = initialInside ? 1 : 0;
+  let zoom = recentContinuity && initialInside ? continuity.zoom : 1;
   let zoomTarget = 1;
-  let hasPointer = false;
+  let hasPointer = initialInside;
+  let activeTarget: Element | null = null;
+
+  function persistContinuity() {
+    if (!config.continuityKey) return;
+    const rect = rectCache.current;
+    continuityStates.set(config.continuityKey, {
+      viewportX: posX + rect.left,
+      viewportY: posY + rect.top,
+      presence,
+      zoom,
+      updatedAt: performance.now(),
+    });
+  }
 
   function halfExtents(): [number, number] {
     const size = Math.max(config.size, 8);
@@ -520,6 +567,7 @@ export function createGlass(
     presence += (presenceTarget - presence) * kScale;
 
     render();
+    persistContinuity();
 
     const settled =
       Math.abs(targetX - posX) < 0.1 &&
@@ -547,43 +595,33 @@ export function createGlass(
   wake = start;
   start();
 
-  const rectCache = createRectCache(output);
-
-  function onPointerMove(event: PointerEvent) {
+  function onPointer(pointer: PointerSnapshot) {
     const rect = rectCache.current;
-    targetX = event.clientX - rect.left;
-    targetY = event.clientY - rect.top;
-    if (!hasPointer) {
+    const inside = pointer.hasMoved && pointer.active
+      && pointer.clientX >= rect.left
+      && pointer.clientX <= rect.right
+      && pointer.clientY >= rect.top
+      && pointer.clientY <= rect.bottom;
+    targetX = pointer.clientX - rect.left;
+    targetY = pointer.clientY - rect.top;
+    if (inside && !hasPointer) {
       posX = targetX;
       posY = targetY;
-      hasPointer = true;
     }
-    presenceTarget = 1;
-    const target = event.target as Element | null;
+    hasPointer = inside;
+    presenceTarget = inside ? 1 : 0;
+    const target = inside ? pointer.target : null;
+    const nextActiveTarget = target?.closest?.(config.targets) ?? null;
     zoomTarget =
-      config.zoom > 1 && target?.closest?.(config.targets)
+      config.zoom > 1 && nextActiveTarget
         ? Math.min(Math.max(config.zoom, 1), 4)
         : 1;
-    if (htmlInCanvas) paintable.requestPaint!();
+    if (htmlInCanvas && nextActiveTarget !== activeTarget) paintable.requestPaint!();
+    activeTarget = nextActiveTarget;
     start();
   }
 
-  function onPointerLeave() {
-    presenceTarget = 0;
-    zoomTarget = 1;
-    hasPointer = false;
-    if (htmlInCanvas) paintable.requestPaint!();
-    start();
-  }
-
-  content.addEventListener("pointermove", onPointerMove, { passive: true });
-  content.addEventListener("pointerleave", onPointerLeave, { passive: true });
-
-  function onScroll() {
-    if (htmlInCanvas) paintable.requestPaint!();
-    start();
-  }
-  content.addEventListener("scroll", onScroll, { passive: true });
+  const unsubscribePointer = subscribePointer(onPointer);
 
   function onMotionChange() {
     reducedMotion = motionQuery.matches;
@@ -632,11 +670,10 @@ export function createGlass(
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      persistContinuity();
+      unsubscribePointer();
       rectCache.destroy();
       cancelAnimationFrame(raf);
-      content.removeEventListener("pointermove", onPointerMove);
-      content.removeEventListener("pointerleave", onPointerLeave);
-      content.removeEventListener("scroll", onScroll);
       observer.disconnect();
       intersection.disconnect();
       motionQuery.removeEventListener("change", onMotionChange);

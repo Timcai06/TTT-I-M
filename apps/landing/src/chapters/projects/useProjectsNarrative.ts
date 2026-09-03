@@ -76,20 +76,28 @@ export function useProjectsNarrative(
 
   useEffect(() => {
     const section = root.current
-    if (!section || glassActive) return
+    if (!section) return
     const fineDesktop = window.matchMedia('(min-width: 769px) and (pointer: fine)')
     let disposeTilts: Array<() => void> = []
+    let restoreTimer = 0
     const syncTilts = () => {
+      window.clearTimeout(restoreTimer)
       disposeTilts.forEach((dispose) => dispose())
       disposeTilts = []
       if (!fineDesktop.matches || glassActive) return
-      disposeTilts = Array.from(section.querySelectorAll<HTMLElement>('.media-frame'))
-        .map((frame) => attachTilt(frame, { damp: 0.22 }))
+      // A Glass surface handoff briefly reports inactive while the next source
+      // captures its first frame. Delay Tilt restoration so two interaction
+      // systems never alternate during that internal handoff.
+      restoreTimer = window.setTimeout(() => {
+        disposeTilts = Array.from(section.querySelectorAll<HTMLElement>('.media-frame'))
+          .map((frame) => attachTilt(frame, { damp: 0.22 }))
+      }, 320)
     }
     syncTilts()
     fineDesktop.addEventListener('change', syncTilts)
     return () => {
       fineDesktop.removeEventListener('change', syncTilts)
+      window.clearTimeout(restoreTimer)
       disposeTilts.forEach((dispose) => dispose())
     }
   }, [glassActive, root])

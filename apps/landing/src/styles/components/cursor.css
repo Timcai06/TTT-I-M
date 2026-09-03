@@ -54,6 +54,20 @@
   transform: translate(-50%, -50%) scale(4.6667);
 }
 
+/* Inside Work Glass the cursor becomes the precise optical core instead of a
+   second competing large disc. Glass owns scale/refraction; Cursor owns aim. */
+.cursor.is-over-glass::before {
+  background: var(--fg);
+  border-color: var(--fg);
+  transform: translate(-50%, -50%) scale(0.6667);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fg) 16%, transparent);
+}
+
+.cursor.is-over-glass.is-hover::before {
+  transform: translate(-50%, -50%) scale(1.5);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--fg) 18%, transparent);
+}
+
 .cursor.is-labeled::before {
   border-radius: 999px;
   transform: translate(-50%, -50%) scale(6.3333, 2.6667);

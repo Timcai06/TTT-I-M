@@ -3,6 +3,7 @@ import { projects, type Project, type ProjectShot } from '../../content'
 import SciScopeFilm from '../../components/SciScopeFilm'
 import ProjectGlassSurface from '../../components/effects/ProjectGlassSurface'
 import { requestParticlePortal } from '../../lib/particlePortal'
+import { requestPointerHitTest } from '../../lib/pointerCoordinator'
 import ProjectCard from './ProjectCard'
 import ProjectsIntro from './ProjectsIntro'
 import { useProjectsNarrative } from './useProjectsNarrative'
@@ -17,7 +18,6 @@ void loadProjectCaseDialog()
 interface ActiveCaseStudy {
   project: Project
   trigger: HTMLButtonElement
-  sourceImage: HTMLImageElement | null
   heroShot: ProjectShot
   open: boolean
   closing: boolean
@@ -45,6 +45,12 @@ function isVisibleImage(image: HTMLImageElement | null): image is HTMLImageEleme
     && rect.top < window.innerHeight
 }
 
+function findProjectReturnImage(root: HTMLElement | null, projectId: string): HTMLImageElement | null {
+  return root?.querySelector<HTMLImageElement>(
+    `[data-work-glass-surface="${projectId}"] .media-frame__img.is-active`,
+  ) ?? null
+}
+
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
   const [activeCaseStudy, setActiveCaseStudy] = useState<ActiveCaseStudy | null>(null)
@@ -57,6 +63,7 @@ export default function Projects() {
     if (active) surfaces.add(surfaceId)
     else surfaces.delete(surfaceId)
     setGlassActive(surfaces.size > 0)
+    requestPointerHitTest()
   }, [])
   const openCaseStudy = useCallback((
     project: Project,
@@ -66,10 +73,12 @@ export default function Projects() {
     void import('./ProjectCaseContent')
     const heroShot = resolveHeroShot(project, sourceImage)
     if (!heroShot) return
-    setGlassSuppressed(true)
 
     const commit = () => {
-      setActiveCaseStudy({ project, trigger, sourceImage, heroShot, open: true, closing: false })
+      // Keep Glass alive through the particle detach, then release it beneath
+      // the cloud's densest frame as the dialog becomes the interaction owner.
+      setGlassSuppressed(true)
+      setActiveCaseStudy({ project, trigger, heroShot, open: true, closing: false })
     }
     if (!sourceImage) {
       commit()
@@ -101,11 +110,14 @@ export default function Projects() {
     const commit = () => {
       setActiveCaseStudy((latest) => latest ? { ...latest, open: false, closing: true } : latest)
     }
+    const resumeGlass = () => setGlassSuppressed(false)
     const hero = document.querySelector<HTMLImageElement>(
       `[data-project-dialog="${current.project.id}"] [data-particle-portal-target] img`,
     )
-    if (!hero || !isVisibleImage(current.sourceImage)) {
+    const returnImage = findProjectReturnImage(root.current, current.project.id)
+    if (!hero || !isVisibleImage(returnImage)) {
       commit()
+      resumeGlass()
       return
     }
 
@@ -113,12 +125,16 @@ export default function Projects() {
     const accepted = requestParticlePortal({
       source: hero,
       sourceContainer: hero.closest<HTMLElement>('[data-particle-portal-target]'),
-      resolveTarget: () => current.sourceImage,
+      resolveTarget: () => findProjectReturnImage(root.current, current.project.id),
       commit,
       mode: 'case-collapse',
       label: current.project.name,
+      onComplete: resumeGlass,
     })
-    if (!accepted) commit()
+    if (!accepted) {
+      commit()
+      resumeGlass()
+    }
   }, [activeCaseStudy])
 
   return (
@@ -160,7 +176,6 @@ export default function Projects() {
             onOpenChangeComplete={(open) => {
               if (!open) {
                 setActiveCaseStudy(null)
-                setGlassSuppressed(false)
               }
             }}
           />

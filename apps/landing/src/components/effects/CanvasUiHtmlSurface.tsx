@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useReducer,
@@ -52,6 +53,7 @@ interface CanvasUiHtmlSurfaceProps<Options extends object> {
   options: Options
   loadFactory: () => Promise<CanvasUiHtmlFactory<Options>>
   onActiveChange?: (active: boolean) => void
+  onHostChange?: (element: HTMLDivElement | null) => void
   retainFallbackUntilReady?: boolean
   renderMargin?: string
   mountMargin?: string
@@ -74,6 +76,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   options,
   loadFactory,
   onActiveChange,
+  onHostChange,
   retainFallbackUntilReady = false,
   renderMargin = '160px 0px',
   mountMargin = '80% 0px',
@@ -96,6 +99,11 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   const [budgetEpoch, retryBudget] = useReducer((value: number) => value + 1, 0)
   const mobile = useMobileExperience()
   const reducedMotion = useReducedMotion()
+
+  const bindHost = useCallback((element: HTMLDivElement | null) => {
+    hostRef.current = element
+    onHostChange?.(element)
+  }, [hostRef, onHostChange])
 
   const nativeCandidate = enabled && supported && !mobile && !reducedMotion && !failed
   const slotGranted = useCanvasSurfaceSlot(exclusiveGroup, nativeCandidate && mounted)
@@ -196,7 +204,13 @@ export default function CanvasUiHtmlSurface<Options extends object>({
         image.addEventListener('error', finish, { once: true })
       }
     })
-    const initialImagesReady = Promise.all(images.map(waitForImage))
+    // Only block handoff on imagery that is expected to be present in the
+    // first visible frame. Deferred gallery alternatives can repaint into the
+    // already-stable surface later without making Glass feel network-bound.
+    const firstFrameImages = images.filter((image) => (
+      image.loading !== 'lazy' || image.classList.contains('is-active')
+    ))
+    const initialImagesReady = Promise.all(firstFrameImages.map(waitForImage))
     const imageListeners = images.map((image) => {
       image.addEventListener('load', requestPaint)
       image.addEventListener('error', requestPaint)
@@ -323,7 +337,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
 
   return (
     <div
-      ref={hostRef}
+      ref={bindHost}
       className={`canvas-ui-html${retainFallbackUntilReady ? ' canvas-ui-html--retained-fallback' : ''} ${className}`}
       data-canvas-ui-effect={effectId}
       data-canvas-ui-state={state}

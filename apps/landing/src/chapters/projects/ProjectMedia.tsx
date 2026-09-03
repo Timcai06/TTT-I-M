@@ -116,6 +116,7 @@ export default function ProjectMedia({ project }: { project: Project }): ReactEl
               onClick={() => setActive(index)}
               aria-label={item.label}
               aria-pressed={index === active}
+              data-glass-target
             >
               <img src={item.src} alt="" loading="lazy" decoding="async" />
               <span className="media-thumb__label">{item.label}</span>

@@ -24,6 +24,8 @@ const required = [
   'src/components/effects/AboutDecryptReveal.tsx',
   'src/components/effects/ProjectGlassSurface.tsx',
   'src/lib/canvas-ui/canvasSurfaceSlots.ts',
+  'src/lib/canvas-ui/workGlassCoordinator.ts',
+  'src/lib/pointerCoordinator.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
   'src/shaders/liquid-metal-button/liquid-metal-button.html',
   'src/shaders/spark-badge/SparkBadge.tsx',
@@ -39,6 +41,8 @@ for (const path of required) {
 }
 
 const app = read('src/App.tsx')
+const cursor = read('src/components/Cursor.tsx')
+const pointerCoordinator = read('src/lib/pointerCoordinator.ts')
 const life = read('src/components/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
@@ -74,6 +78,7 @@ const decryptVendor = read('src/lib/canvas-ui/vendor/DecryptReveal/DecryptReveal
 const glassSurface = read('src/components/effects/ProjectGlassSurface.tsx')
 const glassConfig = read('src/lib/canvas-ui/glassConfig.ts')
 const glassVendor = read('src/lib/canvas-ui/vendor/Glass/GlassVanilla.ts')
+const workGlassCoordinator = read('src/lib/canvas-ui/workGlassCoordinator.ts')
 const canvasSurfaceSlots = read('src/lib/canvas-ui/canvasSurfaceSlots.ts')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
 const scrollExpand = read('src/components/ScrollExpand.tsx')
@@ -220,7 +225,7 @@ for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
 for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
-for (const token of ['retainFallbackUntilReady', 'failureCount', "addEventListener('canvas-ui:invalidate'", 'initialImagesReady', '1600']) {
+for (const token of ['retainFallbackUntilReady', 'failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', '1600']) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
 }
 for (const token of ['canvas-ui-html--retained-fallback', "data-canvas-ui-state='loading'", "data-canvas-ui-state='active'", 'visibility: hidden']) {
@@ -237,8 +242,8 @@ for (const token of ['size: 140', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflec
 for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', 'ggx', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
   if (!glassVendor.includes(token)) throw new Error(`Vendored Glass is missing ${token}.`)
 }
-for (const token of ['onPointerMove', 'onPointerLeave', 'onScroll', 'paintable.requestPaint!()']) {
-  if (!glassVendor.includes(token)) throw new Error(`Project Glass capture invalidation is missing ${token}.`)
+for (const token of ['subscribePointer', 'getPointerSnapshot', 'continuityStates', 'persistContinuity', 'paintable.requestPaint!()']) {
+  if (!glassVendor.includes(token)) throw new Error(`Project Glass continuous pointer lifecycle is missing ${token}.`)
 }
 if (glassVendor.includes('interaction = content')) {
   throw new Error('Glass pointer mapping must remain attached to its captured content subtree.')
@@ -249,8 +254,20 @@ for (const token of ['ProjectGlassSurface', 'glassReady', 'glassSuppressed', 'gl
 for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data-glass-target']) {
   if (!projects.includes(token)) throw new Error(`Project Glass overview discovery is missing ${token}.`)
 }
-for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="35% 0px"', 'surfaceId', 'retainFallbackUntilReady', 'preloadProjectGlass']) {
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="35% 0px"', 'surfaceId', 'retainFallbackUntilReady', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
+}
+for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemove'", "addEventListener('scroll'", 'elementFromPoint', 'portfolio:iframe-pointer']) {
+  if (!pointerCoordinator.includes(token)) throw new Error(`Shared pointer coordinator is missing ${token}.`)
+}
+for (const token of ['subscribePointer', 'is-over-glass']) {
+  if (!cursor.includes(token)) throw new Error(`Cursor must share Work Glass pointer state: ${token}.`)
+}
+for (const token of ['selectWorkGlassSurface', 'directTarget', 'verticalDistance', 'subscribeWorkGlassSelection', 'registerWorkGlassSurface']) {
+  if (!workGlassCoordinator.includes(token)) throw new Error(`Work Glass chapter arbitration is missing ${token}.`)
+}
+for (const token of ['findProjectReturnImage', 'setGlassSuppressed(true)', 'requestPointerHitTest', 'onComplete: resumeGlass']) {
+  if (!projects.includes(token)) throw new Error(`Work Glass case-study handoff is missing ${token}.`)
 }
 for (const token of ['setRevealState', "'.project-glass--overview'", "'.project-glass--card'", 'onEnterBack', "new Event('canvas-ui:invalidate')"]) {
   if (!projects.includes(token)) throw new Error(`Projects reveal state must survive Glass subtree replacement: ${token}.`)
