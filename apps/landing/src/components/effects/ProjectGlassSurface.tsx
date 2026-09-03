@@ -40,7 +40,6 @@ export default function ProjectGlassSurface({
       options={PROJECT_GLASS_CONFIG}
       loadFactory={loadGlass}
       onActiveChange={reportActive}
-      preserveDom
       renderMargin="25% 0px"
       mountMargin="0px"
     >

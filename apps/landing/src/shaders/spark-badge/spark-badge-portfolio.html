@@ -29,6 +29,8 @@ const runtimeControls = {
   turbulence: 1,
   spread: 1
 };
+let renderActive = true;
+let renderFrame = 0;
 window.__sparkBadgeControls = runtimeControls;
 const reflectControls = () => {
   document.documentElement.dataset.sparkControls = JSON.stringify(runtimeControls);
@@ -513,6 +515,18 @@ function applyParticleCounts(){
 
 addEventListener('message', event => {
   if (!event.data) return;
+  if (event.data.type === 'spark-badge-activity') {
+    renderActive = event.data.active !== false;
+    last = 0;
+    if (renderActive) {
+      render();
+      scheduleFrame();
+    } else if (renderFrame) {
+      cancelAnimationFrame(renderFrame);
+      renderFrame = 0;
+    }
+    return;
+  }
   if (event.data.type === 'spark-badge-step') {
     const d = Number.isFinite(event.data.delta) ? Math.max(0, Math.min(0.1, event.data.delta)) : 1/30;
     CT += d;
@@ -841,8 +855,14 @@ function render(){
   flush();
 }
 
+function scheduleFrame(){
+  if (!renderActive || renderFrame) return;
+  renderFrame = requestAnimationFrame(frame);
+}
+
 function frame(ts){
-  requestAnimationFrame(frame);
+  renderFrame = 0;
+  if (!renderActive) return;
   if (!last) last = ts;
   let dt = (ts - last)/1000; last = ts;
   if (dt > 0.1) dt = 0.1;
@@ -861,6 +881,7 @@ function frame(ts){
     if (avg > 0.022){ slowRun++; if (slowRun >= 2){ NF = Math.max(1100, (NF*0.85)|0); NR = Math.max(240, (NR*0.9)|0); NW = Math.max(260, (NW*0.9)|0); slowRun = 0; } }
     else slowRun = 0;
   }
+  scheduleFrame();
 }
 
 function flush(){
@@ -905,7 +926,7 @@ if (params.get('debug') === 'mask'){                  // silhouette check while 
   // should never be sitting on an empty canvas when it comes into view
   prewarm();
   render();
-  requestAnimationFrame(frame);
+  scheduleFrame();
 }
 window.__ready = true;
 })();

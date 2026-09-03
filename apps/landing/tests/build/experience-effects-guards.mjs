@@ -165,6 +165,11 @@ if (workTransitionStyle.includes('mask-image: radial-gradient(ellipse 72% 76%'))
 for (const token of ['media="print"', 'bridge-ready', 'pointer-bridge', 'portfolio:iframe-pointer', 'syncPendingFrame', 'escapeHtml(safeText)']) {
   if (!liquidMetalButton.includes(token)) throw new Error(`Liquid Metal runtime must avoid a blank font-blocked entrance: ${token}`)
 }
+for (const token of ['keepMounted', 'spark-badge-activity', 'postActivity(active)']) {
+  if (!workTransition.includes(token) && !read('src/shaders/spark-badge/SparkBadge.tsx').includes(token)) {
+    throw new Error(`Stack → Work must preload and pause its right-side Spark resource: ${token}`)
+  }
+}
 if (workTransition.includes('cursorLabel=')) {
   throw new Error('The Liquid Metal CTA animation must carry focus without a competing cursor label.')
 }
@@ -205,14 +210,22 @@ for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFl
 for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
   if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
 }
-for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'preserveDom', 'MutationObserver']) {
+for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
+}
+for (const forbidden of ['preserveDom', 'captureRef', 'MutationObserver']) {
+  if (canvasHtmlSurface.includes(forbidden)) {
+    throw new Error(`Canvas UI effects must capture and interact with the same live subtree: ${forbidden}`)
+  }
 }
 for (const token of ['size: 140', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflection: 1.12', 'shine: 0.14', 'zoom: 1.5', 'follow: 0.2', "targets: '[data-glass-target]'"]) {
   if (!glassConfig.includes(token)) throw new Error(`Project Glass must retain its source-backed dark-page profile token ${token}.`)
 }
 for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', 'ggx', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
   if (!glassVendor.includes(token)) throw new Error(`Vendored Glass is missing ${token}.`)
+}
+if (glassVendor.includes('interaction = content')) {
+  throw new Error('Glass pointer mapping must remain attached to its captured content subtree.')
 }
 for (const token of ['ProjectGlassSurface', 'glassReady', 'glassSuppressed', 'glassActive']) {
   if (!projects.includes(token)) throw new Error(`Projects Glass handoff is missing ${token}.`)
@@ -222,9 +235,6 @@ for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data
 }
 for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="0px"', 'surfaceId']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
-}
-if (!glassSurface.includes('preserveDom')) {
-  throw new Error('Project Glass must remain an overlay enhancement and never replace the live Work DOM.')
 }
 for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot']) {
   if (!canvasSurfaceSlots.includes(token)) throw new Error(`Canvas surface slot governor is missing ${token}.`)
@@ -338,6 +348,9 @@ if (soundtrackBytes > 700_000) throw new Error(`SciScope soundtrack exceeds 700 
 const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')
 if (!sparkPortfolio.includes("set('particleAmount', 0.08, 1.4)")) {
   throw new Error('The portfolio Spark adapter must retain its controllable chapter-density range.')
+}
+for (const token of ['spark-badge-activity', 'renderActive', 'scheduleFrame()', 'cancelAnimationFrame(renderFrame)']) {
+  if (!sparkPortfolio.includes(token)) throw new Error(`The warmed Spark scene must pause cleanly offscreen: ${token}`)
 }
 const skillsIndex = registry.indexOf("id: 'skills'")
 const transitionIndex = registry.indexOf("id: 'work-transition'")

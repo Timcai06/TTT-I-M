@@ -50,7 +50,8 @@ function controlsForProgress(progress: number, mobile: boolean): SparkControls {
 /**
  * Stack → Work 的无导航叙事桥。Spark Badge 只在这一章形成浏览器轮廓，
  * 三段文案由同一条滚动时间轴连续驱动；Liquid Metal Button 是唯一交互终点。
- * 两个 ThreeUI renderer 都保留原始 iframe 隔离、offscreen unmount 和源码算法。
+ * 两个 ThreeUI renderer 都保留原始 iframe 隔离和源码算法；右侧 Spark 在章节
+ * 抵达前完成初始化，离屏时只暂停帧循环，避免第一段叙事等待资源冷启动。
  */
 export default function WorkTransition() {
   const root = useRef<HTMLElement>(null)
@@ -285,6 +286,7 @@ export default function WorkTransition() {
           <div className="work-transition__spark" aria-hidden="true">
             <SparkBadge
               variant="browser"
+              keepMounted
               sourceUrl={sparkBadgeUrl}
               speed={initialControls.speed}
               particleAmount={initialControls.particleAmount}

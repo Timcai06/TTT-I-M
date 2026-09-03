@@ -5,6 +5,7 @@ export type SparkBadgeVariant = "badge" | "browser" | "iphone" | "studio-display
 
 export type SparkBadgeProps = {
   className?: string;
+  keepMounted?: boolean;
   particleAmount?: number;
   rainAmount?: number;
   sourceUrl?: string;
@@ -43,6 +44,7 @@ const VARIANT_TITLES: Record<SparkBadgeVariant, string> = {
 
 export function SparkBadge({
   className = "",
+  keepMounted = false,
   particleAmount = SPARK_BADGE_DEFAULTS.particleAmount,
   rainAmount = SPARK_BADGE_DEFAULTS.rainAmount,
   sourceUrl = "/spark-badge.html",
@@ -55,6 +57,7 @@ export function SparkBadge({
   const hostRef = useRef<HTMLDivElement>(null);
   const intersectsRef = useRef(true);
   const [mounted, setMounted] = useState(true);
+  const [active, setActive] = useState(true);
   const [ready, setReady] = useState(false);
   const frameSource = sourceForVariant(sourceUrl, variant);
   const safeSpeed = clamp(speed, 0, 2);
@@ -74,17 +77,28 @@ export function SparkBadge({
       },
     }, "*");
   }, [safeParticleAmount, safeRainAmount, safeSpeed, safeSpread, safeTurbulence]);
+  const postActivity = useCallback((nextActive: boolean) => {
+    iframeRef.current?.contentWindow?.postMessage({
+      type: "spark-badge-activity",
+      active: nextActive,
+    }, "*");
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
-    const sync = () => setMounted(intersectsRef.current && document.visibilityState !== "hidden");
+    const sync = () => {
+      const nextActive = intersectsRef.current && document.visibilityState !== "hidden";
+      setActive(nextActive);
+      setMounted(keepMounted || nextActive);
+      postActivity(nextActive);
+    };
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry) return;
       intersectsRef.current = entry.isIntersecting;
       sync();
-    }, { rootMargin: "80px" });
+    }, { rootMargin: keepMounted ? "140% 0px" : "80px" });
 
     observer.observe(host);
     document.addEventListener("visibilitychange", sync);
@@ -92,7 +106,7 @@ export function SparkBadge({
       observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
     };
-  }, []);
+  }, [keepMounted, postActivity]);
 
   useEffect(() => {
     if (!mounted) setReady(false);
@@ -108,7 +122,7 @@ export function SparkBadge({
     <div
       ref={hostRef}
       className={`spark-badge${className ? ` ${className}` : ""}`}
-      data-state={!mounted ? "paused" : ready ? "ready" : "loading"}
+      data-state={!mounted || !active ? "paused" : ready ? "ready" : "loading"}
       data-variant={variant}
     >
       {mounted ? (
@@ -121,6 +135,7 @@ export function SparkBadge({
           loading="eager"
           onLoad={() => {
             postControls();
+            postActivity(active);
             setReady(true);
           }}
         />
