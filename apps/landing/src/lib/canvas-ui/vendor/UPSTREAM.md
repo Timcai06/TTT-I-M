@@ -30,8 +30,10 @@ changes are deliberately limited to:
   idempotent destroy, and pause/resume hooks. Glass additionally consumes the
   landing's frame-coalesced pointer coordinator, preserves kinematics while the
   Work controller hands capture between project surfaces, and requests a new
-  HTML capture when the semantic hover target changes. Its shader, render
-  passes, optical defaults and HTML capture path remain upstream.
+  HTML capture when the semantic hover target changes. Work additionally maps
+  each local capture into a viewport-sized output so the lens is not clipped by
+  project boxes. The refraction model, render passes, optical defaults and HTML
+  capture path remain upstream.
 
 The horizontal Bend adapter does not modify the vendored engine. Its Shader is
 a direct X-axis port of the upstream rounded 40-sample fold solver.

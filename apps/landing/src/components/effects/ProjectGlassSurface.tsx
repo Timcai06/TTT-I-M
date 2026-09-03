@@ -24,6 +24,8 @@ const loadGlass = async (): Promise<CanvasUiHtmlFactory<GlassOptions>> => {
   return (elements, options) => createGlass(elements, {
     ...options,
     continuityKey: 'work-project-glass',
+    viewportOutput: true,
+    scopeSelector: '#projects',
   })
 }
 
@@ -77,7 +79,7 @@ export default function ProjectGlassSurface({
       onHostChange={bindHost}
       retainFallbackUntilReady
       renderMargin="25% 0px"
-      mountMargin="35% 0px"
+      mountMargin="220% 0px"
     >
       {children}
     </CanvasUiHtmlSurface>

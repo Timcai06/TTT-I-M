@@ -25,6 +25,7 @@ const required = [
   'src/components/effects/ProjectGlassSurface.tsx',
   'src/lib/canvas-ui/canvasSurfaceSlots.ts',
   'src/lib/canvas-ui/workGlassCoordinator.ts',
+  'src/lib/canvas-ui/vendor/Glass/viewportGeometry.ts',
   'src/lib/pointerCoordinator.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
   'src/shaders/liquid-metal-button/liquid-metal-button.html',
@@ -242,7 +243,7 @@ for (const token of ['size: 140', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflec
 for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', 'ggx', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
   if (!glassVendor.includes(token)) throw new Error(`Vendored Glass is missing ${token}.`)
 }
-for (const token of ['subscribePointer', 'getPointerSnapshot', 'continuityStates', 'persistContinuity', 'paintable.requestPaint!()']) {
+for (const token of ['subscribePointer', 'getPointerSnapshot', 'continuityStates', 'persistContinuity', 'resolveGlassSourceGeometry', 'uSourceOrigin', 'uSourceResolution', 'scopeSelector', 'float body =', 'paintable.requestPaint!()']) {
   if (!glassVendor.includes(token)) throw new Error(`Project Glass continuous pointer lifecycle is missing ${token}.`)
 }
 if (glassVendor.includes('interaction = content')) {
@@ -254,7 +255,15 @@ for (const token of ['ProjectGlassSurface', 'glassReady', 'glassSuppressed', 'gl
 for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data-glass-target']) {
   if (!projects.includes(token)) throw new Error(`Project Glass overview discovery is missing ${token}.`)
 }
-for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="35% 0px"', 'surfaceId', 'retainFallbackUntilReady', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
+const overviewSurfaceStart = projects.indexOf('surfaceId="project-overview"')
+const overviewSurfaceEnd = projects.indexOf('</ProjectGlassSurface>', overviewSurfaceStart)
+for (const token of ['projects__header', '<ProjectsBento />']) {
+  const position = projects.indexOf(token, overviewSurfaceStart)
+  if (position < overviewSurfaceStart || position > overviewSurfaceEnd) {
+    throw new Error(`Project Glass overview must capture the complete Work opening: ${token}.`)
+  }
+}
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'retainFallbackUntilReady', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
 }
 for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemove'", "addEventListener('scroll'", 'elementFromPoint', 'portfolio:iframe-pointer']) {
@@ -263,7 +272,7 @@ for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemov
 for (const token of ['subscribePointer', 'is-over-glass']) {
   if (!cursor.includes(token)) throw new Error(`Cursor must share Work Glass pointer state: ${token}.`)
 }
-for (const token of ['selectWorkGlassSurface', 'directTarget', 'verticalDistance', 'subscribeWorkGlassSelection', 'registerWorkGlassSurface']) {
+for (const token of ['selectWorkGlassSurface', 'directTarget', 'verticalDistance', 'retainCurrentAcrossGap', 'withinWork', 'subscribeWorkGlassSelection', 'registerWorkGlassSurface']) {
   if (!workGlassCoordinator.includes(token)) throw new Error(`Work Glass chapter arbitration is missing ${token}.`)
 }
 for (const token of ['findProjectReturnImage', 'setGlassSuppressed(true)', 'requestPointerHitTest', 'onComplete: resumeGlass']) {
@@ -277,6 +286,9 @@ if (!projectsIntroStyle.includes('.project-glass--overview.is-visible .bento-glo
 }
 for (const token of ['.project-glass--card.is-visible .project-card', '.project-glass--card.is-visible .media-frame']) {
   if (!projectsCardStyle.includes(token)) throw new Error(`Project cards must inherit stable Glass reveal state: ${token}.`)
+}
+for (const token of [".project-glass[data-canvas-ui-state='active']", '.project-glass > .canvas-ui-html__output', 'position: fixed', 'width: 100vw', 'height: 100svh']) {
+  if (!projectsCardStyle.includes(token)) throw new Error(`Project Glass viewport continuity is missing ${token}.`)
 }
 for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot']) {
   if (!canvasSurfaceSlots.includes(token)) throw new Error(`Canvas surface slot governor is missing ${token}.`)

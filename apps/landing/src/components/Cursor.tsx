@@ -138,7 +138,7 @@ export default function Cursor() {
       setInteractive(findTarget(pointer.target), pointer.clientX, pointer.clientY)
       el.classList.toggle(
         'is-over-glass',
-        Boolean(pointer.target?.closest('.project-glass[data-canvas-ui-state="active"]')),
+        Boolean(pointer.target?.closest('.projects[data-work-glass-active="true"]')),
       )
     }
     const unsubscribePointer = subscribePointer(onPointer)

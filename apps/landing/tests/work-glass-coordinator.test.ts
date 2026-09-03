@@ -52,6 +52,26 @@ void test('a short inter-project gap preserves the current optical surface', () 
   ), 'overview')
 })
 
+void test('handoff waits until the lens clears the outgoing project boundary', () => {
+  assert.equal(selectWorkGlassSurface(
+    [overview, project],
+    { clientX: 500, clientY: 620, hasMoved: true, active: true },
+    1200,
+    900,
+    'overview',
+    'project',
+  ), 'overview')
+
+  assert.equal(selectWorkGlassSurface(
+    [overview, project],
+    { clientX: 500, clientY: 700, hasMoved: true, active: true },
+    1200,
+    900,
+    'overview',
+    'project',
+  ), 'project')
+})
+
 void test('before the first pointer move the dominant viewport surface prewarms', () => {
   assert.equal(selectWorkGlassSurface(
     [
@@ -63,4 +83,19 @@ void test('before the first pointer move the dominant viewport surface prewarms'
     900,
     null,
   ), 'project')
+})
+
+void test('Work keeps the current optical source across an intentional interlude', () => {
+  assert.equal(selectWorkGlassSurface(
+    [
+      { ...overview, top: -1500, bottom: -900 },
+      { ...project, top: 1400, bottom: 2000 },
+    ],
+    { clientX: 600, clientY: 450, hasMoved: true, active: true },
+    1200,
+    900,
+    'overview',
+    null,
+    true,
+  ), 'overview')
 })

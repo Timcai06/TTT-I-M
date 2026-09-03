@@ -20,6 +20,7 @@ let selectedId: string | null = null
 let pointerCleanup: (() => void) | null = null
 let selectionFrame = 0
 let latestPointer = getPointerSnapshot()
+const HANDOFF_RADIUS = 140
 
 function verticalDistance(rect: WorkGlassCandidateRect, y: number): number {
   if (y < rect.top) return rect.top - y
@@ -38,18 +39,38 @@ export function selectWorkGlassSurface(
   viewportHeight: number,
   currentId: string | null,
   directTargetId: string | null = null,
+  retainCurrentAcrossGap = false,
 ): string | null {
   const visible = entries.filter((entry) => (
     entry.right > 0
     && entry.left < viewportWidth
     && intersectionHeight(entry, viewportHeight) > 0
   ))
-  if (visible.length === 0) return null
+  if (visible.length === 0) {
+    return retainCurrentAcrossGap && entries.some((entry) => entry.id === currentId)
+      ? currentId
+      : null
+  }
+
+  const pointerIsActive = pointer.hasMoved && pointer.active
+  const current = visible.find((entry) => entry.id === currentId)
+  const pointerInsideCurrent = Boolean(current && pointerIsActive
+    && pointer.clientX >= current.left
+    && pointer.clientX <= current.right
+    && pointer.clientY >= current.top
+    && pointer.clientY <= current.bottom)
+  if (
+    directTargetId
+    && directTargetId !== currentId
+    && current
+    && !pointerInsideCurrent
+    && verticalDistance(current, pointer.clientY) <= HANDOFF_RADIUS
+  ) return current.id
 
   if (directTargetId && visible.some((entry) => entry.id === directTargetId)) return directTargetId
 
-  const pointerY = pointer.hasMoved && pointer.active ? pointer.clientY : viewportHeight / 2
-  if (pointer.hasMoved && pointer.active) {
+  const pointerY = pointerIsActive ? pointer.clientY : viewportHeight / 2
+  if (pointerIsActive) {
     const containing = visible.find((entry) => (
       pointer.clientX >= entry.left
       && pointer.clientX <= entry.right
@@ -59,8 +80,7 @@ export function selectWorkGlassSurface(
     if (containing) return containing.id
   }
 
-  const current = visible.find((entry) => entry.id === currentId)
-  if (current && verticalDistance(current, pointerY) <= 72) return current.id
+  if (current && verticalDistance(current, pointerY) <= HANDOFF_RADIUS) return current.id
 
   return visible
     .map((entry) => ({
@@ -85,11 +105,29 @@ function flushSelection(): void {
     ?.closest<HTMLElement>('[data-work-glass-surface]')
     ?.dataset.workGlassSurface ?? null
   // Pointer hit-testing already proves that this surface occupies the current
-  // viewport point. Keep the hot path free of list-wide layout reads.
+  // viewport point. Read at most the outgoing surface before switching so its
+  // viewport lens can become a clean rim instead of being torn down at the
+  // exact DOM boundary; this keeps the hot path free of list-wide layout reads.
   if (directTarget && candidates.has(directTarget)) {
+    const currentElement = selectedId ? candidates.get(selectedId) : null
+    if (currentElement && selectedId !== directTarget) {
+      const rect = currentElement.getBoundingClientRect()
+      const outsideCurrent = latestPointer.clientX < rect.left
+        || latestPointer.clientX > rect.right
+        || latestPointer.clientY < rect.top
+        || latestPointer.clientY > rect.bottom
+      if (outsideCurrent && verticalDistance({
+        id: selectedId as string,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+      }, latestPointer.clientY) <= HANDOFF_RADIUS) return
+    }
     emitSelection(directTarget)
     return
   }
+  const withinWork = Boolean(latestPointer.target?.closest('#projects'))
   const entries: WorkGlassCandidateRect[] = Array.from(candidates, ([id, element]) => {
     const rect = element.getBoundingClientRect()
     return { id, top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right }
@@ -101,6 +139,7 @@ function flushSelection(): void {
     window.innerHeight,
     selectedId,
     directTarget,
+    withinWork,
   ))
 }
 

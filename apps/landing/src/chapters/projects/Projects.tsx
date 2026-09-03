@@ -138,7 +138,12 @@ export default function Projects() {
   }, [activeCaseStudy])
 
   return (
-    <section className="section projects container" id="projects" ref={root}>
+    <section
+      className="section projects container"
+      id="projects"
+      ref={root}
+      data-work-glass-active={glassActive}
+    >
       <ProjectsIntro
         laserActive={laserActive}
         laserHandle={laserHandle}

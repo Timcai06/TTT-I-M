@@ -1,6 +1,10 @@
 // @ts-nocheck -- vendored upstream source is intentionally kept on its original compiler contract.
 import { createRectCache } from "../rect-cache";
 import {
+  glassRectContains,
+  resolveGlassSourceGeometry,
+} from "./viewportGeometry";
+import {
   getPointerSnapshot,
   subscribePointer,
   type PointerSnapshot,
@@ -42,6 +46,10 @@ export interface GlassOptions {
   follow?: number;
   /** Optional shared kinematic channel used to preserve motion between surfaces. */
   continuityKey?: string;
+  /** Render the optical result in a viewport-sized canvas instead of the source bounds. */
+  viewportOutput?: boolean;
+  /** Ancestor that owns pointer presence while using a viewport-sized output. */
+  scopeSelector?: string;
 }
 
 export interface GlassElements {
@@ -85,6 +93,8 @@ const DEFAULTS: Required<GlassOptions> = {
   targets: "[data-glass-target]",
   follow: 0.2,
   continuityKey: "",
+  viewportOutput: false,
+  scopeSelector: "",
 };
 
 interface GlassContinuityState {
@@ -118,8 +128,11 @@ precision highp float;
 out vec4 outColor;
 uniform sampler2D uContent;
 uniform vec2 uResolution;
+uniform vec2 uSourceOrigin;
+uniform vec2 uSourceResolution;
 uniform float uMaxX;
 uniform float uHasContent;
+uniform float uClipToContent;
 uniform vec2 uCenter;
 uniform vec2 uHalf;
 uniform float uCorner;
@@ -154,7 +167,7 @@ float ign (vec2 v) {
 }
 
 vec3 page (vec2 px, float lod) {
-  vec2 uv = px / uResolution;
+  vec2 uv = (px - uSourceOrigin) / uSourceResolution;
   uv.x = clamp(uv.x, 0.0005, uMaxX - 0.0005);
   uv.y = clamp(uv.y, 0.0005, 0.9995);
   return pow(textureLod(uContent, vec2(uv.x, 1.0 - uv.y), lod).rgb, vec3(2.2));
@@ -203,8 +216,8 @@ void main () {
 
   float aa = 1.5;
   float mask = 1.0 - smoothstep(-aa, 0.0, sd);
-  float alpha = mask * uAlpha
-    * (1.0 - step(uMaxX, fragPx.x / uResolution.x));
+  float contentClip = 1.0 - step(uMaxX, fragPx.x / uResolution.x);
+  float alpha = mask * uAlpha * mix(1.0, contentClip, uClipToContent);
 
   float minHalf = min(uHalf.x, uHalf.y);
   float edgeW = max(minHalf * (1.0 - clamp(uEdge, 0.0, 0.98)), 1.0);
@@ -226,8 +239,10 @@ void main () {
     float band = pow(rim, 1.8);
     float arcs = pow(abs(ldot), 3.0) * (ldot > 0.0 ? 0.5 : 0.28);
     float shine = band * (0.04 + arcs) * max(uShine, 0.5);
-    float a = alpha * clamp(0.06 + 0.12 * rim, 0.0, 1.0);
-    outColor = vec4(vec3(shine * 1.6) * alpha, a);
+    float body = 0.018 + 0.024 * (1.0 - rim);
+    float a = alpha * clamp(0.1 + 0.12 * rim, 0.0, 1.0);
+    vec3 tint = vec3(0.72, 0.82, 0.9) * body;
+    outColor = vec4((tint + vec3(shine * 1.6)) * alpha, a);
     return;
   }
 
@@ -399,7 +414,7 @@ export function createGlass(
     }
     contentMaxX = Math.min(
       1,
-      Math.max(0.05, content.clientWidth / Math.max(output.clientWidth, 1)),
+      Math.max(0.05, content.clientWidth / Math.max(source.clientWidth, 1)),
     );
     if (htmlInCanvas) {
       const cssWidth = Math.max(1, Math.round(source.clientWidth));
@@ -429,14 +444,17 @@ export function createGlass(
     gl!.generateMipmap(gl!.TEXTURE_2D);
   }
 
-  const rectCache = createRectCache(output);
+  const outputRectCache = createRectCache(output);
+  const sourceRectCache = createRectCache(source);
+  const scopeElement = config.scopeSelector
+    ? output.closest(config.scopeSelector)
+    : null;
+  const scopeRectCache = scopeElement ? createRectCache(scopeElement) : outputRectCache;
   const initialPointer = getPointerSnapshot();
-  const initialRect = rectCache.current;
+  const initialRect = outputRectCache.current;
+  const initialScopeRect = scopeRectCache.current;
   const initialInside = initialPointer.hasMoved && initialPointer.active
-    && initialPointer.clientX >= initialRect.left
-    && initialPointer.clientX <= initialRect.right
-    && initialPointer.clientY >= initialRect.top
-    && initialPointer.clientY <= initialRect.bottom;
+    && glassRectContains(initialScopeRect, initialPointer.clientX, initialPointer.clientY);
   const continuity = config.continuityKey
     ? continuityStates.get(config.continuityKey)
     : undefined;
@@ -458,7 +476,7 @@ export function createGlass(
 
   function persistContinuity() {
     if (!config.continuityKey) return;
-    const rect = rectCache.current;
+    const rect = outputRectCache.current;
     continuityStates.set(config.continuityKey, {
       viewportX: posX + rect.left,
       viewportY: posY + rect.top,
@@ -479,6 +497,9 @@ export function createGlass(
   function render() {
     uploadContent();
     const dpr = output.width / Math.max(output.clientWidth, 1);
+    const outputRect = outputRectCache.current;
+    const sourceRect = sourceRectCache.current;
+    const sourceGeometry = resolveGlassSourceGeometry(outputRect, sourceRect, dpr);
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
     gl!.viewport(0, 0, output.width, output.height);
     gl!.disable(gl!.SCISSOR_TEST);
@@ -512,8 +533,28 @@ export function createGlass(
     gl!.bindTexture(gl!.TEXTURE_2D, contentTexture);
     gl!.uniform1i(uniforms.uContent, 0);
     gl!.uniform2f(uniforms.uResolution, output.width, output.height);
+    gl!.uniform2f(
+      uniforms.uSourceOrigin,
+      sourceGeometry.originX,
+      sourceGeometry.originY,
+    );
+    gl!.uniform2f(
+      uniforms.uSourceResolution,
+      sourceGeometry.width,
+      sourceGeometry.height,
+    );
     gl!.uniform1f(uniforms.uMaxX, contentMaxX);
-    gl!.uniform1f(uniforms.uHasContent, htmlInCanvas ? 1 : 0);
+    const viewportX = outputRect.left + posX;
+    const viewportY = outputRect.top + posY;
+    const lensHasSource = glassRectContains(
+      sourceRect,
+      viewportX,
+      viewportY,
+      halfW,
+      halfH,
+    );
+    gl!.uniform1f(uniforms.uHasContent, htmlInCanvas && lensHasSource ? 1 : 0);
+    gl!.uniform1f(uniforms.uClipToContent, config.viewportOutput ? 0 : 1);
     gl!.uniform2f(uniforms.uCenter, cx, cy);
     gl!.uniform2f(uniforms.uHalf, halfW * dpr, halfH * dpr);
     const corner =
@@ -596,12 +637,10 @@ export function createGlass(
   start();
 
   function onPointer(pointer: PointerSnapshot) {
-    const rect = rectCache.current;
+    const rect = outputRectCache.current;
+    const scopeRect = scopeRectCache.current;
     const inside = pointer.hasMoved && pointer.active
-      && pointer.clientX >= rect.left
-      && pointer.clientX <= rect.right
-      && pointer.clientY >= rect.top
-      && pointer.clientY <= rect.bottom;
+      && glassRectContains(scopeRect, pointer.clientX, pointer.clientY);
     targetX = pointer.clientX - rect.left;
     targetY = pointer.clientY - rect.top;
     if (inside && !hasPointer) {
@@ -640,7 +679,7 @@ export function createGlass(
     visible = entries[entries.length - 1]?.isIntersecting ?? true;
     if (visible) start();
   });
-  intersection.observe(output);
+  intersection.observe(scopeElement ?? output);
 
   return {
     setOptions(next) {
@@ -672,7 +711,9 @@ export function createGlass(
       destroyed = true;
       persistContinuity();
       unsubscribePointer();
-      rectCache.destroy();
+      outputRectCache.destroy();
+      sourceRectCache.destroy();
+      if (scopeRectCache !== outputRectCache) scopeRectCache.destroy();
       cancelAnimationFrame(raf);
       observer.disconnect();
       intersection.disconnect();

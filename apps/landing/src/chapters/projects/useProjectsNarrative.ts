@@ -36,7 +36,7 @@ export function useProjectsNarrative(
       const bento = section.querySelector<HTMLElement>('.projects__bento')
       if (bentoSurface && bento) {
         ScrollTrigger.create({
-          trigger: bentoSurface,
+          trigger: bento,
           start: 'top 86%',
           onEnter: () => setRevealState(bentoSurface, true),
           onEnterBack: () => setRevealState(bentoSurface, true),
@@ -126,6 +126,10 @@ export function useProjectsNarrative(
 
     const settle = () => {
       intro.dataset.handoff = 'settled'
+      // A retained clip-path would become a containing clip for the fixed Work
+      // Glass output. Once the portal is complete, release that boundary before
+      // handing interaction to the chapter-wide optical plane.
+      content.style.removeProperty('clip-path')
       setLaserActive(false)
       setGlassReady(true)
     }

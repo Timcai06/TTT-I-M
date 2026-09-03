@@ -30,31 +30,31 @@ export default function ProjectsIntro({
       <div className="projects__intro-sticky">
         <ProjectLaser active={laserActive} handleRef={laserHandle} captureRef={portalContent} />
         <div className="projects__intro-content" ref={portalContent} data-project-laser-target>
-          <div className="projects__header">
-            <div className="projects__heading-wrap">
-              <div className="section__label">Work — 选作</div>
-              <MaskedHeading
-                className="projects__masked-heading"
-                text={'Six things I made\nin 2026.'}
-                sources={headingSources}
-                emphasis="I made"
-                fillScale={1.12}
-                parallax={18}
-                reveal="wipe"
-                trigger="view"
-              />
-            </div>
-            <p className="projects__header-side">
-              我不想把项目写成一张技术栈清单。每个仓库里都留着输入、运行结果、
-              踩过的坑和复现方法。
-            </p>
-          </div>
           <ProjectGlassSurface
             surfaceId="project-overview"
             variant="overview"
             enabled={glassEnabled}
             onActiveChange={onGlassActiveChange}
           >
+            <div className="projects__header">
+              <div className="projects__heading-wrap">
+                <div className="section__label">Work — 选作</div>
+                <MaskedHeading
+                  className="projects__masked-heading"
+                  text={'Six things I made\nin 2026.'}
+                  sources={headingSources}
+                  emphasis="I made"
+                  fillScale={1.12}
+                  parallax={18}
+                  reveal="wipe"
+                  trigger="view"
+                />
+              </div>
+              <p className="projects__header-side">
+                我不想把项目写成一张技术栈清单。每个仓库里都留着输入、运行结果、
+                踩过的坑和复现方法。
+              </p>
+            </div>
             <ProjectsBento />
           </ProjectGlassSurface>
         </div>
