@@ -41,7 +41,7 @@ tests/build/ platform-guards.mjs（跨 workspace 守卫）
 
 ## 🎯 面向未来的开发指南
 1. **新增章节（landing）**：只改 `apps/landing/src/chapters/registry.ts`，导航/进度轨/锚点自动处理。
-2. **新增动效**：懒加载 DOM 的滚动特效务必用 `onChaptersReady` + `gsap.context()`，避免生命周期泄漏。
+2. **新增动效**：React 内的 GSAP 动画使用有 scope 的 `useGSAP()`；HTML-in-Canvas 效果复用 `CanvasUiHtmlSurface`，避免生命周期和 context 预算分叉。
 3. **高渲染开销组件**：复用 `lib/webgl/useGLSurface`（IntersectionObserver mount/pause）+
    `lib/webgl/quality` 设备分级，离屏即掐断。
 4. **内容（studio）**：组件只认 `@timcai/content` 的 repository 接口，绝不直连数据文件；

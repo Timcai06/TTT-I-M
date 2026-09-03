@@ -1,6 +1,7 @@
 import { Fragment, lazy, Suspense, useCallback, useRef, useState } from 'react'
 import { projects, type Project, type ProjectShot } from '../../content'
 import SciScopeFilm from '../../components/SciScopeFilm'
+import ProjectGlassSurface from '../../components/effects/ProjectGlassSurface'
 import { requestParticlePortal } from '../../lib/particlePortal'
 import ProjectCard from './ProjectCard'
 import ProjectsIntro from './ProjectsIntro'
@@ -47,7 +48,16 @@ function isVisibleImage(image: HTMLImageElement | null): image is HTMLImageEleme
 export default function Projects() {
   const root = useRef<HTMLElement>(null)
   const [activeCaseStudy, setActiveCaseStudy] = useState<ActiveCaseStudy | null>(null)
-  const { laserActive, laserHandle } = useProjectsNarrative(root)
+  const [glassActive, setGlassActive] = useState(false)
+  const [glassSuppressed, setGlassSuppressed] = useState(false)
+  const activeGlassSurfaces = useRef(new Set<string>())
+  const { laserActive, laserHandle, glassReady } = useProjectsNarrative(root, glassActive)
+  const changeGlassActive = useCallback((surfaceId: string, active: boolean) => {
+    const surfaces = activeGlassSurfaces.current
+    if (active) surfaces.add(surfaceId)
+    else surfaces.delete(surfaceId)
+    setGlassActive(surfaces.size > 0)
+  }, [])
   const openCaseStudy = useCallback((
     project: Project,
     trigger: HTMLButtonElement,
@@ -56,6 +66,7 @@ export default function Projects() {
     void import('./ProjectCaseContent')
     const heroShot = resolveHeroShot(project, sourceImage)
     if (!heroShot) return
+    setGlassSuppressed(true)
 
     const commit = () => {
       setActiveCaseStudy({ project, trigger, sourceImage, heroShot, open: true, closing: false })
@@ -115,12 +126,19 @@ export default function Projects() {
       <ProjectsIntro laserActive={laserActive} laserHandle={laserHandle} />
 
       <div className="projects__list">
-        {projects.map((project) => (
+        {projects.map((project, index) => (
           <Fragment key={project.id}>
-            <ProjectCard
-              project={project}
-              onOpenCaseStudy={openCaseStudy}
-            />
+            <ProjectGlassSurface
+              surfaceId={project.id}
+              enabled={glassReady && !glassSuppressed}
+              onActiveChange={changeGlassActive}
+            >
+              <ProjectCard
+                project={project}
+                alternate={index % 2 === 1}
+                onOpenCaseStudy={openCaseStudy}
+              />
+            </ProjectGlassSurface>
             {project.id === 'sciscope' ? <SciScopeFilm /> : null}
           </Fragment>
         ))}
@@ -135,7 +153,10 @@ export default function Projects() {
             open={activeCaseStudy.open}
             onOpenChange={changeCaseStudyOpen}
             onOpenChangeComplete={(open) => {
-              if (!open) setActiveCaseStudy(null)
+              if (!open) {
+                setActiveCaseStudy(null)
+                setGlassSuppressed(false)
+              }
             }}
           />
         </Suspense>

@@ -8,7 +8,7 @@ This portfolio does not use a traditional router (like `react-router`). Instead,
 
 ## Module Responsibilities
 - **Loader**: The entry point of the site. Blocks the initial render until critical assets (fonts, hero images, essential 3D textures) are preloaded to prevent FOUC (Flash of Unstyled Content).
-- **Hero & About**: High-performance areas carrying heavy Text / Particle interactions. These need tight lifecycle management.
+- **Hero & About**: Hero owns the eager portrait scene; About lazily mounts a source-pinned Canvas UI Decrypt Reveal over its identity dossier, then returns to semantic DOM evidence content.
 - **Frame**: Maps vertical scroll to a horizontal photography rail; supported Chromium can add the chapter-local horizontal Bend while stable browsers retain the real DOM and edge-blur fallback.
 - **Work**: Spatial 3D project archive or engineering-style grid.
 - **Navigation Transition**: Handles the physical "shutter" or "glass break" effect when jumping between chapters.
@@ -21,6 +21,7 @@ This portfolio does not use a traditional router (like `react-router`). Instead,
 - `src/core/narrative/` is the data-only contract for long scroll stories. `WORK_TRANSITION_NARRATIVE` owns the Stack → Work geometry, named phases, and explicit CTA release gate; the component/controller consumes it instead of duplicating thresholds.
 - `src/shared/effects/manifest.ts` records each optional visual's chapter, fallback, motion policy, GPU cost, and source/license boundary.
 - Canvas handles share `pause / resume / resize / destroy`; optional surfaces still acquire contexts through `contextRegistry` and release them when their chapter leaves.
+- Native HTML-in-Canvas effects share `components/effects/CanvasUiHtmlSurface.tsx`: it preserves semantic fallback DOM, waits for the first captured frame, pauses on visibility loss, releases distant contexts, and retries when context budget returns. Decrypt Reveal owns the About dossier; Glass starts only after the Work Laser handoff settles, captures one complete project card at a time through an exclusive surface slot, and is suspended for project dialogs.
 - `/lab` is development-only and dynamically imports `src/lab/VisualLab.tsx`. Production builds must not emit a Visual Lab chunk.
 
 ## Three.js / React Three Fiber (R3F) Lifecycle
@@ -39,7 +40,7 @@ Composition has a single source of truth (`chapters/registry.ts`); runtime phase
 
 ## WebGL Layer — `lib/webgl/`
 - `useGLSurface` — reusable dual-IntersectionObserver mount/pause lifecycle (extracted from ParticlePortrait).
-- `contextRegistry` — WebGL context budget; optional surfaces (transition field) call `canAcquire()` and skip when tight.
+- `contextRegistry` — WebGL context budget; optional surfaces call `canAcquire()` and can subscribe for a retry when another chapter releases capacity.
 - `textureCache` — ref-counted (last release disposes; preserves the unmount-frees-memory design).
 - `quality` — device-tier profile (deviceMemory / cores / coarse-pointer → high/medium/low) driving DPR, portrait segments, text targets, transition particles, context limit.
 

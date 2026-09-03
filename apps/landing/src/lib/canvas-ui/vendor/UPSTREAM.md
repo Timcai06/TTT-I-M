@@ -5,6 +5,12 @@
 - Imported: 2026-08-29
 - License: `LICENSE.md` in this directory
 
+Decrypt Reveal and Glass were added from the later pinned tree
+`a4b40d03ad92a6210af114df7a1900a2675fe288` on 2026-09-03:
+
+- `DecryptReveal/DecryptRevealVanilla.ts`
+- `Glass/GlassVanilla.ts`
+
 Vendored files preserve the upstream rendering pipelines. Local integration
 changes are deliberately limited to:
 
@@ -20,6 +26,9 @@ changes are deliberately limited to:
   point grid, stagger, drift, one-second intro and settle solver remain upstream.
 - `@ts-nocheck` headers because the application enables stricter indexed-access
   checks than the upstream build.
+- `DecryptRevealVanilla.ts` and `GlassVanilla.ts`: first-captured-frame callbacks,
+  idempotent destroy, and pause/resume hooks. Their shaders, render passes,
+  pointer solvers, defaults and HTML capture path remain upstream.
 
 The horizontal Bend adapter does not modify the vendored engine. Its Shader is
 a direct X-axis port of the upstream rounded 40-sample fold solver.

@@ -2,6 +2,7 @@
 @import './components/cursor.css' layer(primitives);
 @import './components/glitch-text.css' layer(primitives);
 @import './components/gradual-blur.css' layer(effects);
+@import './components/canvas-ui-surfaces.css' layer(effects);
 @import './components/staggered-section-menu.css' layer(primitives);
 @import './components/nav.css' layer(chapters);
 @import './components/signature-mark.css' layer(primitives);

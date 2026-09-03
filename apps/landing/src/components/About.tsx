@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
-import { gsap } from '../lib/gsap'
+import { useRef } from 'react'
+import { gsap, useGSAP } from '../lib/gsap'
 import { revealWords } from '../lib/wordReveal'
 import { facts } from '../content'
+import AboutDecryptReveal from './effects/AboutDecryptReveal'
 import CountUp from './CountUp'
 
 /** Split a fact value like `'10+'` into its leading number and trailing suffix. */
@@ -12,61 +13,32 @@ function parseFact(value: string): { to: number; suffix: string } {
 }
 
 /**
- * @description About 章节 —— 自述与工程叙事。内容分为左右两栏：
- *   左栏：标题逐行裂分入场 → 三段文字块 (Vision / Tech Stack / Manifesto)
- *         → 统计数字牌；暗房 grain 与排版本身承接背景层次
- *   右栏：圆角肖像框入场（一次性缓动，避免 scroll-scrub 的 border-radius repaint 开销）
- *         → Policy 哲学段落
+ * @description About 章节 —— 首屏身份档案由 Canvas UI Decrypt Reveal 解码，
+ *   下方真实 DOM 承担 Vision / Tech Stack / Manifesto / Facts 的连续阅读。
  *
  *   Manifesto 段落使用 `revealWords` 做逐字模糊→清晰 scrub reveal（CJK 感知 tokenizer），
  *   其余段落使用 GSAP fromTo 渐现。双向回退 (`toggleActions: 'play none none reverse'`)
  *   确保用户向上滚动时动画自然撤消。
  *
  * @dependencies
- *   - GSAP + ScrollTrigger + gsap.context (动画生命周期管理)
+ *   - GSAP + ScrollTrigger + useGSAP (动画生命周期管理)
  *   - `revealWords` (CJK 感知 word-by-word blur→clear scrub)
  *   - App 级静态 grain（About 不持有独立 WebGL 背景）
  *   - Tech 竖线使用自定义贝塞尔路径 (C 1,2,3,4...) strokeDashoffset scrubbing
  *
  * @performance / @caveats
- *   - 肖像框的 `borderRadius` tween 原先为 scroll-scrub，每 tick 触发 repaint (border-radius 无法 GPU 合成)。
- *     现在改为一次性进入缓动，repaint 仅发生一次（约 1.4s 内），视觉平滑度不变，性能提升显著
+ *   - 身份档案保持静态布局，避免 capture 期间同时运行标题位移与肖像 border-radius repaint
  *   - Tech 竖线使用 `strokeDashoffset` 驱动（非 filter/blur），仅操作 SVG 描边，GPU 友好
  *   - About 不再挂载独立 TextParticles canvas，避免与全局 Continuum 形成双 WebGL 粒子负载
  *
- * @steps
- *   step1: 标题逐行裂分 (split-line) 从下升起，stagger 0.12s
- *   step2: 各段落块逐个 fromTo 渐现，每块独立 ScrollTrigger
- *   step3: Manifesto 段落逐字 scrub reveal (blur→clear)
- *   step4: 统计牌 stagger 进场
- *   step5: 肖像框一次性 borderRadius 缓动 + 图片 scale 回缩
- *   step6: Tech 竖线路径 strokeDashoffset scrubbing (draws progressively)
+ * @steps Decrypt 首屏保持稳定 capture；下方段落、统计与 Tech 路径独立进入。
  */
 export default function About() {
   const root = useRef<HTMLElement>(null)
   const techPathRef = useRef<SVGPathElement>(null)
 
-  useEffect(() => {
+  useGSAP(() => {
     if (!root.current) return
-    const ctx = gsap.context(() => {
-      // Title stagger lines reveal
-      gsap.fromTo(
-        '.about__lead-line',
-        { yPercent: 100, skewY: 5 },
-        {
-          scrollTrigger: {
-            trigger: '.about__lead',
-            start: 'top 85%',
-            toggleActions: 'play none none reverse', // 双向回退触发
-          },
-          yPercent: 0,
-          skewY: 0,
-          duration: 1.8,
-          ease: 'expo.out',
-          stagger: 0.12,
-        }
-      )
-
       // Independent paragraph blocks reveal. The manifesto is excluded here —
       // it gets a word-level blur→clear reveal instead (see below).
       gsap.utils
@@ -90,7 +62,7 @@ export default function About() {
         })
 
       // Manifesto: scrubbed word-by-word de-blur as the line crosses the band.
-      revealWords(root.current!, '.about__block--manifesto p')
+      revealWords(root.current, '.about__block--manifesto p')
 
       // Stats reveal
       gsap.from('.about__fact', {
@@ -105,47 +77,6 @@ export default function About() {
         stagger: 0.15,
         ease: 'expo.out',
       })
-
-      // Luke-style red-portrait reveal.
-      // Previously scrub-driven, which repainted `border-radius` on every
-      // scroll tick (border-radius can't be GPU-composited). Now it's a
-      // single eased tween fired on enter: the costly repaint happens once
-      // over ~1.4s instead of continuously, and the morph reads smoother.
-      gsap.fromTo(
-        '.about__portrait-frame',
-        {
-          borderRadius: '180px 0 0 180px',
-          y: 80,
-          opacity: 0,
-        },
-        {
-          scrollTrigger: {
-            trigger: '.about__grid',
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-          borderRadius: '320px 0 0 320px',
-          y: 0,
-          opacity: 1,
-          duration: 1.4,
-          ease: 'expo.out',
-        }
-      )
-
-      gsap.fromTo(
-        '.about__portrait-img',
-        { scale: 1.12 },
-        {
-          scrollTrigger: {
-            trigger: '.about__grid',
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-          scale: 1.0,
-          duration: 1.6,
-          ease: 'expo.out',
-        }
-      )
 
       // Tech scroll line animation (draws custom bezier curve progressively until the chapter ends)
       const path = techPathRef.current
@@ -163,22 +94,47 @@ export default function About() {
           },
         })
       }
-    }, root)
-    return () => ctx.revert()
-  }, [])
+  }, { scope: root })
 
   return (
     <section className="section about" id="about" ref={root}>
-      <div className="about__grid">
-        <div className="about__left">
-          <div className="section__label">About — 自述</div>
-          <h2 className="about__lead">
-            <span className="split-line"><span className="about__lead-line split-line__inner">上海大一在读，</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner">我把模型、数据和交互</span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner"><em>做成能运行、能复盘的</em></span></span>
-            <span className="split-line"><span className="about__lead-line split-line__inner"><em>系统。</em></span></span>
-          </h2>
+      <AboutDecryptReveal>
+        <div className="about__dossier">
+          <div className="about__dossier-copy">
+            <div className="section__label">About — 自述</div>
+            <div className="about__dossier-kicker">IDENTITY DOSSIER / 00—06</div>
+            <h2 className="about__lead">
+              <span>上海大一在读，</span>
+              <span>我把模型、数据和交互</span>
+              <span><em>做成能运行、能复盘的</em></span>
+              <span><em>系统。</em></span>
+            </h2>
+            <p className="about__dossier-summary">
+              我关心的不只是模型有没有跑通，而是证据从哪来、运行时发生了什么，以及别人能不能复现。
+            </p>
+            <dl className="about__dossier-meta">
+              <div><dt>PROFILE</dt><dd>TIM CAI</dd></div>
+              <div><dt>FOCUS</dt><dd>AI SYSTEMS × INTERACTION</dd></div>
+              <div><dt>BASE</dt><dd>SHANGHAI / CN</dd></div>
+            </dl>
+          </div>
 
+          <div className="about__portrait-frame">
+            <div className="about__portrait-glow" />
+            <img className="about__portrait-img" src="/portrait/about_me.jpg" alt="Tim's Portrait" />
+            <div className="about__portrait-vignette" />
+            <div className="about__portrait-meta">PROFILE CAPTURE → V3.0</div>
+          </div>
+
+          <div className="about__decrypt-hint" aria-hidden="true">
+            <span>MOVE TO DECRYPT</span>
+            <span>移动以解密</span>
+          </div>
+        </div>
+      </AboutDecryptReveal>
+
+      <div className="about__grid about__grid--evidence">
+        <div className="about__left">
           <div className="about__content-flow">
             {/* Block 1: Vision / Background (Large Serif, Left-aligned) */}
             <div className="about__block about__block--vision">
@@ -244,15 +200,8 @@ export default function About() {
         </div>
 
         <div className="about__right">
-          <div className="about__portrait-sticky">
-            <div className="about__portrait-frame">
-              <div className="about__portrait-glow" />
-              <img className="about__portrait-img" src="/portrait/about_me.jpg" alt="Tim's Portrait" />
-              <div className="about__portrait-vignette" />
-              <div className="about__portrait-meta">→ V3.0</div>
-            </div>
-
-            {/* Block 4: Philosophy moved underneath the portrait frame */}
+          <div className="about__evidence-aside">
+            <span className="about__evidence-index">METHOD / TRACE / PROOF</span>
             <div className="about__block about__block--philosophy">
               <p>
                 这个站也不是一张静态简历。GSAP、R3F 和自定义 GLSL 串起代码、项目与证据，<br />

@@ -18,6 +18,12 @@ const required = [
   'src/lib/canvas-ui/particlePortal.ts',
   'src/lib/canvas-ui/particlePortalMath.ts',
   'src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts',
+  'src/lib/canvas-ui/vendor/DecryptReveal/DecryptRevealVanilla.ts',
+  'src/lib/canvas-ui/vendor/Glass/GlassVanilla.ts',
+  'src/components/effects/CanvasUiHtmlSurface.tsx',
+  'src/components/effects/AboutDecryptReveal.tsx',
+  'src/components/effects/ProjectGlassSurface.tsx',
+  'src/lib/canvas-ui/canvasSurfaceSlots.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
   'src/shaders/liquid-metal-button/liquid-metal-button.html',
   'src/shaders/spark-badge/SparkBadge.tsx',
@@ -55,6 +61,15 @@ const projectLaser = read('src/components/ProjectLaser.tsx')
 const laserRuntime = read('src/lib/canvas-ui/laser.ts')
 const laserConfig = read('src/lib/canvas-ui/laserConfig.ts')
 const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
+const about = read('src/components/About.tsx')
+const canvasHtmlSurface = read('src/components/effects/CanvasUiHtmlSurface.tsx')
+const decryptSurface = read('src/components/effects/AboutDecryptReveal.tsx')
+const decryptConfig = read('src/lib/canvas-ui/decryptRevealConfig.ts')
+const decryptVendor = read('src/lib/canvas-ui/vendor/DecryptReveal/DecryptRevealVanilla.ts')
+const glassSurface = read('src/components/effects/ProjectGlassSurface.tsx')
+const glassConfig = read('src/lib/canvas-ui/glassConfig.ts')
+const glassVendor = read('src/lib/canvas-ui/vendor/Glass/GlassVanilla.ts')
+const canvasSurfaceSlots = read('src/lib/canvas-ui/canvasSurfaceSlots.ts')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
 const scrollExpand = read('src/components/ScrollExpand.tsx')
 const scrollExpandStyle = read('src/styles/components/scroll-expand.css')
@@ -173,6 +188,39 @@ if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
 
 if (!projects.includes("project.id === 'sciscope'") || !projects.includes('<SciScopeFilm />')) {
   throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
+}
+for (const token of ['AboutDecryptReveal', 'about__dossier', 'MOVE TO DECRYPT', 'about__grid--evidence']) {
+  if (!about.includes(token)) throw new Error(`About Decrypt dossier is missing ${token}.`)
+}
+for (const token of ['radius: 400', 'softness: 0.5', 'cell: 10', 'edgeGlow: 2', 'aberration: 10', "color: '#d6c5a8'"]) {
+  if (!decryptConfig.includes(token)) throw new Error(`Decrypt Reveal must retain the official profile token ${token}.`)
+}
+for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFlicker', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
+  if (!decryptVendor.includes(token)) throw new Error(`Vendored Decrypt Reveal is missing ${token}.`)
+}
+for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
+  if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
+}
+for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame']) {
+  if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
+}
+for (const token of ['size: 120', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflection: 1', 'zoom: 1.5', 'follow: 0.2']) {
+  if (!glassConfig.includes(token)) throw new Error(`Project Glass must retain the official profile token ${token}.`)
+}
+for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', 'ggx', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
+  if (!glassVendor.includes(token)) throw new Error(`Vendored Glass is missing ${token}.`)
+}
+for (const token of ['ProjectGlassSurface', 'glassReady', 'glassSuppressed', 'glassActive']) {
+  if (!projects.includes(token)) throw new Error(`Projects Glass handoff is missing ${token}.`)
+}
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="0px"', 'surfaceId']) {
+  if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
+}
+for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot']) {
+  if (!canvasSurfaceSlots.includes(token)) throw new Error(`Canvas surface slot governor is missing ${token}.`)
+}
+if (!glassSurface.includes("import('../../lib/canvas-ui/vendor/Glass/GlassVanilla')")) {
+  throw new Error('Project Glass shader must remain deferred behind a dynamic import.')
 }
 for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'laserActive']) {
   if (!projects.includes(token)) throw new Error(`Projects laser intro is missing ${token}.`)

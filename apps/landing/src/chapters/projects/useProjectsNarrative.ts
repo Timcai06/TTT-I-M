@@ -10,11 +10,16 @@ import { consumePendingWorkHandoff, WORK_HANDOFF_EVENT } from '../../lib/workHan
 interface ProjectsNarrative {
   laserActive: boolean
   laserHandle: RefObject<LaserHandle | null>
+  glassReady: boolean
 }
 
-export function useProjectsNarrative(root: RefObject<HTMLElement | null>): ProjectsNarrative {
+export function useProjectsNarrative(
+  root: RefObject<HTMLElement | null>,
+  glassActive: boolean,
+): ProjectsNarrative {
   const laserHandle = useRef<LaserHandle | null>(null)
   const [laserActive, setLaserActive] = useState(false)
+  const [glassReady, setGlassReady] = useState(true)
 
   useEffect(() => {
     if (!root.current) return
@@ -42,21 +47,10 @@ export function useProjectsNarrative(root: RefObject<HTMLElement | null>): Proje
       requestScrollRefresh()
     }, section)
 
-    const fineDesktop = window.matchMedia('(min-width: 769px) and (pointer: fine)')
-    let disposeTilts: Array<() => void> = []
-    const syncTilts = () => {
-      disposeTilts.forEach((dispose) => dispose())
-      disposeTilts = []
-      if (!fineDesktop.matches) return
-      disposeTilts = Array.from(section.querySelectorAll<HTMLElement>('.media-frame'))
-        .map((frame) => attachTilt(frame, { damp: 0.22 }))
-    }
-    syncTilts()
-    fineDesktop.addEventListener('change', syncTilts)
-
     const onWorkHandoff = () => {
       if (!consumePendingWorkHandoff()) return
       if (prefersReducedMotion()) return
+      setGlassReady(false)
       setLaserActive(true)
     }
     window.addEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
@@ -64,11 +58,29 @@ export function useProjectsNarrative(root: RefObject<HTMLElement | null>): Proje
 
     return () => {
       window.removeEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
-      fineDesktop.removeEventListener('change', syncTilts)
-      disposeTilts.forEach((dispose) => dispose())
       context.revert()
     }
   }, [root])
+
+  useEffect(() => {
+    const section = root.current
+    if (!section || glassActive) return
+    const fineDesktop = window.matchMedia('(min-width: 769px) and (pointer: fine)')
+    let disposeTilts: Array<() => void> = []
+    const syncTilts = () => {
+      disposeTilts.forEach((dispose) => dispose())
+      disposeTilts = []
+      if (!fineDesktop.matches || glassActive) return
+      disposeTilts = Array.from(section.querySelectorAll<HTMLElement>('.media-frame'))
+        .map((frame) => attachTilt(frame, { damp: 0.22 }))
+    }
+    syncTilts()
+    fineDesktop.addEventListener('change', syncTilts)
+    return () => {
+      fineDesktop.removeEventListener('change', syncTilts)
+      disposeTilts.forEach((dispose) => dispose())
+    }
+  }, [glassActive, root])
 
   useGSAP(() => {
     if (!laserActive) return
@@ -86,6 +98,7 @@ export function useProjectsNarrative(root: RefObject<HTMLElement | null>): Proje
     const settle = () => {
       intro.dataset.handoff = 'settled'
       setLaserActive(false)
+      setGlassReady(true)
     }
 
     const syncPortal = (progress = 0) => {
@@ -149,5 +162,5 @@ export function useProjectsNarrative(root: RefObject<HTMLElement | null>): Proje
     }
   }, { scope: root, dependencies: [laserActive], revertOnUpdate: true })
 
-  return { laserActive, laserHandle }
+  return { laserActive, laserHandle, glassReady }
 }

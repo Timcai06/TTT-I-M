@@ -1,0 +1,40 @@
+.canvas-ui-html {
+  position: relative;
+  width: 100%;
+  isolation: isolate;
+}
+
+.canvas-ui-html__source,
+.canvas-ui-html__output {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-ui-html__source {
+  z-index: 0;
+}
+
+.canvas-ui-html__output {
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms linear;
+}
+
+.canvas-ui-html__output.is-ready {
+  opacity: 1;
+}
+
+[data-canvas-ui-state='fallback'] > .canvas-ui-html__output,
+[data-canvas-ui-state='deferred'] > .canvas-ui-html__output {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-ui-html__output {
+    display: none;
+  }
+}

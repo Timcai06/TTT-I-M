@@ -1,6 +1,17 @@
-import { getGLQualityProfile } from './quality'
+import { getGLQualityProfile } from './quality.ts'
 
 let active = 0
+const listeners = new Set<() => void>()
+
+function emitContextChange(): void {
+  listeners.forEach((listener) => listener())
+}
+
+/** Subscribe to context-budget changes so deferred optional surfaces can retry. */
+export function subscribeContextRegistry(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
 
 /**
  * @description 返回当前已登记的 WebGL context 数量，用于调试和可选视觉面的预算判断
@@ -35,6 +46,7 @@ export function canAcquireOptionalSurface(): boolean {
  */
 export function acquireContext(): void {
   active += 1
+  emitContextChange()
 }
 
 /**
@@ -44,4 +56,5 @@ export function acquireContext(): void {
  */
 export function releaseContext(): void {
   active = Math.max(0, active - 1)
+  emitContextChange()
 }

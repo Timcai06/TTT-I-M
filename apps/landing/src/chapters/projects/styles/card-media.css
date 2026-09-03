@@ -1,3 +1,18 @@
+.project-glass,
+.project-glass__content {
+  position: relative;
+  width: 100%;
+}
+
+.project-glass__content {
+  display: flow-root;
+  overflow: visible;
+}
+
+.project-glass[data-canvas-ui-state='active'] .project-card__media {
+  perspective: none;
+}
+
 .projects__list {
   margin-top: 80px;
   display: flex;
@@ -31,8 +46,8 @@
 }
 
 /* alternate sides for editorial rhythm */
-.project-card:nth-of-type(even) .project-card__text { order: 2; }
-.project-card:nth-of-type(even) .project-card__media { order: 1; }
+.project-card[data-layout='reverse'] .project-card__text { order: 2; }
+.project-card[data-layout='reverse'] .project-card__media { order: 1; }
 
 .project-card:hover {
   opacity: 1;

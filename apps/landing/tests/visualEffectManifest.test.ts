@@ -17,7 +17,14 @@ void test('every visual effect declares fallback, motion, GPU and license policy
 })
 
 void test('GPU effects cost one context and DOM evidence tools cost none', () => {
-  for (const id of ['horizontal-bend', 'project-laser', 'particle-portal', 'footer-liquid-cursor']) {
+  for (const id of [
+    'horizontal-bend',
+    'project-laser',
+    'particle-portal',
+    'footer-liquid-cursor',
+    'about-decrypt-reveal',
+    'project-glass',
+  ]) {
     assert.equal(getVisualEffectDefinition(id)?.contextCost, 1)
   }
   for (const id of [

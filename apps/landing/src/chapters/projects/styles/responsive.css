@@ -4,8 +4,8 @@
     grid-template-columns: 1fr;
     gap: 32px;
   }
-  .project-card:nth-of-type(even) .project-card__text,
-  .project-card:nth-of-type(even) .project-card__media { order: 0; }
+  .project-card[data-layout='reverse'] .project-card__text,
+  .project-card[data-layout='reverse'] .project-card__media { order: 0; }
   .project-card__media { order: 0; }
   .project-card:hover .project-card__title { transform: none; }
   .project-card:hover .project-card__cn { transform: none; }
@@ -59,7 +59,7 @@
     transition: none;
   }
 
-  .project-card:nth-of-type(2n) {
+  .project-card[data-layout='reverse'] {
     width: calc(100% - 12px);
     margin-left: 12px;
   }

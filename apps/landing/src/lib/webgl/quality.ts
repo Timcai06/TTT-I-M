@@ -1,4 +1,4 @@
-import { isMobileExperience } from '../device'
+import { isMobileExperience } from '../device.ts'
 
 export type GLQualityTier = 'high' | 'medium' | 'low'
 

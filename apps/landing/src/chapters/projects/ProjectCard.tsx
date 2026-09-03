@@ -6,6 +6,7 @@ const ProjectMetrics = lazy(() => import('./ProjectMetrics'))
 
 interface ProjectCardProps {
   project: Project
+  alternate: boolean
   onOpenCaseStudy: (
     project: Project,
     trigger: HTMLButtonElement,
@@ -13,7 +14,7 @@ interface ProjectCardProps {
   ) => void
 }
 
-export default function ProjectCard({ project, onOpenCaseStudy }: ProjectCardProps) {
+export default function ProjectCard({ project, alternate, onOpenCaseStudy }: ProjectCardProps) {
   const hasCaseStudy = Boolean(project.media || project.caseStudies?.length || project.detail)
   const openCaseStudy = (event: MouseEvent<HTMLButtonElement>) => {
     const card = event.currentTarget.closest<HTMLElement>('[data-project-id]')
@@ -27,6 +28,7 @@ export default function ProjectCard({ project, onOpenCaseStudy }: ProjectCardPro
       data-accent={project.accent}
       data-project-id={project.id}
       data-motion="project-card"
+      data-layout={alternate ? 'reverse' : 'forward'}
     >
       <div className="project-card__text">
         <div className="project-card__top">
