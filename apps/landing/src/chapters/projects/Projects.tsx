@@ -123,7 +123,12 @@ export default function Projects() {
 
   return (
     <section className="section projects container" id="projects" ref={root}>
-      <ProjectsIntro laserActive={laserActive} laserHandle={laserHandle} />
+      <ProjectsIntro
+        laserActive={laserActive}
+        laserHandle={laserHandle}
+        glassEnabled={glassReady && !glassSuppressed}
+        onGlassActiveChange={changeGlassActive}
+      />
 
       <div className="projects__list">
         {projects.map((project, index) => (

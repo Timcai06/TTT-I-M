@@ -15,6 +15,7 @@ interface ProjectGlassSurfaceProps {
   enabled: boolean
   surfaceId: string
   onActiveChange: (surfaceId: string, active: boolean) => void
+  variant?: 'overview' | 'card'
 }
 
 export default function ProjectGlassSurface({
@@ -22,6 +23,7 @@ export default function ProjectGlassSurface({
   enabled,
   surfaceId,
   onActiveChange,
+  variant = 'card',
 }: ProjectGlassSurfaceProps) {
   const reportActive = useCallback(
     (active: boolean) => onActiveChange(surfaceId, active),
@@ -30,14 +32,15 @@ export default function ProjectGlassSurface({
 
   return (
     <CanvasUiHtmlSurface
-      className="project-glass"
-      contentClassName="project-glass__content"
+      className={`project-glass project-glass--${variant}`}
+      contentClassName={`project-glass__content project-glass__content--${variant}`}
       effectId={`project-glass-${surfaceId}`}
       exclusiveGroup="canvas-ui-html-primary"
       enabled={enabled}
       options={PROJECT_GLASS_CONFIG}
       loadFactory={loadGlass}
       onActiveChange={reportActive}
+      preserveDom
       renderMargin="25% 0px"
       mountMargin="0px"
     >

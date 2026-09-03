@@ -80,6 +80,7 @@ export default function ProjectMedia({ project }: { project: Project }): ReactEl
           rel="noopener noreferrer"
           onClick={openShot}
           aria-label={`全屏查看：${shot.label}`}
+          data-glass-target
         >
           {shots.map((item, index) => (
             <img
@@ -87,8 +88,9 @@ export default function ProjectMedia({ project }: { project: Project }): ReactEl
               src={item.src}
               alt={index === active ? item.alt : ''}
               aria-hidden={index === active ? undefined : true}
-              loading="lazy"
+              loading={index === active ? 'eager' : 'lazy'}
               decoding="async"
+              fetchPriority={index === active ? 'high' : 'auto'}
               className={`media-frame__img${index === active ? ' is-active' : ''}`}
             />
           ))}

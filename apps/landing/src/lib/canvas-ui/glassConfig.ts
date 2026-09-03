@@ -1,9 +1,9 @@
 import type { GlassOptions } from './vendor/Glass/GlassVanilla'
 
-/** Unmodified Canvas UI Glass demo optics and portfolio-specific zoom targets. */
+/** Canvas UI demo optics, enlarged slightly so the lens reads over dark project imagery. */
 export const PROJECT_GLASS_CONFIG = {
   shape: 'circle',
-  size: 120,
+  size: 140,
   aspect: 1.7,
   corner: 32,
   ior: 1.5,
@@ -12,9 +12,9 @@ export const PROJECT_GLASS_CONFIG = {
   depth: 250,
   aberration: 1,
   blur: 0,
-  reflection: 1,
-  shine: 0.01,
+  reflection: 1.12,
+  shine: 0.14,
   zoom: 1.5,
   follow: 0.2,
-  targets: '.media-frame__stage, .project-card__title, .project-card__link, .media-thumb',
+  targets: '[data-glass-target]',
 } as const satisfies GlassOptions

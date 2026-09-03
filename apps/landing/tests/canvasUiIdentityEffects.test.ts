@@ -31,10 +31,10 @@ void test('Decrypt Reveal keeps Canvas UI demo optics and only applies portfolio
   })
 })
 
-void test('Project Glass keeps the official 120px-radius physical lens profile', () => {
+void test('Project Glass keeps source-backed optics with a legible dark-page lens', () => {
   assert.deepEqual(PROJECT_GLASS_CONFIG, {
     shape: 'circle',
-    size: 120,
+    size: 140,
     aspect: 1.7,
     corner: 32,
     ior: 1.5,
@@ -43,11 +43,11 @@ void test('Project Glass keeps the official 120px-radius physical lens profile',
     depth: 250,
     aberration: 1,
     blur: 0,
-    reflection: 1,
-    shine: 0.01,
+    reflection: 1.12,
+    shine: 0.14,
     zoom: 1.5,
     follow: 0.2,
-    targets: '.media-frame__stage, .project-card__title, .project-card__link, .media-thumb',
+    targets: '[data-glass-target]',
   })
 })
 

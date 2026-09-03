@@ -164,6 +164,10 @@
   isolation: isolate;
 }
 
+.project-glass--overview .projects__bento-shell {
+  margin-top: 0;
+}
+
 .projects__bento {
   position: relative;
   z-index: 2;

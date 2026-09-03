@@ -62,6 +62,7 @@ const laserRuntime = read('src/lib/canvas-ui/laser.ts')
 const laserConfig = read('src/lib/canvas-ui/laserConfig.ts')
 const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
 const about = read('src/components/About.tsx')
+const aboutStyle = read('src/styles/components/about.css')
 const canvasHtmlSurface = read('src/components/effects/CanvasUiHtmlSurface.tsx')
 const decryptSurface = read('src/components/effects/AboutDecryptReveal.tsx')
 const decryptConfig = read('src/lib/canvas-ui/decryptRevealConfig.ts')
@@ -192,6 +193,9 @@ if (!projects.includes("project.id === 'sciscope'") || !projects.includes('<SciS
 for (const token of ['AboutDecryptReveal', 'about__dossier', 'MOVE TO DECRYPT', 'about__grid--evidence']) {
   if (!about.includes(token)) throw new Error(`About Decrypt dossier is missing ${token}.`)
 }
+for (const token of ['height: min(100svh, 960px)', 'grid-template-columns: repeat(12', '@media (min-width: 901px) and (max-height: 800px)']) {
+  if (!aboutStyle.includes(token)) throw new Error(`About Decrypt must retain its desktop single-screen layout contract: ${token}.`)
+}
 for (const token of ['radius: 400', 'softness: 0.5', 'cell: 10', 'edgeGlow: 2', 'aberration: 10', "color: '#d6c5a8'"]) {
   if (!decryptConfig.includes(token)) throw new Error(`Decrypt Reveal must retain the official profile token ${token}.`)
 }
@@ -201,11 +205,11 @@ for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFl
 for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
   if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
 }
-for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame']) {
+for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'preserveDom', 'MutationObserver']) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
-for (const token of ['size: 120', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflection: 1', 'zoom: 1.5', 'follow: 0.2']) {
-  if (!glassConfig.includes(token)) throw new Error(`Project Glass must retain the official profile token ${token}.`)
+for (const token of ['size: 140', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflection: 1.12', 'shine: 0.14', 'zoom: 1.5', 'follow: 0.2', "targets: '[data-glass-target]'"]) {
+  if (!glassConfig.includes(token)) throw new Error(`Project Glass must retain its source-backed dark-page profile token ${token}.`)
 }
 for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', 'ggx', 'drawElementImage', 'onFirstFrame', 'pause()', 'resume()']) {
   if (!glassVendor.includes(token)) throw new Error(`Vendored Glass is missing ${token}.`)
@@ -213,8 +217,14 @@ for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', '
 for (const token of ['ProjectGlassSurface', 'glassReady', 'glassSuppressed', 'glassActive']) {
   if (!projects.includes(token)) throw new Error(`Projects Glass handoff is missing ${token}.`)
 }
+for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data-glass-target']) {
+  if (!projects.includes(token)) throw new Error(`Project Glass overview discovery is missing ${token}.`)
+}
 for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="0px"', 'surfaceId']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
+}
+if (!glassSurface.includes('preserveDom')) {
+  throw new Error('Project Glass must remain an overlay enhancement and never replace the live Work DOM.')
 }
 for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot']) {
   if (!canvasSurfaceSlots.includes(token)) throw new Error(`Canvas surface slot governor is missing ${token}.`)

@@ -2,6 +2,7 @@ import { useRef, type RefObject } from 'react'
 import { projects } from '../../content'
 import MaskedHeading from '../../components/MaskedHeading'
 import ProjectLaser from '../../components/ProjectLaser'
+import ProjectGlassSurface from '../../components/effects/ProjectGlassSurface'
 import type { LaserHandle } from '../../lib/canvas-ui/laser'
 import ProjectsBento from './ProjectsBento'
 
@@ -12,9 +13,16 @@ const headingSources = projects
 interface ProjectsIntroProps {
   laserActive: boolean
   laserHandle: RefObject<LaserHandle | null>
+  glassEnabled: boolean
+  onGlassActiveChange: (surfaceId: string, active: boolean) => void
 }
 
-export default function ProjectsIntro({ laserActive, laserHandle }: ProjectsIntroProps) {
+export default function ProjectsIntro({
+  laserActive,
+  laserHandle,
+  glassEnabled,
+  onGlassActiveChange,
+}: ProjectsIntroProps) {
   const portalContent = useRef<HTMLDivElement>(null)
 
   return (
@@ -41,7 +49,14 @@ export default function ProjectsIntro({ laserActive, laserHandle }: ProjectsIntr
               踩过的坑和复现方法。
             </p>
           </div>
-          <ProjectsBento />
+          <ProjectGlassSurface
+            surfaceId="project-overview"
+            variant="overview"
+            enabled={glassEnabled}
+            onActiveChange={onGlassActiveChange}
+          >
+            <ProjectsBento />
+          </ProjectGlassSurface>
         </div>
       </div>
     </div>

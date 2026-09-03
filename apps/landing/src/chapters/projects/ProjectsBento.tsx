@@ -36,6 +36,7 @@ export default function ProjectsBento() {
                 onClick={(event) => scrollToProject(project.id, event.currentTarget)}
                 aria-label={`跳到项目 ${project.name} — ${project.tagline}`}
                 data-cursor="hover"
+                data-glass-target
                 animated={project.id === 'educanvas'}
                 edgeSensitivity={14}
                 glowColor="39 46 72"

@@ -9,6 +9,28 @@
   overflow: visible;
 }
 
+.project-glass--overview {
+  z-index: 3;
+  margin-top: 72px;
+}
+
+.project-glass--overview[data-canvas-ui-state='active']::after {
+  content: 'OPTICAL GLASS / MOVE';
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 14px;
+  padding: 7px 9px;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(5, 6, 7, 0.58);
+  color: rgba(255, 255, 255, 0.66);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  backdrop-filter: blur(10px);
+}
+
 .project-glass[data-canvas-ui-state='active'] .project-card__media {
   perspective: none;
 }

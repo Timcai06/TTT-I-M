@@ -42,6 +42,8 @@ export interface GlassElements {
   source: HTMLCanvasElement;
   /** The element inside the source canvas that gets captured. */
   content: HTMLElement;
+  /** Optional live DOM surface that owns pointer interaction. */
+  interaction?: HTMLElement;
   /** Canvas the WebGL effect renders to. */
   output: HTMLCanvasElement;
   /** Application lifecycle handshake fired after captured HTML reaches the output. */
@@ -276,7 +278,7 @@ export function createGlass(
   options: GlassOptions = {},
 ): GlassInstance | null {
   const config = { ...DEFAULTS, ...options };
-  const { source, content, output, onFirstFrame } = elements;
+  const { source, content, interaction = content, output, onFirstFrame } = elements;
 
   const gl = output.getContext("webgl2", {
     alpha: true,
@@ -574,13 +576,13 @@ export function createGlass(
     start();
   }
 
-  content.addEventListener("pointermove", onPointerMove, { passive: true });
-  content.addEventListener("pointerleave", onPointerLeave, { passive: true });
+  interaction.addEventListener("pointermove", onPointerMove, { passive: true });
+  interaction.addEventListener("pointerleave", onPointerLeave, { passive: true });
 
   function onScroll() {
     start();
   }
-  content.addEventListener("scroll", onScroll, { passive: true });
+  interaction.addEventListener("scroll", onScroll, { passive: true });
 
   function onMotionChange() {
     reducedMotion = motionQuery.matches;
@@ -631,9 +633,9 @@ export function createGlass(
       destroyed = true;
       rectCache.destroy();
       cancelAnimationFrame(raf);
-      content.removeEventListener("pointermove", onPointerMove);
-      content.removeEventListener("pointerleave", onPointerLeave);
-      content.removeEventListener("scroll", onScroll);
+      interaction.removeEventListener("pointermove", onPointerMove);
+      interaction.removeEventListener("pointerleave", onPointerLeave);
+      interaction.removeEventListener("scroll", onScroll);
       observer.disconnect();
       intersection.disconnect();
       motionQuery.removeEventListener("change", onMotionChange);

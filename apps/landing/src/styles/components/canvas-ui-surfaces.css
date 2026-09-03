@@ -17,6 +17,18 @@
   z-index: 0;
 }
 
+/* Glass is progressive enhancement: its source is an inert mirrored capture,
+   while the live Work DOM remains in normal layout below the lens. */
+.canvas-ui-html--preserve-dom > .canvas-ui-html__source {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.canvas-ui-html--preserve-dom > :not(canvas) {
+  position: relative;
+  z-index: 0;
+}
+
 .canvas-ui-html__output {
   z-index: 1;
   opacity: 0;
