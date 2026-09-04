@@ -382,21 +382,22 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
   expect(preEntryGeometry.sectionTop).toBeGreaterThan(preEntryGeometry.viewportHeight)
   expect(preEntryGeometry.stickyTop).toBeGreaterThanOrEqual(preEntryGeometry.sectionTop - 1)
 
-  await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), start + 2)
-  await page.waitForTimeout(250)
-
-  await expect(transition.locator('.work-transition__spark')).toHaveCSS('pointer-events', 'none')
-  await page.mouse.move(page.viewportSize()!.width * 0.74, page.viewportSize()!.height * 0.52)
-  await page.mouse.wheel(0, 260)
-  await page.waitForTimeout(1200)
-
   const readProgress = () => transition.evaluate((section) => {
     const top = section.getBoundingClientRect().top + window.scrollY
     const distance = section.getBoundingClientRect().height - window.innerHeight
     return (window.scrollY - top) / distance
   })
+
+  await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), start + 2)
+  await expect.poll(readProgress).toBeGreaterThan(-0.005)
+  await expect.poll(readProgress).toBeLessThan(0.01)
+
+  await expect(transition.locator('.work-transition__spark')).toHaveCSS('pointer-events', 'none')
+  await page.mouse.move(page.viewportSize()!.width * 0.74, page.viewportSize()!.height * 0.52)
+  await page.mouse.wheel(0, 260)
+  await expect.poll(readProgress).toBeGreaterThan(0.01)
+  await expect(page.locator('body')).not.toHaveClass(/disable-hover/)
   const lightWheelProgress = await readProgress()
-  expect(lightWheelProgress).toBeGreaterThan(0.01)
   expect(lightWheelProgress).toBeLessThan(0.1)
 
   const scrollToProgress = async (progress: number) => {
@@ -405,7 +406,9 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
       return top + (section.getBoundingClientRect().height - window.innerHeight) * nextProgress
     }, progress)
     await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), target)
-    await page.waitForTimeout(1000)
+    await expect.poll(readProgress).toBeGreaterThan(progress - 0.01)
+    await expect.poll(readProgress).toBeLessThan(progress + 0.01)
+    await expect(page.locator('body')).not.toHaveClass(/disable-hover/)
   }
 
   await scrollToProgress(0.14)
