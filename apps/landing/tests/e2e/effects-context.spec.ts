@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { LASER_CONFIG } from '../../src/lib/canvas-ui/laserConfig.ts'
 
 async function waitForLive(page: Page) {
@@ -8,6 +8,38 @@ async function waitForLive(page: Page) {
   })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+}
+
+async function alignSectionTop(
+  section: Locator,
+  viewportRatio: number,
+) {
+  await expect.poll(async () => section.evaluate((node, ratio) => {
+    const delta = node.getBoundingClientRect().top - window.innerHeight * ratio
+    if (Math.abs(delta) > 1) {
+      window.scrollTo({ top: window.scrollY + delta, behavior: 'auto' })
+    }
+    return Math.abs(delta)
+  }, viewportRatio)).toBeLessThan(2)
+}
+
+async function alignSectionProgress(
+  page: Page,
+  section: Locator,
+  targetProgress: number,
+) {
+  await expect.poll(async () => section.evaluate((node, progress) => {
+    const rect = node.getBoundingClientRect()
+    const distance = Math.max(1, rect.height - window.innerHeight)
+    const currentProgress = -rect.top / distance
+    const delta = (progress - currentProgress) * distance
+    if (Math.abs(delta) > 1) {
+      window.scrollTo({ top: window.scrollY + delta, behavior: 'auto' })
+    }
+    return Math.abs(currentProgress - progress)
+  }, targetProgress)).toBeLessThan(0.01)
+
+  await expect(page.locator('body')).not.toHaveClass(/disable-hover/)
 }
 
 test('chapter-scoped effects replace the global continuum without leaking canvases', async ({ page }) => {
@@ -184,30 +216,32 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
 test('Stack flow enters continuously from outside the viewport', async ({ page }) => {
   await waitForLive(page)
 
-  const samples = await page.locator('#skills').evaluate(async (skills) => {
-    const absoluteTop = skills.getBoundingClientRect().top + window.scrollY
-    const active = skills.querySelector<SVGPathElement>('.skills__flow-active')
-    const svg = skills.querySelector<SVGSVGElement>('.skills__flow-svg')
+  const skills = page.locator('#skills')
+  const readSample = () => skills.evaluate((section) => {
+    const active = section.querySelector<SVGPathElement>('.skills__flow-active')
+    const svg = section.querySelector<SVGSVGElement>('.skills__flow-svg')
     if (!active || !svg) throw new Error('Stack flow path is missing')
-
-    const sampleAt = async (rootTopRatio: number) => {
-      window.scrollTo({ top: absoluteTop - window.innerHeight * rootTopRatio, behavior: 'auto' })
-      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-      const dash = getComputedStyle(active).strokeDasharray
-      const drawn = Number.parseFloat(dash.split(/[ ,]+/)[0] ?? '0')
-      return {
-        drawn,
-        total: active.getTotalLength(),
-        opacity: Number.parseFloat(getComputedStyle(svg).opacity),
-      }
+    const dash = getComputedStyle(active).strokeDasharray
+    return {
+      drawn: Number.parseFloat(dash.split(/[ ,]+/)[0] ?? '0'),
+      total: active.getTotalLength(),
+      opacity: Number.parseFloat(getComputedStyle(svg).opacity),
     }
-
-    return [
-      await sampleAt(1),
-      await sampleAt(0),
-      await sampleAt(-0.4),
-    ]
   })
+
+  await alignSectionTop(skills, 1)
+  await expect.poll(async () => (await readSample()).drawn).toBeLessThanOrEqual(1)
+  const beforeEntry = await readSample()
+
+  await alignSectionTop(skills, 0)
+  await expect.poll(async () => (await readSample()).drawn).toBeGreaterThanOrEqual(beforeEntry.drawn)
+  const atEntry = await readSample()
+
+  await alignSectionTop(skills, -0.4)
+  await expect.poll(async () => (await readSample()).drawn).toBeGreaterThan(atEntry.drawn)
+  const inside = await readSample()
+
+  const samples = [beforeEntry, atEntry, inside]
 
   expect(samples.every(({ opacity }) => opacity === 1)).toBe(true)
   expect(samples[0]?.drawn).toBeLessThanOrEqual(1)
@@ -334,7 +368,6 @@ test('desktop life archive uses seven equal-width columns with varied photograph
 test('desktop stack-to-work copy tracks scroll continuously through stable reading windows', async ({ page }) => {
   await waitForLive(page)
   const transition = page.locator('#work-transition')
-  const start = await transition.evaluate((section) => section.getBoundingClientRect().top + window.scrollY)
 
   // The bridge must remain physically inside its section throughout Frame.
   // This catches both GSAP fixed-pin preemption and sticky choosing the wrong
@@ -388,7 +421,7 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
     return (window.scrollY - top) / distance
   })
 
-  await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), start + 2)
+  await alignSectionProgress(page, transition, 0)
   await expect.poll(readProgress).toBeGreaterThan(-0.005)
   await expect.poll(readProgress).toBeLessThan(0.01)
 
@@ -401,14 +434,9 @@ test('desktop stack-to-work copy tracks scroll continuously through stable readi
   expect(lightWheelProgress).toBeLessThan(0.1)
 
   const scrollToProgress = async (progress: number) => {
-    const target = await transition.evaluate((section, nextProgress) => {
-      const top = section.getBoundingClientRect().top + window.scrollY
-      return top + (section.getBoundingClientRect().height - window.innerHeight) * nextProgress
-    }, progress)
-    await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), target)
+    await alignSectionProgress(page, transition, progress)
     await expect.poll(readProgress).toBeGreaterThan(progress - 0.01)
     await expect.poll(readProgress).toBeLessThan(progress + 0.01)
-    await expect(page.locator('body')).not.toHaveClass(/disable-hover/)
   }
 
   await scrollToProgress(0.14)
