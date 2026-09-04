@@ -242,6 +242,11 @@ const missingGLQualityInputs = requiredGLQualityInputs.filter((needle) => !glQua
 if (missingGLQualityInputs.length > 0) {
   throw new Error(`WebGL quality profile is missing dynamic budget knobs: ${missingGLQualityInputs.join(', ')}`)
 }
+const contextLimits = [...glQualitySource.matchAll(/optionalContextLimit:\s*(\d+)/g)]
+  .map((match) => Number(match[1]))
+if (contextLimits.length !== 3 || contextLimits.some((limit) => limit !== 2)) {
+  throw new Error('Every desktop quality tier must preserve the two-surface chapter composition budget.')
+}
 
 for (const token of ['optionalContextLimit', 'tryAcquireOptionalContext', 'acquireOptionalContextWhenAvailable', 'activeLeases', 'released', 'activeContextOwners']) {
   if (!contextRegistrySource.includes(token)) throw new Error(`WebGL context lease registry is missing ${token}.`)

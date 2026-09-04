@@ -11,6 +11,10 @@ async function waitForLive(page: Page) {
 }
 
 test('chapter-scoped effects replace the global continuum without leaking canvases', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 4 })
+    Object.defineProperty(navigator, 'hardwareConcurrency', { configurable: true, get: () => 4 })
+  })
   await waitForLive(page)
   await expect(page.locator('.particle-continuum')).toHaveCount(0)
   await expect(page.locator('[data-drift-wall]')).toHaveCount(1)
