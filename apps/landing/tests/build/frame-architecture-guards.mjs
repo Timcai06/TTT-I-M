@@ -42,7 +42,7 @@ for (const token of ['HorizontalBendSurface', 'bendHandle', 'ArchiveEditorialCop
     throw new Error(`Frame horizontal bend is missing ${token}.`)
   }
 }
-for (const token of ["acquireOptionalContextWhenAvailable('horizontal-bend'", 'contextLease?.release()', 'handle?.destroy()', 'onEnhancedChange(false)']) {
+for (const token of ["acquireOptionalContextWhenAvailable('horizontal-bend'", 'contextLease?.release()', 'handle?.destroy()', 'onEnhancedChange(false)', 'setFailed(true)', 'mounted && visible && !failed']) {
   if (!bendSurfaceSource.includes(token)) throw new Error(`Horizontal Bend lifecycle must retain ${token}.`)
 }
 for (const token of ['zone: 240', 'angle: 80', 'rounding: 150', 'perspective: 700', 'ease: 240', 'smoothing: 0.1', 'tumble: 0.5', 'tilt: 0.5', 'index <= 40', 'supportsHtmlInCanvas', 'drawElementImage', 'requestPaint', 'onFirstFrame', 'calculateHorizontalBendGeometry', 'tipPlane', 'u_tilt_x', 'u_tilt_y', 'u_phi', 'float foldLighting = 1.0 - foldAmount * foldShade * 0.24', "drawable.style.background = '#08090a'", 'float sourceY = 0.5 + (uv.y - 0.5) * (u_perspective + depthSum) / u_perspective']) {

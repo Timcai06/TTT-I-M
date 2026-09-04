@@ -25,6 +25,7 @@ export default function HorizontalBendSurface({
     initiallyMounted: false,
   })
   const [enhanced, setEnhanced] = useState(false)
+  const [failed, setFailed] = useState(false)
   const reducedMotion = useReducedMotion()
   const mobileExperience = useMobileExperience()
   const disabled = reducedMotion || mobileExperience
@@ -33,7 +34,7 @@ export default function HorizontalBendSurface({
     const host = ref.current
     const captureEl = capture.current
     const viewportEl = viewport.current
-    if (!mounted || !visible || !host || !captureEl || !viewportEl) return
+    if (!mounted || !visible || failed || !host || !captureEl || !viewportEl) return
     if (disabled) return
     const canvas = host.querySelector('canvas')
     if (!canvas) return
@@ -60,6 +61,10 @@ export default function HorizontalBendSurface({
         onEnhancedChange(false)
       }
     }
+    const fail = () => {
+      cleanup()
+      setFailed(true)
+    }
 
     stopWaiting = acquireOptionalContextWhenAvailable('horizontal-bend', (lease) => {
       if (released) {
@@ -77,10 +82,10 @@ export default function HorizontalBendSurface({
             setEnhanced(true)
             onEnhancedChange(true)
           },
-          onFailure: cleanup,
+          onFailure: fail,
         })
       } catch {
-        cleanup()
+        fail()
         return
       }
       if (released) {
@@ -96,7 +101,13 @@ export default function HorizontalBendSurface({
       window.addEventListener('resize', resize)
     })
     return cleanup
-  }, [capture, disabled, handleRef, mounted, onEnhancedChange, ref, viewport, visible])
+  }, [capture, disabled, failed, handleRef, mounted, onEnhancedChange, ref, viewport, visible])
+
+  useEffect(() => {
+    if (visible || !failed) return
+    const timer = window.setTimeout(() => setFailed(false), 0)
+    return () => window.clearTimeout(timer)
+  }, [failed, visible])
 
   if (disabled) return null
 
@@ -107,7 +118,7 @@ export default function HorizontalBendSurface({
       ref={ref}
       aria-hidden="true"
     >
-      {mounted && visible && <canvas />}
+      {mounted && visible && !failed && <canvas />}
     </div>
   )
 }

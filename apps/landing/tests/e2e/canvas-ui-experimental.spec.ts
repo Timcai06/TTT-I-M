@@ -56,6 +56,7 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
 
   await bend.locator('canvas').dispatchEvent('webglcontextlost')
   await expect(bend).toHaveAttribute('data-horizontal-bend', 'fallback')
+  await expect(bend.locator('canvas')).toHaveCount(0)
   await expect(page.locator('#frame-building .frame-edge-blur').first()).toBeVisible()
   await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')).toHaveCSS('opacity', '1')
   await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track .archive-slot__media').first()).toHaveCSS('opacity', '1')
