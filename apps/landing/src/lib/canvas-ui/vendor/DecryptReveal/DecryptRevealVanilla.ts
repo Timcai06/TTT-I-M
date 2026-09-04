@@ -1,5 +1,10 @@
 // @ts-nocheck -- vendored upstream source is intentionally kept on its original compiler contract.
 import { createRectCache } from "../rect-cache";
+import {
+  compileWebGLShader,
+  linkWebGLProgram,
+  requireWebGLResource,
+} from "../../../webgl/programValidation";
 
 export interface DecryptRevealOptions {
   /** Decrypt radius around the cursor in CSS pixels. */
@@ -547,25 +552,13 @@ export function createDecryptReveal(
   }
 
   function compile(type: number, text: string): WebGLShader {
-    const shader = gl!.createShader(type)!;
-    gl!.shaderSource(shader, text);
-    gl!.compileShader(shader);
-    if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
-      console.error(
-        "DecryptReveal shader error:",
-        gl!.getShaderInfoLog(shader),
-      );
-    }
-    return shader;
+    return compileWebGLShader(gl!, type, text, "Decrypt Reveal");
   }
 
   function link(frag: string) {
     const vs = compile(gl!.VERTEX_SHADER, VERT);
     const fs = compile(gl!.FRAGMENT_SHADER, frag);
-    const program = gl!.createProgram()!;
-    gl!.attachShader(program, vs);
-    gl!.attachShader(program, fs);
-    gl!.linkProgram(program);
+    const program = linkWebGLProgram(gl!, vs, fs, "Decrypt Reveal");
     const uniforms: Record<string, WebGLUniformLocation> = {};
     const count = gl!.getProgramParameter(program, gl!.ACTIVE_UNIFORMS);
     for (let i = 0; i < count; i++) {
@@ -578,7 +571,7 @@ export function createDecryptReveal(
   const cellPass = link(CELL_FRAG);
   const mainPass = link(MAIN_FRAG);
 
-  const quad = gl.createBuffer();
+  const quad = requireWebGLResource(gl.createBuffer(), "Decrypt Reveal quad buffer");
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -589,7 +582,7 @@ export function createDecryptReveal(
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
   function makeTexture(filter: number) {
-    const texture = gl!.createTexture()!;
+    const texture = requireWebGLResource(gl!.createTexture(), "Decrypt Reveal texture");
     gl!.bindTexture(gl!.TEXTURE_2D, texture);
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, filter);
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, filter);
@@ -612,12 +605,12 @@ export function createDecryptReveal(
   );
 
   const cellTexture = makeTexture(gl.NEAREST);
-  const cellFbo = gl.createFramebuffer()!;
+  const cellFbo = requireWebGLResource(gl.createFramebuffer(), "Decrypt Reveal cell framebuffer");
   let cellCols = 0;
   let cellRows = 0;
 
   const shapeTexture = makeTexture(gl.NEAREST);
-  const atlasTexture = gl.createTexture()!;
+  const atlasTexture = requireWebGLResource(gl.createTexture(), "Decrypt Reveal atlas texture");
   gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
   gl.texParameteri(
     gl.TEXTURE_2D,

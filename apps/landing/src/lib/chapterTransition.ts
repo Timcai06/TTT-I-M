@@ -17,6 +17,7 @@ export interface ChapterTransitionRequest {
 // build guard pins this transport choice.
 const transitionListeners = new Set<(request: ChapterTransitionRequest) => void>()
 const arrivedListeners = new Set<(id: string) => void>()
+let pendingTransition: ChapterTransitionRequest | null = null
 
 /**
  * @description 发起一次章节跳转请求。
@@ -28,6 +29,13 @@ export function transitionToChapter(id: string, options: ChapterTransitionOption
   const request: ChapterTransitionRequest = {
     id,
     updateHash: options.updateHash ?? false,
+  }
+  if (transitionListeners.size === 0) {
+    // The transition renderer is an eagerly-requested lazy chunk. Retain the
+    // latest user intent until its subscription is live so a slow first chunk
+    // fetch can never swallow navigation.
+    pendingTransition = request
+    return
   }
   transitionListeners.forEach((listener) => listener(request))
 }
@@ -41,6 +49,17 @@ export function onChapterTransitionRequest(
   callback: (request: ChapterTransitionRequest) => void
 ) {
   transitionListeners.add(callback)
+  const pending = pendingTransition
+  pendingTransition = null
+  if (pending) {
+    queueMicrotask(() => {
+      if (transitionListeners.has(callback)) {
+        callback(pending)
+      } else if (!pendingTransition) {
+        pendingTransition = pending
+      }
+    })
+  }
   return () => {
     transitionListeners.delete(callback)
   }

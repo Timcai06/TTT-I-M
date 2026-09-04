@@ -6,9 +6,12 @@ import {
   createFrameParticles,
   type FrameParticleHandle,
 } from '../../lib/canvas-ui/particleScroll'
-import { isMobileExperience } from '../../lib/device'
-import { prefersReducedMotion } from '../../lib/motion'
-import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../../lib/webgl/contextRegistry'
+import { useMobileExperience } from '../../lib/device'
+import { useReducedMotion } from '../../lib/motion'
+import {
+  acquireOptionalContextWhenAvailable,
+  type ContextLease,
+} from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { markDrawableSubtree } from '../../lib/canvas-ui/runtime'
 
@@ -59,7 +62,9 @@ export default function FrameParticleHandoff() {
     mountMargin: '160% 0px',
     initiallyMounted: false,
   })
-  const disabled = prefersReducedMotion() || isMobileExperience()
+  const reducedMotion = useReducedMotion()
+  const mobileExperience = useMobileExperience()
+  const disabled = reducedMotion || mobileExperience
   const supported = canRenderFrameParticles()
 
   const image = useMemo(() => {
@@ -73,47 +78,119 @@ export default function FrameParticleHandoff() {
     const source = sourceRef.current
     const output = outputRef.current
     if (!mounted || !visible || !capture || !source || !output) return
-    if (disabled || !supported || !canAcquireOptionalSurface()) return
+    if (disabled || !supported) return
 
     const unmarkDrawable = markDrawableSubtree(source, capture)
     let handle: FrameParticleHandle | null = null
     let released = false
-    let acquired = false
-    const captureTimer = window.setTimeout(() => cleanup(), 4_000)
+    let contextLease: ContextLease | null = null
+    let captureTimer = 0
+    let decodeTimer = 0
+    let stopWaiting = () => {}
+    const mediaLifecycle = new AbortController()
     const cleanup = () => {
       if (released) return
       released = true
       window.clearTimeout(captureTimer)
+      window.clearTimeout(decodeTimer)
+      mediaLifecycle.abort(new Error('Frame particle capture detached'))
+      stopWaiting()
       unmarkDrawable()
-      handle?.destroy()
-      if (handleRef.current === handle) handleRef.current = null
-      if (acquired) releaseContext()
-      setEnhanced(false)
+      try {
+        handle?.destroy()
+      } finally {
+        if (handleRef.current === handle) handleRef.current = null
+        contextLease?.release()
+        contextLease = null
+        setEnhanced(false)
+      }
     }
 
     const captureImages = [...capture.querySelectorAll('img')]
-    void Promise.allSettled(captureImages.map((captureImage) => captureImage.decode())).then(() => {
+    const waitForDrawableImage = (captureImage: HTMLImageElement) => new Promise<boolean>((resolve) => {
+      let settled = false
+      const detach = () => {
+        captureImage.removeEventListener('load', onLoad)
+        captureImage.removeEventListener('error', onError)
+        mediaLifecycle.signal.removeEventListener('abort', onAbort)
+      }
+      const finish = (ready: boolean) => {
+        if (settled) return
+        settled = true
+        detach()
+        resolve(ready)
+      }
+      const verify = () => {
+        if (captureImage.naturalWidth <= 0) {
+          finish(false)
+          return
+        }
+        if (typeof captureImage.decode !== 'function') {
+          finish(true)
+          return
+        }
+        void captureImage.decode().then(
+          () => finish(captureImage.naturalWidth > 0),
+          () => finish(captureImage.naturalWidth > 0),
+        )
+      }
+      const onLoad = () => verify()
+      const onError = () => finish(false)
+      const onAbort = () => finish(false)
+      captureImage.addEventListener('load', onLoad, { once: true })
+      captureImage.addEventListener('error', onError, { once: true })
+      mediaLifecycle.signal.addEventListener('abort', onAbort, { once: true })
+      if (captureImage.complete) verify()
+    })
+    const imageReadiness = Promise.all(captureImages.map(waitForDrawableImage))
+      .then((readiness) => captureImages.length > 0 && readiness.every(Boolean))
+    const decodeDeadline = new Promise<boolean>((resolve) => {
+      decodeTimer = window.setTimeout(() => resolve(false), 4_000)
+    })
+    void Promise.race([imageReadiness, decodeDeadline]).then((imagesReady) => {
       if (released) return
-      acquireContext()
-      acquired = true
-      handle = createFrameParticles({
-        source,
-        content: capture,
-        output,
-        onReady: () => {
-          window.clearTimeout(captureTimer)
-          setEnhanced(true)
-          handle?.setScrollState(latestState.current)
-        },
-        onFailure: cleanup,
-      })
-      if (!handle) {
+      window.clearTimeout(decodeTimer)
+      if (!imagesReady) {
         cleanup()
         return
       }
+      stopWaiting = acquireOptionalContextWhenAvailable('frame-particle-handoff', (lease) => {
+        if (released) {
+          lease.release()
+          return
+        }
+        contextLease = lease
+        captureTimer = window.setTimeout(cleanup, 4_000)
+        let created: FrameParticleHandle | null
+        try {
+          created = createFrameParticles({
+            source,
+            content: capture,
+            output,
+            onReady: () => {
+              window.clearTimeout(captureTimer)
+              setEnhanced(true)
+              handle?.setScrollState(latestState.current)
+            },
+            onFailure: cleanup,
+          })
+        } catch {
+          cleanup()
+          return
+        }
+        if (released) {
+          created?.destroy()
+          return
+        }
+        if (!created) {
+          cleanup()
+          return
+        }
 
-      handleRef.current = handle
-      handle.setScrollState(latestState.current)
+        handle = created
+        handleRef.current = created
+        created.setScrollState(latestState.current)
+      })
     })
     const resize = () => handle?.resize()
     window.addEventListener('resize', resize)

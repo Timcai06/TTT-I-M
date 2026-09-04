@@ -34,6 +34,8 @@ const globalLayerSource = readFileSync('src/styles/global.css', 'utf8')
 const narrativeSpecSource = readFileSync('src/core/narrative/specs.ts', 'utf8')
 const effectManifestSource = readFileSync('src/shared/effects/manifest.ts', 'utf8')
 const registrySource = readFileSync('src/chapters/registry.ts', 'utf8')
+const chapterBoundarySource = readFileSync('src/components/ChapterBoundary.tsx', 'utf8')
+const scrollIntentSource = readFileSync('src/lib/scroll/scrollIntent.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
@@ -107,6 +109,18 @@ for (const entrypoint of ['./hero', './about', './life', './frame', './skills', 
   if (!registrySource.includes(entrypoint)) throw new Error(`Chapter registry must resolve through vertical-slice entrypoint ${entrypoint}.`)
 }
 
+for (const token of ['fallbackMinHeight', 'MutationObserver', 'ResizeObserver', 'lastKnownHeight', "track('Chapter Render Error'", 'globalThis.reportError', 'Reload experience']) {
+  if (!chapterBoundarySource.includes(token) && !registrySource.includes(token)) {
+    throw new Error(`Chapter error containment is missing ${token}.`)
+  }
+}
+if (/errored\s*\?\s*null/.test(chapterBoundarySource) || chapterBoundarySource.includes('return this.state.errored ? null')) {
+  throw new Error('A failed chapter must preserve deterministic geometry and recovery UI; it cannot collapse to null.')
+}
+if (!appSource.includes('chapter-loading-reserve') || !appSource.includes('style={{ minHeight: failureMinHeight }}')) {
+  throw new Error('Every lazy chapter must reserve deterministic geometry while its code chunk is pending.')
+}
+
 if (!chapterScrollMetricsSource.includes('useSyncExternalStore') || !chapterScrollMetricsSource.includes('ScrollTrigger.create')) {
   throw new Error('Chapter scroll metrics must be a shared external store backed by one ScrollTrigger.')
 }
@@ -126,9 +140,23 @@ if (
 ) {
   throw new Error('Lenis must re-measure its scroll limit after ScrollTrigger pin spacers refresh, and release that listener on cleanup.')
 }
+if (
+  !lenisSource.includes('if (reduced)') ||
+  lenisSource.includes('smoothWheel: !reduced') ||
+  !lenisSource.includes('smoothWheel: true')
+) {
+  throw new Error('Reduced-motion must use native scrolling without constructing or ticking a partially-disabled Lenis runtime.')
+}
 
 if (!providerSource.includes('userScrollStarted') || !providerSource.includes("window.history.replaceState(null, '', nextUrl)")) {
   throw new Error('Natural chapter scrolling must keep the URL hash aligned without adding browser history entries.')
+}
+if (
+  !providerSource.includes('if (userScrollStarted) return') ||
+  !providerSource.includes('isKeyboardScrollIntent') ||
+  !scrollIntentSource.includes('INTERACTIVE_SELECTOR')
+) {
+  throw new Error('Scroll-intent listeners must detach after first use and ignore keyboard input owned by interactive controls.')
 }
 
 if (!landingNarrativeSource.includes('pickActiveChapterId') || !landingNarrativeSource.includes('computeChapterProgressFills') || !landingNarrativeSource.includes('getChapterTheme')) {
@@ -142,13 +170,29 @@ if (!themeDriverSource.includes('useLandingScrollNarrative') || themeDriverSourc
 if (!appSource.includes('<ChapterTransition />')) {
   throw new Error('App must mount the full-screen chapter transition layer.')
 }
+if (
+  !appSource.includes("lazy(() => import('./components/ChapterTransition'))")
+  || !transitionApiSource.includes('pendingTransition')
+  || !transitionApiSource.includes('transitionListeners.size === 0')
+) {
+  throw new Error('ChapterTransition must stay off the critical entry chunk without dropping an early navigation intent.')
+}
 
 if (!appSource.includes("getStage() === 'live'") || !appSource.includes('scrollToChapter(hash, { immediate: true })') || !appSource.includes('for (const delay of [120, 520, 1100])')) {
   throw new Error('Initial hash deep links must wait for the live stage and reassert the immediate chapter landing after late layout shifts.')
 }
+if (!appSource.includes('attachCorrectionListeners') || !appSource.includes('cancelCorrectionsFromKeyboard') || !appSource.includes('correctionsCancelled')) {
+  throw new Error('Late deep-link correction must yield immediately once the user takes control of scrolling.')
+}
 
 if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSource.includes('immediate: true')) {
   throw new Error('ChapterTransition must listen for nav requests and jump directly while the cover is active.')
+}
+
+for (const token of ['new AbortController()', "lifecycle.abort(new Error('Chapter transition detached'))", 'activeTimeline?.kill()']) {
+  if (!transitionSource.includes(token)) {
+    throw new Error(`ChapterTransition must cancel async frames and GSAP ownership on detach: missing ${token}`)
+  }
 }
 
 const transitionLayerInputs = [

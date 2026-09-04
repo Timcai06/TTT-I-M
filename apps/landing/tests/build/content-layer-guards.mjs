@@ -60,7 +60,7 @@ if (!lifeGallerySource.includes('DriftWall') || !lifeGallerySource.includes('dat
   throw new Error('LifeGallery must use the full React Bits DriftWall scene.')
 }
 
-for (const needle of ['requestAnimationFrame', 'IntersectionObserver', 'translate3d', 'translateZ', 'prefers-reduced-motion']) {
+for (const needle of ['requestAnimationFrame', 'IntersectionObserver', 'translate3d', 'translateZ', 'useReducedMotion']) {
   if (!driftWallSource.includes(needle)) throw new Error(`DriftWall must preserve ${needle}.`)
 }
 
@@ -87,7 +87,7 @@ if (!projectsStyleSource.includes('.bento-glow') || !projectsStyleSource.include
 if (!footerSource.includes('ASCIIText') || !footerSource.includes('footer__ascii')) {
   throw new Error('Footer must use ASCIIText as the scoped final signal.')
 }
-for (const needle of ["from 'three'", 'vertexShader', 'fragmentShader', 'getImageData', 'hue-rotate', 'IntersectionObserver', 'forceContextLoss']) {
+for (const needle of ["from 'three'", 'vertexShader', 'fragmentShader', 'getImageData', 'hue-rotate', 'useGLSurface', 'forceContextLoss']) {
   if (!asciiTextSource.includes(needle)) throw new Error(`ASCIIText must preserve ${needle}.`)
 }
 

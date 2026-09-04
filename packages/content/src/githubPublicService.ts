@@ -7,8 +7,27 @@ import {
   type GitHubRepositorySummary,
 } from './githubGraphAdapter'
 import type { GitHubSyncManifest } from './githubConnector'
+import {
+  DEFAULT_REPOSITORY_LIMIT,
+  normalizeRepositoryLimit,
+  parseGitHubRepositories,
+  parseGitHubUser,
+  parsePublicGitHubHandle,
+  type GitHubPublicRepositoryResponse,
+  type GitHubPublicUserResponse,
+} from './githubPublicValidation'
+import {
+  fetchJsonWithDeadline,
+  fetchTextWithDeadline,
+  GITHUB_API_ORIGIN,
+  publicGitHubHeaders,
+  type GitHubPublicPreviewOptions,
+} from './githubPublicTransport'
 
-export type GitHubPublicPreviewStatus = 'ready' | 'not_found' | 'rate_limited' | 'network_error' | 'invalid_response'
+export { parsePublicGitHubHandle } from './githubPublicValidation'
+export type { GitHubPublicPreviewOptions } from './githubPublicTransport'
+
+export type GitHubPublicPreviewStatus = 'ready' | 'not_found' | 'rate_limited' | 'network_error' | 'invalid_response' | 'invalid_input'
 
 export interface GitHubPublicPreviewResult {
   /** 当前 public service 状态。 */
@@ -23,67 +42,27 @@ export interface GitHubPublicPreviewResult {
   rateLimitResetAt?: string
 }
 
-interface GitHubPublicUserResponse {
-  id: number
-  login: string
-  name: string | null
-  avatar_url: string
-  html_url: string
-}
-
-interface GitHubPublicRepositoryResponse {
-  id: number
-  name: string
-  full_name: string
-  html_url: string
-  description: string | null
-  language: string | null
-  topics?: string[]
-  fork: boolean
-  archived: boolean
-  stargazers_count: number
-  forks_count: number
-  open_issues_count: number
-  pushed_at: string | null
-  created_at: string
-  updated_at: string
-}
-
-const GITHUB_API_ORIGIN = 'https://api.github.com'
-const GITHUB_API_VERSION = '2026-03-10'
-const DEFAULT_REPOSITORY_LIMIT = 12
 const README_FETCH_LIMIT = 4
 const README_EXCERPT_MAX_CHARS = 180
+const DEFAULT_OPERATION_TIMEOUT_MS = 12_000
 
-function normalizeHandle(handle: string): string {
-  return handle.trim().replace(/^@/, '') || 'Timcai06'
+function operationTimeout(options: GitHubPublicPreviewOptions): number {
+  const configured = options.totalTimeoutMs ?? DEFAULT_OPERATION_TIMEOUT_MS
+  if (!Number.isFinite(configured) || configured <= 0) return DEFAULT_OPERATION_TIMEOUT_MS
+  return Math.min(60_000, Math.max(1, Math.floor(configured)))
 }
 
 function ownerIdFromHandle(handle: string): string {
   return `github_public_${handle.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`
 }
 
-function publicGitHubHeaders(): HeadersInit {
-  return {
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': GITHUB_API_VERSION,
-    'User-Agent': 'ttt-i-m-builder-graph-public-preview',
-  }
-}
-
 function rateLimitResetAt(response: Response): string | undefined {
   const reset = response.headers.get('x-ratelimit-reset')
   if (!reset) return undefined
   const resetMs = Number(reset) * 1000
-  return Number.isFinite(resetMs) ? new Date(resetMs).toISOString() : undefined
-}
-
-async function readJson<T>(response: Response): Promise<T | undefined> {
-  try {
-    return await response.json() as T
-  } catch {
-    return undefined
-  }
+  if (!Number.isFinite(resetMs)) return undefined
+  const resetDate = new Date(resetMs)
+  return Number.isFinite(resetDate.getTime()) ? resetDate.toISOString() : undefined
 }
 
 function profileFromGitHub(user: GitHubPublicUserResponse): GitHubProfileSummary {
@@ -129,20 +108,22 @@ function cleanReadmeExcerpt(readme: string): string | undefined {
     : cleaned
 }
 
-async function fetchReadmeExcerpt(repository: GitHubPublicRepositoryResponse): Promise<string | undefined> {
+async function fetchReadmeExcerpt(
+  repository: GitHubPublicRepositoryResponse,
+  options: GitHubPublicPreviewOptions,
+): Promise<string | undefined> {
   const [owner, repo] = repository.full_name.split('/')
   if (!owner || !repo) return undefined
 
   try {
-    const response = await fetch(`${GITHUB_API_ORIGIN}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme`, {
+    const { response, text } = await fetchTextWithDeadline(`${GITHUB_API_ORIGIN}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme`, {
       headers: {
         ...publicGitHubHeaders(),
         Accept: 'application/vnd.github.raw+json',
       },
-    })
+    }, options)
 
-    if (!response.ok) return undefined
-    const text = await response.text()
+    if (!response.ok || text === undefined) return undefined
     return cleanReadmeExcerpt(text)
   } catch {
     return undefined
@@ -222,14 +203,29 @@ function manifestForPublicPreview(
 export async function fetchPublicGitHubPreviewSnapshot(
   handle: string,
   repositoryLimit = DEFAULT_REPOSITORY_LIMIT,
+  options: GitHubPublicPreviewOptions = {},
 ): Promise<GitHubPublicPreviewResult> {
-  const safeHandle = normalizeHandle(handle)
+  const parsedHandle = parsePublicGitHubHandle(handle)
+  const safeHandle = parsedHandle.handle
+  if (!parsedHandle.valid) {
+    return {
+      status: 'invalid_input',
+      handle: safeHandle.slice(0, 39),
+      message: 'Enter a valid GitHub handle using letters, numbers, or hyphens.',
+    }
+  }
   const encodedHandle = encodeURIComponent(safeHandle)
+  const safeRepositoryLimit = normalizeRepositoryLimit(repositoryLimit)
+  const requestOptions: GitHubPublicPreviewOptions = {
+    ...options,
+    operationDeadlineAt: Date.now() + operationTimeout(options),
+  }
 
   try {
-    const userResponse = await fetch(`${GITHUB_API_ORIGIN}/users/${encodedHandle}`, {
+    const userRequest = await fetchJsonWithDeadline<unknown>(`${GITHUB_API_ORIGIN}/users/${encodedHandle}`, {
       headers: publicGitHubHeaders(),
-    })
+    }, requestOptions)
+    const userResponse = userRequest.response
 
     if (userResponse.status === 404) {
       return { status: 'not_found', handle: safeHandle, message: `GitHub user @${safeHandle} was not found.` }
@@ -246,15 +242,17 @@ export async function fetchPublicGitHubPreviewSnapshot(
       return { status: 'network_error', handle: safeHandle, message: `GitHub user lookup failed with ${userResponse.status}.` }
     }
 
-    const user = await readJson<GitHubPublicUserResponse>(userResponse)
-    if (!user?.login || !user.id) {
+    const user = parseGitHubUser(userRequest.data)
+    if (!user) {
       return { status: 'invalid_response', handle: safeHandle, message: 'GitHub user response was missing required public fields.' }
     }
 
-    const reposResponse = await fetch(
-      `${GITHUB_API_ORIGIN}/users/${encodedHandle}/repos?type=owner&sort=pushed&direction=desc&per_page=${repositoryLimit}`,
+    const reposRequest = await fetchJsonWithDeadline<unknown>(
+      `${GITHUB_API_ORIGIN}/users/${encodedHandle}/repos?type=owner&sort=pushed&direction=desc&per_page=${safeRepositoryLimit}`,
       { headers: publicGitHubHeaders() },
+      requestOptions,
     )
+    const reposResponse = reposRequest.response
 
     if (reposResponse.status === 403 || reposResponse.status === 429) {
       return {
@@ -268,9 +266,9 @@ export async function fetchPublicGitHubPreviewSnapshot(
       return { status: 'network_error', handle: safeHandle, message: `GitHub repository lookup failed with ${reposResponse.status}.` }
     }
 
-    const repositoriesResponse = await readJson<GitHubPublicRepositoryResponse[]>(reposResponse)
-    if (!Array.isArray(repositoriesResponse)) {
-      return { status: 'invalid_response', handle: safeHandle, message: 'GitHub repositories response was not a list.' }
+    const repositoriesResponse = parseGitHubRepositories(reposRequest.data, user.login)
+    if (!repositoriesResponse) {
+      return { status: 'invalid_response', handle: safeHandle, message: 'GitHub repositories response failed public-data validation.' }
     }
 
     const publicRepositories = sortRepositoriesForPreview(
@@ -279,7 +277,7 @@ export async function fetchPublicGitHubPreviewSnapshot(
     const readmeEntries = await Promise.all(
       publicRepositories.slice(0, README_FETCH_LIMIT).map(async (repository) => [
         repository.full_name,
-        await fetchReadmeExcerpt(repository),
+        await fetchReadmeExcerpt(repository, requestOptions),
       ] as const),
     )
     const readmeExcerpts = new Map(readmeEntries)

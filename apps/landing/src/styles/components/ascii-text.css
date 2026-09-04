@@ -16,7 +16,8 @@
   pointer-events: none;
 }
 
-.ascii-text-container pre {
+.ascii-text-container .ascii-text__glyphs,
+.ascii-text-container .ascii-text__fallback {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -38,6 +39,10 @@
   white-space: pre;
 }
 
+.ascii-text-container .ascii-text__glyphs {
+  white-space: pre;
+}
+
 .ascii-text-container .ascii-text__fallback {
   left: 50%;
   top: 50%;
@@ -51,6 +56,11 @@
   white-space: pre-wrap;
 }
 
+.ascii-text-container[data-ascii-state='live'] > .ascii-text__fallback {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ascii-text-container pre { filter: none !important; }
+  .ascii-text-container .ascii-text__glyphs,
+  .ascii-text-container .ascii-text__fallback { filter: none !important; }
 }

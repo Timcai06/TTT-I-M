@@ -14,6 +14,8 @@ const resourceFiles = {
   loaders: 'src/lib/resources/loaders.ts',
   controller: 'src/lib/resources/preloadController.ts',
   imageDecodeQueue: 'src/lib/resources/imageDecodeQueue.ts',
+  sharedResource: 'src/lib/resources/sharedResource.ts',
+  taskDeadline: 'src/lib/resources/taskDeadline.ts',
 }
 for (const [name, path] of Object.entries(resourceFiles)) {
   if (!existsSync(path)) {
@@ -25,7 +27,11 @@ const manifestSource = readFileSync(resourceFiles.manifest, 'utf8')
 const loadersSource = readFileSync(resourceFiles.loaders, 'utf8')
 const controllerSource = readFileSync(resourceFiles.controller, 'utf8')
 const imageDecodeQueueSource = readFileSync(resourceFiles.imageDecodeQueue, 'utf8')
+const sharedResourceSource = readFileSync(resourceFiles.sharedResource, 'utf8')
+const taskDeadlineSource = readFileSync(resourceFiles.taskDeadline, 'utf8')
 const particlePortraitSource = readFileSync('src/components/ParticlePortrait.tsx', 'utf8')
+const ditherSource = readFileSync('src/components/DitherBackground.tsx', 'utf8')
+const asciiSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
 const chapterTransitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const contextRegistrySource = readFileSync('src/lib/webgl/contextRegistry.ts', 'utf8')
 const glQualitySource = readFileSync('src/lib/webgl/quality.ts', 'utf8')
@@ -106,6 +112,8 @@ const requiredManifestInputs = [
   'sciscope-film-poster.jpg',
   'chunks:pretext',
   'texture:hero',
+  'shader:liquid-metal',
+  'renderer:spark-badge',
   "tier: 'critical'",
   "tier: 'visual'",
 ]
@@ -116,11 +124,16 @@ if (missingManifest.length > 0) {
 
 // ── Loaders: the per-type load implementations ──
 const requiredLoaderInputs = [
-  'TextureLoader',
+  'EMPTY_IMAGE',
   'document.fonts.ready',
   'decode',
   '@chenglou/pretext',
   'FONT_READY_DEV_TIMEOUT_MS',
+  'loadLiquidMetalSource',
+  'loadSparkBadgeSource',
+  "resolveSparkBadgeSource(portfolioSparkBadgeUrl, 'browser')",
+  'enqueueImageDecode(image, signal)',
+  "signal?.removeEventListener('abort'",
 ]
 const missingLoaders = requiredLoaderInputs.filter((needle) => !loadersSource.includes(needle))
 if (missingLoaders.length > 0) {
@@ -133,7 +146,8 @@ const requiredControllerInputs = [
   '__portfolioPreloadDebug',
   'console.table',
   'TASK_TIMEOUT_MS',
-  'withTimeout',
+  'runTaskWithDeadline',
+  'lifecycle.abort',
   'non-fatal',
   'renderReady: true',
 ]
@@ -177,7 +191,7 @@ if (!controllerSource.includes('VISUAL_CONCURRENCY') || !controllerSource.includ
   throw new Error('Preload controller must run the complete landing manifest (visual queue), not stop at critical resources.')
 }
 
-for (const token of ['settleRenderLayout', 'requestScrollRefresh(true)', 'requestAnimationFrame']) {
+for (const token of ['settleRenderLayout(lifecycle.signal)', "signal.addEventListener('abort'", 'requestScrollRefresh(true)', 'requestAnimationFrame']) {
   if (!controllerSource.includes(token)) {
     throw new Error(`Render-ready gate must settle layout and refresh ScrollTrigger before hand-off: missing ${token}`)
   }
@@ -191,6 +205,11 @@ if (!controllerSource.includes('criticalReady') || !controllerSource.includes('c
 if (!controllerSource.includes('renderReady') || !controllerSource.includes('renderReady: true')) {
   throw new Error('Preload controller must expose a full-manifest renderReady gate.')
 }
+for (const token of ['window.__portfolioPreloadDebug', 'snapshot', 'if (!import.meta.env.DEV) return', 'Object.freeze']) {
+  if (!controllerSource.includes(token)) {
+    throw new Error(`Production preload diagnostics must retain a timer-free read-only snapshot: missing ${token}`)
+  }
+}
 if (!loaderSource.includes('preload.renderReady') || !loaderSource.includes('current.renderReady')) {
   throw new Error('Loader exit and progress must be driven by the full renderReady state.')
 }
@@ -200,6 +219,18 @@ if (/!introReady \|\| !preload\.criticalReady/.test(loaderSource)) {
 
 if (!imageDecodeQueueSource.includes('requestIdleCallback') || !imageDecodeQueueSource.includes('MIN_IDLE_BUDGET_MS')) {
   throw new Error('Image decode queue must release scroll-near decode work during idle frame budget.')
+}
+for (const token of ['detachActivityListeners', 'releaseQueueInfrastructure', "signal.addEventListener('abort'", 'activeDecodes']) {
+  if (!imageDecodeQueueSource.includes(token)) throw new Error(`Image decode queue cancellation lifecycle is missing ${token}.`)
+}
+for (const token of ['runTaskWithDeadline', 'AbortController', 'ResourceTimeoutError', 'parentSignal.removeEventListener']) {
+  if (!taskDeadlineSource.includes(token)) throw new Error(`Resource deadline contract is missing ${token}.`)
+}
+for (const token of ['createSharedResource', 'consumers', 'controller.signal.aborted', 'Failed loads are never cached']) {
+  if (!sharedResourceSource.includes(token)) throw new Error(`Shared immutable-resource lifecycle is missing ${token}.`)
+}
+if (!manifestSource.includes('load: (signal: AbortSignal)') || !manifestSource.includes('loadImage(src, {') || !manifestSource.includes('}, signal)')) {
+  throw new Error('Every manifest task must receive and propagate the preload lifecycle AbortSignal.')
 }
 
 const requiredGLQualityInputs = [
@@ -212,12 +243,29 @@ if (missingGLQualityInputs.length > 0) {
   throw new Error(`WebGL quality profile is missing dynamic budget knobs: ${missingGLQualityInputs.join(', ')}`)
 }
 
-if (!contextRegistrySource.includes('optionalContextLimit') || !contextRegistrySource.includes('canAcquireOptionalSurface')) {
-  throw new Error('WebGL context registry must gate optional surfaces through the dynamic quality budget.')
+for (const token of ['optionalContextLimit', 'tryAcquireOptionalContext', 'acquireOptionalContextWhenAvailable', 'activeLeases', 'released', 'activeContextOwners']) {
+  if (!contextRegistrySource.includes(token)) throw new Error(`WebGL context lease registry is missing ${token}.`)
+}
+
+if (!contextRegistrySource.includes('canCreateWebGL2Context') || !particlePortraitSource.includes('canCreateWebGL2Context')) {
+  throw new Error('R3F surfaces must synchronously gate unsupported WebGL2 before Canvas bootstrap.')
 }
 
 if (!particlePortraitSource.includes('quality.portraitSegments') || particlePortraitSource.includes('isMobile ? 180 : 280')) {
   throw new Error('ParticlePortrait must use the WebGL quality profile instead of fixed high-density geometry.')
+}
+if (
+  !particlePortraitSource.includes("acquireContext('hero-particle-portrait')") ||
+  !particlePortraitSource.includes('contextLeaseRef.current = lease') ||
+  !particlePortraitSource.includes('mounted && contextReady')
+) {
+  throw new Error('ParticlePortrait must reserve and own its required context before the actual R3F Canvas subtree mounts.')
+}
+if (!ditherSource.includes("tryAcquireOptionalContext('loader-dither')") || !ditherSource.includes('webglcontextlost') || !ditherSource.includes('contextLease.release()') || !ditherSource.includes('renderer.debug.onShaderError') || !ditherSource.includes('disposeSurface()')) {
+  throw new Error('loader-dither must fail closed and release its owned context after allocation, shader, or context failure.')
+}
+for (const token of ["acquireOptionalContextWhenAvailable('contact-ascii'", 'useGLSurface', 'canCreateWebGL2Context', 'stopWaitingForContext()', 'webglcontextlost', 'contextLease?.release()', 'renderer.debug.onShaderError', 'recoverFromFailure']) {
+  if (!asciiSource.includes(token)) throw new Error(`Contact ASCII lifecycle is missing ${token}.`)
 }
 
 if (chapterTransitionSource.includes('quality.transitionParticles') || chapterTransitionSource.includes('canAcquireOptionalSurface') || chapterTransitionSource.includes("import('three')")) {

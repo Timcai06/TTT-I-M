@@ -7,7 +7,10 @@ export async function resolve(specifier, context, nextResolve) {
       (specifier.startsWith('./') || specifier.startsWith('../')) &&
       !/\.[cm]?[jt]sx?$/.test(specifier)
 
-    if (!shouldTryTs || !context.parentURL?.includes('/packages/content/src/')) {
+    const isAuthoredTypeScript = context.parentURL?.includes('/packages/content/src/')
+      || context.parentURL?.includes('/apps/studio/')
+
+    if (!shouldTryTs || !isAuthoredTypeScript) {
       throw error
     }
 

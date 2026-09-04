@@ -20,6 +20,40 @@
   background: #070708;
 }
 
+.liquid-metal-button__fallback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  min-width: min(250px, calc(100% - 32px));
+  min-height: 58px;
+  padding: 0 28px;
+  border: 1px solid rgba(216, 189, 134, 0.52);
+  border-radius: 999px;
+  color: #f4f1e8;
+  background: rgba(216, 189, 134, 0.08);
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.18em;
+  transform: translate(-50%, -50%);
+  transition: opacity 120ms linear, border-color 120ms linear, background-color 120ms linear;
+}
+
+.liquid-metal-button__fallback:not(:disabled):hover,
+.liquid-metal-button__fallback:not(:disabled):focus-visible {
+  border-color: rgba(216, 189, 134, 0.88);
+  background: rgba(216, 189, 134, 0.14);
+}
+
+.liquid-metal-button[data-state='ready'] .liquid-metal-button__fallback {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.liquid-metal-button__fallback:disabled:not([aria-hidden='true']) {
+  cursor: default;
+}
+
 .spark-badge__frame,
 .liquid-metal-button__frame {
   position: absolute;
@@ -29,6 +63,7 @@
   height: 100%;
   border: 0;
   opacity: 0;
+  z-index: 1;
   transition: opacity 180ms ease-out;
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
-import { useSound } from '../lib/sound/SoundProvider'
+import { useSound } from '../lib/sound/SoundContext'
 import { LiquidMetalButton } from '../shaders/liquid-metal-button/LiquidMetalButton'
 import ScrollExpand from './ScrollExpand'
 

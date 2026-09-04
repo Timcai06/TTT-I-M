@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, Key, ReactNode, RefObject } from 'react'
+import { useReducedMotion } from '../lib/motion'
 
 export type LogoItem =
   | { node: ReactNode; href?: string; title?: string; ariaLabel?: string }
@@ -30,7 +31,9 @@ function useMeasuredSequence(
   containerRef: RefObject<HTMLDivElement | null>,
   sequenceRef: RefObject<HTMLUListElement | null>,
   vertical: boolean,
-  dependencies: readonly unknown[],
+  logos: LogoItem[],
+  gap: number,
+  logoHeight: number,
 ) {
   const [size, setSize] = useState({ sequence: 0, copies: MIN_COPIES })
 
@@ -50,48 +53,56 @@ function useMeasuredSequence(
       })
     }
 
-    const observer = new ResizeObserver(measure)
-    observer.observe(container)
-    observer.observe(sequence)
-    sequence.querySelectorAll('img').forEach((image) => {
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    if (observer) {
+      observer.observe(container)
+      observer.observe(sequence)
+    } else {
+      window.addEventListener('resize', measure, { passive: true })
+    }
+    const images = [...sequence.querySelectorAll('img')]
+    images.forEach((image) => {
       image.addEventListener('load', measure, { once: true })
       image.addEventListener('error', measure, { once: true })
     })
     measure()
 
-    return () => observer.disconnect()
-    // The logo content and layout props intentionally trigger a fresh measurement.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerRef, sequenceRef, vertical, ...dependencies])
+    return () => {
+      observer?.disconnect()
+      if (!observer) window.removeEventListener('resize', measure)
+      images.forEach((image) => {
+        image.removeEventListener('load', measure)
+        image.removeEventListener('error', measure)
+      })
+    }
+  }, [containerRef, gap, logoHeight, logos, sequenceRef, vertical])
 
   return size
 }
 
 function useLoopActivity(containerRef: RefObject<HTMLDivElement | null>) {
-  const [inView, setInView] = useState(false)
-  const [pageVisible, setPageVisible] = useState(() => document.visibilityState !== 'hidden')
-  const [reducedMotion, setReducedMotion] = useState(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === 'undefined' || document.visibilityState !== 'hidden',
   )
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const observer = new IntersectionObserver(([entry]) => setInView(Boolean(entry?.isIntersecting)), {
-      rootMargin: '120px',
-    })
+    if (typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(Boolean(entry?.isIntersecting)),
+      { rootMargin: '120px' },
+    )
     observer.observe(container)
     return () => observer.disconnect()
   }, [containerRef])
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const onMotionChange = () => setReducedMotion(media.matches)
     const onVisibilityChange = () => setPageVisible(document.visibilityState !== 'hidden')
-    media.addEventListener('change', onMotionChange)
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
-      media.removeEventListener('change', onMotionChange)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
@@ -127,7 +138,9 @@ export const LogoLoop = memo(function LogoLoop({
     containerRef,
     sequenceRef,
     vertical,
-    [logos, gap, logoHeight],
+    logos,
+    gap,
+    logoHeight,
   )
 
   const velocity = useMemo(() => {

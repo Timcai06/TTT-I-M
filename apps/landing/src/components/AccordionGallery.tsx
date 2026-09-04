@@ -3,6 +3,7 @@ import { gsap } from '../lib/gsap'
 import { scrollToChapter } from '../lib/chapterScroll'
 import { requestParticlePortal, type ParticlePortalMode } from '../lib/particlePortal'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
+import { useReducedMotion } from '../lib/motion'
 
 export interface AccordionGalleryItem {
   image: string
@@ -87,20 +88,14 @@ export default function AccordionGallery({
   const barRefs = useRef<(HTMLElement | null)[]>([])
   const textRefs = useRef<(HTMLElement | null)[]>([])
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
+  const navigationFrameRef = useRef(0)
+  const mountedRef = useRef(false)
   const firstRunRef = useRef(true)
   const mediaSizeRef = useRef(320)
   const count = items.length
   const vertical = orientation === 'vertical'
   const [active, setActive] = useState(Math.min(Math.max(defaultIndex, 0), Math.max(count - 1, 0)))
-  const [reducedMotion, setReducedMotion] = useState(false)
-
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const sync = () => setReducedMotion(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
+  const reducedMotion = useReducedMotion()
 
   const applyLayout = useCallback((animate: boolean) => {
     if (items.length === 0) return
@@ -158,9 +153,13 @@ export default function AccordionGallery({
       applyLayout(!firstRunRef.current)
     }
     measure()
-    const observer = new ResizeObserver(measure)
-    observer.observe(root)
-    return () => observer.disconnect()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    if (observer) observer.observe(root)
+    else window.addEventListener('resize', measure, { passive: true })
+    return () => {
+      observer?.disconnect()
+      if (!observer) window.removeEventListener('resize', measure)
+    }
   }, [applyLayout, count, expandRatio, gap, vertical])
 
   useEffect(() => {
@@ -168,8 +167,14 @@ export default function AccordionGallery({
     firstRunRef.current = false
   }, [applyLayout])
 
-  useEffect(() => () => {
-    timelineRef.current?.kill()
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      timelineRef.current?.kill()
+      window.cancelAnimationFrame(navigationFrameRef.current)
+      navigationFrameRef.current = 0
+    }
   }, [])
 
   if (items.length === 0) return null
@@ -193,12 +198,16 @@ export default function AccordionGallery({
         if (particleNavigation && source) {
           const keyboardActivation = event.detail === 0
           const commit = () => {
+            if (!mountedRef.current) return
             // The preview sits before lazily measured ScrollTrigger pins. Land
             // against a freshly measured spacer, then re-assert once after the
             // refresh frame so Lenis cannot restore its pre-click scroll value.
             requestScrollRefresh(true)
             scrollToChapter(chapterId, { immediate: true, updateHash: true })
-            window.requestAnimationFrame(() => {
+            window.cancelAnimationFrame(navigationFrameRef.current)
+            navigationFrameRef.current = window.requestAnimationFrame(() => {
+              navigationFrameRef.current = 0
+              if (!mountedRef.current) return
               requestScrollRefresh(true)
               scrollToChapter(chapterId, { immediate: true })
               if (keyboardActivation) {

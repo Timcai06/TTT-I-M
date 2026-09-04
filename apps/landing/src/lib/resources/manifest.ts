@@ -3,8 +3,10 @@ import {
   loadFonts,
   loadHeroTexture,
   loadImage,
+  loadLiquidMetalSource,
   loadResponsiveImage,
   loadPretext,
+  loadSparkBadgeSource,
   preloadLazyChapters,
 } from './loaders'
 
@@ -29,8 +31,8 @@ export interface ResourceTask {
   tier: ResourceTier
   /** 资源类型，用于理解成本来源：image/font/texture/chunk/particles */
   type: ResourceType
-  /** 实际加载函数；成功 resolve，失败由 preloadController 记录但不应让页面永久卡死 */
-  load: () => Promise<void>
+  /** 实际加载函数；必须响应 signal，确保超时或卸载不会留下孤儿下载/解码任务 */
+  load: (signal: AbortSignal) => Promise<void>
 }
 
 /**
@@ -88,20 +90,37 @@ export function buildResourceManifest(): ResourceTask[] {
     label: src,
     tier: 'visual',
     type: 'image',
-    load: () => loadImage(src, { decode: 'eager', fetchPriority: 'auto', loading: 'eager' }),
+    load: (signal) => loadImage(src, { decode: 'eager', fetchPriority: 'auto', loading: 'eager' }, signal),
   }))
+
+  const interactiveVisuals: ResourceTask[] = [
+    {
+      id: 'shader:liquid-metal',
+      label: 'Liquid Metal control',
+      tier: 'visual',
+      type: 'chunk',
+      load: loadLiquidMetalSource,
+    },
+    {
+      id: 'renderer:spark-badge',
+      label: 'Stack to Work renderer',
+      tier: 'visual',
+      type: 'particles',
+      load: loadSparkBadgeSource,
+    },
+  ]
 
   const responsiveImages: ResourceTask[] = archiveImages.map((image) => ({
     id: `responsive-image:${image.src}`,
     label: image.src,
     tier: 'visual',
     type: 'image',
-    load: () => loadResponsiveImage(image, {
+    load: (signal) => loadResponsiveImage(image, {
       decode: 'eager',
       fetchPriority: 'auto',
       loading: 'eager',
-    }),
+    }, signal),
   }))
 
-  return [...critical, ...staticImages, ...responsiveImages]
+  return [...critical, ...interactiveVisuals, ...staticImages, ...responsiveImages]
 }

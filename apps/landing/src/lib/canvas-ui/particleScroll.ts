@@ -4,6 +4,7 @@ import {
   type ParticleScrollInstance,
 } from './vendor/ParticleScroll/ParticleScrollVanilla'
 import { getGLQualityProfile } from '../webgl/quality'
+import { forceLoseCanvasWebGLContext } from '../webgl/contextRegistry'
 import { FRAME_PARTICLE_CONFIG } from './particleScrollConfig'
 
 export { FRAME_PARTICLE_CONFIG } from './particleScrollConfig'
@@ -54,11 +55,13 @@ export function createFrameParticles({
     })
   } catch {
     output.removeEventListener('webglcontextlost', onContextLost)
+    forceLoseCanvasWebGLContext(output)
     return null
   }
 
   if (!instance) {
     output.removeEventListener('webglcontextlost', onContextLost)
+    forceLoseCanvasWebGLContext(output)
     return null
   }
 
@@ -75,8 +78,14 @@ export function createFrameParticles({
     resize: () => instance?.resize(),
     destroy() {
       output.removeEventListener('webglcontextlost', onContextLost)
-      instance?.destroy()
-      instance = null
+      try {
+        instance?.destroy()
+      } catch {
+        // A broken vendor teardown must not strand the browser context.
+      } finally {
+        instance = null
+        forceLoseCanvasWebGLContext(output)
+      }
     },
   }
 }

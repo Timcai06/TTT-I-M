@@ -37,7 +37,7 @@ function findCachedChromiumExecutable() {
 }
 
 function resolveE2EPort() {
-  const rawPort = process.env.PLAYWRIGHT_PORT ?? '5173'
+  const rawPort = process.env.PLAYWRIGHT_PORT ?? '4173'
   const port = Number(rawPort)
 
   if (!Number.isInteger(port) || port < 1024 || port > 65_535) {
@@ -59,7 +59,7 @@ export default defineConfig({
   // one worker per CPU core can create more concurrent browser contexts than
   // headless Chromium/GitHub runners can reliably allocate, which shows up as
   // unrelated "Error creating WebGL context" noise and advisory e2e flakes.
-  workers: process.env.CI ? 1 : 3,
+  workers: 1,
   reporter: [['list']],
   use: {
     baseURL: e2eBaseURL,
@@ -71,9 +71,9 @@ export default defineConfig({
   webServer: {
     // PLAYWRIGHT_PORT lets local/agent runs avoid a developer-owned Vite
     // process without killing it or accidentally reusing a stale checkout.
-    command: `npm run dev -- --host 127.0.0.1 --port ${e2ePort}`,
+    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${e2ePort} --strictPort`,
     url: e2eBaseURL,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 90_000,
   },
   projects: [

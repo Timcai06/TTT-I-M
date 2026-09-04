@@ -3,6 +3,7 @@ import type { Project } from '../../content'
 import { gsap, useGSAP } from '../../lib/gsap'
 import { openProjectLightbox } from './lightbox'
 import { useMobileProjectMedia } from './useProjectMediaMode'
+import { useReducedMotion } from '../../lib/motion'
 
 const MobileProjectCarousel = lazy(() => import('./MobileProjectCarousel'))
 
@@ -12,11 +13,12 @@ export default function ModelingLabMedia({ project }: { project: Project }) {
   const root = useRef<HTMLDivElement>(null)
   const visual = useRef<HTMLDivElement>(null)
   const mobile = useMobileProjectMedia()
+  const reducedMotion = useReducedMotion()
   const active = cases.find((study) => study.id === activeId) ?? cases[0]
 
   useGSAP(() => {
     if (!visual.current || !active || mobile) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (reducedMotion) {
       gsap.set(visual.current, { autoAlpha: 1, y: 0 })
       return
     }
@@ -25,7 +27,7 @@ export default function ModelingLabMedia({ project }: { project: Project }) {
       { autoAlpha: 0, y: 14 },
       { autoAlpha: 1, y: 0, duration: 0.58, ease: 'power3.out', clearProps: 'transform' },
     )
-  }, { scope: root, dependencies: [active?.id, mobile], revertOnUpdate: true })
+  }, { scope: root, dependencies: [active?.id, mobile, reducedMotion], revertOnUpdate: true })
 
   if (!active) return null
 
@@ -130,4 +132,3 @@ export default function ModelingLabMedia({ project }: { project: Project }) {
     </div>
   )
 }
-

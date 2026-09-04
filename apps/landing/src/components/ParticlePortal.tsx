@@ -13,18 +13,36 @@ import {
   type ParticlePortalHandle,
 } from '../lib/canvas-ui/particlePortal'
 import {
-  acquireContext,
-  canAcquireOptionalSurface,
-  releaseContext,
+  tryAcquireOptionalContext,
 } from '../lib/webgl/contextRegistry'
 
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => window.requestAnimationFrame(() => resolve()))
+function nextFrame(signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false)
+
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (completed: boolean) => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', onAbort)
+      resolve(completed)
+    }
+    const frame = window.requestAnimationFrame(() => finish(true))
+    const onAbort = () => {
+      window.cancelAnimationFrame(frame)
+      finish(false)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) onAbort()
+  })
 }
 
-async function waitForTarget(request: ParticlePortalRequest): Promise<HTMLImageElement | null> {
+async function waitForTarget(
+  request: ParticlePortalRequest,
+  signal: AbortSignal,
+): Promise<HTMLImageElement | null> {
   for (let frame = 0; frame < 36; frame += 1) {
-    await nextFrame()
+    if (!await nextFrame(signal)) return null
     const target = request.resolveTarget()
     if (!target) continue
     if (!target.complete) {
@@ -48,11 +66,14 @@ export default function ParticlePortal() {
   const timelineRef = useRef<gsap.core.Timeline | null>(null)
   const handleRef = useRef<ParticlePortalHandle | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
+  const activeAbortRef = useRef<AbortController | null>(null)
   const busyRef = useRef(false)
   const queuedRef = useRef<ParticlePortalRequest | null>(null)
 
   useGSAP((_, contextSafe) => {
     if (!contextSafe) return
+    let disposed = false
+    let queuedFrame = 0
     const runRequest = contextSafe(async (request: ParticlePortalRequest) => {
       if (busyRef.current) {
         queuedRef.current = request
@@ -63,14 +84,17 @@ export default function ParticlePortal() {
       const runQueued = () => {
         const queued = queuedRef.current
         queuedRef.current = null
-        if (queued) window.requestAnimationFrame(() => { void runRequest(queued) })
+        if (!queued || disposed) return
+        queuedFrame = window.requestAnimationFrame(() => {
+          queuedFrame = 0
+          if (!disposed) void runRequest(queued)
+        })
       }
 
-      let committed = false
+      let commitPromise: Promise<void> | null = null
       const commit = async () => {
-        if (committed) return
-        committed = true
-        await request.commit()
+        commitPromise ??= Promise.resolve().then(() => request.commit())
+        await commitPromise
       }
 
       const runSemanticFallback = async () => {
@@ -92,7 +116,6 @@ export default function ParticlePortal() {
         || !source.isConnected
         || !source.complete
         || !canRenderParticlePortal()
-        || !canAcquireOptionalSurface()
       ) {
         await runSemanticFallback()
         return
@@ -106,6 +129,16 @@ export default function ParticlePortal() {
         return
       }
 
+      const contextLease = tryAcquireOptionalContext('particle-portal')
+      if (!contextLease) {
+        await runSemanticFallback()
+        return
+      }
+
+      const runController = new AbortController()
+      const { signal } = runController
+      activeAbortRef.current = runController
+
       // This is a transient material handoff, not a page-level renderer. Keep
       // the DOM and GPU budget at zero while idle and allocate only for a
       // request that has already passed every capability and placement gate.
@@ -114,22 +147,25 @@ export default function ParticlePortal() {
       root.append(canvas)
       canvasRef.current = canvas
 
-      let contextRegistered = false
       const sourceVisibility = source.style.visibility
       let targetVisibility = ''
       let target: HTMLImageElement | null = null
       let failed = false
+      let cleaned = false
       const progress = { value: 0 }
 
       const cleanup = () => {
+        if (cleaned) return
+        cleaned = true
         timelineRef.current?.kill()
         timelineRef.current = null
-        handleRef.current?.destroy()
-        handleRef.current = null
-        if (contextRegistered) {
-          releaseContext()
-          contextRegistered = false
+        try {
+          handleRef.current?.destroy()
+        } catch {
+          // DOM restoration and lease release remain mandatory after GL errors.
         }
+        handleRef.current = null
+        contextLease.release()
         source.style.visibility = sourceVisibility
         request.sourceContainer?.classList.remove('is-particle-departing')
         if (target) {
@@ -143,11 +179,40 @@ export default function ParticlePortal() {
         if (canvasRef.current === canvas) canvasRef.current = null
         busyRef.current = false
         cleanupRef.current = null
+        if (activeAbortRef.current === runController) activeAbortRef.current = null
       }
       cleanupRef.current = cleanup
 
-      acquireContext()
-      contextRegistered = true
+      const runTimeline = (
+        build: (timeline: gsap.core.Timeline) => void,
+        ease = 'power2.inOut',
+      ): Promise<boolean> => {
+        if (signal.aborted) return Promise.resolve(false)
+
+        return new Promise((resolve) => {
+          let settled = false
+          const finish = (completed: boolean) => {
+            if (settled) return
+            settled = true
+            signal.removeEventListener('abort', onAbort)
+            if (timelineRef.current === timeline) timelineRef.current = null
+            resolve(completed)
+          }
+          const onAbort = () => {
+            timeline.kill()
+            finish(false)
+          }
+          const timeline = gsap.timeline({
+            defaults: { ease },
+            onComplete: () => finish(true),
+          })
+          timelineRef.current = timeline
+          signal.addEventListener('abort', onAbort, { once: true })
+          if (signal.aborted) onAbort()
+          else build(timeline)
+        })
+      }
+
       const handle = createParticlePortal({
         canvas,
         image: source,
@@ -183,11 +248,13 @@ export default function ParticlePortal() {
       // completing, land the semantic jump and force the transient surface to
       // its cleanup path instead of leaving the user at the archive index.
       const semanticWatchdog = window.setTimeout(() => {
-        if (committed) return
+        if (commitPromise) return
         failed = true
-        void commit().finally(() => {
-          timelineRef.current?.progress(1)
-        })
+        void commit()
+          .catch(() => undefined)
+          .finally(() => {
+            timelineRef.current?.progress(1)
+          })
       }, 1400)
 
       const speedUpOnIntent = () => {
@@ -207,12 +274,7 @@ export default function ParticlePortal() {
       document.addEventListener('visibilitychange', pauseWhenHidden)
 
       try {
-        await new Promise<void>((resolve) => {
-          const timeline = gsap.timeline({
-            defaults: { ease: 'power2.inOut' },
-            onComplete: resolve,
-          })
-          timelineRef.current = timeline
+        const detached = await runTimeline((timeline) => {
           timeline
             .addLabel('detach', 0)
             .to(veil, {
@@ -225,11 +287,13 @@ export default function ParticlePortal() {
               onUpdate: () => handle.setProgress(progress.value),
             }, 'detach')
         })
+        if (!detached || signal.aborted) return
 
         await commit()
-        if (failed) return
+        if (failed || signal.aborted) return
 
-        target = await waitForTarget(request)
+        target = await waitForTarget(request, signal)
+        if (signal.aborted) return
         const targetPlacement = target ? measureImagePlacement(target) : null
         if (!target || !targetPlacement) {
           // The semantic action has already landed. Finish transparently rather
@@ -243,12 +307,7 @@ export default function ParticlePortal() {
         target.style.visibility = 'hidden'
         target.closest<HTMLElement>('[data-particle-portal-target]')?.classList.add('is-particle-arriving')
 
-        await new Promise<void>((resolve) => {
-          const timeline = gsap.timeline({
-            defaults: { ease: 'power3.inOut' },
-            onComplete: resolve,
-          })
-          timelineRef.current = timeline
+        await runTimeline((timeline) => {
           timeline
             .addLabel('assemble', 0)
             .to(progress, {
@@ -261,7 +320,11 @@ export default function ParticlePortal() {
               if (target) target.style.visibility = targetVisibility
             }, [], 'assemble+=0.46')
             .to(canvas, { opacity: 0, duration: 0.14, ease: 'power1.out' }, 'assemble+=0.5')
-        })
+        }, 'power3.inOut')
+      } catch (error) {
+        if (import.meta.env.DEV && !signal.aborted) {
+          console.warn('[particle-portal] transition failed; restored semantic DOM.', error)
+        }
       } finally {
         window.clearTimeout(semanticWatchdog)
         window.removeEventListener('wheel', speedUpOnIntent)
@@ -280,8 +343,11 @@ export default function ParticlePortal() {
     })
 
     return () => {
+      disposed = true
       unsubscribe()
       queuedRef.current = null
+      if (queuedFrame) window.cancelAnimationFrame(queuedFrame)
+      activeAbortRef.current?.abort(new Error('Particle Portal detached'))
       cleanupRef.current?.()
     }
   }, { scope: rootRef })

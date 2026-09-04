@@ -28,8 +28,25 @@ const transitionChapters = navChapters.map((chapter) => {
   }
 })
 
-function nextFrame() {
-  return new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
+function nextFrame(signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return Promise.resolve(false)
+
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (completed: boolean) => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', onAbort)
+      resolve(completed)
+    }
+    const frame = window.requestAnimationFrame(() => finish(true))
+    const onAbort = () => {
+      window.cancelAnimationFrame(frame)
+      finish(false)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) onAbort()
+  })
 }
 
 function splitText(text: string, className: string) {
@@ -99,7 +116,13 @@ export default function ChapterTransition() {
   })
 
   useEffect(() => {
+    const transitionRoot = rootRef.current
+    const lifecycle = new AbortController()
+    const { signal } = lifecycle
+    let activeTimeline: gsap.core.Timeline | null = null
+
     const runTransition = async (request: ChapterTransitionRequest) => {
+      if (signal.aborted) return
       if (getStage() === 'transitioning') {
         queuedRef.current = request
         return
@@ -114,11 +137,13 @@ export default function ChapterTransition() {
       setPretextReady(false)
       setTargetId(request.id)
       setActive(true)
-      await nextFrame()
+      if (!await nextFrame(signal)) return
 
       const root = rootRef.current
       if (!root) {
         scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
+        setActive(false)
+        setPretextReady(false)
         setStage('live')
         return
       }
@@ -133,24 +158,43 @@ export default function ChapterTransition() {
       // announces the destination before the page gets there.
       root.style.setProperty('--transition-cover', getChapterTheme(request.id).cover)
 
-      await new Promise<void>((resolve) => {
-        createTransitionTimeline(root, direction, {
+      const completed = await new Promise<boolean>((resolve) => {
+        let settled = false
+        const finish = (didComplete: boolean) => {
+          if (settled) return
+          settled = true
+          signal.removeEventListener('abort', onAbort)
+          activeTimeline = null
+          resolve(didComplete)
+        }
+        const onAbort = () => {
+          activeTimeline?.kill()
+          finish(false)
+        }
+
+        activeTimeline = createTransitionTimeline(root, direction, {
           onRevealTarget: () => {
+            if (signal.aborted) return
             setPretextReady(true)
             setPretextRefreshKey((key) => key + 1)
           },
           onLand: () => {
+            if (signal.aborted) return
             setPretextReady(false)
             scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
-            window.requestAnimationFrame(() => {
+            void nextFrame(signal).then((completed) => {
+              if (!completed) return
               requestScrollRefresh(true)
               ScrollTrigger.update()
               dispatchChapterArrived(request.id)
             })
           },
-          onComplete: resolve,
+          onComplete: () => finish(true),
         })
+        signal.addEventListener('abort', onAbort, { once: true })
+        if (signal.aborted) onAbort()
       })
+      if (!completed || signal.aborted) return
 
       gsap.set(root, { autoAlpha: 0, pointerEvents: 'none' })
       setActive(false)
@@ -159,12 +203,22 @@ export default function ChapterTransition() {
 
       const queued = queuedRef.current
       queuedRef.current = null
-      if (queued) void runTransition(queued)
+      if (queued && !signal.aborted) void runTransition(queued)
     }
 
-    return onChapterTransitionRequest((request) => {
+    const unsubscribe = onChapterTransitionRequest((request) => {
       void runTransition(request)
     })
+
+    return () => {
+      unsubscribe()
+      queuedRef.current = null
+      lifecycle.abort(new Error('Chapter transition detached'))
+      activeTimeline?.kill()
+      activeTimeline = null
+      if (transitionRoot) gsap.set(transitionRoot, { autoAlpha: 0, pointerEvents: 'none' })
+      if (getStage() === 'transitioning') setStage('live')
+    }
   }, [])
 
   return (

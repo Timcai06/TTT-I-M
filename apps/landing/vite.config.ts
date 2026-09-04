@@ -7,6 +7,21 @@ import {
   htmlInCanvasOriginTrial,
 } from './config/htmlInCanvasOriginTrial.ts'
 
+function deploymentMetadata() {
+  const candidate = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? ''
+  const commit = /^[a-f\d]{7,40}$/i.test(candidate) ? candidate.toLowerCase() : 'local'
+  return {
+    name: 'deployment-metadata',
+    generateBundle(this: { emitFile: (asset: { type: 'asset'; fileName: string; source: string }) => void }) {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'build-meta.json',
+        source: JSON.stringify({ application: 'landing', commit }),
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, process.cwd(), '')
@@ -16,9 +31,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      deploymentMetadata(),
       htmlInCanvasOriginTrial(originTrialToken),
       react(),
-      // GLSL `#include` support for the particle continuum shaders (plan/03).
+      // GLSL `#include` support for authored shader modules.
       glsl({ warnDuplicatedImports: true, removeDuplicatedImports: true }),
       ViteImageOptimizer({
         test: /\.(jpe?g|png|gif|tiff|webp|svg|avif)$/i,

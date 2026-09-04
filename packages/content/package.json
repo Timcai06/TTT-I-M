@@ -9,6 +9,7 @@
     "./github-connector": "./src/githubConnector.ts",
     "./github-graph-adapter": "./src/githubGraphAdapter.ts",
     "./public-preview": "./src/publicPreview.ts",
-    "./github-public-service": "./src/githubPublicService.ts"
+    "./github-public-service": "./src/githubPublicService.ts",
+    "./github-public-preview-cache": "./src/githubPublicPreviewCache.ts"
   }
 }

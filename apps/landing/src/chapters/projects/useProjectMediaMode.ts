@@ -1,18 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
+import { createMediaQueryStore } from '../../lib/mediaQueryStore'
 
 const MOBILE_MEDIA_QUERY = '(max-width: 768px), (pointer: coarse)'
+const mobileProjectMediaStore = createMediaQueryStore(MOBILE_MEDIA_QUERY)
 
 export function useMobileProjectMedia(): boolean {
-  const [mobile, setMobile] = useState(false)
-
-  useEffect(() => {
-    const query = window.matchMedia(MOBILE_MEDIA_QUERY)
-    const sync = () => setMobile(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
-
-  return mobile
+  return useSyncExternalStore(
+    mobileProjectMediaStore.subscribe,
+    mobileProjectMediaStore.getSnapshot,
+    mobileProjectMediaStore.getServerSnapshot,
+  )
 }
-

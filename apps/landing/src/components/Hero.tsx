@@ -50,11 +50,6 @@ export default function Hero() {
   const [heroPretextEnabled, setHeroPretextEnabled] = useState(false)
   /** pretext 刷新键 —— 变化时重新计算 glyph 布局（适配 resize / 重新激活）。 */
   const [pretextRefreshKey, setPretextRefreshKey] = useState(0)
-  /** 仅在非降动模式下展示粒子层（Canvas 构建成本高，降动用户无需承担）。 */
-  const [showParticleLayer] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  })
   /**
    * Effect 1: 入场动画 + 滚动 scrubbing 动画。
    * 在 gsap.context 内运行，组件卸载时 ctx.revert() 一次性清理所有 ScrollTrigger。
@@ -241,10 +236,9 @@ export default function Hero() {
       return
     }
 
-    let ticking = false
-    let initialFrame = 0
+    let syncFrame = 0
     const syncPretextAvailability = () => {
-      ticking = false
+      syncFrame = 0
       window.clearTimeout(pretextEnableTimer.current)
 
       if (window.scrollY > 6) {
@@ -257,16 +251,16 @@ export default function Hero() {
     }
 
     const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      window.requestAnimationFrame(syncPretextAvailability)
+      if (syncFrame) return
+      syncFrame = window.requestAnimationFrame(syncPretextAvailability)
     }
 
-    initialFrame = window.requestAnimationFrame(syncPretextAvailability)
+    syncFrame = window.requestAnimationFrame(syncPretextAvailability)
     window.addEventListener('scroll', onScroll, { passive: true })
 
     return () => {
-      window.cancelAnimationFrame(initialFrame)
+      window.cancelAnimationFrame(syncFrame)
+      syncFrame = 0
       window.removeEventListener('scroll', onScroll)
       window.clearTimeout(pretextEnableTimer.current)
     }
@@ -301,9 +295,7 @@ export default function Hero() {
       {/* Canvas 层：幽灵照片 → 粒子肖像 (条件渲染) → 扫描线光泽，三层堆叠 */}
       <div className="hero__canvas">
         <img className="hero__ghost hero__portrait-ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
-        {showParticleLayer && (
-          <ParticlePortrait />
-        )}
+        <ParticlePortrait />
         <div className="hero__scan" aria-hidden="true" />
       </div>
       {/* 暗角遮罩：CSS 径向渐变，使视线聚焦中央 */}

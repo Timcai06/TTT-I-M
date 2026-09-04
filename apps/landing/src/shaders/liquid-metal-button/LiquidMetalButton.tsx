@@ -1,8 +1,16 @@
-/* eslint-disable react-hooks/exhaustive-deps, react-hooks/set-state-in-effect */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { preloadLiquidMetalButtonSource } from "./liquidMetalSource";
+import {
+  buildLiquidMetalSource,
+  clampLiquidMetalValue,
+  type LiquidMetalButtonVariant,
+} from "./liquidMetalAdapter";
+import {
+  acquireOptionalContextWhenAvailable,
+  type ContextLease,
+} from "../../lib/webgl/contextRegistry";
 
-export type LiquidMetalButtonVariant = "pill" | "circle" | "play";
+export type { LiquidMetalButtonVariant } from "./liquidMetalAdapter";
 
 export type LiquidMetalButtonProps = {
   variant?: LiquidMetalButtonVariant;
@@ -15,198 +23,6 @@ export type LiquidMetalButtonProps = {
   embedded?: boolean;
   onClick?: () => void;
 };
-
-const LIQUID_METAL_BUTTON_BRIDGE = `
-<script id="liquid-metal-button-bridge">
-(() => {
-  const bridgeButton = document.getElementById('btn');
-  const bridgeStage = document.getElementById('stage');
-  if(!bridgeButton || !bridgeStage) return;
-  let bridgeConfigured = false;
-
-  window.addEventListener('message', event => {
-    if(event.source !== parent) return;
-    const config = event.data && event.data.liquidMetalButton;
-    if(!config) return;
-    bridgeConfigured = true;
-    const text = typeof config.text === 'string' ? config.text.slice(0, 24) : '';
-    const label = bridgeButton.querySelector('.lbl');
-    if(label) label.textContent = text;
-    bridgeButton.setAttribute('aria-label', text || 'Button');
-    if(Number.isFinite(config.pillWidthUnits)) {
-      bridgeStage.style.setProperty('--bw', 'calc(' + config.pillWidthUnits + ' * var(--u))');
-    }
-    const bridgeCanvas = document.getElementById('fx');
-    if(bridgeCanvas) {
-      bridgeCanvas.style.filter = config.rendering === 'monotone'
-        ? 'grayscale(1) saturate(0) contrast(1.12) brightness(.96)'
-        : 'none';
-    }
-    document.body.style.background = config.embedded ? '#0e0f12' : '';
-    bridgeStage.style.position = config.embedded ? 'absolute' : '';
-    bridgeStage.style.top = config.embedded ? '50%' : '';
-    bridgeStage.style.left = config.embedded ? '50%' : '';
-    bridgeStage.style.transform = config.embedded ? 'translate(-50%, -50%)' : '';
-  });
-
-  bridgeButton.addEventListener('click', () => {
-    parent.postMessage({ liquidMetalButton: { type: 'activate' } }, '*');
-  });
-  const postPointer = (phase, event) => {
-    parent.postMessage({
-      liquidMetalButton: {
-        type: 'pointer-bridge',
-        phase,
-        x: Number.isFinite(event && event.clientX) ? event.clientX : 0,
-        y: Number.isFinite(event && event.clientY) ? event.clientY : 0,
-        interactive: bridgeButton.matches(':hover'),
-      },
-    }, '*');
-  };
-  document.addEventListener('pointermove', event => postPointer('move', event), { passive: true });
-  document.documentElement.addEventListener('pointerleave', event => postPointer('leave', event), { passive: true });
-  window.addEventListener('blur', event => postPointer('leave', event));
-  const signalReady = attempt => {
-    if(bridgeConfigured || attempt > 7) return;
-    parent.postMessage({ liquidMetalButton: { type: 'bridge-ready' } }, '*');
-    setTimeout(() => signalReady(attempt + 1), Math.min(60 * Math.pow(1.7, attempt), 900));
-  };
-  signalReady(0);
-})();
-</script>`;
-
-const LIQUID_RUNTIME_MARKER = `<script>
-/* =====================================================================`;
-
-function injectBridge(source: string) {
-  const nonBlockingFontSource = source.replace(
-    /(<link href="https:\/\/fonts\.googleapis\.com\/[^"]+" rel="stylesheet")>/,
-    `$1 media="print" onload="this.media='all'">`,
-  );
-  return nonBlockingFontSource.replace(
-    LIQUID_RUNTIME_MARKER,
-    `${LIQUID_METAL_BUTTON_BRIDGE}\n${LIQUID_RUNTIME_MARKER}`,
-  );
-}
-
-const CIRCLE_RUNTIME_STYLE = `
-<style id="liquid-metal-circle-variant">
-  body[data-shape="circle"] .stage {
-    --h: clamp(56px, 10vmin, 72px);
-    --bw: var(--h);
-  }
-
-  body[data-shape="circle"] .btn {
-    gap: 0;
-  }
-
-  body[data-shape="circle"] .btn .ico {
-    width: 28%;
-    height: 28%;
-  }
-
-  body[data-shape="circle"] .btn .lbl {
-    display: none;
-  }
-</style>`;
-
-function sourceForVariant(source: string, variant: Exclude<LiquidMetalButtonVariant, "play">) {
-  if (variant === "pill") {
-    return injectBridge(source);
-  }
-
-  return injectBridge(source
-    .replace("</head>", `${CIRCLE_RUNTIME_STYLE}\n</head>`)
-    .replace("<body>", '<body data-shape="circle">')
-    .replace(
-      '<button class="btn" id="btn" type="button">',
-      '<button class="btn" id="btn" type="button" aria-label="Add">',
-    ));
-}
-
-function sourceForPlayVariant(source: string) {
-  return injectBridge(source
-  .replace(
-    "--bw: calc(1407 * var(--u));",
-    "--bw: var(--h);",
-  )
-  .replace(
-    "</style>",
-    `
-  /* Circular play-button adapter. The renderer and interaction graph stay
-     source-exact; only geometry, finish, outline, and accessible naming vary. */
-  body{position:relative}
-  .stage{
-    --h:88px;
-    position:absolute;top:50%;left:50%;
-    transform:translate(-50%,-50%);
-  }
-  #fx{filter:none}
-  .btn{flex-direction:column;gap:0}
-  .btn:focus-visible{outline:2px solid rgba(255,255,255,.68);outline-offset:4px}
-  .btn .ico{
-    width:calc(var(--h) * .25);height:calc(var(--h) * .25);
-    transform:translateX(calc(var(--h) * .018));
-  }
-</style>`,
-  )
-  .replace(
-    `<button class="btn" id="btn" type="button">
-    <svg class="ico" viewBox="0 0 115 115" aria-hidden="true">
-      <g stroke="currentColor" stroke-width="17" stroke-linecap="round">
-        <path d="M57.5 8.5 V106.5"/>
-        <path d="M8.5 57.5 H106.5"/>
-      </g>
-    </svg>
-    <span class="lbl">Sign up</span>
-  </button>`,
-    `<button class="btn" id="btn" type="button" aria-label="Play">
-    <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="currentColor" d="M15.5 10.75a2.2 2.2 0 0 1 3.32-1.9l18.04 13.25a2.35 2.35 0 0 1 0 3.8L18.82 39.15a2.2 2.2 0 0 1-3.32-1.9v-26.5Z"/>
-    </svg>
-  </button>`,
-  )
-  .replace(
-    "let needResize = true;",
-    "let needResize = true;\nlet playStrokeWidth = 3;",
-  )
-  .replace(
-    "const bw = Math.max(1.5, 3.2 * (BH/516));      // stroke half-width, device px",
-    "const bw = Math.max(0.5 * DPR, playStrokeWidth * DPR * 0.5); // configurable stroke half-width, device px",
-  )
-  .replace(
-    "window.__seek   = v => { clock = v; drawn = null; };",
-    `window.__seek   = v => { clock = v; drawn = null; };
-
-window.addEventListener('message', event => {
-  if(event.source !== parent) return;
-  const config = event.data && event.data.liquidMetalPlayButton;
-  if(!config) return;
-  const diameter = Math.min(160, Math.max(72, Number(config.diameter) || 88));
-  const strokeWidth = Math.min(8, Math.max(1, Number(config.strokeWidth) || 3));
-  const text = typeof config.text === 'string' ? config.text.slice(0, 24) : 'Play';
-  stage.style.setProperty('--h', diameter + 'px');
-  playStrokeWidth = strokeWidth;
-  btn.setAttribute('aria-label', text.trim() || 'Play');
-  cv.style.filter = config.rendering === 'monotone' ? 'grayscale(1) contrast(1.04)' : 'none';
-  needResize = true;
-  drawn = null;
-});`,
-  ));
-}
-
-function clamp(value: number, min: number, max: number, fallback: number) {
-  return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
 
 export function LiquidMetalButton({
   className = "",
@@ -221,11 +37,13 @@ export function LiquidMetalButton({
 }: LiquidMetalButtonProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const [frameElement, setFrameElement] = useState<HTMLIFrameElement | null>(null);
+  const contextLeaseRef = useRef<ContextLease | null>(null);
+  const instanceId = useId();
   const intersectsRef = useRef(true);
-  const [mounted, setMounted] = useState(true);
-  const [ready, setReady] = useState(false);
-  const [source, setSource] = useState<string | null>(null);
-  const [sourceFailed, setSourceFailed] = useState(false);
+  const [mounted, setMounted] = useState(
+    () => typeof document === "undefined" || document.visibilityState !== "hidden",
+  );
   const safeVariant: LiquidMetalButtonVariant =
     variant === "circle" || variant === "play" ? variant : "pill";
   const isPlayButton = safeVariant === "play";
@@ -234,37 +52,55 @@ export function LiquidMetalButton({
   const pillWidthUnits = safeVariant === "pill"
     ? Math.min(3000, Math.max(1407, 820 + safeText.length * 94))
     : undefined;
-  const playConfig = {
-    diameter: clamp(diameter, 72, 160, 88),
-    strokeWidth: clamp(strokeWidth, 1, 8, 3),
+  const sourceKey = `${safeVariant}:${safeText}`;
+  const [sourceState, setSourceState] = useState<{
+    key: string;
+    source: string | null;
+    failed: boolean;
+  }>({ key: "", source: null, failed: false });
+  const source = sourceState.key === sourceKey ? sourceState.source : null;
+  const sourceFailed = sourceState.key === sourceKey && sourceState.failed;
+  const [rendererState, setRendererState] = useState<{
+    frame: HTMLIFrameElement;
+    key: string;
+    status: "ready" | "failed";
+  } | null>(null);
+  const rendererFailed = rendererState?.key === sourceKey && rendererState.status === "failed";
+  const failed = sourceFailed || rendererFailed;
+  const playConfig = useMemo(() => ({
+    diameter: clampLiquidMetalValue(diameter, 72, 160, 88),
+    strokeWidth: clampLiquidMetalValue(strokeWidth, 1, 8, 3),
     rendering,
     text: safeText,
-  } as const;
+  } as const), [diameter, rendering, safeText, strokeWidth]);
+  const gpuRequest = useMemo(() => (
+    mounted && source && !failed
+      ? { key: sourceKey, owner: `liquid-metal:${safeVariant}:${instanceId}` }
+      : null
+  ), [failed, instanceId, mounted, safeVariant, source, sourceKey]);
+  const [grantedRequest, setGrantedRequest] = useState<typeof gpuRequest>(null);
+  const gpuGranted = gpuRequest !== null && grantedRequest === gpuRequest;
+  const ready = mounted
+    && gpuGranted
+    && rendererState?.key === sourceKey
+    && rendererState.status === "ready"
+    && rendererState.frame === frameElement;
 
   useEffect(() => {
-    let cancelled = false;
-    setReady(false);
-    setSource(null);
-    setSourceFailed(false);
-    preloadLiquidMetalButtonSource().then((baseSource) => {
-      if (cancelled) return;
-      const variantSource = isPlayButton
-        ? sourceForPlayVariant(baseSource)
-        : sourceForVariant(baseSource, safeVariant);
-      setSource(safeVariant === "pill"
-        ? variantSource.replace(
-          '<span class="lbl">Sign up</span>',
-          `<span class="lbl">${escapeHtml(safeText)}</span>`,
-        )
-        : variantSource);
+    const controller = new AbortController();
+    preloadLiquidMetalButtonSource(controller.signal).then((baseSource) => {
+      if (controller.signal.aborted) return;
+      setSourceState({
+        key: sourceKey,
+        failed: false,
+        source: buildLiquidMetalSource(baseSource, safeVariant, safeText),
+      });
     }).catch(() => {
-      if (!cancelled) {
-        setSource(null);
-        setSourceFailed(true);
-      }
+      if (controller.signal.aborted) return;
+      setSourceState({ key: sourceKey, source: null, failed: true });
     });
-    return () => { cancelled = true; };
-  }, [isPlayButton, safeText, safeVariant]);
+    return () => controller.abort(new Error("Liquid Metal source consumer detached"));
+  }, [safeText, safeVariant, sourceKey]);
 
   const syncButtonConfig = useCallback(() => {
     frameRef.current?.contentWindow?.postMessage({
@@ -275,45 +111,81 @@ export function LiquidMetalButton({
   const syncPlayConfig = useCallback(() => {
     if (!isPlayButton) return;
     frameRef.current?.contentWindow?.postMessage({ liquidMetalPlayButton: playConfig }, "*");
-  }, [isPlayButton, playConfig.diameter, playConfig.rendering, playConfig.strokeWidth, playConfig.text]);
+  }, [isPlayButton, playConfig]);
+  const assignFrame = useCallback((frame: HTMLIFrameElement | null) => {
+    frameRef.current = frame;
+    setFrameElement(frame);
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
     const sync = () => setMounted(intersectsRef.current && document.visibilityState !== "hidden");
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry) return;
-      intersectsRef.current = entry.isIntersecting;
-      sync();
-    }, { rootMargin: "80px" });
+    const observer = typeof IntersectionObserver === "undefined"
+      ? null
+      : new IntersectionObserver(([entry]) => {
+        if (!entry) return;
+        intersectsRef.current = entry.isIntersecting;
+        sync();
+      }, { rootMargin: "80px" });
 
-    observer.observe(host);
+    observer?.observe(host);
     document.addEventListener("visibilitychange", sync);
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
       document.removeEventListener("visibilitychange", sync);
     };
   }, []);
 
   useEffect(() => {
-    if (!mounted) setReady(false);
-  }, [mounted]);
+    if (!gpuRequest) return;
+    let active = true;
+
+    const stopWaiting = acquireOptionalContextWhenAvailable(
+      gpuRequest.owner,
+      (lease) => {
+        if (!active) {
+          lease.release();
+          return;
+        }
+        contextLeaseRef.current = lease;
+        queueMicrotask(() => {
+          if (active && contextLeaseRef.current === lease) setGrantedRequest(gpuRequest);
+        });
+      },
+    );
+
+    return () => {
+      active = false;
+      stopWaiting();
+      const lease = contextLeaseRef.current;
+      contextLeaseRef.current = null;
+      lease?.release();
+    };
+  }, [gpuRequest]);
 
   useEffect(() => {
-    if (!mounted || ready) return;
+    if (!mounted || ready || !source || failed || !gpuGranted) return;
 
-    let attempts = 0;
     const syncPendingFrame = () => {
       syncButtonConfig();
       syncPlayConfig();
-      attempts += 1;
-      if (attempts >= 8) setReady(true);
     };
     syncPendingFrame();
     const retry = window.setInterval(syncPendingFrame, 90);
-    return () => window.clearInterval(retry);
-  }, [mounted, ready, safeVariant, syncButtonConfig, syncPlayConfig]);
+    const deadline = window.setTimeout(() => {
+      const frameWindow = frameRef.current?.contentWindow;
+      const frame = frameRef.current;
+      if (frameWindow && frame) {
+        setRendererState({ frame, key: sourceKey, status: "failed" });
+      }
+    }, 3_000);
+    return () => {
+      window.clearInterval(retry);
+      window.clearTimeout(deadline);
+    };
+  }, [failed, gpuGranted, mounted, ready, source, sourceKey, syncButtonConfig, syncPlayConfig]);
 
   useEffect(() => {
     if (!ready) return;
@@ -330,9 +202,18 @@ export function LiquidMetalButton({
       if (!message || typeof message !== "object") return;
       const type = (message as { type?: unknown }).type;
       if (type === "bridge-ready") {
-        setReady(true);
         syncButtonConfig();
         syncPlayConfig();
+      }
+      if (type === "renderer-ready") {
+        const frame = frameRef.current;
+        if (frame) setRendererState({ frame, key: sourceKey, status: "ready" });
+        syncButtonConfig();
+        syncPlayConfig();
+      }
+      if (type === "renderer-failed") {
+        const frame = frameRef.current;
+        if (frame) setRendererState({ frame, key: sourceKey, status: "failed" });
       }
       if (type === "activate") onClick?.();
       if (type === "pointer-bridge") {
@@ -361,29 +242,37 @@ export function LiquidMetalButton({
     };
     window.addEventListener("message", receiveMessage);
     return () => window.removeEventListener("message", receiveMessage);
-  }, [cursorLabel, onClick, syncButtonConfig, syncPlayConfig]);
+  }, [cursorLabel, onClick, sourceKey, syncButtonConfig, syncPlayConfig]);
 
   return (
     <div
       ref={hostRef}
       className={`liquid-metal-button${className ? ` ${className}` : ""}`}
-      data-state={!mounted ? "paused" : sourceFailed ? "fallback" : ready ? "ready" : "loading"}
+      data-state={!mounted
+        ? "paused"
+        : failed || (source !== null && !gpuGranted)
+          ? "fallback"
+          : ready
+            ? "ready"
+            : "loading"}
       data-variant={safeVariant}
       data-cursor-label={cursorLabel}
     >
-      {mounted && sourceFailed ? (
-        <button
-          type="button"
-          className="liquid-metal-button__fallback"
-          aria-label={safeText}
-          onClick={onClick}
-        >
-          {safeText}
-        </button>
-      ) : mounted && source ? (
+      <button
+        type="button"
+        className="liquid-metal-button__fallback"
+        aria-label={safeText}
+        aria-hidden={ready ? "true" : undefined}
+        disabled={ready || !onClick}
+        tabIndex={ready ? -1 : undefined}
+        onClick={onClick}
+      >
+        {safeText}
+      </button>
+      {mounted && source && gpuGranted && !failed ? (
         <iframe
-          key={safeVariant}
-          ref={frameRef}
+          key={`${sourceKey}:${source.length}`}
+          ref={assignFrame}
           className={`liquid-metal-button__frame${ready ? " is-ready" : ""}`}
           title={safeVariant === "circle"
             ? "Interactive liquid metal circle button"
@@ -393,8 +282,8 @@ export function LiquidMetalButton({
           srcDoc={source}
           sandbox="allow-scripts"
           loading="eager"
+          referrerPolicy="no-referrer"
           onLoad={() => {
-            setReady(true);
             syncButtonConfig();
             syncPlayConfig();
           }}

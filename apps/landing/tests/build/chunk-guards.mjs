@@ -32,6 +32,18 @@ if (!indexSource.includes('ParticlePortrait')) {
   throw new Error(`Entry chunk ${indexChunk} must keep the accepted original Hero ParticlePortrait subject.`)
 }
 
+const eagerTelemetryNeedles = [
+  '@vercel/analytics',
+  '@vercel/speed-insights',
+  'window.vaq',
+  '/_vercel/insights/script.js',
+  '/_vercel/speed-insights/script.js',
+]
+const eagerTelemetryLeaks = eagerTelemetryNeedles.filter((needle) => indexSource.includes(needle))
+if (eagerTelemetryLeaks.length > 0) {
+  throw new Error(`Production telemetry leaked into ${indexChunk}: ${eagerTelemetryLeaks.join(', ')}`)
+}
+
 
 const forbiddenDebugNeedles = ['leva', '__CONTINUUM_DEBUG__', 'continuumQualityForTier']
 const debugLeaks = forbiddenDebugNeedles.filter((needle) => indexSource.includes(needle))
@@ -66,6 +78,7 @@ const PER_CHUNK_BUDGET_KB = {
   'react-vendor': 72,
   'gsap-vendor': 66,
   'index': 41,
+  'ChapterTransition': 5,
   'layout': 24,
   'workHandoff': 5,
   'projects': 18,

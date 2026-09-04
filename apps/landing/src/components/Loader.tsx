@@ -11,6 +11,7 @@ import {
   stepDisplayedProgress,
 } from '../lib/loaderTiming'
 import { DOTS12, advanceLoaderSpinnerFrame, loaderSpinnerGlyph } from '../lib/spinner'
+import { useReducedMotion } from '../lib/motion'
 
 // Lazy so the intro Dither shader (+ three) stays out of the eager index chunk;
 // the static `.intro` gradient is the fallback until it streams in.
@@ -67,8 +68,7 @@ export default function Loader() {
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
   const renderPhase = preload.criticalReady ? '02 / ARCHIVE' : '01 / SYSTEM'
   const stageText = preload.renderReady ? 'render ready' : preload.label
-  const reducedMotion = typeof window !== 'undefined'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reducedMotion = useReducedMotion()
   const spinnerGlyph = loaderSpinnerGlyph({
     frameIndex: spinnerFrame,
     ready: preload.renderReady,
@@ -181,7 +181,13 @@ export default function Loader() {
     let frame = 0
     let displayedProgress = 0
 
+    const schedule = () => {
+      if (frame !== 0 || document.hidden) return
+      frame = window.requestAnimationFrame(renderProgress)
+    }
+
     const renderProgress = () => {
+      frame = 0
       const current = preloadRef.current
       if (!current) return
 
@@ -198,12 +204,25 @@ export default function Loader() {
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
 
       if (!current.renderReady || displayedProgress < 0.999) {
-        frame = window.requestAnimationFrame(renderProgress)
+        schedule()
       }
     }
 
-    frame = window.requestAnimationFrame(renderProgress)
-    return () => window.cancelAnimationFrame(frame)
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        window.cancelAnimationFrame(frame)
+        frame = 0
+      } else {
+        schedule()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    schedule()
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.cancelAnimationFrame(frame)
+    }
   }, [])
 
   useEffect(() => {

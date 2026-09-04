@@ -122,7 +122,8 @@
   height: auto;
 }
 
-.footer__ascii .ascii-text-container pre {
+.footer__ascii .ascii-text__glyphs,
+.footer__ascii .ascii-text__fallback {
   background-attachment: scroll;
   mix-blend-mode: multiply;
   filter: contrast(1.5) saturate(1.28);

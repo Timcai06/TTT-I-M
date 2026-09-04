@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { gsap } from '../../lib/gsap'
-import { prefersReducedMotion } from '../../lib/motion'
+import { useReducedMotion } from '../../lib/motion'
+import { useMobileExperience } from '../../lib/device'
 import type { FooterLiquidController } from '../../components/FooterLiquidCursor'
 
 interface FooterRevealResult {
@@ -26,6 +27,8 @@ export function useFooterReveal(): FooterRevealResult {
   const wrapRef = useRef<HTMLDivElement>(null)
   const clockRef = useRef<HTMLTimeElement>(null)
   const liquidRef = useRef<FooterLiquidController | null>(null)
+  const reducedMotion = useReducedMotion()
+  const mobileExperience = useMobileExperience()
 
   useEffect(() => {
     const rootEl = root.current
@@ -33,7 +36,7 @@ export function useFooterReveal(): FooterRevealResult {
     const wrapEl = wrapRef.current
     if (!rootEl || !svgEl || !wrapEl) return
 
-    const animated = !prefersReducedMotion() && window.matchMedia('(min-width: 769px)').matches
+    const animated = !reducedMotion && !mobileExperience
     const aura = svgEl.querySelector<SVGCircleElement>('[data-iris-aura]')
     const core = svgEl.querySelector<SVGCircleElement>('[data-iris-core]')
     const rim = svgEl.querySelector<SVGCircleElement>('[data-iris-rim]')
@@ -175,7 +178,7 @@ export function useFooterReveal(): FooterRevealResult {
       setFooterCursorState(false)
       context.revert()
     }
-  }, [])
+  }, [mobileExperience, reducedMotion])
 
   return { clockRef, liquidRef, root, svgRef, wrapRef }
 }

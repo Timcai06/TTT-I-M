@@ -3,11 +3,15 @@
   "framework": "vite",
   "buildCommand": "npm run build:landing",
   "outputDirectory": "apps/landing/dist",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "rewrites": [
     {
       "source": "/_next/:path*",
       "destination": "https://ttt-i-m-studio.vercel.app/_next/:path*"
+    },
+    {
+      "source": "/__studio/build-meta.json",
+      "destination": "https://ttt-i-m-studio.vercel.app/api/build-meta"
     },
     {
       "source": "/blog",
@@ -52,6 +56,33 @@
   ],
   "headers": [
     {
+      "source": "/build-meta.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/(.*).woff2",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
       "source": "/(frame|life|projects|portrait|noise)/(.*)",
       "headers": [
         {
@@ -84,8 +115,8 @@
           "value": "camera=(), microphone=(), geolocation=(), payment=()"
         },
         {
-          "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; script-src 'self' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com; worker-src 'self' blob:; frame-ancestors 'self'"
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' 'sha256-+3Vw4kd8fR9/9ApEdkSB+XW9kPn3SzFHdnvj5Ozzay8=' 'sha256-XJ8PhdG2uXxycBVP0kMC0AFCnbqO0u9g3CuQR0ilu+U=' 'sha256-dUQWf519IUQZM7lIeI5+ApscASKWx4hnhCfL89ZtgAY=' 'sha256-d37lbyHzOMxOF8c/qTsZ/ndGH6F0QEpZN3wkt6fvJow=' https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com; worker-src 'self' blob:; frame-src 'self' data: blob:; frame-ancestors 'self'"
         }
       ]
     }

@@ -1,10 +1,16 @@
 import { preloadLazyChapters } from '../../chapters/registry'
+import { preloadLiquidMetalButtonSource } from '../../shaders/liquid-metal-button/liquidMetalSource'
+import {
+  portfolioSparkBadgeUrl,
+  resolveSparkBadgeSource,
+} from '../../shaders/spark-badge/sparkBadgeSource'
 import { enqueueImageDecode } from './imageDecodeQueue'
 
 // 资源类型加载器集中在这里；未来 KTX2、Draco、Meshopt GLTF 只需新增 loader 和 manifest entry。
 /** Hero 粒子肖像使用的源照片路径，同时用于 preload manifest 和 texture cache 预热。 */
 export const HERO_TEXTURE = '/portrait/tim.jpg'
 const FONT_READY_DEV_TIMEOUT_MS = 6000
+const EMPTY_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 type ImageDecodeMode = 'eager' | 'idle' | 'none'
 
 /**
@@ -18,6 +24,124 @@ interface LoadImageOptions {
   fetchPriority?: 'high' | 'low' | 'auto'
   /** 原生 loading hint；预加载 Image 对象仍显式设置，便于浏览器调度。 */
   loading?: 'eager' | 'lazy'
+}
+
+function signalError(signal: AbortSignal): Error {
+  if (signal.reason instanceof Error) return signal.reason
+  return new Error(signal.reason ? String(signal.reason) : 'Resource load aborted')
+}
+
+function awaitWithSignal<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(signalError(signal))
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(signalError(signal))
+    signal.addEventListener('abort', onAbort, { once: true })
+    void promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort)
+        resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(error instanceof Error ? error : new Error(String(error)))
+      },
+    )
+  })
+}
+
+async function decodeLoadedImage(
+  image: HTMLImageElement,
+  label: string,
+  decode: ImageDecodeMode,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (decode === 'eager' && typeof image.decode === 'function') {
+    try {
+      await image.decode()
+    } catch (error) {
+      if (import.meta.env.DEV && !signal?.aborted) {
+        console.warn(`[resources] eager image decode rejected for ${label}`, error)
+      }
+    }
+  } else if (decode === 'idle') {
+    await enqueueImageDecode(image, signal).catch((error: unknown) => {
+      if (signal?.aborted) throw error
+    })
+  }
+}
+
+function loadConfiguredImage(
+  label: string,
+  options: Required<Pick<LoadImageOptions, 'decode' | 'fetchPriority' | 'loading'>>,
+  startRequest: (image: HTMLImageElement) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const image = new Image()
+    let completing = false
+    let settled = false
+
+    const cleanup = () => {
+      image.onload = null
+      image.onerror = null
+      signal?.removeEventListener('abort', onAbort)
+    }
+    const succeed = () => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve()
+    }
+    const fail = (error: Error) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      reject(error)
+    }
+    const onAbort = () => {
+      if (settled) return
+      cleanup()
+      image.srcset = ''
+      image.src = EMPTY_IMAGE
+      fail(signal ? signalError(signal) : new Error('Resource load aborted'))
+    }
+    const complete = async () => {
+      if (settled || completing) return
+      completing = true
+      try {
+        await decodeLoadedImage(image, image.currentSrc || label, options.decode, signal)
+      } catch (error) {
+        completing = false
+        fail(error instanceof Error ? error : new Error(String(error)))
+        return
+      }
+      completing = false
+      if (signal?.aborted) onAbort()
+      else succeed()
+    }
+
+    if (signal?.aborted) {
+      fail(signalError(signal))
+      return
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+    image.decoding = 'async'
+    image.loading = options.loading
+    image.fetchPriority = options.fetchPriority
+    image.onload = () => { void complete() }
+    image.onerror = () => fail(new Error(`Failed to preload image: ${label}`))
+    try {
+      startRequest(image)
+    } catch (error) {
+      fail(error instanceof Error ? error : new Error(String(error)))
+      return
+    }
+
+    if (image.complete) {
+      if (image.naturalWidth <= 0) fail(new Error(`Failed to preload image: ${label}`))
+      else void complete()
+    }
+  })
 }
 
 /** 浏览器响应式图片选择所需的最小属性集合。 */
@@ -48,52 +172,13 @@ export function loadImage(src: string, {
   decode = 'none',
   fetchPriority = 'low',
   loading = 'lazy',
-}: LoadImageOptions = {}): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    let settled = false
-    const complete = async () => {
-      if (settled) return
-      settled = true
-      try {
-        if (decode === 'eager' && typeof image.decode === 'function') {
-          try {
-            await image.decode()
-          } catch (error) {
-            if (import.meta.env.DEV) {
-              console.warn(`[resources] eager image decode rejected for ${src}`, error)
-            }
-          }
-        } else if (decode === 'idle') {
-          // Warm-decode during idle and wait for that attempt before counting the
-          // task complete. Decode rejection is still non-fatal: onload already
-          // fired, so the DOM <img> can paint and the global timeout prevents a
-          // single problematic image from stranding the intro.
-          await enqueueImageDecode(image).catch(() => {})
-        }
-      } finally {
-        image.onload = null
-        image.onerror = null
-      }
-      resolve()
-    }
-    const image = new Image()
-    image.decoding = 'async'
-    image.loading = loading
-    image.fetchPriority = fetchPriority
-    image.onload = complete
-    image.onerror = () => reject(new Error(`Failed to preload image: ${src}`))
-    image.src = src
-
-    if (image.complete) {
-      image.onload = null
-      image.onerror = null
-      if (image.naturalWidth <= 0) {
-        reject(new Error(`Failed to preload image: ${src}`))
-        return
-      }
-      void complete()
-    }
-  })
+}: LoadImageOptions = {}, signal?: AbortSignal): Promise<void> {
+  return loadConfiguredImage(
+    src,
+    { decode, fetchPriority, loading },
+    (image) => { image.src = src },
+    signal,
+  )
 }
 
 /**
@@ -107,50 +192,17 @@ export function loadResponsiveImage({ sizes, src, srcSet }: ResponsiveImageSourc
   decode = 'eager',
   fetchPriority = 'auto',
   loading = 'eager',
-}: LoadImageOptions = {}): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    let settled = false
-    const image = new Image()
-
-    const complete = async () => {
-      if (settled) return
-      settled = true
-      try {
-        if (decode === 'eager' && typeof image.decode === 'function') {
-          await image.decode().catch((error: unknown) => {
-            if (import.meta.env.DEV) {
-              console.warn(`[resources] responsive image decode rejected for ${image.currentSrc || src}`, error)
-            }
-          })
-        } else if (decode === 'idle') {
-          await enqueueImageDecode(image).catch(() => {})
-        }
-      } finally {
-        image.onload = null
-        image.onerror = null
-      }
-      resolve()
-    }
-
-    image.decoding = 'async'
-    image.loading = loading
-    image.fetchPriority = fetchPriority
-    image.onload = complete
-    image.onerror = () => reject(new Error(`Failed to preload responsive image: ${src}`))
-    image.sizes = sizes
-    image.srcset = srcSet
-    image.src = src
-
-    if (image.complete) {
-      if (image.naturalWidth <= 0) {
-        image.onload = null
-        image.onerror = null
-        reject(new Error(`Failed to preload responsive image: ${src}`))
-        return
-      }
-      void complete()
-    }
-  })
+}: LoadImageOptions = {}, signal?: AbortSignal): Promise<void> {
+  return loadConfiguredImage(
+    src,
+    { decode, fetchPriority, loading },
+    (image) => {
+      image.sizes = sizes
+      image.srcset = srcSet
+      image.src = src
+    },
+    signal,
+  )
 }
 
 /**
@@ -159,29 +211,40 @@ export function loadResponsiveImage({ sizes, src, srcSet }: ResponsiveImageSourc
  * @dependencies CSS Font Loading API (`document.fonts.ready`)
  * @performance / @caveats DEV 超时只 warning 并继续；生产不设置额外 timer，保持浏览器原生字体门控语义。
  */
-export function loadFonts(): Promise<void> {
+export function loadFonts(signal: AbortSignal): Promise<void> {
   if (typeof document === 'undefined' || !document.fonts) return Promise.resolve()
+  if (signal.aborted) return Promise.reject(signalError(signal))
   if (import.meta.env.DEV) {
     // Race fonts.ready against a dev safety timeout, but clear the timer when
     // fonts win so the warning only fires when fonts genuinely stall (the old
     // version left the timer running and logged a false warning every load).
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       let settled = false
+      const cleanup = () => signal.removeEventListener('abort', onAbort)
       const finish = () => {
         if (settled) return
         settled = true
         window.clearTimeout(timer)
+        cleanup()
         resolve()
+      }
+      const onAbort = () => {
+        if (settled) return
+        settled = true
+        window.clearTimeout(timer)
+        cleanup()
+        reject(signalError(signal))
       }
       const timer = window.setTimeout(() => {
         if (settled) return
         console.warn(`[resources] document.fonts.ready exceeded ${FONT_READY_DEV_TIMEOUT_MS}ms in dev; continuing with current font fallback.`)
         finish()
       }, FONT_READY_DEV_TIMEOUT_MS)
+      signal.addEventListener('abort', onAbort, { once: true })
       void document.fonts.ready.then(finish)
     })
   }
-  return document.fonts.ready.then(() => undefined)
+  return awaitWithSignal(document.fonts.ready.then(() => undefined), signal)
 }
 
 /**
@@ -190,12 +253,12 @@ export function loadFonts(): Promise<void> {
  * @dependencies Three.js `TextureLoader`
  * @performance / @caveats loadAsync 成功后立即 dispose，是为了保持 WebGL “卸载释放显存”的设计边界。
  */
-export async function loadHeroTexture(): Promise<void> {
-  const THREE = await import('three')
-  const texture = await new THREE.TextureLoader().loadAsync(HERO_TEXTURE)
-  // Warms the HTTP/decode cache; the actual GPU upload happens (ref-counted) when
-  // ParticlePortrait mounts. Disposing here keeps the unmount-frees-memory design.
-  texture.dispose()
+export function loadHeroTexture(signal: AbortSignal): Promise<void> {
+  return loadImage(HERO_TEXTURE, {
+    decode: 'eager',
+    fetchPriority: 'high',
+    loading: 'eager',
+  }, signal)
 }
 
 /**
@@ -203,8 +266,21 @@ export async function loadHeroTexture(): Promise<void> {
  * @dependencies `@chenglou/pretext`
  * @performance / @caveats 只加载模块，不初始化 glyph；真实 DOM 测量仍由对应 hook 在可见时执行。
  */
-export function loadPretext(): Promise<void> {
-  return import('@chenglou/pretext').then(() => undefined)
+export function loadPretext(signal: AbortSignal): Promise<void> {
+  return awaitWithSignal(import('@chenglou/pretext').then(() => undefined), signal)
+}
+
+/** Preload the source-authored Work CTA document and its self-hosted font. */
+export function loadLiquidMetalSource(signal: AbortSignal): Promise<void> {
+  return preloadLiquidMetalButtonSource(signal).then(() => undefined)
+}
+
+/** Preload the source-authored Stack → Work renderer into the HTTP cache. */
+export async function loadSparkBadgeSource(signal: AbortSignal): Promise<void> {
+  const browserSceneUrl = resolveSparkBadgeSource(portfolioSparkBadgeUrl, 'browser')
+  const response = await fetch(browserSceneUrl, { cache: 'force-cache', signal })
+  if (!response.ok) throw new Error(`Spark Badge source failed: ${response.status}`)
+  await response.text()
 }
 
 export { preloadLazyChapters }

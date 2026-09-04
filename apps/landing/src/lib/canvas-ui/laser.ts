@@ -5,6 +5,7 @@ import {
 } from './vendor/Laser/LaserVanilla'
 import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
 import { LASER_CONFIG } from './laserConfig.ts'
+import { forceLoseCanvasWebGLContext } from '../webgl/contextRegistry.ts'
 
 export { LASER_CONFIG } from './laserConfig.ts'
 
@@ -55,13 +56,22 @@ export function createLaser(
   const markCaptureReady = () => { source.dataset.captureState = 'ready' }
   source.addEventListener('paint', markCaptureReady)
 
-  let instance: LaserInstance | null = createCanvasUiLaser(
-    { source, content, output: canvas, beamTarget: beamTarget ?? undefined },
-    LASER_CONFIG,
-  )
+  let instance: LaserInstance | null
+  try {
+    instance = createCanvasUiLaser(
+      { source, content, output: canvas, beamTarget: beamTarget ?? undefined },
+      LASER_CONFIG,
+    )
+  } catch {
+    source.removeEventListener('paint', markCaptureReady)
+    source.remove()
+    forceLoseCanvasWebGLContext(canvas)
+    return null
+  }
   if (!instance) {
     source.removeEventListener('paint', markCaptureReady)
     source.remove()
+    forceLoseCanvasWebGLContext(canvas)
     return null
   }
 
@@ -80,10 +90,14 @@ export function createLaser(
     resume() { instance?.resume() },
     resize() { instance?.resize() },
     destroy() {
-      instance?.destroy()
-      instance = null
-      source.removeEventListener('paint', markCaptureReady)
-      source.remove()
+      try {
+        instance?.destroy()
+      } finally {
+        instance = null
+        forceLoseCanvasWebGLContext(canvas)
+        source.removeEventListener('paint', markCaptureReady)
+        source.remove()
+      }
     },
   }
 }

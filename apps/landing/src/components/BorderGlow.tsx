@@ -6,6 +6,8 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react'
+import { sampleBorderGlowSweep } from '../lib/borderGlowTiming'
+import { useReducedMotion } from '../lib/motion'
 
 type SharedProps = {
   children?: ReactNode
@@ -65,47 +67,6 @@ function buildGradientVars(colors: string[]): Record<string, string> {
   return vars
 }
 
-const easeOutCubic = (x: number) => 1 - (1 - x) ** 3
-const easeInCubic = (x: number) => x ** 3
-
-function animateValue({
-  start = 0,
-  end = 100,
-  duration = 1000,
-  delay = 0,
-  ease = easeOutCubic,
-  onUpdate,
-  onEnd,
-}: {
-  start?: number
-  end?: number
-  duration?: number
-  delay?: number
-  ease?: (value: number) => number
-  onUpdate: (value: number) => void
-  onEnd?: () => void
-}) {
-  let frame = 0
-  let cancelled = false
-  const timeout = window.setTimeout(() => {
-    const startedAt = performance.now()
-    const tick = (now: number) => {
-      if (cancelled) return
-      const progress = Math.min((now - startedAt) / duration, 1)
-      onUpdate(start + (end - start) * ease(progress))
-      if (progress < 1) frame = requestAnimationFrame(tick)
-      else onEnd?.()
-    }
-    frame = requestAnimationFrame(tick)
-  }, delay)
-
-  return () => {
-    cancelled = true
-    window.clearTimeout(timeout)
-    cancelAnimationFrame(frame)
-  }
-}
-
 export default function BorderGlow({
   as = 'div',
   children,
@@ -123,8 +84,12 @@ export default function BorderGlow({
   ...rest
 }: BorderGlowProps) {
   const cardRef = useRef<HTMLElement | null>(null)
+  const reducedMotion = useReducedMotion()
+  const externalPointerMove = (rest as HTMLAttributes<HTMLElement>).onPointerMove
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    externalPointerMove?.(event)
+    if (event.defaultPrevented || reducedMotion) return
     const card = cardRef.current
     if (!card) return
     const rect = card.getBoundingClientRect()
@@ -141,60 +106,70 @@ export default function BorderGlow({
     if (angle < 0) angle += 360
     card.style.setProperty('--edge-proximity', `${(edge * 100).toFixed(3)}`)
     card.style.setProperty('--cursor-angle', `${angle.toFixed(3)}deg`)
-  }, [])
+  }, [externalPointerMove, reducedMotion])
 
   useEffect(() => {
     const card = cardRef.current
-    if (!animated || !card || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const cleanups: Array<() => void> = []
-    let played = false
-    const startSweep = () => {
-      if (played) return
-      played = true
-      const angleStart = 110
-      const angleEnd = 465
-      card.classList.add('sweep-active')
-      card.style.setProperty('--cursor-angle', `${angleStart}deg`)
-      cleanups.push(
-        animateValue({ duration: 500, onUpdate: (value) => card.style.setProperty('--edge-proximity', `${value}`) }),
-        animateValue({
-          ease: easeInCubic,
-          duration: 1500,
-          end: 50,
-          onUpdate: (value) => card.style.setProperty('--cursor-angle', `${(angleEnd - angleStart) * (value / 100) + angleStart}deg`),
-        }),
-        animateValue({
-          ease: easeOutCubic,
-          delay: 1500,
-          duration: 2250,
-          start: 50,
-          end: 100,
-          onUpdate: (value) => card.style.setProperty('--cursor-angle', `${(angleEnd - angleStart) * (value / 100) + angleStart}deg`),
-        }),
-        animateValue({
-          ease: easeInCubic,
-          delay: 2500,
-          duration: 1500,
-          start: 100,
-          end: 0,
-          onUpdate: (value) => card.style.setProperty('--edge-proximity', `${value}`),
-          onEnd: () => card.classList.remove('sweep-active'),
-        }),
-      )
+    if (!animated || !card || reducedMotion) return
+    let frame = 0
+    let elapsed = 0
+    let lastFrameAt: number | null = null
+    let intersecting = false
+    let complete = false
+
+    const stopClock = () => {
+      if (frame !== 0) cancelAnimationFrame(frame)
+      frame = 0
+      lastFrameAt = null
     }
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting) {
-        startSweep()
-        observer.disconnect()
+    const tick = (now: number) => {
+      frame = 0
+      if (!intersecting || document.visibilityState === 'hidden' || complete) {
+        lastFrameAt = null
+        return
       }
-    }, { rootMargin: '-12% 0px', threshold: 0.12 })
-    observer.observe(card)
-    return () => {
-      observer.disconnect()
-      cleanups.forEach((cleanup) => cleanup())
-      card.classList.remove('sweep-active')
+      if (lastFrameAt !== null) elapsed += Math.max(0, Math.min(now - lastFrameAt, 100))
+      lastFrameAt = now
+      const sample = sampleBorderGlowSweep(elapsed)
+      card.style.setProperty('--edge-proximity', sample.proximity.toFixed(3))
+      card.style.setProperty('--cursor-angle', `${sample.angle.toFixed(3)}deg`)
+      complete = sample.complete
+      if (complete) {
+        card.classList.remove('sweep-active')
+        observer?.disconnect()
+        return
+      }
+      frame = requestAnimationFrame(tick)
     }
-  }, [animated])
+    const syncClock = () => {
+      const shouldRun = intersecting && document.visibilityState !== 'hidden' && !complete
+      if (!shouldRun) {
+        stopClock()
+        return
+      }
+      card.classList.add('sweep-active')
+      if (frame === 0) frame = requestAnimationFrame(tick)
+    }
+    const observer = typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver((entries) => {
+          intersecting = entries[0]?.isIntersecting ?? false
+          syncClock()
+        }, { rootMargin: '-12% 0px', threshold: 0.12 })
+    const onVisibilityChange = () => syncClock()
+    if (observer) observer.observe(card)
+    else intersecting = true
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    syncClock()
+    return () => {
+      observer?.disconnect()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      stopClock()
+      card.classList.remove('sweep-active')
+      card.style.removeProperty('--edge-proximity')
+      card.style.removeProperty('--cursor-angle')
+    }
+  }, [animated, reducedMotion])
 
   const style = {
     '--card-bg': backgroundColor,

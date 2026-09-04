@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import type { CSSProperties, HTMLAttributes, ReactNode } from 'react'
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
 import { requestScrollRefresh } from '../lib/scroll/requestRefresh'
+import { useReducedMotion } from '../lib/motion'
 
 export interface ScrollExpandProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'title'> {
   src?: string
@@ -68,6 +69,7 @@ export default function ScrollExpand({
   const overlay = useRef<HTMLDivElement>(null)
   const scrim = useRef<HTMLDivElement>(null)
   const hint = useRef<HTMLDivElement>(null)
+  const reducedMotion = useReducedMotion()
 
   useGSAP(() => {
     const rootNode = root.current
@@ -77,7 +79,6 @@ export default function ScrollExpand({
     const mediaNode = media.current
     if (!rootNode || !trackNode || !stageNode || !frameNode || !mediaNode) return
 
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const startInsetX = Math.max(0, (100 - clamp(startWidth, 1, 100)) / 2)
     const startInsetY = Math.max(0, (100 - clamp(startHeight, 1, 100)) / 2)
     let stageHeight = 0
@@ -94,7 +95,7 @@ export default function ScrollExpand({
 
     measure()
 
-    if (!enabled || reduceMotion) {
+    if (!enabled || reducedMotion) {
       trackNode.style.height = `${stageHeight}px`
       gsap.set(frameNode, {
         '--se-inset-x': '0%',
@@ -168,13 +169,18 @@ export default function ScrollExpand({
 
     syncProgress()
 
-    const resizeObserver = new ResizeObserver(() => requestScrollRefresh())
-    resizeObserver.observe(rootNode)
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(() => requestScrollRefresh())
+    if (resizeObserver) resizeObserver.observe(rootNode)
+    const refreshOnResize = () => requestScrollRefresh()
+    if (!resizeObserver) window.addEventListener('resize', refreshOnResize, { passive: true })
     requestScrollRefresh()
 
     return () => {
       driver.kill()
-      resizeObserver.disconnect()
+      resizeObserver?.disconnect()
+      if (!resizeObserver) window.removeEventListener('resize', refreshOnResize)
     }
   }, {
     scope: root,
@@ -184,6 +190,7 @@ export default function ScrollExpand({
       holdDistance,
       mediaZoom,
       overlayScrim,
+      reducedMotion,
       scrollDistance,
       smoothing,
       startHeight,

@@ -3,6 +3,7 @@ import {
   type LiquidInstance,
 } from './vendor/Liquid/LiquidVanilla'
 import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
+import { forceLoseCanvasWebGLContext } from '../webgl/contextRegistry.ts'
 
 export interface LiquidFieldHandle extends EffectLifecycle {
   setActive(active: boolean): void
@@ -40,16 +41,24 @@ export function createLiquidField(canvas: HTMLCanvasElement): LiquidFieldHandle 
   // canvas detached so the section owns one visible canvas/GL context only;
   // the real Footer DOM remains the accessible foreground layer.
 
-  let instance: LiquidInstance | null = createCanvasUiLiquid(
-    { source, content, output: canvas },
-    {
-      ...LIQUID_FIELD_CONFIG,
-      captureContent: false,
-      distortion: 0,
-      blend: 0,
-    },
-  )
+  let instance: LiquidInstance | null
+  try {
+    instance = createCanvasUiLiquid(
+      { source, content, output: canvas },
+      {
+        ...LIQUID_FIELD_CONFIG,
+        captureContent: false,
+        distortion: 0,
+        blend: 0,
+      },
+    )
+  } catch {
+    forceLoseCanvasWebGLContext(canvas)
+    source.remove()
+    return null
+  }
   if (!instance) {
+    forceLoseCanvasWebGLContext(canvas)
     source.remove()
     return null
   }
@@ -80,9 +89,15 @@ export function createLiquidField(canvas: HTMLCanvasElement): LiquidFieldHandle 
     resume() { instance?.resume() },
     resize() { instance?.resize() },
     destroy() {
-      instance?.destroy()
-      instance = null
-      source.remove()
+      try {
+        instance?.destroy()
+      } catch {
+        // The wrapper still owns explicit context loss and DOM cleanup.
+      } finally {
+        instance = null
+        forceLoseCanvasWebGLContext(canvas)
+        source.remove()
+      }
     },
   }
 }

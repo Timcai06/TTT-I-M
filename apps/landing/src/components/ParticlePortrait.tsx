@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState, Component } from 'react'
+import { useCallback, useMemo, useRef, useEffect, useState, Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -7,7 +7,7 @@ import { isMobileExperience } from '../lib/device'
 import { onIntroExit } from '../lib/intro'
 import { isLive } from '../lib/stage'
 import { useGLSurface } from '../lib/webgl/useGLSurface'
-import { acquireContext, releaseContext } from '../lib/webgl/contextRegistry'
+import { acquireContext, canCreateWebGL2Context } from '../lib/webgl/contextRegistry'
 import { getGLQualityProfile, type GLQualityProfile } from '../lib/webgl/quality'
 import { acquireTexture, releaseTexture } from '../lib/webgl/textureCache'
 import vertexShader from './shaders/ParticlePortrait.vert.glsl'
@@ -18,7 +18,15 @@ import fragmentShader from './shaders/ParticlePortrait.frag.glsl'
 // memory; on scroll-back it remounts, and a live stage lets the portrait
 // re-materialize instantly instead of waiting on (or replaying) the 2.2s reveal.
 
-function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; texture: THREE.Texture }) {
+function PortraitPoints({
+  interactive,
+  quality,
+  texture,
+}: {
+  interactive: boolean
+  quality: GLQualityProfile
+  texture: THREE.Texture
+}) {
   const matRef = useRef<THREE.ShaderMaterial>(null)
   // On a remount after the intro already played, start fully materialized
   // (introRef = 1) so there's no blank wait or replayed reveal.
@@ -65,6 +73,12 @@ function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; textu
   )
 
   useEffect(() => {
+    if (!interactive) {
+      isHoveringRef.current = false
+      mouseRef.current.set(99, 99)
+      targetMouseRef.current.set(99, 99)
+      return
+    }
     const onMove = (e: MouseEvent) => {
       // 1. 获取归一化设备坐标 (NDC) [-1, 1]
       const x = (e.clientX / size.width) * 2 - 1
@@ -104,7 +118,7 @@ function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; textu
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseleave', onLeave)
     }
-  }, [size.width, size.height, viewport.width, viewport.height, aspect])
+  }, [aspect, interactive, size.height, size.width, viewport.height, viewport.width])
 
   useFrame((_, delta) => {
     if (!matRef.current) return
@@ -148,8 +162,8 @@ function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; textu
 }
 
 /**
- * @description WebGL 纹理加载 hook。通过全局 `textureCache` 获取共享纹理，保证 Hero 粒子层在
- *   scroll-away 卸载、scroll-back 重挂载时不重复上传同一张照片纹理。
+ * @description WebGL 纹理加载 hook。通过全局 `textureCache` 获取共享纹理，保证并发消费者
+ *   不重复解码/上传；最后一个消费者离场后仍会释放 GPU 纹理。
  * @dependencies
  *   - Three.js Texture filter 参数（LinearFilter / generateMipmaps=false）
  *   - `acquireTexture` / `releaseTexture` 引用计数缓存
@@ -159,7 +173,7 @@ function PortraitPoints({ quality, texture }: { quality: GLQualityProfile; textu
  *     可减少纹理上传后的 GPU 内存占用。
  *   - effect cleanup 总是调用 `releaseTexture(src)`；即使 Promise 尚未 resolve，也通过 `cancelled`
  *     阻止 setState，避免卸载后写入 React 状态。
- *   - 纹理加载失败只设置 `failed=true` 并返回 null 场景，Hero 仍由 CSS ghost photo 承担兜底视觉。
+ *   - 纹理加载失败会从共享缓存驱逐，Hero 本次由 CSS ghost photo 承担兜底；后续重挂载可干净重试。
  * @steps
  *   step1: acquireTexture(src) 从共享缓存获取或新建纹理
  *   step2: 配置纹理 filter 与 mipmap 策略
@@ -208,11 +222,15 @@ function useImperativeTexture(src: string) {
  *   step2: componentDidCatch 输出轻量 warning，保留组件栈用于调试
  *   step3: render 阶段返回 null，由 Hero 静态 ghost 视觉兜底
  */
-class CanvasErrorBoundary extends Component<{ children: ReactNode }, { errored: boolean }> {
+class CanvasErrorBoundary extends Component<{
+  children: ReactNode
+  onError: () => void
+}, { errored: boolean }> {
   state = { errored: false }
   static getDerivedStateFromError() { return { errored: true } }
   componentDidCatch(err: Error, info: ErrorInfo) {
     console.warn('[ParticlePortrait] canvas error:', err.message, info.componentStack)
+    this.props.onError()
   }
   render() {
     return this.state.errored ? null : this.props.children
@@ -224,10 +242,18 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, { errored: 
  * @dependencies `useImperativeTexture` 负责纹理缓存和失败兜底；`PortraitPoints` 负责几何与 shader 动画
  * @performance / @caveats 在纹理未就绪或失败时返回 null，避免创建空材质/空几何造成无意义 GPU work
  */
-function PortraitScene({ quality, src }: { quality: GLQualityProfile; src: string }) {
+function PortraitScene({
+  interactive,
+  quality,
+  src,
+}: {
+  interactive: boolean
+  quality: GLQualityProfile
+  src: string
+}) {
   const { texture, failed } = useImperativeTexture(src)
   if (failed || !texture) return null
-  return <PortraitPoints quality={quality} texture={texture} />
+  return <PortraitPoints interactive={interactive} quality={quality} texture={texture} />
 }
 
 /**
@@ -281,23 +307,58 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
   const { ref: wrapRef, visible, mounted } = useGLSurface()
   const reduced = useReducedMotion()
   const quality = useMemo(() => getGLQualityProfile(), [])
+  const [contextReady, setContextReady] = useState(false)
+  const contextLeaseRef = useRef<ReturnType<typeof acquireContext> | null>(null)
+  const componentMountedRef = useRef(false)
 
-  // Account this Canvas in the WebGL context budget for its mounted lifetime,
-  // so optional surfaces (the transition field) can see real pressure.
   useEffect(() => {
-    if (reduced || !mounted) return
-    acquireContext()
-    return () => releaseContext()
-  }, [reduced, mounted])
+    componentMountedRef.current = true
+    return () => { componentMountedRef.current = false }
+  }, [])
+
+  useEffect(() => {
+    if (reduced || !mounted || !canCreateWebGL2Context()) {
+      queueMicrotask(() => {
+        if (componentMountedRef.current) setContextReady(false)
+      })
+      return
+    }
+
+    // Reserve the required slot before R3F is allowed to construct its
+    // renderer. This makes the registry an admission contract instead of
+    // after-the-fact accounting and removes the race with optional surfaces.
+    const lease = acquireContext('hero-particle-portrait')
+    contextLeaseRef.current = lease
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled && contextLeaseRef.current === lease) {
+        setContextReady(true)
+      }
+    })
+    return () => {
+      cancelled = true
+      lease.release()
+      if (contextLeaseRef.current === lease) contextLeaseRef.current = null
+      queueMicrotask(() => {
+        if (componentMountedRef.current && contextLeaseRef.current === null) setContextReady(false)
+      })
+    }
+  }, [mounted, reduced])
+
+  const handleCanvasError = useCallback(() => {
+    contextLeaseRef.current?.release()
+    contextLeaseRef.current = null
+    setContextReady(false)
+  }, [])
 
   // Honour the OS "reduce motion" setting: skip the animated particle field
   // entirely. The static hero ghost photo behind it carries the composition.
   if (reduced) return null
 
   return (
-    <CanvasErrorBoundary>
-      <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
-        {mounted && (
+    <div ref={wrapRef} style={{ position: 'absolute', inset: 0 }}>
+      {mounted && contextReady && (
+        <CanvasErrorBoundary onError={handleCanvasError}>
           <Canvas
             frameloop={visible ? 'always' : 'never'}
             dpr={[1, quality.dprMax]}
@@ -305,10 +366,10 @@ export default function ParticlePortrait({ src = '/portrait/tim.jpg' }: { src?: 
             camera={{ position: [0, 0, 2.4], fov: 45 }}
             style={{ background: 'transparent' }}
           >
-            <PortraitScene quality={quality} src={src} />
+            <PortraitScene interactive={visible} quality={quality} src={src} />
           </Canvas>
-        )}
-      </div>
-    </CanvasErrorBoundary>
+        </CanvasErrorBoundary>
+      )}
+    </div>
   )
 }

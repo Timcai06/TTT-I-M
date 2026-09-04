@@ -1,0 +1,38 @@
+{
+  "repository": "https://github.com/DavidHDev/canvas-ui",
+  "defaultRevision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
+  "files": {
+    "Bend/BendVanilla.ts": {
+      "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
+      "sha256": "d9aed96ede211dd5f6972bb4a912b41a667172044c508acc92651ca8f47613c8"
+    },
+    "DecryptReveal/DecryptRevealVanilla.ts": {
+      "revision": "a4b40d03ad92a6210af114df7a1900a2675fe288",
+      "sha256": "97b9d215d98bdc7cc49f953ab686c8f6c4097cbba173f1514113dabae54098be"
+    },
+    "Glass/GlassVanilla.ts": {
+      "revision": "a4b40d03ad92a6210af114df7a1900a2675fe288",
+      "sha256": "02fb8b589fbc8d9132f223799c1593feb2251c49dd1717f64b4c056248c645af"
+    },
+    "Glass/viewportGeometry.ts": {
+      "revision": "local-adapter",
+      "sha256": "9521bc4deafcc6efa20a4c5ec5ebaf0fa4540587665cce4db6dde0a3379eb309"
+    },
+    "Laser/LaserVanilla.ts": {
+      "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
+      "sha256": "4bd9df118545c365eb5ae5c91144a82f9bfb0bfd506689d336b86c55cf9a6139"
+    },
+    "Liquid/LiquidVanilla.ts": {
+      "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
+      "sha256": "84b4c9d1062f12c72c96f7b0ad64d590b896dc274a28cfefc0fbfd2d732b28b3"
+    },
+    "ParticleScroll/ParticleScrollVanilla.ts": {
+      "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
+      "sha256": "4a36a4a6d98aa38958f3b1a114c3fa52affca4becf8dfa5f24aef671fa5c322b"
+    },
+    "rect-cache.ts": {
+      "revision": "local-adapter",
+      "sha256": "4f743f99a3cf0830f567d01143bd820776589dea1172f2eb0ccfa002d0a08382"
+    }
+  }
+}

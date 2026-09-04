@@ -166,26 +166,26 @@ function compile(gl: WebGL2RenderingContext, type: number, source: string): WebG
   return shader
 }
 
-function link(gl: WebGL2RenderingContext): {
-  program: WebGLProgram
-  vertex: WebGLShader
-  fragment: WebGLShader
-} {
+function link(gl: WebGL2RenderingContext): WebGLProgram {
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER)
-  const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER)
-  const program = gl.createProgram()
-  if (!program) throw new Error('Unable to allocate Particle Portal program')
-  gl.attachShader(program, vertex)
-  gl.attachShader(program, fragment)
-  gl.linkProgram(program)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const message = gl.getProgramInfoLog(program) ?? 'Unknown Particle Portal link error'
-    gl.deleteProgram(program)
+  let fragment: WebGLShader | null = null
+  try {
+    fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER)
+    const program = gl.createProgram()
+    if (!program) throw new Error('Unable to allocate Particle Portal program')
+    gl.attachShader(program, vertex)
+    gl.attachShader(program, fragment)
+    gl.linkProgram(program)
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      const message = gl.getProgramInfoLog(program) ?? 'Unknown Particle Portal link error'
+      gl.deleteProgram(program)
+      throw new Error(message)
+    }
+    return program
+  } finally {
     gl.deleteShader(vertex)
-    gl.deleteShader(fragment)
-    throw new Error(message)
+    if (fragment) gl.deleteShader(fragment)
   }
-  return { program, vertex, fragment }
 }
 
 function uniform(gl: WebGL2RenderingContext, program: WebGLProgram, name: string): WebGLUniformLocation {
@@ -267,37 +267,43 @@ export function createParticlePortal({
   if (!gl || gl.isContextLost()) return null
   const releaseGL = () => gl.getExtension('WEBGL_lose_context')?.loseContext()
 
-  let linked: ReturnType<typeof link>
+  let program: WebGLProgram
   try {
-    linked = link(gl)
+    program = link(gl)
   } catch {
     releaseGL()
     return null
   }
 
-  const { program, vertex, fragment } = linked
   const vao = gl.createVertexArray()
   const texture = gl.createTexture()
   if (!vao || !texture) {
     gl.deleteProgram(program)
-    gl.deleteShader(vertex)
-    gl.deleteShader(fragment)
     releaseGL()
     return null
   }
 
-  const uniforms = {
-    texture: uniform(gl, program, 'uTexture'),
-    viewport: uniform(gl, program, 'uViewport'),
-    grid: uniform(gl, program, 'uGrid'),
-    sourceRect: uniform(gl, program, 'uSourceRect'),
-    targetRect: uniform(gl, program, 'uTargetRect'),
-    sourceUv: uniform(gl, program, 'uSourceUv'),
-    targetUv: uniform(gl, program, 'uTargetUv'),
-    progress: uniform(gl, program, 'uProgress'),
-    pointSize: uniform(gl, program, 'uPointSize'),
-    dpr: uniform(gl, program, 'uDpr'),
-    mode: uniform(gl, program, 'uMode'),
+  let uniforms: Record<'texture' | 'viewport' | 'grid' | 'sourceRect' | 'targetRect' | 'sourceUv' | 'targetUv' | 'progress' | 'pointSize' | 'dpr' | 'mode', WebGLUniformLocation>
+  try {
+    uniforms = {
+      texture: uniform(gl, program, 'uTexture'),
+      viewport: uniform(gl, program, 'uViewport'),
+      grid: uniform(gl, program, 'uGrid'),
+      sourceRect: uniform(gl, program, 'uSourceRect'),
+      targetRect: uniform(gl, program, 'uTargetRect'),
+      sourceUv: uniform(gl, program, 'uSourceUv'),
+      targetUv: uniform(gl, program, 'uTargetUv'),
+      progress: uniform(gl, program, 'uProgress'),
+      pointSize: uniform(gl, program, 'uPointSize'),
+      dpr: uniform(gl, program, 'uDpr'),
+      mode: uniform(gl, program, 'uMode'),
+    }
+  } catch {
+    gl.deleteTexture(texture)
+    gl.deleteVertexArray(vao)
+    gl.deleteProgram(program)
+    releaseGL()
+    return null
   }
 
   gl.bindTexture(gl.TEXTURE_2D, texture)
@@ -314,8 +320,6 @@ export function createParticlePortal({
     gl.deleteTexture(texture)
     gl.deleteVertexArray(vao)
     gl.deleteProgram(program)
-    gl.deleteShader(vertex)
-    gl.deleteShader(fragment)
     releaseGL()
     return null
   }
@@ -403,8 +407,6 @@ export function createParticlePortal({
       gl.deleteTexture(texture)
       gl.deleteVertexArray(vao)
       gl.deleteProgram(program)
-      gl.deleteShader(vertex)
-      gl.deleteShader(fragment)
       releaseGL()
     },
   }

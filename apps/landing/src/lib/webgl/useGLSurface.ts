@@ -5,7 +5,7 @@ import type { RefObject } from 'react'
  * @description WebGL surface 的通用挂载/暂停生命周期，统一处理“靠近才挂载、可见才渲染”
  * @dependencies 依赖 IntersectionObserver；调用方通常把 visible/mounted 接到 R3F Canvas 和 frameloop
  * @performance renderMargin 控制暂停范围，mountMargin 控制卸载范围，两层 observer 形成迟滞区，避免边界来回抖动
- * @caveats 这个 hook 不直接创建 Canvas，也不登记 context；调用方仍要负责 acquireContext/releaseContext 和 reduced-motion 降级
+ * @caveats 这个 hook 不直接创建 Canvas，也不登记 context；调用方仍要持有并释放命名 ContextLease，同时负责 reduced-motion 降级
  */
 export interface GLSurfaceOptions {
   /** 渲染暂停 observer 的 rootMargin，默认 120px，进入该范围后才允许 frameloop 运行 */
@@ -41,14 +41,32 @@ export function useGLSurface({
   initiallyMounted = true,
 }: GLSurfaceOptions = {}): GLSurface {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(true)
-  const [mounted, setMounted] = useState(initiallyMounted)
+  const renderIntersectingRef = useRef(true)
+  const [visible, setVisible] = useState(() => typeof document === 'undefined' || !document.hidden)
+  const [mounted, setMounted] = useState(
+    () => initiallyMounted || typeof IntersectionObserver === 'undefined',
+  )
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    const syncVisibility = () => {
+      setVisible(renderIntersectingRef.current && document.visibilityState !== 'hidden')
+    }
+    const onVisibilityChange = () => syncVisibility()
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    if (typeof IntersectionObserver === 'undefined') {
+      renderIntersectingRef.current = true
+      return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+
     const render = new IntersectionObserver(
-      ([entry]) => { if (entry) setVisible(entry.isIntersecting) },
+      ([entry]) => {
+        if (!entry) return
+        renderIntersectingRef.current = entry.isIntersecting
+        syncVisibility()
+      },
       { rootMargin: renderMargin }
     )
     const mount = new IntersectionObserver(
@@ -57,7 +75,11 @@ export function useGLSurface({
     )
     render.observe(el)
     mount.observe(el)
-    return () => { render.disconnect(); mount.disconnect() }
+    return () => {
+      render.disconnect()
+      mount.disconnect()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
   }, [initiallyMounted, renderMargin, mountMargin])
 
   return { ref, visible, mounted }

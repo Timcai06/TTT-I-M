@@ -11,21 +11,26 @@ function escapeXml(value: string) {
 }
 
 export function GET() {
-  const items = posts.all().map((post) => `
+  const items = posts.all().map((post) => {
+    const postUrl = escapeXml(new URL(`/blog/${post.slug}`, baseUrl).href)
+    return `
     <item>
       <title>${escapeXml(post.title)}</title>
-      <link>${baseUrl}/blog/${post.slug}</link>
-      <guid>${baseUrl}/blog/${post.slug}</guid>
+      <link>${postUrl}</link>
+      <guid>${postUrl}</guid>
       <description>${escapeXml(post.excerpt)}</description>
       ${post.meta.publishedAt ? `<pubDate>${new Date(post.meta.publishedAt).toUTCString()}</pubDate>` : ''}
     </item>
-  `).join('')
+  `
+  }).join('')
+
+  const escapedBaseUrl = escapeXml(baseUrl)
 
   return new Response(`<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
       <channel>
         <title>Tim Cai Studio</title>
-        <link>${baseUrl}</link>
+        <link>${escapedBaseUrl}</link>
         <description>Studio essays and platform notes.</description>
         ${items}
       </channel>

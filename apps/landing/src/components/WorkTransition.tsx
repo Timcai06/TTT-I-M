@@ -9,7 +9,7 @@ import { dispatchWorkHandoff } from '../lib/workHandoff'
 import { LiquidMetalButton } from '../shaders/liquid-metal-button/LiquidMetalButton'
 import { preloadLiquidMetalButtonSource } from '../shaders/liquid-metal-button/liquidMetalSource'
 import { SparkBadge } from '../shaders/spark-badge/SparkBadge'
-import sparkBadgeUrl from '../shaders/spark-badge/spark-badge-portfolio.html?url'
+import { portfolioSparkBadgeUrl } from '../shaders/spark-badge/sparkBadgeSource'
 
 type SparkControls = {
   speed: number
@@ -294,7 +294,7 @@ export default function WorkTransition() {
             <SparkBadge
               variant="browser"
               keepMounted
-              sourceUrl={sparkBadgeUrl}
+              sourceUrl={portfolioSparkBadgeUrl}
               speed={initialControls.speed}
               particleAmount={initialControls.particleAmount}
               rainAmount={initialControls.rainAmount}

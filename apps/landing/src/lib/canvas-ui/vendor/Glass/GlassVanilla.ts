@@ -9,6 +9,11 @@ import {
   subscribePointer,
   type PointerSnapshot,
 } from "../../../pointerCoordinator";
+import {
+  compileWebGLShader,
+  linkWebGLProgram,
+  requireWebGLResource,
+} from "../../../webgl/programValidation";
 
 export interface GlassOptions {
   /** Lens shape. */
@@ -346,21 +351,12 @@ export function createGlass(
   }
 
   function compile(type: number, text: string): WebGLShader {
-    const shader = gl!.createShader(type)!;
-    gl!.shaderSource(shader, text);
-    gl!.compileShader(shader);
-    if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
-      console.error("Glass shader error:", gl!.getShaderInfoLog(shader));
-    }
-    return shader;
+    return compileWebGLShader(gl!, type, text, "Glass");
   }
 
   const vertexShader = compile(gl.VERTEX_SHADER, VERT);
   const fragmentShader = compile(gl.FRAGMENT_SHADER, FRAG);
-  const program = gl.createProgram()!;
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
+  const program = linkWebGLProgram(gl, vertexShader, fragmentShader, "Glass");
 
   const uniforms: Record<string, WebGLUniformLocation> = {};
   const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
@@ -369,7 +365,7 @@ export function createGlass(
     uniforms[info.name] = gl.getUniformLocation(program, info.name)!;
   }
 
-  const quad = gl.createBuffer();
+  const quad = requireWebGLResource(gl.createBuffer(), "Glass quad buffer");
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -379,7 +375,7 @@ export function createGlass(
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-  const contentTexture = gl.createTexture()!;
+  const contentTexture = requireWebGLResource(gl.createTexture(), "Glass content texture");
   gl.bindTexture(gl.TEXTURE_2D, contentTexture);
   gl.texParameteri(
     gl.TEXTURE_2D,

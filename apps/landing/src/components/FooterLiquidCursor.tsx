@@ -1,8 +1,11 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { createLiquidField, type LiquidFieldHandle } from '../lib/canvas-ui/liquidField'
-import { isTouchDevice } from '../lib/device'
-import { prefersReducedMotion } from '../lib/motion'
-import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../lib/webgl/contextRegistry'
+import { useMobileExperience } from '../lib/device'
+import { useReducedMotion } from '../lib/motion'
+import {
+  acquireOptionalContextWhenAvailable,
+  type ContextLease,
+} from '../lib/webgl/contextRegistry'
 
 export interface FooterLiquidController {
   setActive(active: boolean): void
@@ -16,43 +19,88 @@ export default function FooterLiquidCursor({
   controllerRef: RefObject<FooterLiquidController | null>
 }) {
   const host = useRef<HTMLDivElement>(null)
-  const disabled = isTouchDevice() || prefersReducedMotion()
+  const reducedMotion = useReducedMotion()
+  const disabled = useMobileExperience() || reducedMotion
 
   useEffect(() => {
     const hostEl = host.current
     if (!hostEl || disabled) return
     let canvas: HTMLCanvasElement | null = null
     let field: LiquidFieldHandle | null = null
-    let registered = false
+    let contextLease: ContextLease | null = null
     let active = false
     let lastX = 0
     let lastY = 0
     let hasPointer = false
     let pointerListening = false
+    let releasing = false
+    let waitingForContext = false
+    let failedForActivation = false
+    let stopWaitingForContext = () => {}
 
+    const onContextLost = (event: Event) => {
+      event.preventDefault()
+      failedForActivation = true
+      release()
+    }
     const release = () => {
-      field?.destroy()
+      if (releasing) return
+      releasing = true
+      stopWaitingForContext()
+      stopWaitingForContext = () => {}
+      waitingForContext = false
+      const currentField = field
+      const currentCanvas = canvas
       field = null
-      if (registered) releaseContext()
-      registered = false
-      hostEl.dataset.liquidState = 'idle'
-      canvas?.remove()
       canvas = null
+      currentCanvas?.removeEventListener('webglcontextlost', onContextLost)
+      try {
+        currentField?.destroy()
+      } catch {
+        // Context-loss cleanup is best-effort; the semantic Footer remains live.
+      } finally {
+        contextLease?.release()
+        contextLease = null
+        hostEl.dataset.liquidState = 'idle'
+        currentCanvas?.remove()
+        releasing = false
+      }
     }
     const ensure = () => {
-      if (field) return field
-      if (!canAcquireOptionalSurface()) return null
-      canvas = document.createElement('canvas')
-      hostEl.append(canvas)
-      acquireContext()
-      registered = true
-      field = createLiquidField(canvas)
-      if (!field) {
-        release()
-        return null
-      }
-      hostEl.dataset.liquidState = 'live'
-      if (active) field.setActive(true)
+      if (field || waitingForContext || failedForActivation || !active || document.hidden) return field
+      waitingForContext = true
+      hostEl.dataset.liquidState = 'waiting'
+      stopWaitingForContext = acquireOptionalContextWhenAvailable('footer-liquid', (lease) => {
+        waitingForContext = false
+        if (!active || document.hidden) {
+          lease.release()
+          hostEl.dataset.liquidState = 'idle'
+          return
+        }
+        contextLease = lease
+        canvas = document.createElement('canvas')
+        canvas.addEventListener('webglcontextlost', onContextLost)
+        hostEl.append(canvas)
+        try {
+          field = createLiquidField(canvas)
+        } catch {
+          failedForActivation = true
+          release()
+          return
+        }
+        if (!field) {
+          failedForActivation = true
+          release()
+          return
+        }
+        hostEl.dataset.liquidState = 'live'
+        try {
+          field.setActive(true)
+        } catch {
+          failedForActivation = true
+          release()
+        }
+      })
       return field
     }
     const onPointerMove = (event: PointerEvent) => {
@@ -62,7 +110,14 @@ export default function FooterLiquidCursor({
       lastX = event.clientX
       lastY = event.clientY
       hasPointer = true
-      ensure()?.splat(event.clientX, event.clientY, dx, dy)
+      const current = ensure()
+      if (!current) return
+      try {
+        current.splat(event.clientX, event.clientY, dx, dy)
+      } catch {
+        failedForActivation = true
+        release()
+      }
     }
     const setPointerTracking = (next: boolean) => {
       if (next === pointerListening) return
@@ -76,7 +131,14 @@ export default function FooterLiquidCursor({
         release()
       } else if (active) {
         setPointerTracking(true)
-        ensure()?.setActive(true)
+        const current = ensure()
+        if (!current) return
+        try {
+          current.setActive(true)
+        } catch {
+          failedForActivation = true
+          release()
+        }
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -86,15 +148,34 @@ export default function FooterLiquidCursor({
         active = next
         hostEl.classList.toggle('is-active', next)
         setPointerTracking(next)
-        if (next) ensure()?.setActive(true)
+        if (next) {
+          const current = ensure()
+          if (current) {
+            try {
+              current.setActive(true)
+            } catch {
+              failedForActivation = true
+              release()
+            }
+          }
+        }
         else {
           hasPointer = false
+          failedForActivation = false
           release()
         }
       },
-      clear() { field?.clear() },
+      clear() {
+        try {
+          field?.clear()
+        } catch {
+          failedForActivation = true
+          release()
+        }
+      },
       destroy() {
         active = false
+        failedForActivation = false
         setPointerTracking(false)
         release()
       },

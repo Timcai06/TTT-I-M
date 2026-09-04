@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react'
 import { requestScrollRefresh } from '../scroll/requestRefresh'
 import { buildResourceManifest, type ResourceTask } from './manifest'
+import { runTaskWithDeadline } from './taskDeadline'
 
 // A stuck resource (hung socket, dead CDN) must never strand the intro on a
-// black screen. Every task races this timeout; on timeout it's treated as a
-// non-fatal skip so the gate keeps moving. This is the A1 fix: previously a
-// single failed/404 image left the render-ready state false forever.
+// black screen. Every task receives a child AbortSignal; a deadline cancels
+// the underlying loader before becoming a non-fatal skip.
 const TASK_TIMEOUT_MS = 12000
 
 type PreloadTaskDebugStatus = 'pending' | 'fulfilled' | 'rejected'
 
 /**
  * 单个预加载任务的调试快照。
- * 仅在 DEV 暴露到 `window.__portfolioPreloadDebug`，用于定位 loader 卡住或资源超时。
+ * 暴露为只读快照到 `window.__portfolioPreloadDebug`，用于定位 loader 卡住或资源超时。
  */
 interface PreloadTaskDebugEntry {
   /** 任务耗时，单位 ms；任务结束后写入。 */
@@ -32,9 +32,9 @@ interface PreloadTaskDebugEntry {
 }
 
 /**
- * @description DEV 调试句柄。把预加载任务状态同步到全局窗口对象，便于在浏览器控制台排查真实进度。
+ * @description 预加载诊断句柄。任务快照在所有构建中可读，stall console 报告仅在 DEV 启用。
  * @dependencies `performance.now`、`console.table`、`window.__portfolioPreloadDebug`
- * @performance / @caveats 仅 DEV 创建；生产环境不会挂载全局对象，也不会启动 stall report timers。
+ * @performance / @caveats 生产环境只保留轻量内存快照，不启动 timer 或 console 报告。
  */
 interface PreloadDebugHandle {
   fail: (index: number, error: unknown) => void
@@ -74,12 +74,12 @@ const STALL_REPORT_DELAYS = [3000, 8000, 15000, 30000]
 declare global {
   interface Window {
     __portfolioPreloadDebug?: {
-      startedAt: number
-      tasks: PreloadTaskDebugEntry[]
+      readonly startedAt: number
+      readonly tasks: readonly Readonly<PreloadTaskDebugEntry>[]
       snapshot: () => {
-        failed: PreloadTaskDebugEntry[]
-        fulfilled: PreloadTaskDebugEntry[]
-        pending: PreloadTaskDebugEntry[]
+        readonly failed: readonly Readonly<PreloadTaskDebugEntry>[]
+        readonly fulfilled: readonly Readonly<PreloadTaskDebugEntry>[]
+        readonly pending: readonly Readonly<PreloadTaskDebugEntry>[]
       }
     }
   }
@@ -91,29 +91,10 @@ function errorMessage(error: unknown) {
 }
 
 /**
- * @description 为单个资源任务增加硬超时，防止 hung socket、坏 CDN 或图片 decode 卡住 Loader。
- * @dependencies 浏览器 `window.setTimeout`
- * @performance / @caveats 超时后 reject，由上层 `runTask` 记录为非致命失败；不要在这里吞错，
- *   否则 debug 面板无法区分真实成功和跳过。
- */
-function withTimeout(promise: Promise<void>, ms: number): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error(`timed out after ${ms}ms`)), ms)
-    promise.then(
-      () => { window.clearTimeout(timer); resolve() },
-      (error: unknown) => {
-        window.clearTimeout(timer)
-        reject(error instanceof Error ? error : new Error(String(error)))
-      }
-    )
-  })
-}
-
-/**
- * @description 创建 DEV-only 预加载调试器。
- *   定时输出 pending / fulfilled / skipped 表格，并提供 `window.__portfolioPreloadDebug.snapshot()` 手动读取。
+ * @description 创建预加载诊断器。所有构建都提供确定性的任务快照；DEV 额外定时输出
+ *   pending / fulfilled / skipped 表格。
  * @dependencies `ResourceTask` manifest、浏览器 console API、`import.meta.env.DEV`
- * @performance / @caveats stall report timers 必须在 hook cleanup 和 ready 后 stop，避免热更新时重复输出。
+ * @performance / @caveats stall report timers 只在 DEV 创建，并在 hook cleanup/ready 后 stop。
  * @steps
  *   step1: 根据 manifest 初始化每个任务的 pending entry
  *   step2: 暴露 snapshot 到 window，便于人工排查
@@ -121,7 +102,7 @@ function withTimeout(promise: Promise<void>, ms: number): Promise<void> {
  *   step4: 返回 finish/fail/report/stop 方法供 preload 流程调用
  */
 function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefined {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return undefined
+  if (typeof window === 'undefined') return undefined
 
   const startedAt = performance.now()
   const entries: PreloadTaskDebugEntry[] = tasks.map((task) => ({
@@ -131,15 +112,25 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
     status: 'pending',
   }))
 
-  const snapshot = () => ({
-    failed: entries.filter((entry) => entry.status === 'rejected'),
-    fulfilled: entries.filter((entry) => entry.status === 'fulfilled'),
-    pending: entries.filter((entry) => entry.status === 'pending'),
+  const publicEntries = (status?: PreloadTaskDebugStatus) => Object.freeze(
+    entries
+      .filter((entry) => status === undefined || entry.status === status)
+      .map((entry) => Object.freeze({ ...entry })),
+  )
+  const snapshot = () => Object.freeze({
+    failed: publicEntries('rejected'),
+    fulfilled: publicEntries('fulfilled'),
+    pending: publicEntries('pending'),
   })
 
-  window.__portfolioPreloadDebug = { startedAt, tasks: entries, snapshot }
+  window.__portfolioPreloadDebug = Object.freeze({
+    startedAt,
+    get tasks() { return publicEntries() },
+    snapshot,
+  })
 
   const report = (reason: string) => {
+    if (!import.meta.env.DEV) return
     const { failed, fulfilled, pending } = snapshot()
     const elapsed = Math.round(performance.now() - startedAt)
     console.groupCollapsed(
@@ -168,9 +159,11 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
     console.groupEnd()
   }
 
-  const timers = STALL_REPORT_DELAYS.map((delay) =>
-    window.setTimeout(() => report(`still preparing at ${delay}ms`), delay)
-  )
+  const timers = import.meta.env.DEV
+    ? STALL_REPORT_DELAYS.map((delay) =>
+        window.setTimeout(() => report(`still preparing at ${delay}ms`), delay)
+      )
+    : []
 
   return {
     fail(index, error) {
@@ -202,18 +195,35 @@ const VISUAL_CONCURRENCY = 8
  * ScrollTrigger 全局测量。超时兜底覆盖后台标签页的 rAF 节流，避免 Loader 被布局
  * settle 永久卡住。
  */
-function settleRenderLayout(): Promise<void> {
+function settleRenderLayout(signal: AbortSignal): Promise<void> {
   return new Promise<void>((resolve) => {
     let settled = false
-    const finish = () => {
+    let firstFrame = 0
+    let secondFrame = 0
+    const cleanup = () => {
+      window.clearTimeout(timeout)
+      window.cancelAnimationFrame(firstFrame)
+      window.cancelAnimationFrame(secondFrame)
+      signal.removeEventListener('abort', onAbort)
+    }
+    const finish = (refresh: boolean) => {
       if (settled) return
       settled = true
-      window.clearTimeout(timeout)
-      requestScrollRefresh(true)
+      cleanup()
+      if (refresh) requestScrollRefresh(true)
       resolve()
     }
-    const timeout = window.setTimeout(finish, 250)
-    window.requestAnimationFrame(() => window.requestAnimationFrame(finish))
+    const onAbort = () => finish(false)
+    const timeout = window.setTimeout(() => finish(true), 250)
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) {
+      onAbort()
+      return
+    }
+    firstFrame = window.requestAnimationFrame(() => {
+      firstFrame = 0
+      secondFrame = window.requestAnimationFrame(() => finish(true))
+    })
   })
 }
 
@@ -222,7 +232,7 @@ function settleRenderLayout(): Promise<void> {
  *   critical 先准备运行时，visual 随后按受控并发下载并解码当前设备会展示的资源。
  * @dependencies
  *   - `buildResourceManifest` 生成资源任务列表
- *   - `withTimeout` 为每个任务提供硬超时
+ *   - `runTaskWithDeadline` 为每个任务提供可传播的取消和硬超时
  *   - DEV 环境下的 `createPreloadDebug`
  * @performance / @caveats
  *   - visual 并发固定为 8，在网络利用率和图片解码压力之间取平衡。
@@ -254,12 +264,14 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     let criticalCompleted = 0
     const failed: string[] = []
     const debug = createPreloadDebug(tasks)
+    const lifecycle = new AbortController()
 
     const runTask = async (task: ResourceTask, index: number) => {
       try {
-        await withTimeout(task.load(), TASK_TIMEOUT_MS)
+        await runTaskWithDeadline(task.load, TASK_TIMEOUT_MS, lifecycle.signal)
         debug?.finish(index)
       } catch (error) {
+        if (lifecycle.signal.aborted) return
         // Non-fatal: a missing/slow resource is skipped, never a black screen.
         debug?.fail(index, error)
         if (!failed.includes(task.id)) failed.push(task.id)
@@ -311,7 +323,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
         setState((current) => ({ ...current, criticalReady: true, label: 'Visual archive' }))
       }
       await runGroup(visualIndexes, VISUAL_CONCURRENCY)
-      if (!cancelled) await settleRenderLayout()
+      if (!cancelled) await settleRenderLayout(lifecycle.signal)
     }
 
     void run().then(() => {
@@ -332,6 +344,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
 
     return () => {
       cancelled = true
+      lifecycle.abort(new Error('Whole-site preload unmounted'))
       debug?.stop()
     }
   }, [tasks])

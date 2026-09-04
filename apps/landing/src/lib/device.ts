@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
+import { createMediaQueryStore } from './mediaQueryStore.ts'
 
 /** 视口宽度判断 mobile 布局的断点，需和 CSS media query 保持一致。 */
 export const MOBILE_VIEWPORT_QUERY = '(max-width: 768px)'
 /** 触摸/粗指针判断，用于 iPad、小窗、触屏笔记本等非纯宽度场景。 */
 export const TOUCH_POINTER_QUERY = '(hover: none), (pointer: coarse)'
+const mobileViewportStore = createMediaQueryStore(MOBILE_VIEWPORT_QUERY)
+const touchPointerStore = createMediaQueryStore(TOUCH_POINTER_QUERY)
 
 /**
  * @description 判断当前 viewport 是否进入 mobile 宽度断点
@@ -11,7 +14,7 @@ export const TOUCH_POINTER_QUERY = '(hover: none), (pointer: coarse)'
  * @caveats SSR/测试环境没有 window 时返回 false，避免服务端读取浏览器 API
  */
 export function isMobileViewport(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia(MOBILE_VIEWPORT_QUERY).matches
+  return mobileViewportStore.getSnapshot()
 }
 
 /**
@@ -19,7 +22,7 @@ export function isMobileViewport(): boolean {
  * @dependencies window.matchMedia 和 TOUCH_POINTER_QUERY
  */
 export function isTouchDevice(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia(TOUCH_POINTER_QUERY).matches
+  return touchPointerStore.getSnapshot()
 }
 
 /**
@@ -37,22 +40,15 @@ export function isMobileExperience(): boolean {
  * @caveats 初始 state 使用 isMobileExperience；挂载后立即 update，确保浏览器恢复/旋转屏幕后状态同步
  */
 export function useMobileExperience(): boolean {
-  const [mobile, setMobile] = useState(isMobileExperience)
-
-  useEffect(() => {
-    const viewport = window.matchMedia(MOBILE_VIEWPORT_QUERY)
-    const touch = window.matchMedia(TOUCH_POINTER_QUERY)
-    const update = () => setMobile(viewport.matches || touch.matches)
-
-    viewport.addEventListener('change', update)
-    touch.addEventListener('change', update)
-    update()
-
-    return () => {
-      viewport.removeEventListener('change', update)
-      touch.removeEventListener('change', update)
-    }
-  }, [])
-
-  return mobile
+  const mobileViewport = useSyncExternalStore(
+    mobileViewportStore.subscribe,
+    mobileViewportStore.getSnapshot,
+    mobileViewportStore.getServerSnapshot,
+  )
+  const touchPointer = useSyncExternalStore(
+    touchPointerStore.subscribe,
+    touchPointerStore.getSnapshot,
+    touchPointerStore.getServerSnapshot,
+  )
+  return mobileViewport || touchPointer
 }

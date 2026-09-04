@@ -1,5 +1,11 @@
 // @ts-nocheck -- vendored source is checked upstream with a looser TS config.
 import { createRectCache } from "../rect-cache";
+import {
+  assertFramebufferComplete,
+  compileWebGLShader,
+  linkWebGLProgram,
+  requireWebGLResource,
+} from "../../../webgl/programValidation";
 
 export interface LiquidOptions {
   /** Capture and composite the HTML content. Disable for a dye-only overlay. */
@@ -382,12 +388,7 @@ export function createLiquid(
   const shaders: WebGLShader[] = [];
 
   function compile(type: number, source: string): WebGLShader {
-    const shader = gl!.createShader(type)!;
-    gl!.shaderSource(shader, source);
-    gl!.compileShader(shader);
-    if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
-      console.error("Liquid shader error:", gl!.getShaderInfoLog(shader));
-    }
+    const shader = compileWebGLShader(gl!, type, source, "Liquid");
     shaders.push(shader);
     return shader;
   }
@@ -402,10 +403,8 @@ export function createLiquid(
   const programs: WebGLProgram[] = [];
 
   function createProgram(fragSource: string): Program {
-    const program = gl!.createProgram()!;
-    gl!.attachShader(program, vertexShader);
-    gl!.attachShader(program, compile(gl!.FRAGMENT_SHADER, fragSource));
-    gl!.linkProgram(program);
+    const fragmentShader = compile(gl!.FRAGMENT_SHADER, fragSource);
+    const program = linkWebGLProgram(gl!, vertexShader, fragmentShader, "Liquid");
     programs.push(program);
     const uniforms: Record<string, WebGLUniformLocation> = {};
     const count = gl!.getProgramParameter(program, gl!.ACTIVE_UNIFORMS);
@@ -426,7 +425,7 @@ export function createLiquid(
   const pressureProgram = createProgram(FRAG_PRESSURE);
   const gradientProgram = createProgram(FRAG_GRADIENT);
 
-  const quad = gl.createBuffer();
+  const quad = requireWebGLResource(gl.createBuffer(), "Liquid quad buffer");
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -442,7 +441,7 @@ export function createLiquid(
     format: number,
     filter: number,
   ): Target {
-    const texture = gl!.createTexture()!;
+    const texture = requireWebGLResource(gl!.createTexture(), "Liquid simulation texture");
     gl!.bindTexture(gl!.TEXTURE_2D, texture);
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, filter);
     gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, filter);
@@ -459,7 +458,7 @@ export function createLiquid(
       gl!.HALF_FLOAT,
       null,
     );
-    const fbo = gl!.createFramebuffer()!;
+    const fbo = requireWebGLResource(gl!.createFramebuffer(), "Liquid simulation framebuffer");
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo);
     gl!.framebufferTexture2D(
       gl!.FRAMEBUFFER,
@@ -468,6 +467,7 @@ export function createLiquid(
       texture,
       0,
     );
+    assertFramebufferComplete(gl!, "Liquid simulation");
     gl!.viewport(0, 0, size, size);
     gl!.clearColor(0, 0, 0, 1);
     gl!.clear(gl!.COLOR_BUFFER_BIT);
@@ -595,7 +595,7 @@ export function createLiquid(
 
   syncCanvasSize();
 
-  const contentTexture = gl.createTexture()!;
+  const contentTexture = requireWebGLResource(gl.createTexture(), "Liquid content texture");
   gl.bindTexture(gl.TEXTURE_2D, contentTexture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

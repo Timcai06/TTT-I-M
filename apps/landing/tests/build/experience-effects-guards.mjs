@@ -13,6 +13,7 @@ const required = [
   'src/components/ScrollExpand.tsx',
   'src/components/SciScopeFilm.tsx',
   'src/lib/sound/SoundProvider.tsx',
+  'src/lib/sound/SoundContext.ts',
   'src/lib/canvas-ui/particleScroll.ts',
   'src/lib/canvas-ui/particleScrollConfig.ts',
   'src/lib/canvas-ui/particlePortal.ts',
@@ -28,8 +29,10 @@ const required = [
   'src/lib/canvas-ui/vendor/Glass/viewportGeometry.ts',
   'src/lib/pointerCoordinator.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
+  'src/shaders/liquid-metal-button/liquidMetalAdapter.ts',
   'src/shaders/liquid-metal-button/liquid-metal-button.html',
   'src/shaders/spark-badge/SparkBadge.tsx',
+  'src/shaders/spark-badge/sparkBadgeSource.ts',
   'src/shaders/spark-badge/spark-badge.html',
   'src/shaders/spark-badge/spark-badge-portfolio.html',
   'public/projects/sciscope/sciscope-concept-film.mp4',
@@ -93,7 +96,11 @@ const liquidRuntime = read('src/lib/canvas-ui/liquidField.ts')
 const liquidVendor = read('src/lib/canvas-ui/vendor/Liquid/LiquidVanilla.ts')
 const workTransition = read('src/components/WorkTransition.tsx')
 const workTransitionStyle = read('src/styles/components/work-transition.css')
-const liquidMetalButton = read('src/shaders/liquid-metal-button/LiquidMetalButton.tsx')
+const liquidMetalButton = [
+  'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
+  'src/shaders/liquid-metal-button/liquidMetalAdapter.ts',
+].map(read).join('\n')
+const sparkBadgeSource = read('src/shaders/spark-badge/sparkBadgeSource.ts')
 const sciScopeFilm = read('src/components/SciScopeFilm.tsx')
 const sciScopeFilmStyle = read('src/styles/components/sciscope-film.css')
 const soundProvider = read('src/lib/sound/SoundProvider.tsx')
@@ -108,7 +115,7 @@ if (/ParticleContinuum|lib\/continuum/.test(app) || existsSync('src/lib/continuu
   throw new Error('The retired global Particle Continuum must not remain in the Landing runtime.')
 }
 
-for (const token of ['onParticlePortalRequest', 'canAcquireOptionalSurface', 'releaseContext', 'visibilitychange', 'waitForTarget']) {
+for (const token of ['onParticlePortalRequest', "tryAcquireOptionalContext('particle-portal')", 'contextLease.release()', 'visibilitychange', 'waitForTarget', 'commitPromise ??=']) {
   if (!particlePortal.includes(token)) throw new Error(`Particle Portal lifecycle is missing ${token}.`)
 }
 for (const token of ["document.createElement('canvas')", 'root.append(canvas)', 'canvas.remove()', 'canvasRef.current = null']) {
@@ -130,8 +137,11 @@ if (!workTransition.includes('variant="browser"') || !workTransition.includes('L
 if (!workTransition.includes('useReducedMotion') || !workTransition.includes('controlsForProgress') || !workTransition.includes('ctaMounted')) {
   throw new Error('The Stack → Work bridge must retain reduced-motion and scroll-driven particle controls.')
 }
-if (!workTransition.includes('spark-badge-portfolio.html?url')) {
-  throw new Error('The portfolio must use its budgeted Spark scene while preserving the canonical source beside it.')
+if (!workTransition.includes('portfolioSparkBadgeUrl') || !sparkBadgeSource.includes("spark-badge-portfolio.html?url")) {
+  throw new Error('The portfolio must use one shared URL contract for its budgeted Spark scene.')
+}
+for (const token of ['resolveSparkBadgeSource', 'variant=${variant}', 'portfolioSparkBadgeUrl']) {
+  if (!sparkBadgeSource.includes(token)) throw new Error(`Spark source identity must retain ${token}.`)
 }
 if (!workTransitionStyle.includes('height: var(--work-transition-height-desktop)') || !workTransitionStyle.includes('height: var(--work-transition-height-mobile)')) {
   throw new Error('The Stack → Work bridge must retain its measured desktop/mobile narrative space.')
@@ -172,10 +182,16 @@ if (!/\.work-transition__spark\s*\{[^}]*pointer-events:\s*none/s.test(workTransi
 if (workTransitionStyle.includes('mask-image: radial-gradient(ellipse 72% 76%')) {
   throw new Error('The Liquid Metal CTA bloom must not be clipped by the retired radial mask.')
 }
-for (const token of ['media="print"', 'bridge-ready', 'pointer-bridge', 'portfolio:iframe-pointer', 'syncPendingFrame', 'escapeHtml(safeText)']) {
+for (const token of ['bridge-ready', 'renderer-ready', 'renderer-failed', 'pointer-bridge', 'portfolio:iframe-pointer', 'syncPendingFrame', 'escapeHtml(text)', 'status: "failed"', 'typeof window.__set', 'webglcontextlost', 'contextLeaseRef', 'acquireOptionalContextWhenAvailable', 'lease?.release()']) {
   if (!liquidMetalButton.includes(token)) throw new Error(`Liquid Metal runtime must avoid a blank font-blocked entrance: ${token}`)
 }
-for (const token of ['keepMounted', 'spark-badge-activity', 'postActivity(active)']) {
+if (/\{mounted\s*\?\s*\(\s*<button[^>]*liquid-metal-button__fallback/s.test(liquidMetalButton)) {
+  throw new Error('Liquid Metal must keep its semantic fallback button mounted independently of GPU visibility admission.')
+}
+if (liquidMetalButton.includes('onload="this.media=')) {
+  throw new Error('Liquid Metal must not depend on an inline event handler that enforced CSP will block.')
+}
+for (const token of ['keepMounted', 'useGLSurface', 'mountMargin: keepMounted ? "140% 0px" : "80px"', 'spark-badge-activity', 'postActivity(active && mounted)']) {
   if (!workTransition.includes(token) && !read('src/shaders/spark-badge/SparkBadge.tsx').includes(token)) {
     throw new Error(`Stack → Work must preload and pause its right-side Spark resource: ${token}`)
   }
@@ -223,14 +239,22 @@ for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFl
 for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
   if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
 }
-for (const token of ['supportsHtmlInCanvas', 'canAcquireOptionalSurface', 'acquireContext', 'releaseContext', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')"]) {
+for (const token of ['supportsHtmlInCanvas', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
-for (const token of ['retainFallbackUntilReady', 'failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', '1600']) {
+for (const token of ['failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', 'INITIAL_IMAGE_WAIT_MS', 'FACTORY_STARTUP_WAIT_MS', 'FIRST_FRAME_WAIT_MS', 'availability.some']) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
 }
-for (const token of ['canvas-ui-html--retained-fallback', "data-canvas-ui-state='loading'", "data-canvas-ui-state='active'", 'visibility: hidden']) {
-  if (!canvasHtmlStyle.includes(token)) throw new Error(`Glass seamless handoff CSS is missing ${token}.`)
+for (const token of ['.canvas-ui-html > [drawable]', '.canvas-ui-html__source', 'opacity: 0', 'pointer-events: none']) {
+  if (!canvasHtmlStyle.includes(token)) throw new Error(`Canvas UI single-DOM handoff CSS is missing ${token}.`)
+}
+if ((canvasHtmlSurface.match(/\{children\}/g) ?? []).length !== 1) {
+  throw new Error('Canvas UI host must render exactly one semantic React subtree.')
+}
+for (const forbidden of ['retainFallbackUntilReady', 'canvas-ui-html__fallback', 'canvas-ui-html--retained-fallback']) {
+  if (canvasHtmlSurface.includes(forbidden) || canvasHtmlStyle.includes(forbidden) || glassSurface.includes(forbidden)) {
+    throw new Error(`Canvas UI must never duplicate its semantic subtree: ${forbidden}`)
+  }
 }
 for (const forbidden of ['preserveDom', 'captureRef', 'MutationObserver']) {
   if (canvasHtmlSurface.includes(forbidden)) {
@@ -263,7 +287,7 @@ for (const token of ['projects__header', '<ProjectsBento />']) {
     throw new Error(`Project Glass overview must capture the complete Work opening: ${token}.`)
   }
 }
-for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'portalOutput', 'retainFallbackUntilReady', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'portalOutput', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
 }
 for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemove'", "addEventListener('scroll'", 'elementFromPoint', 'portfolio:iframe-pointer']) {
@@ -308,6 +332,9 @@ if (!glassSurface.includes("import('../../lib/canvas-ui/vendor/Glass/GlassVanill
 for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'laserActive']) {
   if (!projects.includes(token)) throw new Error(`Projects laser intro is missing ${token}.`)
 }
+for (const token of ["acquireOptionalContextWhenAvailable('project-laser'", 'contextLease?.release()', 'ResizeObserver']) {
+  if (!projectLaser.includes(token)) throw new Error(`Project Laser lifecycle must retain ${token}.`)
+}
 if (projects.includes('--laser-progress')) {
   throw new Error('Project Laser must respond to the CTA handoff rather than becoming a persistent scroll overlay.')
 }
@@ -333,10 +360,10 @@ for (const forbidden of ['WheelEvent', 'lenis.stop()', 'overflow: scroll']) {
 for (const token of ['FrameParticleHandoff', 'lazy(loadFrameParticleHandoff)', 'frame-particle-handoff--loading']) {
   if (!frame.includes(token)) throw new Error(`Frame → Stack particle handoff is missing ${token}.`)
 }
-for (const token of ['setScrollState', 'data-frame-particles', 'data-frame-particle-capture', 'markDrawableSubtree', 'canAcquireOptionalSurface', 'releaseContext', "start: 'top top'", "end: 'bottom bottom'"]) {
+for (const token of ['setScrollState', 'data-frame-particles', 'data-frame-particle-capture', 'markDrawableSubtree', "acquireOptionalContextWhenAvailable('frame-particle-handoff'", 'contextLease?.release()', 'readiness.every(Boolean)', "start: 'top top'", "end: 'bottom bottom'"]) {
   if (!frameParticles.includes(token)) throw new Error(`Frame Particle Scroll lifecycle must retain ${token}.`)
 }
-for (const token of ["mode: 'dissolve'", 'point: 0.61', 'band: 320', 'density: 2', 'size: 1.1', 'spread: 260', 'gravity: 0.08', 'drift: 0.4', 'swirl: 80', 'settle: 0.82', 'smoothing: 0.26', 'frontStart: 0.18', 'frontEnd: 1.28', 'canRenderFrameParticles']) {
+for (const token of ["mode: 'dissolve'", 'point: 0.61', 'band: 320', 'density: 2', 'size: 1.1', 'spread: 260', 'gravity: 0.08', 'drift: 0.4', 'swirl: 80', 'settle: 0.82', 'smoothing: 0.26', 'frontStart: 0.18', 'frontEnd: 1.28', 'canRenderFrameParticles', 'forceLoseCanvasWebGLContext']) {
   if (!frameParticleRuntime.includes(token)) throw new Error(`Frame Particle Scroll adapter must retain ${token}.`)
 }
 for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'config.mode === "dissolve"', 'signalProgress', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
@@ -349,6 +376,9 @@ for (const forbidden of ['externalProgress', '--particle-front', 'mask-image:', 
   if (frameParticleVendor.includes(forbidden) || frameParticles.includes(forbidden) || frameStyle.includes(forbidden)) {
     throw new Error(`Frame Particle Scroll must not retain the rejected hybrid renderer: ${forbidden}`)
   }
+}
+if (frameParticles.includes('Promise.allSettled')) {
+  throw new Error('Frame Particle Scroll must not promote failed image decodes into a Canvas takeover.')
 }
 for (const forbidden of ['WheelEvent', 'KeyboardEvent', 'lenis.stop()', 'overflow: scroll']) {
   if (frameParticles.includes(forbidden) || frameParticleRuntime.includes(forbidden)) {
@@ -370,7 +400,7 @@ for (const token of ['force: 0.62', 'pressureIterations: 3', 'simResolution: 96'
 for (const token of ['FRAG_DIVERGENCE', 'FRAG_CURL', 'FRAG_VORTICITY', 'FRAG_PRESSURE', 'FRAG_GRADIENT', 'captureContent']) {
   if (!liquidVendor.includes(token)) throw new Error(`Vendored Canvas UI Liquid must retain ${token}.`)
 }
-for (const token of ['canAcquireOptionalSurface', 'releaseContext', 'visibilitychange']) {
+for (const token of ["acquireOptionalContextWhenAvailable('footer-liquid'", 'stopWaitingForContext()', 'contextLease?.release()', 'visibilitychange']) {
   if (!footerLiquid.includes(token)) throw new Error(`Footer liquid lifecycle must retain ${token}.`)
 }
 for (const token of ['<ScrollExpand', 'useWindowScroll={!mobile}', 'enabled={!mobile && !reducedMotion}', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
@@ -397,7 +427,7 @@ if (!sciScopeFilmStyle.includes('100dvh - 86px') || !sciScopeFilmStyle.includes(
 if (!app.includes('SoundProvider') || !nav.includes('aria-pressed={soundEnabled}')) {
   throw new Error('The global opt-in sound provider and accessible nav toggle must remain wired.')
 }
-for (const requiredSoundToken of ['MASTER_GAIN = 0.28', 'FADE_SECONDS = 0.18', 'visibilitychange', 'AudioBufferSourceNode']) {
+for (const requiredSoundToken of ['MASTER_GAIN = 0.28', 'FADE_SECONDS = 0.18', 'SOUNDTRACK_TIMEOUT_MS', 'bufferGenerationRef', 'controller.signal.aborted', 'visibilitychange', 'AudioBufferSourceNode']) {
   if (!soundProvider.includes(requiredSoundToken)) throw new Error(`SoundProvider is missing ${requiredSoundToken}.`)
 }
 if (/sciscope-concept-film|sciscope-soundtrack/.test(loader)) {
@@ -435,7 +465,7 @@ if (!(skillsIndex < transitionIndex && transitionIndex < projectsIndex)) {
 
 const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex')
 const canonicalScenes = {
-  'src/shaders/liquid-metal-button/liquid-metal-button.html': '76624e881a3aecbd79b473d9c51f53c7157d47052abd0f9dc28fefd223b0a819',
+  'src/shaders/liquid-metal-button/liquid-metal-button.html': '692b8bb800ab273bc74dd2c0df3a5cb911269cc7928834b85b0925e0d86fee3e',
   'src/shaders/spark-badge/spark-badge.html': 'a8eefdee0d87deefae9b8b8dac4d79c0ee41447578a78090cad9c956e33ccf90',
 }
 for (const [path, expected] of Object.entries(canonicalScenes)) {
@@ -471,7 +501,7 @@ if (
 for (const token of ['Math.min(safeItems.length, 5)', 'column * 5 + slot * 3', 'TONE_SEQUENCE', 'toneBuckets', "'data-tone'", "'--dw-card-position'"]) {
   if (!driftWall.includes(token)) throw new Error(`DriftWall must preserve varied equal-width image distribution: ${token}`)
 }
-for (const token of ['renderActive', "document.addEventListener('visibilitychange'", "drift-wall${renderActive ? ' is-render-active' : ''}"]) {
+for (const token of ['renderActive', 'useReducedMotion', "document.addEventListener('visibilitychange'", "renderActive && !reducedMotion", '!renderActive || reducedMotion', "typeof ResizeObserver === 'undefined'", "typeof IntersectionObserver === 'undefined'", 'drift-wall__semantic', 'aria-hidden="true"']) {
   if (!driftWall.includes(token)) throw new Error(`DriftWall must stop its offscreen frame loop: ${token}`)
 }
 for (const token of ['clusterElements', 'imagesByCluster', 'latestProgress', 'measuredScrollDistance']) {

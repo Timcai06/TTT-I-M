@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../lib/gsap'
-import { prefersReducedMotion } from '../lib/motion'
+import { useReducedMotion } from '../lib/motion'
 
 interface CountUpProps {
   /** Target value to count up (or down) to. */
@@ -35,6 +35,7 @@ export default function CountUp({
   className = '',
 }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null)
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const el = ref.current
@@ -48,7 +49,7 @@ export default function CountUp({
       return `${prefix}${body}${suffix}`
     }
 
-    if (prefersReducedMotion()) {
+    if (reducedMotion) {
       el.textContent = format(to)
       return
     }
@@ -56,26 +57,41 @@ export default function CountUp({
     el.textContent = format(from)
     const counter = { val: from }
     let played = false
+    let tween: gsap.core.Tween | null = null
+
+    const play = () => {
+      if (played) return
+      played = true
+      tween = gsap.to(counter, {
+        val: to,
+        duration,
+        ease: 'power2.out',
+        onUpdate: () => {
+          el.textContent = format(counter.val)
+        },
+      })
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      play()
+      return () => tween?.kill()
+    }
 
     const io = new IntersectionObserver(
       (entries) => {
-        if (!entries[0]?.isIntersecting || played) return
-        played = true
-        gsap.to(counter, {
-          val: to,
-          duration,
-          ease: 'power2.out',
-          onUpdate: () => {
-            el.textContent = format(counter.val)
-          },
-        })
+        if (!entries[0]?.isIntersecting) return
+        play()
+        io.disconnect()
       },
       { threshold: 0.6 }
     )
     io.observe(el)
 
-    return () => io.disconnect()
-  }, [to, from, duration, suffix, prefix, separator])
+    return () => {
+      io.disconnect()
+      tween?.kill()
+    }
+  }, [duration, from, prefix, reducedMotion, separator, suffix, to])
 
   return <span ref={ref} className={`count-up ${className}`.trim()} />
 }

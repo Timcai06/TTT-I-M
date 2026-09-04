@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useReducedMotion } from '../lib/motion'
 
 export type DriftWallTone = 'warm' | 'cool' | 'neutral' | 'dark'
 
@@ -83,46 +84,55 @@ export default function DriftWall({
   const activeIdRef = useRef<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [height, setHeight] = useState(620)
-  const [reducedMotion, setReducedMotion] = useState(false)
+  const reducedMotion = useReducedMotion()
   const [renderActive, setRenderActive] = useState(false)
 
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const sync = () => setReducedMotion(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
+  const safeItems = useMemo<DriftWallItem[]>(
+    () => items.length > 0 ? items : [{ image: '', title: 'Archive', tone: 'neutral' }],
+    [items],
+  )
 
   useLayoutEffect(() => {
     const root = containerRef.current
     if (!root) return
-    const resize = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (entry) setHeight(entry.contentRect.height || 620)
-    })
-    let inView = false
+
+    const measure = () => {
+      setHeight(root.getBoundingClientRect().height || root.clientHeight || 620)
+    }
+    measure()
+    const resize = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver((entries) => {
+          const entry = entries[0]
+          if (entry) setHeight(entry.contentRect.height || 620)
+        })
+    if (resize) resize.observe(root)
+    else window.addEventListener('resize', measure, { passive: true })
+
+    let inView = typeof IntersectionObserver === 'undefined'
     const syncActivity = () => {
       setRenderActive(inView && document.visibilityState !== 'hidden')
     }
-    const visibility = new IntersectionObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      inView = entry.isIntersecting
-      syncActivity()
-    }, { rootMargin: '20% 0px', threshold: 0.01 })
-    resize.observe(root)
-    visibility.observe(root)
+    const visibility = typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver((entries) => {
+          const entry = entries[0]
+          if (!entry) return
+          inView = entry.isIntersecting
+          syncActivity()
+        }, { rootMargin: '20% 0px', threshold: 0.01 })
+    visibility?.observe(root)
+    syncActivity()
     document.addEventListener('visibilitychange', syncActivity)
     return () => {
-      resize.disconnect()
-      visibility.disconnect()
+      resize?.disconnect()
+      if (!resize) window.removeEventListener('resize', measure)
+      visibility?.disconnect()
       document.removeEventListener('visibilitychange', syncActivity)
     }
   }, [])
 
   const columnItems = useMemo(() => {
-    const safeItems: DriftWallItem[] = items.length > 0 ? items : [{ image: '', title: 'Archive', tone: 'neutral' }]
     const count = Math.min(safeItems.length, 5)
 
     if (!safeItems.some((item) => item.tone)) {
@@ -151,7 +161,7 @@ export default function DriftWall({
         return item
       }),
     )
-  }, [columns, items])
+  }, [columns, safeItems])
 
   const columnMeta = useMemo(() => {
     const unit = tileHeight + gap
@@ -179,8 +189,9 @@ export default function DriftWall({
   }, [depth, roll, scale, tilt, turn])
 
   useEffect(() => {
-    if (!renderActive) {
+    if (!renderActive || reducedMotion) {
       lastTimeRef.current = null
+      if (reducedMotion) applyPlaneTransform(0, 0)
       return
     }
     const animate = (time: number) => {
@@ -193,8 +204,6 @@ export default function DriftWall({
       pointerDampedRef.current.x += (pointerRef.current.x * maxTilt - pointerDampedRef.current.x) * damp
       pointerDampedRef.current.y += (-pointerRef.current.y * maxTilt - pointerDampedRef.current.y) * damp
       applyPlaneTransform(pointerDampedRef.current.x, pointerDampedRef.current.y)
-      if (reducedMotion) return
-
       trackRefs.current.forEach((track, index) => {
         const meta = columnMeta[index]
         if (!track || !meta) return
@@ -270,18 +279,16 @@ export default function DriftWall({
       'data-tile-id': id,
       'data-tone': item.tone ?? 'neutral',
       style: tileStyle,
-      onFocus: () => activate(id, column),
-      onBlur: release,
     }
     return item.href
-      ? <a key={id} href={item.href} {...common}>{body}</a>
-      : <span key={id} tabIndex={0} role="img" aria-label={item.title ?? 'Life archive image'} {...common}>{body}</span>
+      ? <a key={id} href={item.href} tabIndex={-1} {...common}>{body}</a>
+      : <span key={id} {...common}>{body}</span>
   }
 
   return (
     <div
       ref={containerRef}
-      className={`drift-wall${renderActive ? ' is-render-active' : ''}${reducedMotion ? ' drift-wall--reduced' : ''}${className ? ` ${className}` : ''}`}
+      className={`drift-wall${renderActive && !reducedMotion ? ' is-render-active' : ''}${reducedMotion ? ' drift-wall--reduced' : ''}${className ? ` ${className}` : ''}`}
       style={cssVars}
       onPointerMove={(event) => {
         const rect = containerRef.current?.getBoundingClientRect()
@@ -304,7 +311,16 @@ export default function DriftWall({
       role="group"
       aria-label="Life archive — drifting wall of photographs"
     >
-      <div ref={planeRef} className="drift-wall__plane">
+      <ul className="drift-wall__semantic">
+        {safeItems.map((item, index) => (
+          <li key={`${item.image}-${index}`}>
+            {item.href
+              ? <a href={item.href}>{item.title ?? 'Life archive image'}</a>
+              : <span>{item.title ?? 'Life archive image'}</span>}
+          </li>
+        ))}
+      </ul>
+      <div ref={planeRef} className="drift-wall__plane" aria-hidden="true">
         {columnItems.map((column, columnIndex) => {
           const meta = columnMeta[columnIndex]
           if (!meta) return null

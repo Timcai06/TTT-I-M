@@ -1,16 +1,16 @@
-/* eslint-disable react-refresh/only-export-components */
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react'
-
-export type SoundCue = 'entry' | 'query' | 'evidence' | 'synthesis'
+import {
+  SoundContext,
+  type SoundContextValue,
+  type SoundCue,
+} from './SoundContext'
 
 type Segment = { offset: number; duration: number }
 
@@ -25,9 +25,15 @@ const STORAGE_KEY = 'tim-portfolio-sound'
 const SOUNDTRACK_URL = '/projects/sciscope/sciscope-soundtrack.mp3'
 const FADE_SECONDS = 0.18
 const MASTER_GAIN = 0.28
+const SOUNDTRACK_TIMEOUT_MS = 12_000
 
 function readStoredPreference() {
-  return typeof window !== 'undefined' && window.localStorage.getItem(STORAGE_KEY) === 'on'
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === 'on'
+  } catch {
+    return false
+  }
 }
 
 type ActiveSource = {
@@ -36,17 +42,6 @@ type ActiveSource = {
   gain: GainNode
 }
 
-interface SoundContextValue {
-  enabled: boolean
-  setEnabled: (enabled: boolean) => void
-  playSegment: (cue: SoundCue) => void
-  stopActive: () => void
-  enterFilmMode: (video: HTMLVideoElement) => Promise<void>
-  exitFilmMode: (video?: HTMLVideoElement | null) => void
-}
-
-const SoundContext = createContext<SoundContextValue | null>(null)
-
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabledState] = useState(readStoredPreference)
   const enabledRef = useRef(enabled)
@@ -54,6 +49,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const masterRef = useRef<GainNode | null>(null)
   const bufferRef = useRef<AudioBuffer | null>(null)
   const bufferPromiseRef = useRef<Promise<AudioBuffer> | null>(null)
+  const bufferAbortRef = useRef<AbortController | null>(null)
+  const bufferGenerationRef = useRef(0)
   const activeRef = useRef<ActiveSource | null>(null)
   const requestedCueRef = useRef<SoundCue | null>(null)
   const lastCueRequestAtRef = useRef(0)
@@ -64,13 +61,17 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     if (contextRef.current) return contextRef.current
     const AudioContextClass = window.AudioContext
     if (!AudioContextClass) return null
-    const context = new AudioContextClass()
-    const master = context.createGain()
-    master.gain.value = MASTER_GAIN
-    master.connect(context.destination)
-    contextRef.current = context
-    masterRef.current = master
-    return context
+    try {
+      const context = new AudioContextClass()
+      const master = context.createGain()
+      master.gain.value = MASTER_GAIN
+      master.connect(context.destination)
+      contextRef.current = context
+      masterRef.current = master
+      return context
+    } catch {
+      return null
+    }
   }, [])
 
   const activateContext = useCallback(async () => {
@@ -91,22 +92,52 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     if (bufferPromiseRef.current) return bufferPromiseRef.current
     const context = ensureContext()
     if (!context) throw new Error('Web Audio is unavailable')
-    bufferPromiseRef.current = fetch(SOUNDTRACK_URL)
+    const controller = new AbortController()
+    const generation = ++bufferGenerationRef.current
+    const timeout = window.setTimeout(() => {
+      controller.abort(new Error(`Soundtrack request timed out after ${SOUNDTRACK_TIMEOUT_MS}ms`))
+    }, SOUNDTRACK_TIMEOUT_MS)
+    bufferAbortRef.current = controller
+    const request = fetch(SOUNDTRACK_URL, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`Soundtrack request failed: ${response.status}`)
         return response.arrayBuffer()
       })
-      .then((data) => context.decodeAudioData(data))
+      .finally(() => {
+        window.clearTimeout(timeout)
+        if (bufferAbortRef.current === controller) bufferAbortRef.current = null
+      })
+      .then((data) => {
+        if (controller.signal.aborted || generation !== bufferGenerationRef.current) {
+          throw controller.signal.reason instanceof Error
+            ? controller.signal.reason
+            : new Error('Soundtrack request was superseded')
+        }
+        return context.decodeAudioData(data)
+      })
       .then((buffer) => {
+        if (controller.signal.aborted || generation !== bufferGenerationRef.current) {
+          throw controller.signal.reason instanceof Error
+            ? controller.signal.reason
+            : new Error('Soundtrack decode completed after cancellation')
+        }
         bufferRef.current = buffer
         return buffer
       })
       .catch((error) => {
-        bufferPromiseRef.current = null
+        if (bufferPromiseRef.current === request) bufferPromiseRef.current = null
         throw error
       })
-    return bufferPromiseRef.current
+    bufferPromiseRef.current = request
+    return request
   }, [ensureContext])
+
+  const cancelBufferRequest = useCallback((reason: string) => {
+    bufferGenerationRef.current += 1
+    bufferAbortRef.current?.abort(new Error(reason))
+    bufferAbortRef.current = null
+    bufferPromiseRef.current = null
+  }, [])
 
   const fadeActive = useCallback(() => {
     const active = activeRef.current
@@ -121,6 +152,23 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       active.source.stop(now + FADE_SECONDS + 0.01)
     } catch {
       // The source may already have completed its segment.
+    }
+  }, [])
+
+  const disposeActive = useCallback(() => {
+    const active = activeRef.current
+    activeRef.current = null
+    if (!active) return
+    try {
+      active.source.stop()
+    } catch {
+      // The source may already have ended.
+    }
+    try {
+      active.source.disconnect()
+      active.gain.disconnect()
+    } catch {
+      // Nodes can already be detached by their ended handler.
     }
   }, [])
 
@@ -143,20 +191,43 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         if (!context || context.state !== 'running') return
         if (!enabledRef.current || filmModeRef.current || requestedCueRef.current !== cue) return
         const segment = SEGMENTS[cue]
-        const source = context.createBufferSource()
-        const gain = context.createGain()
-        source.buffer = buffer
-        gain.gain.setValueAtTime(0, context.currentTime)
-        gain.gain.linearRampToValueAtTime(1, context.currentTime + FADE_SECONDS)
-        source.connect(gain)
-        gain.connect(masterRef.current ?? context.destination)
-        activeRef.current = { cue, source, gain }
-        source.addEventListener('ended', () => {
-          if (activeRef.current?.source === source) activeRef.current = null
-        }, { once: true })
-        source.start(0, segment.offset, segment.duration)
+        let source: AudioBufferSourceNode | null = null
+        let gain: GainNode | null = null
+        try {
+          source = context.createBufferSource()
+          gain = context.createGain()
+          source.buffer = buffer
+          gain.gain.setValueAtTime(0, context.currentTime)
+          gain.gain.linearRampToValueAtTime(1, context.currentTime + FADE_SECONDS)
+          source.connect(gain)
+          gain.connect(masterRef.current ?? context.destination)
+          const activeSource = source
+          const activeGain = gain
+          source.addEventListener('ended', () => {
+            if (activeRef.current?.source === activeSource) activeRef.current = null
+            try {
+              activeSource.disconnect()
+              activeGain.disconnect()
+            } catch {
+              // Immediate visibility/unmount cleanup may have detached them first.
+            }
+          }, { once: true })
+          source.start(0, segment.offset, segment.duration)
+          activeRef.current = { cue, source, gain }
+        } catch (error) {
+          try {
+            source?.disconnect()
+            gain?.disconnect()
+          } catch {
+            // Partially constructed nodes may not have reached a connected state.
+          }
+          throw error
+        }
       })
       .catch(() => {
+        // Sound is progressive enhancement; the visible experience stays usable.
+      })
+      .finally(() => {
         if (requestedCueRef.current === cue) requestedCueRef.current = null
       })
   }, [activateContext, ensureBuffer, fadeActive])
@@ -164,15 +235,20 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const setEnabled = useCallback((next: boolean) => {
     enabledRef.current = next
     setEnabledState(next)
-    window.localStorage.setItem(STORAGE_KEY, next ? 'on' : 'off')
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next ? 'on' : 'off')
+    } catch {
+      // Storage can be disabled by privacy policy; sound still works for this visit.
+    }
     if (!next) {
+      cancelBufferRequest('Sound disabled before soundtrack loading completed')
       filmRef.current?.pause()
       stopActive()
       return
     }
     void activateContext()
     void ensureBuffer().catch(() => undefined)
-  }, [activateContext, ensureBuffer, stopActive])
+  }, [activateContext, cancelBufferRequest, ensureBuffer, stopActive])
 
   const enterFilmMode = useCallback(async (video: HTMLVideoElement) => {
     filmModeRef.current = true
@@ -214,18 +290,32 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
         filmRef.current?.pause()
-        stopActive()
+        requestedCueRef.current = null
+        disposeActive()
+        void contextRef.current?.suspend().catch(() => undefined)
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [stopActive])
+  }, [disposeActive])
 
   useEffect(() => () => {
+    cancelBufferRequest('Sound provider unmounted')
     filmRef.current?.pause()
-    fadeActive()
-    void contextRef.current?.close()
-  }, [fadeActive])
+    disposeActive()
+    const master = masterRef.current
+    masterRef.current = null
+    try {
+      master?.disconnect()
+    } catch {
+      // The AudioContext may already have detached its destination graph.
+    }
+    bufferRef.current = null
+    bufferPromiseRef.current = null
+    const context = contextRef.current
+    contextRef.current = null
+    if (context) void context.close().catch(() => undefined)
+  }, [cancelBufferRequest, disposeActive])
 
   const value = useMemo<SoundContextValue>(() => ({
     enabled,
@@ -237,10 +327,4 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   }), [enabled, enterFilmMode, exitFilmMode, playSegment, setEnabled, stopActive])
 
   return <SoundContext.Provider value={value}>{children}</SoundContext.Provider>
-}
-
-export function useSound(): SoundContextValue {
-  const value = useContext(SoundContext)
-  if (!value) throw new Error('useSound must be used inside SoundProvider')
-  return value
 }

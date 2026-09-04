@@ -36,7 +36,8 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
   expect(Math.max(...counts), `canvas samples: ${counts.join(', ')}`).toBeLessThanOrEqual(2)
   await expect(page.locator('.footer__ascii [data-ascii-state="live"]')).toHaveCount(1)
   await expect(page.locator('.footer__ascii .ascii-filter')).toHaveCount(1)
-  await expect(page.locator('.footer__ascii pre')).toHaveCount(1)
+  await expect(page.locator('.footer__ascii .ascii-filter .ascii-text__glyphs')).toHaveCount(1)
+  await expect(page.locator('.footer__ascii .ascii-text__fallback')).toHaveCount(1)
 })
 
 test('project bento keeps its outer glow and restores blurred-to-clear focus', async ({ page }) => {
@@ -169,7 +170,10 @@ test('Frame final exposure mirrors Particle Scroll without a nested scroll gate'
   }))
   expect(stackEntry.flowOpacity).toBe(1)
   expect(stackEntry.activeDash).not.toBe('none')
-  expect(stackEntry.rows.every((row) => row.opacity === 1 && row.transform === 'none' && !row.repeatedEntrance)).toBe(true)
+  expect(
+    stackEntry.rows.every((row) => row.opacity === 1 && row.transform === 'none' && !row.repeatedEntrance),
+    `Stack rows must be stable at handoff: ${JSON.stringify(stackEntry.rows)}`,
+  ).toBe(true)
 })
 
 test('Stack flow enters continuously from outside the viewport', async ({ page }) => {

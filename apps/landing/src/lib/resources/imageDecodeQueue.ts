@@ -10,24 +10,29 @@ interface IdleCallbackWindow {
   cancelIdleCallback?: (handle: IdleCallbackHandle) => void
 }
 
+interface DecodeItem {
+  image: HTMLImageElement
+  signal?: AbortSignal
+  onAbort?: () => void
+  reject: (error: unknown) => void
+  resolve: () => void
+  settled: boolean
+}
+
 const MIN_IDLE_BUDGET_MS = 6
 const DEFAULT_IDLE_TIMEOUT_MS = 1800
 const INTERACTION_QUIET_MS = 420
 
 let lastInteractionAt = 0
 let activityListenersAttached = false
+let activeDecodes = 0
+let cancelScheduled: (() => void) | null = null
+const queue: DecodeItem[] = []
 
-/**
- * 等待 idle decode 的图片队列。
- * 每个 item 对应一个已经 onload 且 naturalWidth > 0 的 HTMLImageElement。
- */
-const queue: Array<{
-  image: HTMLImageElement
-  reject: (error: unknown) => void
-  resolve: () => void
-}> = []
-
-let scheduled = false
+function signalError(signal: AbortSignal): Error {
+  if (signal.reason instanceof Error) return signal.reason
+  return new Error(signal.reason ? String(signal.reason) : 'Image decode aborted')
+}
 
 function markInteraction() {
   lastInteractionAt = performance.now()
@@ -42,90 +47,134 @@ function ensureActivityListeners() {
   window.addEventListener('pointerdown', markInteraction, { passive: true })
 }
 
+function detachActivityListeners() {
+  if (!activityListenersAttached || typeof window === 'undefined') return
+  activityListenersAttached = false
+  window.removeEventListener('wheel', markInteraction)
+  window.removeEventListener('scroll', markInteraction)
+  window.removeEventListener('touchmove', markInteraction)
+  window.removeEventListener('pointerdown', markInteraction)
+}
+
+function releaseQueueInfrastructure() {
+  if (queue.length > 0 || activeDecodes > 0) return
+  cancelScheduled?.()
+  cancelScheduled = null
+  detachActivityListeners()
+}
+
 function isInteractionWindowBusy() {
   return performance.now() - lastInteractionAt < INTERACTION_QUIET_MS
 }
 
-function scheduleAfterFrame() {
-  scheduled = true
-  window.requestAnimationFrame(() => schedule(runQueue))
-}
-
-/**
- * @description 调度一次空闲任务。优先使用 `requestIdleCallback`，不支持时回退到 32ms timeout。
- * @dependencies 浏览器 `requestIdleCallback` / `setTimeout`
- * @performance / @caveats fallback 的 `didTimeout=true` 表示没有真实 idle budget，只允许队列按保守节奏释放。
- */
 function schedule(callback: (deadline: IdleDeadlineLike) => void) {
+  if (cancelScheduled) return
   const idleWindow = window as IdleCallbackWindow
   if (typeof idleWindow.requestIdleCallback === 'function') {
-    return idleWindow.requestIdleCallback(callback, { timeout: DEFAULT_IDLE_TIMEOUT_MS })
+    const handle = idleWindow.requestIdleCallback((deadline) => {
+      cancelScheduled = null
+      callback(deadline)
+    }, { timeout: DEFAULT_IDLE_TIMEOUT_MS })
+    cancelScheduled = () => idleWindow.cancelIdleCallback?.(handle)
+    return
   }
 
-  return window.setTimeout(() => callback({
-    didTimeout: true,
-    timeRemaining: () => MIN_IDLE_BUDGET_MS,
-  }), 32)
+  const handle = window.setTimeout(() => {
+    cancelScheduled = null
+    callback({ didTimeout: true, timeRemaining: () => MIN_IDLE_BUDGET_MS })
+  }, 32)
+  cancelScheduled = () => window.clearTimeout(handle)
 }
 
-/**
- * @description 按 idle budget 分片执行图片 decode。
- *   每轮只取一个图片，避免一次 idle callback 内连续 decode 多张大图造成主线程长任务。
- * @dependencies `HTMLImageElement.decode`
- * @performance / @caveats
- *   - `MIN_IDLE_BUDGET_MS=6` 是每轮继续处理的最低预算；低于该值就让出一帧。
- *   - decode reject 不在这里吞掉，交给调用方决定是否作为非致命跳过。
- *   - `scheduled` 是全局门闩，防止大量图片同时入队时注册多个 idle callback。
- * @steps
- *   step1: 取出队首图片并执行 decode
- *   step2: resolve/reject 当前 Promise
- *   step3: 若队列仍有任务，根据 idle budget 决定立即续排或下一帧再排
- */
-function runQueue(deadline: IdleDeadlineLike) {
-  scheduled = false
-  ensureActivityListeners()
+function scheduleAfterInteraction() {
+  if (cancelScheduled) return
+  const remainingQuietTime = Math.max(
+    16,
+    INTERACTION_QUIET_MS - (performance.now() - lastInteractionAt),
+  )
+  const timer = window.setTimeout(() => {
+    cancelScheduled = null
+    if (queue.length > 0) schedule(runQueue)
+    else releaseQueueInfrastructure()
+  }, remainingQuietTime)
+  cancelScheduled = () => window.clearTimeout(timer)
+}
 
+function settleItem(item: DecodeItem, error?: unknown) {
+  if (item.settled) return
+  item.settled = true
+  if (item.signal && item.onAbort) item.signal.removeEventListener('abort', item.onAbort)
+  if (error === undefined) item.resolve()
+  else item.reject(error)
+}
+
+function scheduleNext(deadline: IdleDeadlineLike) {
+  if (queue.length === 0) {
+    releaseQueueInfrastructure()
+    return
+  }
+  if (!isInteractionWindowBusy() && (deadline.didTimeout || deadline.timeRemaining() >= MIN_IDLE_BUDGET_MS)) {
+    schedule(runQueue)
+  } else {
+    scheduleAfterInteraction()
+  }
+}
+
+/** Decode at most one image per idle turn to avoid a burst of main-thread work. */
+function runQueue(deadline: IdleDeadlineLike) {
   if (deadline.didTimeout && isInteractionWindowBusy()) {
-    scheduleAfterFrame()
+    scheduleAfterInteraction()
     return
   }
 
   const item = queue.shift()
-  if (!item) return
+  if (!item) {
+    releaseQueueInfrastructure()
+    return
+  }
+  if (item.signal?.aborted) {
+    settleItem(item, signalError(item.signal))
+    scheduleNext(deadline)
+    return
+  }
 
+  activeDecodes += 1
   const decode = typeof item.image.decode === 'function'
     ? item.image.decode()
     : Promise.resolve()
 
-  void decode.then(item.resolve, item.reject).finally(() => {
-    if (queue.length === 0) return
-
-    if (!isInteractionWindowBusy() && (deadline.didTimeout || deadline.timeRemaining() >= MIN_IDLE_BUDGET_MS)) {
-      scheduled = true
-      schedule(runQueue)
-      return
-    }
-
-    scheduleAfterFrame()
+  void decode.then(
+    () => settleItem(item),
+    (error: unknown) => settleItem(item, error),
+  ).finally(() => {
+    activeDecodes -= 1
+    scheduleNext(deadline)
   })
 }
 
 /**
- * @description 将已加载图片加入 idle decode 队列。
- *   用于滚动邻近预热图片：网络加载完成后不立即同步 decode，而是在浏览器空闲片段中释放解码压力。
- * @dependencies `runQueue` / `schedule`
- * @performance / @caveats 只接受 complete 且 naturalWidth > 0 的图片；未完成图片直接 resolve，
- *   因为加载失败/未加载的判定属于 `loadImage` 负责。
+ * Queue an already-loaded image for idle decode. Aborting removes queued work
+ * immediately (or rejects an in-flight decode), and global activity listeners
+ * exist only while the queue has pending or active work.
  */
-export function enqueueImageDecode(image: HTMLImageElement): Promise<void> {
+export function enqueueImageDecode(image: HTMLImageElement, signal?: AbortSignal): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
   if (!image.complete || image.naturalWidth <= 0) return Promise.resolve()
+  if (signal?.aborted) return Promise.reject(signalError(signal))
   ensureActivityListeners()
 
   return new Promise<void>((resolve, reject) => {
-    queue.push({ image, reject, resolve })
-    if (scheduled) return
-    scheduled = true
+    const item: DecodeItem = { image, reject, resolve, settled: false, signal }
+    if (signal) {
+      item.onAbort = () => {
+        const index = queue.indexOf(item)
+        if (index >= 0) queue.splice(index, 1)
+        settleItem(item, signalError(signal))
+        releaseQueueInfrastructure()
+      }
+      signal.addEventListener('abort', item.onAbort, { once: true })
+    }
+    queue.push(item)
     schedule(runQueue)
   })
 }

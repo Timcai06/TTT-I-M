@@ -8,6 +8,7 @@
 @import './components/signature-mark.css' layer(primitives);
 @import './components/hero.css' layer(chapters);
 @import './components/about.css' layer(chapters);
+@import './components/about-evidence.css' layer(chapters);
 @import './components/life-gallery.css' layer(chapters);
 @import './components/frame.css' layer(chapters);
 @import './components/skills.css' layer(chapters);

@@ -16,8 +16,27 @@ export const lazyChapterLoaders = {
   contact: () => import('./contact'),
 } satisfies Record<string, LazyChapterLoader>
 
-export function preloadLazyChapters() {
-  return Promise.all(Object.values(lazyChapterLoaders).map((load) => load())).then(() => undefined)
+function abortError(signal: AbortSignal): Error {
+  return signal.reason instanceof Error ? signal.reason : new Error('Chapter preload aborted')
+}
+
+export function preloadLazyChapters(signal: AbortSignal) {
+  if (signal.aborted) return Promise.reject(abortError(signal))
+  const imports = Promise.all(Object.values(lazyChapterLoaders).map((load) => load())).then(() => undefined)
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = () => reject(abortError(signal))
+    signal.addEventListener('abort', onAbort, { once: true })
+    void imports.then(
+      () => {
+        signal.removeEventListener('abort', onAbort)
+        resolve()
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(error instanceof Error ? error : new Error(String(error)))
+      },
+    )
+  })
 }
 
 const About = lazy(lazyChapterLoaders.about)
@@ -44,6 +63,8 @@ export interface Chapter {
   id: string
   /** The section component rendered inside <main>. May be lazy-loaded. */
   Component: ComponentType | LazyExoticComponent<ComponentType>
+  /** Deterministic geometry reserve when a chunk fails before first render. */
+  failureMinHeight: string
   /** Top-nav entry. Omit to keep the chapter out of the nav. */
   nav?: { label: string }
   /** Scroll-progress rail entry. Omit to keep it off the rail. */
@@ -54,12 +75,14 @@ export const chapters: Chapter[] = [
   {
     id: 'hero',
     Component: Hero,
+    failureMinHeight: '100svh',
     nav: { label: '00 · Index' },
     progress: { index: '01', name: 'HOME' },
   },
   {
     id: 'about',
     Component: About,
+    failureMinHeight: '100svh',
     nav: { label: '01 · About' },
     progress: { index: '02', name: 'ABOUT' },
   },
@@ -69,16 +92,19 @@ export const chapters: Chapter[] = [
     // 后果（接受）：滑过它时 active 章节与背景色温会定格在上一节被追踪的章节。
     id: 'life',
     Component: LifeGallery,
+    failureMinHeight: '100svh',
   },
   {
     id: 'frame',
     Component: Frame,
+    failureMinHeight: '100svh',
     nav: { label: '02 · Frame' },
     progress: { index: '03', name: 'FRAME' },
   },
   {
     id: 'skills',
     Component: Skills,
+    failureMinHeight: '100svh',
     nav: { label: '03 · Stack' },
     progress: { index: '04', name: 'STACK' },
   },
@@ -87,16 +113,19 @@ export const chapters: Chapter[] = [
     // 同样刻意不纳入 nav/rail/narrative 测量 —— 滑动期间 active/色温定格于 skills。
     id: 'work-transition',
     Component: WorkTransition,
+    failureMinHeight: '100svh',
   },
   {
     id: 'projects',
     Component: Projects,
+    failureMinHeight: '100svh',
     nav: { label: '04 · Work' },
     progress: { index: '05', name: 'WORK' },
   },
   {
     id: 'contact',
     Component: Footer,
+    failureMinHeight: '100svh',
     nav: { label: '05 · Contact' },
     progress: { index: '06', name: 'CONTACT' },
   },

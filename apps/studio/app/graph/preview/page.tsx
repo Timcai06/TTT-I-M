@@ -3,7 +3,11 @@ import {
   createPublicPreviewDraft,
   type PublicPreviewRepositoryChoice,
 } from '@timcai/content/public-preview'
-import { fetchPublicGitHubPreviewSnapshot } from '@timcai/content/github-public-service'
+import {
+  fetchPublicGitHubPreviewSnapshot,
+  parsePublicGitHubHandle,
+} from '@timcai/content/github-public-service'
+import { fetchCachedPublicGitHubPreviewSnapshot } from '@timcai/content/github-public-preview-cache'
 
 export const metadata = {
   title: 'Graph Preview',
@@ -14,7 +18,8 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
 function valuesFromSearchParam(value: string | string[] | undefined): string[] {
   if (!value) return []
-  return Array.isArray(value) ? value : [value]
+  const values = Array.isArray(value) ? value : [value]
+  return values.filter((entry) => entry.length <= 200).slice(0, 30)
 }
 
 const repositoryGroups: Array<{ id: PublicPreviewRepositoryChoice['group']; label: string }> = [
@@ -26,9 +31,12 @@ const repositoryGroups: Array<{ id: PublicPreviewRepositoryChoice['group']; labe
 
 export default async function GraphPreviewPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
-  const handle = typeof params.handle === 'string' ? params.handle : 'Timcai06'
+  const requestedHandle = typeof params.handle === 'string' ? params.handle.slice(0, 80) : 'Timcai06'
+  const parsedHandle = parsePublicGitHubHandle(requestedHandle)
   const selectedRepositoryIds = valuesFromSearchParam(params.repo)
-  const previewResult = await fetchPublicGitHubPreviewSnapshot(handle)
+  const previewResult = parsedHandle.valid
+    ? await fetchCachedPublicGitHubPreviewSnapshot(parsedHandle.handle)
+    : await fetchPublicGitHubPreviewSnapshot(requestedHandle)
 
   if (previewResult.status !== 'ready' || !previewResult.snapshot) {
     return (
@@ -42,7 +50,7 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
         <form className="studio-preview-form" action="/graph/preview" method="get">
           <label>
             <span>GitHub handle</span>
-            <input name="handle" defaultValue={previewResult.handle} placeholder="Timcai06" />
+            <input name="handle" defaultValue={previewResult.handle} placeholder="Timcai06" maxLength={39} pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?" />
           </label>
           <button type="submit">Try another handle</button>
         </form>
@@ -65,7 +73,7 @@ export default async function GraphPreviewPage({ searchParams }: { searchParams:
         <form className="studio-preview-form" action="/graph/preview" method="get">
           <label>
             <span>GitHub handle</span>
-            <input name="handle" defaultValue={draft.handle} placeholder="Timcai06" />
+            <input name="handle" defaultValue={draft.handle} placeholder="Timcai06" maxLength={39} pattern="[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?" />
           </label>
           <button type="submit">Refresh preview</button>
         </form>

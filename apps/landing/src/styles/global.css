@@ -117,6 +117,48 @@ main {
   z-index: 1;
 }
 
+.chapter-boundary {
+  display: contents;
+}
+
+.chapter-boundary--failed {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  background: var(--bg);
+}
+
+.chapter-error {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.chapter-error__label,
+.chapter-error__message {
+  margin: 0;
+}
+
+.chapter-error__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--accent-warm);
+}
+
+.chapter-error__message {
+  color: var(--fg-soft);
+}
+
+.chapter-error__retry {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+}
+
 .container {
   width: min(1280px, calc(100% - 64px));
   margin-inline: auto;

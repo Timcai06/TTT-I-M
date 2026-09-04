@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, type CSSProperties } from 'react'
 import { navChapters } from '../chapters/registry'
 import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
-import { useSound } from '../lib/sound/SoundProvider'
+import { useSound } from '../lib/sound/SoundContext'
 import type { StaggeredSectionMenuItem } from './StaggeredSectionMenu'
 
 const StaggeredSectionMenu = lazy(() => import('./StaggeredSectionMenu'))

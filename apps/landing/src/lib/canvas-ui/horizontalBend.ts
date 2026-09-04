@@ -197,20 +197,24 @@ function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {
     return shader
   }
   const vertex = compile(gl.VERTEX_SHADER, VERTEX_SHADER)
-  const fragment = compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER)
-  const program = gl.createProgram()
-  if (!program) throw new Error('Unable to allocate Bend program')
-  gl.attachShader(program, vertex)
-  gl.attachShader(program, fragment)
-  gl.linkProgram(program)
-  gl.deleteShader(vertex)
-  gl.deleteShader(fragment)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const message = gl.getProgramInfoLog(program) || 'Bend program linking failed'
-    gl.deleteProgram(program)
-    throw new Error(message)
+  let fragment: WebGLShader | null = null
+  try {
+    fragment = compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER)
+    const program = gl.createProgram()
+    if (!program) throw new Error('Unable to allocate Bend program')
+    gl.attachShader(program, vertex)
+    gl.attachShader(program, fragment)
+    gl.linkProgram(program)
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      const message = gl.getProgramInfoLog(program) || 'Bend program linking failed'
+      gl.deleteProgram(program)
+      throw new Error(message)
+    }
+    return program
+  } finally {
+    gl.deleteShader(vertex)
+    if (fragment) gl.deleteShader(fragment)
   }
-  return program
 }
 
 export function createHorizontalBend(options: {
@@ -224,6 +228,8 @@ export function createHorizontalBend(options: {
 
   const { canvas, capture, viewport, onFirstFrame, onFailure } = options
   const source = document.createElement('canvas')
+  const imageLifecycle = new AbortController()
+  let destroyed = false
   const context = source.getContext('2d')
   const gl = canvas.getContext('webgl2', {
     alpha: true,
@@ -232,7 +238,10 @@ export function createHorizontalBend(options: {
     antialias: false,
     premultipliedAlpha: true,
   })
-  if (!context?.drawElementImage || !source.requestPaint || !gl) return null
+  if (!context?.drawElementImage || !source.requestPaint || !gl || gl.isContextLost()) {
+    gl?.getExtension('WEBGL_lose_context')?.loseContext()
+    return null
+  }
   const drawElementImage = context.drawElementImage.bind(context)
 
   const drawable = capture.cloneNode(true) as HTMLElement
@@ -257,8 +266,11 @@ export function createHorizontalBend(options: {
       image.removeAttribute('sizes')
       image.src = resolvedSource
     }
-    image.addEventListener('load', () => source.requestPaint?.(), { once: true })
-    void image.decode().then(() => source.requestPaint?.()).catch(() => undefined)
+    const requestSourcePaint = () => {
+      if (!destroyed && source.isConnected) source.requestPaint?.()
+    }
+    image.addEventListener('load', requestSourcePaint, { once: true, signal: imageLifecycle.signal })
+    void image.decode().then(requestSourcePaint).catch(() => undefined)
   })
   source.className = 'horizontal-bend__capture'
   source.append(drawable)
@@ -269,7 +281,6 @@ export function createHorizontalBend(options: {
   let buffer: WebGLBuffer | null = null
   let texture: WebGLTexture | null = null
   let frame = 0
-  let destroyed = false
   let paused = false
   let failed = false
   let firstFrame = false
@@ -307,6 +318,12 @@ export function createHorizontalBend(options: {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]))
   } catch {
+    destroyed = true
+    imageLifecycle.abort()
+    if (texture) gl.deleteTexture(texture)
+    if (buffer) gl.deleteBuffer(buffer)
+    if (program) gl.deleteProgram(program)
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
     unmark()
     source.remove()
     onFailure?.()
@@ -317,6 +334,14 @@ export function createHorizontalBend(options: {
   const uniform = (name: string) => {
     if (!uniforms.has(name)) uniforms.set(name, gl.getUniformLocation(program, name))
     return uniforms.get(name) ?? null
+  }
+
+  const fail = () => {
+    if (destroyed || failed) return
+    failed = true
+    window.cancelAnimationFrame(frame)
+    frame = 0
+    onFailure?.()
   }
 
   const scheduleRender = () => {
@@ -336,10 +361,7 @@ export function createHorizontalBend(options: {
       contentDirty = true
       scheduleRender()
     } catch {
-      if (!firstFrame) {
-        failed = true
-        onFailure?.()
-      }
+      fail()
     }
   }
   source.addEventListener('paint', drawCapture)
@@ -347,80 +369,88 @@ export function createHorizontalBend(options: {
   const render = (now: number) => {
     frame = 0
     if (destroyed || failed || paused || document.hidden || !program || !texture) return
-    const delta = Math.min((now - previousTime) / 1000, 1 / 30)
-    previousTime = now
-    const smoothing = HORIZONTAL_BEND_CONFIG.smoothing
-    const settle = smoothing <= 0 ? 1 : 1 - Math.exp(-delta / smoothing)
-    currentLeft += (targetLeft - currentLeft) * settle
-    currentRight += (targetRight - currentRight) * settle
-    if (Math.abs(currentLeft - targetLeft) < 0.001) currentLeft = targetLeft
-    if (Math.abs(currentRight - targetRight) < 0.001) currentRight = targetRight
+    try {
+      const delta = Math.min((now - previousTime) / 1000, 1 / 30)
+      previousTime = now
+      const smoothing = HORIZONTAL_BEND_CONFIG.smoothing
+      const settle = smoothing <= 0 ? 1 : 1 - Math.exp(-delta / smoothing)
+      currentLeft += (targetLeft - currentLeft) * settle
+      currentRight += (targetRight - currentRight) * settle
+      if (Math.abs(currentLeft - targetLeft) < 0.001) currentLeft = targetLeft
+      if (Math.abs(currentRight - targetRight) < 0.001) currentRight = targetRight
 
-    overscroll *= Math.exp(-delta / 0.22)
-    if (Math.abs(overscroll) < 0.5) overscroll = 0
-    const phiTarget = Math.tanh(overscroll / 500) * 0.4 * HORIZONTAL_BEND_CONFIG.tumble
-    currentPhi += (phiTarget - currentPhi) * Math.min(delta / 0.09, 1)
-    if (phiTarget === 0 && Math.abs(currentPhi) < 0.0001) currentPhi = 0
+      overscroll *= Math.exp(-delta / 0.22)
+      if (Math.abs(overscroll) < 0.5) overscroll = 0
+      const phiTarget = Math.tanh(overscroll / 500) * 0.4 * HORIZONTAL_BEND_CONFIG.tumble
+      currentPhi += (phiTarget - currentPhi) * Math.min(delta / 0.09, 1)
+      if (phiTarget === 0 && Math.abs(currentPhi) < 0.0001) currentPhi = 0
 
-    const tiltSettle = Math.min(delta / 0.15, 1)
-    currentTiltX += (targetTiltX - currentTiltX) * tiltSettle
-    currentTiltY += (targetTiltY - currentTiltY) * tiltSettle
-    if (Math.abs(targetTiltX - currentTiltX) < 0.0001) currentTiltX = targetTiltX
-    if (Math.abs(targetTiltY - currentTiltY) < 0.0001) currentTiltY = targetTiltY
+      const tiltSettle = Math.min(delta / 0.15, 1)
+      currentTiltX += (targetTiltX - currentTiltX) * tiltSettle
+      currentTiltY += (targetTiltY - currentTiltY) * tiltSettle
+      if (Math.abs(targetTiltX - currentTiltX) < 0.0001) currentTiltX = targetTiltX
+      if (Math.abs(targetTiltY - currentTiltY) < 0.0001) currentTiltY = targetTiltY
 
-    resizeCanvasToDisplaySize(canvas)
-    if (resizeCanvasToDisplaySize(source)) source.requestPaint?.()
-    if (contentDirty) {
-      contentDirty = false
+      resizeCanvasToDisplaySize(canvas)
+      if (resizeCanvasToDisplaySize(source)) source.requestPaint?.()
+      if (contentDirty) {
+        contentDirty = false
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source)
+        hasUploadedContent = true
+      }
+
+      const width = Math.max(canvas.clientWidth, 1)
+      const height = Math.max(canvas.clientHeight, 1)
+      const geometry = calculateHorizontalBendGeometry(width, height, HORIZONTAL_BEND_CONFIG)
+      gl.viewport(0, 0, canvas.width, canvas.height)
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.useProgram(program)
+      gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, texture)
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source)
-      hasUploadedContent = true
-    }
+      gl.uniform1i(uniform('u_content'), 0)
+      gl.uniform1f(uniform('u_zone'), geometry.zone)
+      gl.uniform1f(uniform('u_angle'), HORIZONTAL_BEND_CONFIG.angle * Math.PI / 180)
+      gl.uniform1f(uniform('u_perspective'), geometry.perspective)
+      gl.uniform1f(uniform('u_direction'), -1)
+      gl.uniform1f(uniform('u_left_amount'), currentLeft)
+      gl.uniform1f(uniform('u_right_amount'), currentRight)
+      gl.uniform1f(uniform('u_pixel_x'), geometry.pixelX)
+      gl.uniform1f(uniform('u_pixel_y'), geometry.pixelY)
+      gl.uniform1f(uniform('u_rounding'), geometry.rounding)
+      gl.uniform1f(uniform('u_tilt_x'), currentTiltX)
+      gl.uniform1f(uniform('u_tilt_y'), currentTiltY)
+      gl.uniform1f(uniform('u_phi'), currentPhi)
+      gl.uniform3f(uniform('u_background'), 0.031, 0.035, 0.039)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
 
-    const width = Math.max(canvas.clientWidth, 1)
-    const height = Math.max(canvas.clientHeight, 1)
-    const geometry = calculateHorizontalBendGeometry(width, height, HORIZONTAL_BEND_CONFIG)
-    gl.viewport(0, 0, canvas.width, canvas.height)
-    gl.clearColor(0, 0, 0, 0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    gl.useProgram(program)
-    gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.uniform1i(uniform('u_content'), 0)
-    gl.uniform1f(uniform('u_zone'), geometry.zone)
-    gl.uniform1f(uniform('u_angle'), HORIZONTAL_BEND_CONFIG.angle * Math.PI / 180)
-    gl.uniform1f(uniform('u_perspective'), geometry.perspective)
-    gl.uniform1f(uniform('u_direction'), -1)
-    gl.uniform1f(uniform('u_left_amount'), currentLeft)
-    gl.uniform1f(uniform('u_right_amount'), currentRight)
-    gl.uniform1f(uniform('u_pixel_x'), geometry.pixelX)
-    gl.uniform1f(uniform('u_pixel_y'), geometry.pixelY)
-    gl.uniform1f(uniform('u_rounding'), geometry.rounding)
-    gl.uniform1f(uniform('u_tilt_x'), currentTiltX)
-    gl.uniform1f(uniform('u_tilt_y'), currentTiltY)
-    gl.uniform1f(uniform('u_phi'), currentPhi)
-    gl.uniform3f(uniform('u_background'), 0.031, 0.035, 0.039)
-    gl.drawArrays(gl.TRIANGLES, 0, 3)
-
-    if (!firstFrame && hasUploadedContent && gl.getError() === gl.NO_ERROR) {
-      firstFrame = true
-      onFirstFrame?.()
+      if (!firstFrame && hasUploadedContent && gl.getError() === gl.NO_ERROR) {
+        firstFrame = true
+        onFirstFrame?.()
+      }
+      if (
+        currentLeft !== targetLeft
+        || currentRight !== targetRight
+        || overscroll !== 0
+        || currentPhi !== 0
+        || currentTiltX !== targetTiltX
+        || currentTiltY !== targetTiltY
+      ) frame = window.requestAnimationFrame(render)
+    } catch {
+      fail()
     }
-    if (
-      currentLeft !== targetLeft
-      || currentRight !== targetRight
-      || overscroll !== 0
-      || currentPhi !== 0
-      || currentTiltX !== targetTiltX
-      || currentTiltY !== targetTiltY
-    ) frame = window.requestAnimationFrame(render)
   }
 
   const invalidate = () => {
     if (destroyed || failed || paused) return
-    source.requestPaint?.()
-    scheduleRender()
+    try {
+      source.requestPaint?.()
+      scheduleRender()
+    } catch {
+      fail()
+    }
   }
   const pause = () => {
     if (destroyed || paused) return
@@ -439,10 +469,7 @@ export function createHorizontalBend(options: {
   }
   const onContextLost = (event: Event) => {
     event.preventDefault()
-    failed = true
-    window.cancelAnimationFrame(frame)
-    frame = 0
-    onFailure?.()
+    fail()
   }
   const onPointerMove = (event: PointerEvent) => {
     if (!event.isPrimary || HORIZONTAL_BEND_CONFIG.tilt <= 0) return
@@ -492,6 +519,7 @@ export function createHorizontalBend(options: {
     destroy() {
       if (destroyed) return
       destroyed = true
+      imageLifecycle.abort()
       window.cancelAnimationFrame(frame)
       document.removeEventListener('visibilitychange', onVisibility)
       canvas.removeEventListener('webglcontextlost', onContextLost)

@@ -47,8 +47,9 @@ test('WebGL unavailable: app still loads, fallbacks hold, no uncaught crash', as
   // Force every WebGL context request to fail; 2D (text rasterisation) still works.
   await page.addInitScript(() => {
     const proto = HTMLCanvasElement.prototype
-    // eslint-disable-next-line @typescript-eslint/unbound-method -- re-bound via .call below
-    const original = proto.getContext as (id: string, options?: unknown) => RenderingContext | null
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'getContext')
+    if (!descriptor || typeof descriptor.value !== 'function') return
+    const original = descriptor.value as (this: HTMLCanvasElement, id: string, options?: unknown) => RenderingContext | null
     proto.getContext = function patched(this: HTMLCanvasElement, type: string, options?: unknown) {
       if (typeof type === 'string' && type.toLowerCase().includes('webgl')) return null
       return original.call(this, type, options)
@@ -57,8 +58,7 @@ test('WebGL unavailable: app still loads, fallbacks hold, no uncaught crash', as
 
   const fatal: string[] = []
   page.on('pageerror', (e) => {
-    // WebGL/Three errors are expected and caught by CanvasErrorBoundary.
-    if (!/webgl|three|context|getContext/i.test(e.message)) fatal.push(e.message)
+    fatal.push(e.message)
   })
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
@@ -66,7 +66,7 @@ test('WebGL unavailable: app still loads, fallbacks hold, no uncaught crash', as
 
   await expect(page.locator('#hero')).toBeVisible()
   await expect(page.locator('.hero__name')).toContainText('Tim')
-  expect(fatal, `uncaught non-WebGL errors:\n${fatal.join('\n')}`).toHaveLength(0)
+  expect(fatal, `uncaught errors with WebGL denied:\n${fatal.join('\n')}`).toHaveLength(0)
 })
 
 // ── 3. Missing asset (A1: render-ready failure is non-fatal) ──────────────────
@@ -86,13 +86,18 @@ test('a 404 frame image does not strand the loader (A1)', async ({ page }) => {
 })
 
 test('a missing Liquid Metal source cannot trap the Work gate', async ({ page }) => {
-  await page.route('**/liquid-metal-button.html*', (route) => {
-    if (route.request().resourceType() === 'fetch') return route.abort()
-    return route.continue()
+  let abortedSources = 0
+  // Vite fingerprints ?url assets in production (liquid-metal-button-HASH.html),
+  // so the failure gate must match the emitted artifact rather than the source
+  // filename used by the development server.
+  await page.route(/\/liquid-metal-button(?:-[^/]+)?\.html(?:\?.*)?$/, (route) => {
+    abortedSources += 1
+    return route.abort()
   })
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await waitForLive(page)
+  expect(abortedSources, 'the production Liquid Metal artifact was not intercepted').toBeGreaterThan(0)
   const transition = page.locator('#work-transition')
   const target = await transition.evaluate((section) => {
     const rect = section.getBoundingClientRect()

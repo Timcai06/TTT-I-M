@@ -3,6 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "npm@11.11.0",
+  "engines": {
+    "node": ">=24 <26",
+    "npm": ">=11 <12"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -25,8 +30,11 @@
     "test:build": "npm run build:landing && npm run test:guards --workspace @timcai/landing && npm run test:content && node tests/build/platform-guards.mjs",
     "test:build:landing": "npm run test:build --workspace @timcai/landing",
     "test:smoke": "node tests/runtime/cross-zone-smoke.mjs",
-    "test:unit": "npm run test:content && npm run test:unit --workspace @timcai/landing",
+    "test:unit": "npm run test:content && npm run test:studio && npm run test:unit --workspace @timcai/landing",
+    "test:studio": "node --import ./packages/content/tests/register-ts-loader.mjs --test apps/studio/tests/*.test.ts",
+    "test:e2e": "npm run test:e2e --workspace @timcai/landing",
     "test:e2e:gates": "npm run test:e2e:gates --workspace @timcai/landing",
+    "test:e2e:canvas-experimental": "npm run test:e2e:canvas-experimental --workspace @timcai/landing",
     "test:e2e:frame": "npm run test:e2e:frame --workspace @timcai/landing",
     "test:content": "node --import ./packages/content/tests/register-ts-loader.mjs --test packages/content/tests/*.test.ts"
   },

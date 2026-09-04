@@ -14,8 +14,15 @@ import type { GlassOptions } from '../../lib/canvas-ui/vendor/Glass/GlassVanilla
 let glassFactory: Promise<CanvasUiHtmlFactory<GlassOptions>> | null = null
 
 function preloadProjectGlass(): Promise<CanvasUiHtmlFactory<GlassOptions>> {
-  glassFactory ??= import('../../lib/canvas-ui/vendor/Glass/GlassVanilla')
-    .then(({ createGlass }) => createGlass)
+  if (!glassFactory) {
+    const request = import('../../lib/canvas-ui/vendor/Glass/GlassVanilla')
+      .then(({ createGlass }) => createGlass)
+      .catch((error: unknown) => {
+        if (glassFactory === request) glassFactory = null
+        throw error
+      })
+    glassFactory = request
+  }
   return glassFactory
 }
 
@@ -32,7 +39,7 @@ const loadGlass = async (): Promise<CanvasUiHtmlFactory<GlassOptions>> => {
 // Projects is fetched while the Loader is still active. Warm the small shader
 // chunk at module evaluation so entering Work never starts with a network-bound
 // Glass initialization.
-if (supportsHtmlInCanvas()) void preloadProjectGlass()
+if (supportsHtmlInCanvas()) void preloadProjectGlass().catch(() => undefined)
 
 interface ProjectGlassSurfaceProps {
   children: ReactNode
@@ -78,7 +85,6 @@ export default function ProjectGlassSurface({
       onActiveChange={reportActive}
       onHostChange={bindHost}
       portalOutput
-      retainFallbackUntilReady
       renderMargin="25% 0px"
       mountMargin="220% 0px"
     >

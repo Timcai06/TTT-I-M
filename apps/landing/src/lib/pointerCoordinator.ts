@@ -130,6 +130,12 @@ function stopListening(): void {
   window.cancelAnimationFrame(pendingFrame)
   pendingFrame = 0
   pendingTarget = undefined
+  snapshot = {
+    ...snapshot,
+    active: false,
+    target: null,
+    reason: 'leave',
+  }
 }
 
 export function getPointerSnapshot(): PointerSnapshot {

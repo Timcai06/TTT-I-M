@@ -4,7 +4,7 @@ import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
 import { attachTilt } from '../../lib/tilt'
 import type { LaserHandle } from '../../lib/canvas-ui/laser'
 import { LASER_CONFIG } from '../../lib/canvas-ui/laserConfig.ts'
-import { prefersReducedMotion } from '../../lib/motion'
+import { useReducedMotion } from '../../lib/motion'
 import { consumePendingWorkHandoff, WORK_HANDOFF_EVENT } from '../../lib/workHandoff'
 
 interface ProjectsNarrative {
@@ -13,13 +13,27 @@ interface ProjectsNarrative {
   glassReady: boolean
 }
 
+interface ProjectsEffectState {
+  glassReady: boolean
+  laserActive: boolean
+  reducedMotion: boolean
+}
+
 export function useProjectsNarrative(
   root: RefObject<HTMLElement | null>,
   glassActive: boolean,
 ): ProjectsNarrative {
   const laserHandle = useRef<LaserHandle | null>(null)
-  const [laserActive, setLaserActive] = useState(false)
-  const [glassReady, setGlassReady] = useState(true)
+  const reducedMotion = useReducedMotion()
+  const [effectState, setEffectState] = useState<ProjectsEffectState>(() => ({
+    glassReady: true,
+    laserActive: false,
+    reducedMotion,
+  }))
+  if (effectState.reducedMotion !== reducedMotion) {
+    setEffectState({ glassReady: true, laserActive: false, reducedMotion })
+  }
+  const { glassReady, laserActive } = effectState
 
   useEffect(() => {
     if (!root.current) return
@@ -61,9 +75,8 @@ export function useProjectsNarrative(
 
     const onWorkHandoff = () => {
       if (!consumePendingWorkHandoff()) return
-      if (prefersReducedMotion()) return
-      setGlassReady(false)
-      setLaserActive(true)
+      if (reducedMotion) return
+      setEffectState({ glassReady: false, laserActive: true, reducedMotion })
     }
     window.addEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
     onWorkHandoff()
@@ -72,7 +85,7 @@ export function useProjectsNarrative(
       window.removeEventListener(WORK_HANDOFF_EVENT, onWorkHandoff)
       context.revert()
     }
-  }, [root])
+  }, [reducedMotion, root])
 
   useEffect(() => {
     const section = root.current
@@ -103,7 +116,7 @@ export function useProjectsNarrative(
   }, [glassActive, root])
 
   useGSAP(() => {
-    if (!laserActive) return
+    if (!laserActive || reducedMotion) return
     const intro = root.current?.querySelector<HTMLElement>('.projects__intro')
     const content = root.current?.querySelector<HTMLElement>('.projects__intro-content')
     const laser = root.current?.querySelector<HTMLElement>('.projects__laser')
@@ -130,8 +143,7 @@ export function useProjectsNarrative(
       // Glass output. Once the portal is complete, release that boundary before
       // handing interaction to the chapter-wide optical plane.
       content.style.removeProperty('clip-path')
-      setLaserActive(false)
-      setGlassReady(true)
+      setEffectState({ glassReady: true, laserActive: false, reducedMotion })
     }
 
     const syncPortal = (progress = 0) => {
@@ -178,11 +190,15 @@ export function useProjectsNarrative(
     measurePortal()
     syncPortal()
 
-    const resizeObserver = new ResizeObserver(() => {
+    const syncPortalGeometry = () => {
       measurePortal()
       syncPortal(latestProgress)
-    })
-    resizeObserver.observe(content)
+    }
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(syncPortalGeometry)
+    if (resizeObserver) resizeObserver.observe(content)
+    else window.addEventListener('resize', syncPortalGeometry, { passive: true })
 
     const portalTrigger = ScrollTrigger.create({
       trigger: intro,
@@ -197,13 +213,14 @@ export function useProjectsNarrative(
     })
 
     return () => {
-      resizeObserver.disconnect()
+      resizeObserver?.disconnect()
+      if (!resizeObserver) window.removeEventListener('resize', syncPortalGeometry)
       portalTrigger.kill()
       finishTimeline?.kill()
       content.style.removeProperty('clip-path')
       intro.dataset.handoff = 'settled'
     }
-  }, { scope: root, dependencies: [laserActive], revertOnUpdate: true })
+  }, { scope: root, dependencies: [laserActive, reducedMotion], revertOnUpdate: true })
 
   return { laserActive, laserHandle, glassReady }
 }

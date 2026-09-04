@@ -10,7 +10,7 @@ export interface GLQualityProfile {
   tier: GLQualityTier
   /** Canvas/R3F 可使用的最高 DPR，防止高 DPR 屏幕把 fragment/point 成本放大 */
   dprMax: number
-  /** 可选 WebGL surface 的最大并发数；Hero/About 等必要 surface 只登记不 gate */
+  /** 可选 surface 的准入上限；计数包含已登记的必要 surface，避免必要与可选 Canvas 叠加突破页面总预算。 */
   optionalContextLimit: number
   /** Hero portrait 球面分段数，直接影响顶点数量和 GPU 几何成本 */
   portraitSegments: number
@@ -68,7 +68,7 @@ export function getGLQualityProfile(): GLQualityProfile {
   return {
     tier,
     dprMax: 1.5,
-    optionalContextLimit: 3,
+    optionalContextLimit: 2,
     portraitSegments: 260,
   }
 }

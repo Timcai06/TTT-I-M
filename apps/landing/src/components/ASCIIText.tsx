@@ -1,5 +1,31 @@
-import { useEffect, useRef, type CSSProperties } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 import * as THREE from 'three'
+import { useReducedMotion } from '../lib/motion'
+import {
+  acquireOptionalContextWhenAvailable,
+  canCreateWebGL2Context,
+  type ContextLease,
+} from '../lib/webgl/contextRegistry'
+import { useGLSurface } from '../lib/webgl/useGLSurface'
+
+const ASCII_FONT_WAIT_MS = 2_000
+
+function waitForAsciiFonts(): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      resolve()
+    }
+    const timer = window.setTimeout(finish, ASCII_FONT_WAIT_MS)
+    void Promise.all([
+      document.fonts.load('600 200px "JetBrains Mono"').catch(() => undefined),
+      document.fonts.ready,
+    ]).then(finish)
+  })
+}
 
 const vertexShader = `
 varying vec2 vUv;
@@ -64,7 +90,10 @@ class CanvasText {
 
 class AsciiFilter {
   readonly domElement = document.createElement('div')
-  private readonly pre = document.createElement('pre')
+  // The live glyph grid is decorative and aria-hidden. Keep the only semantic
+  // <pre> as the durable fallback so assistive/document tooling never sees two
+  // competing preformatted representations of the same text.
+  private readonly glyphs = document.createElement('div')
   private readonly canvas = document.createElement('canvas')
   private readonly context = this.canvas.getContext('2d', { willReadFrequently: true })
   private columns = 0
@@ -80,7 +109,9 @@ class AsciiFilter {
     this.renderer = renderer
     this.fontSize = fontSize
     this.domElement.className = 'ascii-filter'
-    this.domElement.append(this.pre, this.canvas)
+    this.glyphs.className = 'ascii-text__glyphs'
+    this.glyphs.setAttribute('aria-hidden', 'true')
+    this.domElement.append(this.glyphs, this.canvas)
     if (this.context) this.context.imageSmoothingEnabled = false
   }
 
@@ -97,7 +128,7 @@ class AsciiFilter {
     this.rows = Math.max(1, Math.floor(height / this.fontSize))
     this.canvas.width = this.columns
     this.canvas.height = this.rows
-    this.pre.style.fontSize = `${this.fontSize}px`
+    this.glyphs.style.fontSize = `${this.fontSize}px`
   }
 
   render(scene: THREE.Scene, camera: THREE.Camera) {
@@ -126,7 +157,7 @@ class AsciiFilter {
       }
       output += '\n'
     }
-    this.pre.textContent = output
+    this.glyphs.textContent = output
     const targetAngle = Math.atan2(this.pointer.y - this.center.y, this.pointer.x - this.center.x) * 180 / Math.PI
     this.angle += (targetAngle - this.angle) * 0.075
     this.domElement.style.filter = `hue-rotate(${this.angle.toFixed(1)}deg)`
@@ -147,8 +178,12 @@ class AsciiScene {
   private mesh!: THREE.Mesh
   private frame = 0
   private running = false
+  private disposed = false
+  private shaderFailed = false
+  private contextLease: ContextLease | null = null
   private pointer = { x: 0, y: 0 }
   private container: HTMLElement
+  private readonly onContextLost: () => void
   private options: Required<Pick<ASCIITextProps, 'text' | 'asciiFontSize' | 'textFontSize' | 'textColor' | 'planeBaseHeight' | 'enableWaves'>>
 
   constructor(
@@ -156,19 +191,24 @@ class AsciiScene {
     options: Required<Pick<ASCIITextProps, 'text' | 'asciiFontSize' | 'textFontSize' | 'textColor' | 'planeBaseHeight' | 'enableWaves'>>,
     width: number,
     height: number,
+    onContextLost: () => void,
   ) {
     this.container = container
     this.options = options
     this.width = width
     this.height = height
+    this.onContextLost = onContextLost
     this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 1000)
     this.camera.position.z = 30
     this.pointer = { x: width / 2, y: height / 2 }
   }
 
-  async init() {
-    await document.fonts.load('600 200px "JetBrains Mono"').catch(() => undefined)
-    await document.fonts.ready
+  init(contextLease: ContextLease) {
+    if (this.disposed) {
+      contextLease.release()
+      throw new Error('Cannot initialize a disposed ASCII scene.')
+    }
+    this.contextLease = contextLease
     this.textCanvas = new CanvasText(this.options.text, this.options.textFontSize, this.options.textColor)
     this.textCanvas.resize()
     this.textCanvas.render()
@@ -189,6 +229,8 @@ class AsciiScene {
     this.mesh = new THREE.Mesh(this.geometry, this.material)
     this.scene.add(this.mesh)
     this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'high-performance' })
+    this.renderer.debug.onShaderError = () => { this.shaderFailed = true }
+    this.renderer.domElement.addEventListener('webglcontextlost', this.handleContextLost)
     this.renderer.setPixelRatio(1)
     this.renderer.setClearColor(0x000000, 0)
     this.filter = new AsciiFilter(this.renderer, this.options.asciiFontSize)
@@ -215,16 +257,21 @@ class AsciiScene {
     const animate = () => {
       if (!this.running) return
       this.frame = requestAnimationFrame(animate)
-      const time = performance.now() * 0.001
-      this.textCanvas.render()
-      this.texture.needsUpdate = true
-      const timeUniform = this.material.uniforms.uTime
-      if (timeUniform) timeUniform.value = Math.sin(time)
-      const rotationX = mapRange(this.pointer.y, 0, this.height, 0.5, -0.5)
-      const rotationY = mapRange(this.pointer.x, 0, this.width, -0.5, 0.5)
-      this.mesh.rotation.x += (rotationX - this.mesh.rotation.x) * 0.05
-      this.mesh.rotation.y += (rotationY - this.mesh.rotation.y) * 0.05
-      this.filter.render(this.scene, this.camera)
+      try {
+        const time = performance.now() * 0.001
+        this.textCanvas.render()
+        this.texture.needsUpdate = true
+        const timeUniform = this.material.uniforms.uTime
+        if (timeUniform) timeUniform.value = Math.sin(time)
+        const rotationX = mapRange(this.pointer.y, 0, this.height, 0.5, -0.5)
+        const rotationY = mapRange(this.pointer.x, 0, this.width, -0.5, 0.5)
+        this.mesh.rotation.x += (rotationX - this.mesh.rotation.x) * 0.05
+        this.mesh.rotation.y += (rotationY - this.mesh.rotation.y) * 0.05
+        this.filter.render(this.scene, this.camera)
+        if (this.shaderFailed) this.fail()
+      } catch {
+        this.fail()
+      }
     }
     animate()
   }
@@ -235,14 +282,32 @@ class AsciiScene {
   }
 
   dispose() {
+    if (this.disposed) return
+    this.disposed = true
     this.stop()
-    this.geometry.dispose()
-    this.material.dispose()
-    this.texture.dispose()
+    this.geometry?.dispose()
+    this.material?.dispose()
+    this.texture?.dispose()
     this.scene.clear()
-    this.renderer.dispose()
-    this.renderer.forceContextLoss()
-    this.filter.domElement.remove()
+    this.renderer?.domElement.removeEventListener('webglcontextlost', this.handleContextLost)
+    this.renderer?.dispose()
+    this.renderer?.forceContextLoss()
+    this.filter?.domElement.remove()
+    this.contextLease?.release()
+    this.contextLease = null
+  }
+
+  private readonly handleContextLost = (event: Event) => {
+    event.preventDefault()
+    this.fail()
+  }
+
+  private fail() {
+    if (this.disposed) return
+    this.stop()
+    this.contextLease?.release()
+    this.contextLease = null
+    this.onContextLost()
   }
 }
 
@@ -267,97 +332,130 @@ export default function ASCIIText({
   className = '',
   gradient = 'radial-gradient(circle, #6f342c 0%, #9d7459 48%, #425c5b 100%)',
 }: ASCIITextProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const { ref: containerRef, mounted, visible } = useGLSurface({
+    renderMargin: '12% 0px',
+    mountMargin: '35% 0px',
+    initiallyMounted: false,
+  })
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
     container.dataset.asciiState = 'idle'
+    if (reducedMotion || !mounted || !visible || !canCreateWebGL2Context()) {
+      container.dataset.asciiState = 'fallback'
+      return
+    }
     let scene: AsciiScene | null = null
     let cancelled = false
-    let visible = false
     let initializing = false
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
+    let failureCount = 0
+    let retryTimer = 0
+    let stopWaitingForContext = () => {}
+    const scheduleRetry = () => {
+      if (cancelled || failureCount >= 2) return
+      window.clearTimeout(retryTimer)
+      retryTimer = window.setTimeout(() => {
+        initializing = false
+        void setup()
+      }, 420 * failureCount)
+    }
+    const recoverFromFailure = (instance: AsciiScene) => {
+      if (scene === instance) scene = null
+      instance.dispose()
+      initializing = false
+      failureCount += 1
+      container.dataset.asciiState = 'fallback'
+      scheduleRetry()
+    }
     const setup = async () => {
       if (initializing || scene) return
       initializing = true
       container.dataset.asciiState = 'initializing'
+      await waitForAsciiFonts()
+      if (cancelled) return
       const rect = container.getBoundingClientRect()
       if (rect.width <= 0 || rect.height <= 0) {
         container.dataset.asciiState = 'waiting-for-size'
         initializing = false
         return
       }
-      const instance = new AsciiScene(container, {
-        text,
-        asciiFontSize,
-        textFontSize,
-        textColor,
-        planeBaseHeight,
-        enableWaves: enableWaves && !reduced,
-      }, rect.width, rect.height)
-      try {
-        await instance.init()
-      } catch {
-        // Keep the real-text fallback rendered below when WebGL is denied.
-        // This effect is decorative and must never make Contact unreadable.
-        container.dataset.asciiState = 'fallback'
+      container.dataset.asciiState = 'waiting-for-context'
+      stopWaitingForContext = acquireOptionalContextWhenAvailable('contact-ascii', (lease) => {
+        if (cancelled) {
+          lease.release()
+          return
+        }
+        const instance = new AsciiScene(container, {
+          text,
+          asciiFontSize,
+          textFontSize,
+          textColor,
+          planeBaseHeight,
+          enableWaves,
+        }, rect.width, rect.height, () => {
+          recoverFromFailure(instance)
+        })
+        try {
+          instance.init(lease)
+        } catch {
+          recoverFromFailure(instance)
+          return
+        }
+        if (cancelled) {
+          instance.dispose()
+          return
+        }
+        scene = instance
+        container.dataset.asciiState = 'live'
         initializing = false
-        return
-      }
-      if (cancelled) {
-        instance.dispose()
-        return
-      }
-      scene = instance
-      container.dataset.asciiState = 'live'
-      initializing = false
-      container.querySelector('.ascii-text__fallback')?.remove()
-      if (visible) scene.start()
+        try {
+          scene.start()
+        } catch {
+          recoverFromFailure(instance)
+        }
+      })
     }
-
-    const setVisible = (next: boolean) => {
-      visible = next
-      if (!scene && visible) void setup()
-      else if (visible) scene?.start()
-      else scene?.stop()
+    const resizeScene = (width: number, height: number) => {
+      if (width <= 0 || height <= 0) return
+      if (scene) {
+        const instance = scene
+        try {
+          instance.setSize(width, height)
+        } catch {
+          recoverFromFailure(instance)
+        }
+      }
+      else if (!initializing) void setup()
     }
-    const intersection = new IntersectionObserver((entries) => {
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
       const entry = entries[0]
       if (!entry) return
-      setVisible(entry.isIntersecting)
-    }, { rootMargin: '12% 0px', threshold: 0.01 })
-    const checkRect = () => {
-      const rect = container.getBoundingClientRect()
-      setVisible(rect.bottom >= -window.innerHeight * 0.12 && rect.top <= window.innerHeight * 1.12)
-    }
-    const resize = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-        scene?.setSize(entry.contentRect.width, entry.contentRect.height)
-      }
+      resizeScene(entry.contentRect.width, entry.contentRect.height)
     })
+    const resizeFallback = () => {
+      const rect = container.getBoundingClientRect()
+      resizeScene(rect.width, rect.height)
+    }
     const pointer = (event: PointerEvent) => {
       const rect = container.getBoundingClientRect()
       scene?.setPointer(event.clientX - rect.left, event.clientY - rect.top)
     }
-    intersection.observe(container)
-    resize.observe(container)
+    resize?.observe(container)
+    if (!resize) window.addEventListener('resize', resizeFallback, { passive: true })
     container.addEventListener('pointermove', pointer)
-    window.addEventListener('scroll', checkRect, { passive: true })
-    const initialCheck = requestAnimationFrame(checkRect)
+    void setup()
     return () => {
       cancelled = true
-      cancelAnimationFrame(initialCheck)
-      intersection.disconnect()
-      resize.disconnect()
+      window.clearTimeout(retryTimer)
+      stopWaitingForContext()
+      resize?.disconnect()
+      window.removeEventListener('resize', resizeFallback)
       container.removeEventListener('pointermove', pointer)
-      window.removeEventListener('scroll', checkRect)
       scene?.dispose()
     }
-  }, [asciiFontSize, enableWaves, planeBaseHeight, text, textColor, textFontSize])
+  }, [asciiFontSize, containerRef, enableWaves, mounted, planeBaseHeight, reducedMotion, text, textColor, textFontSize, visible])
 
   return (
     <div

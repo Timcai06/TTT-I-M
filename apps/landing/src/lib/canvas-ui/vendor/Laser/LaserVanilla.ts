@@ -1,4 +1,10 @@
 // @ts-nocheck -- vendored source is checked upstream with a looser TS config.
+import {
+  compileWebGLShader,
+  linkWebGLProgram,
+  requireWebGLResource,
+} from "../../../webgl/programValidation";
+
 export interface LaserOptions {
   /** Animation speed of the beam wave, flicker, and sparkle. 1 is normal. */
   speed?: number;
@@ -327,21 +333,12 @@ export function createLaser(
   }
 
   function compile(type: number, text: string): WebGLShader {
-    const shader = gl!.createShader(type)!;
-    gl!.shaderSource(shader, text);
-    gl!.compileShader(shader);
-    if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
-      console.error("Laser shader error:", gl!.getShaderInfoLog(shader));
-    }
-    return shader;
+    return compileWebGLShader(gl!, type, text, "Laser");
   }
 
   const vertexShader = compile(gl.VERTEX_SHADER, VERT);
   const fragmentShader = compile(gl.FRAGMENT_SHADER, FRAG);
-  const program = gl.createProgram()!;
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
+  const program = linkWebGLProgram(gl, vertexShader, fragmentShader, "Laser");
 
   const uniforms: Record<string, WebGLUniformLocation> = {};
   const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
@@ -350,7 +347,7 @@ export function createLaser(
     uniforms[info.name] = gl.getUniformLocation(program, info.name)!;
   }
 
-  const quad = gl.createBuffer();
+  const quad = requireWebGLResource(gl.createBuffer(), "Laser quad buffer");
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -360,7 +357,7 @@ export function createLaser(
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-  const contentTexture = gl.createTexture()!;
+  const contentTexture = requireWebGLResource(gl.createTexture(), "Laser content texture");
   gl.bindTexture(gl.TEXTURE_2D, contentTexture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

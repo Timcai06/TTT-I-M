@@ -42,11 +42,21 @@ export function acquireTexture(src: string, configure?: ConfigureTexture): Promi
 
   const entry: CacheEntry = { promise: Promise.resolve() as unknown as Promise<THREE.Texture>, texture: null, refs: 1 }
   entry.promise = loader.loadAsync(src).then((texture) => {
-    configure?.(texture)
+    try {
+      configure?.(texture)
+    } catch (error) {
+      texture.dispose()
+      throw error
+    }
     // Only keep it if no one released us to zero while loading.
     if (cache.get(src) === entry) entry.texture = texture
     else texture.dispose()
     return texture
+  }).catch((error: unknown) => {
+    // A transient fetch/decode/configuration failure must never poison future
+    // acquisitions with one permanently rejected promise.
+    if (cache.get(src) === entry) cache.delete(src)
+    throw error
   })
   cache.set(src, entry)
   return entry.promise

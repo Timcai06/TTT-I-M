@@ -1,5 +1,6 @@
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import type { ComponentPropsWithoutRef } from 'react'
+import { resolveSafeHref } from '../lib/safeHref'
 
 interface MdxContentProps {
   body: string
@@ -10,10 +11,10 @@ interface MdxContentProps {
 // Authors can also register custom React components here and use them in .mdx.
 const components = {
   a: (props: ComponentPropsWithoutRef<'a'>) => {
-    const external = props.href?.startsWith('http')
-    return external
-      ? <a {...props} target="_blank" rel="noopener noreferrer" />
-      : <a {...props} />
+    const resolved = resolveSafeHref(props.href)
+    const target = resolved?.external ? '_blank' : props.target
+    const rel = target === '_blank' ? 'noopener noreferrer' : props.rel
+    return <a {...props} href={resolved?.href} target={target} rel={rel} />
   },
 }
 

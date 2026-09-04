@@ -8,7 +8,8 @@ on:
 jobs:
   # Deterministic gates: typecheck + lint (both workspaces), unit tests, build
   # both apps, and run all deterministic build guards (chunk budget, chapter-state, frame,
-  # loader-preload, content-layer, deferred-image bytes, Continuum GPU, platform). These must
+  # loader-preload, content-layer, deferred-image bytes, effect lifecycle, vendor integrity,
+  # and platform boundaries). These must
   # always pass.
   verify:
     runs-on: ubuntu-latest
@@ -29,16 +30,14 @@ jobs:
   #
   # ADVISORY in CI (continue-on-error), AUTHORITATIVE locally. These tests drive the
   # full Lenis + GSAP + ScrollTrigger + IntersectionObserver + WebGL pipeline, whose
-  # settling timing is hardware-variant on shared 2-core CI runners — the same test
-  # passes one run and flakes the next. They run reliably on a real local machine
-  # (verified 16/16). So CI runs them for VISIBILITY but does not block on them; the
+  # performance timing is hardware-variant on shared 2-core CI runners. CI runs the
+  # complete suite for VISIBILITY but does not let hardware-sensitive budgets block; the
   # hard gate is `verify` (typecheck/lint/build/studio + deterministic build guards). Run
   # `npm run test:e2e` locally before merging UI/scroll changes.
-  # 2026-06-11: the deterministic load-time subset (chrome-ui, hero-pretext) was
-  # promoted into the blocking `e2e-gates` job below. What remains advisory here
-  # is the scroll-scrub/perf set (frame, mobile, performance) whose remaining
-  # waitForTimeout()s pace scrub animations — converting those changes test
-  # semantics, so they stay local-authoritative for now.
+  # Deterministic accessibility, degradation, navigation, effect-lifecycle, and
+  # interaction contracts are duplicated in the blocking `e2e-gates` job below.
+  # Frame/mobile/performance coverage remains advisory until its hardware-sensitive
+  # timing can be replaced with event-driven assertions.
   e2e:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -76,6 +75,10 @@ jobs:
   cross-zone-smoke:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CROSS_ZONE_EXPECTED_SHA: ${{ github.sha }}
+      CROSS_ZONE_DEPLOY_WAIT_MS: '540000'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -83,11 +86,10 @@ jobs:
           node-version: 24
       - run: node tests/runtime/cross-zone-smoke.mjs
 
-  # Deterministic e2e gates: BLOCKING. Degradation (reduced motion, no WebGL,
-  # 404 asset — load-time only) plus the promoted deterministic subset:
-  # chrome-ui (nav/scroll-indicator via condition waits only) and hero-pretext
-  # (load-time hover, no fixed waits). No fixed-wait scroll scrubbing here, so
-  # these are stable on shared runners — unlike the advisory `e2e` job above.
+  # Product-safety e2e gates: BLOCKING. Accessibility, degradation (reduced
+  # motion, no WebGL, missing image/renderer), navigation, Canvas fallback/context
+  # lifecycle, Work gate, and representative scroll handoffs run here. The broad
+  # frame/mobile/performance matrix remains in the advisory lane above.
   e2e-gates:
     runs-on: ubuntu-latest
     steps:

@@ -12,10 +12,11 @@ function formatMetric(metric: ProjectMetric): string {
 
 export default function ProjectMetrics({ metrics }: ProjectMetricsProps) {
   const root = useRef<HTMLDListElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === 'undefined')
 
   useEffect(() => {
     if (!root.current) return
+    if (typeof IntersectionObserver === 'undefined') return
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) return

@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { useReducedMotion } from './motion'
 
 const FONT_READY_INTERACTION_TIMEOUT_MS = 1600
 const MIN_FIELD_RADIUS = 150
@@ -68,7 +69,13 @@ function clamp(value: number, min: number, max: number) {
  * @performance 使用模块级 Promise 缓存，多个文本实例共享同一次动态 import
  */
 function loadPretext() {
-  pretextPromise ??= import('@chenglou/pretext')
+  if (!pretextPromise) {
+    const request = import('@chenglou/pretext').catch((error: unknown) => {
+      if (pretextPromise === request) pretextPromise = null
+      throw error
+    })
+    pretextPromise = request
+  }
   return pretextPromise
 }
 
@@ -80,10 +87,17 @@ function loadPretext() {
 function waitForFontsBeforePretext() {
   if (!document.fonts) return Promise.resolve()
 
-  return Promise.race([
-    document.fonts.ready.then(() => undefined),
-    new Promise<void>((resolve) => window.setTimeout(resolve, FONT_READY_INTERACTION_TIMEOUT_MS)),
-  ])
+  return new Promise<void>((resolve) => {
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      resolve()
+    }
+    const timer = window.setTimeout(finish, FONT_READY_INTERACTION_TIMEOUT_MS)
+    void document.fonts.ready.then(finish, finish)
+  })
 }
 
 /**
@@ -256,8 +270,10 @@ export function usePretextTextInteraction(
     text,
   }: PretextTextInteractionOptions
 ) {
+  const reducedMotion = useReducedMotion()
+
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || reducedMotion) {
       textRef.current
         ?.querySelectorAll<HTMLElement>(glyphSelector)
         .forEach((glyph) => {
@@ -270,12 +286,12 @@ export function usePretextTextInteraction(
     const textEl = textRef.current
     if (!textEl) return
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    if (reducedMotion.matches) return
-
     let cancelled = false
     let frame = 0
     let running = false
+    let interactionActive = false
+    let listenersAttached = false
+    let measurementVersion = 0
     let glyphs: GlyphState[] = []
     let mouseX = Number.POSITIVE_INFINITY
     let mouseY = Number.POSITIVE_INFINITY
@@ -283,6 +299,8 @@ export function usePretextTextInteraction(
     let fieldRadius = MIN_FIELD_RADIUS
     let hasPointer = false
     let press = 0
+    let measuredScrollX = window.scrollX
+    let measuredScrollY = window.scrollY
 
     const scheduleAnimation = () => {
       if (running || cancelled) return
@@ -298,13 +316,16 @@ export function usePretextTextInteraction(
     }
 
     const prepareGlyphs = () => {
+      const version = ++measurementVersion
       const rect = textEl.getBoundingClientRect()
       fieldRadius = Math.max(MIN_FIELD_RADIUS, rect.width * 0.5)
+      measuredScrollX = window.scrollX
+      measuredScrollY = window.scrollY
       void createGlyphStates(textEl, text, glyphSelector).then((nextGlyphs) => {
-        if (cancelled) return
+        if (cancelled || version !== measurementVersion) return
         glyphs = nextGlyphs
       }).catch(() => {
-        if (cancelled) return
+        if (cancelled || version !== measurementVersion) return
         glyphs = Array.from(textEl.querySelectorAll<HTMLElement>(glyphSelector)).map((el, index) => {
           const glyphRect = el.getBoundingClientRect()
           return createGlyphStateFromRect(el, index, glyphRect)
@@ -312,7 +333,24 @@ export function usePretextTextInteraction(
       })
     }
 
+    const syncScrollCoordinates = () => {
+      const dx = window.scrollX - measuredScrollX
+      const dy = window.scrollY - measuredScrollY
+      if (dx === 0 && dy === 0) return
+      glyphs.forEach((glyph) => {
+        glyph.left -= dx
+        glyph.right -= dx
+        glyph.homeX -= dx
+        glyph.top -= dy
+        glyph.bottom -= dy
+        glyph.homeY -= dy
+      })
+      measuredScrollX = window.scrollX
+      measuredScrollY = window.scrollY
+    }
+
     const onPointerMove = (event: PointerEvent) => {
+      syncScrollCoordinates()
       hasPointer = true
       mouseX = event.clientX
       mouseY = event.clientY
@@ -338,7 +376,11 @@ export function usePretextTextInteraction(
     }
 
     const animate = (time: number) => {
-      if (cancelled) return
+      if (cancelled || !interactionActive || document.visibilityState === 'hidden') {
+        running = false
+        frame = 0
+        return
+      }
 
       const inactive = !hasPointer || performance.now() - lastMove > 1400
       press += (0 - press) * 0.045
@@ -395,27 +437,75 @@ export function usePretextTextInteraction(
       frame = 0
     }
 
-    void waitForFontsBeforePretext().then(() => {
-      if (cancelled) return
-      prepareGlyphs()
+    const attachListeners = () => {
+      if (listenersAttached) return
+      listenersAttached = true
       window.addEventListener('pointermove', onPointerMove, { passive: true })
       window.addEventListener('pointerleave', onPointerLeave)
       window.addEventListener('pointerdown', onPointerDown, { passive: true })
       window.addEventListener('pointerup', onPointerUp, { passive: true })
       window.addEventListener('resize', prepareGlyphs, { passive: true })
-    })
-
-    return () => {
-      cancelled = true
-      window.cancelAnimationFrame(frame)
+    }
+    const detachListeners = () => {
+      if (!listenersAttached) return
+      listenersAttached = false
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('resize', prepareGlyphs)
+    }
+    const pauseInteraction = () => {
+      interactionActive = false
+      hasPointer = false
+      press = 0
+      measurementVersion += 1
+      window.cancelAnimationFrame(frame)
+      frame = 0
+      running = false
+      detachListeners()
       resetGlyphs()
     }
-  }, [enabled, glyphSelector, refreshKey, strength, text, textRef])
+    const resumeInteraction = () => {
+      if (interactionActive || cancelled || document.visibilityState === 'hidden') return
+      interactionActive = true
+      prepareGlyphs()
+      attachListeners()
+    }
+
+    let intersects = false
+    const syncActivity = () => {
+      if (intersects && document.visibilityState !== 'hidden') resumeInteraction()
+      else pauseInteraction()
+    }
+    const observer = typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver(([entry]) => {
+        intersects = entry?.isIntersecting ?? false
+        syncActivity()
+      }, { rootMargin: '15% 0px', threshold: 0.01 })
+    const onVisibilityChange = () => syncActivity()
+
+    void waitForFontsBeforePretext().then(() => {
+      if (cancelled) return
+      document.addEventListener('visibilitychange', onVisibilityChange)
+      if (observer) observer.observe(textEl)
+      else {
+        intersects = true
+        syncActivity()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      measurementVersion += 1
+      observer?.disconnect()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.cancelAnimationFrame(frame)
+      detachListeners()
+      resetGlyphs()
+    }
+  }, [enabled, glyphSelector, reducedMotion, refreshKey, strength, text, textRef])
 }
 
 /**

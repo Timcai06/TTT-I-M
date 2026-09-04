@@ -12,7 +12,7 @@ Monorepo for Tim Cai's cinematic landing and future content studio.
 ## Commands
 
 ```bash
-npm install
+npm ci
 npm run dev:landing
 npm run dev:studio
 npm run build:landing
@@ -22,10 +22,18 @@ npm run lint
 npm run test:build
 npm run test:smoke
 npm run test:unit
+npm run test:studio
+npm run test:e2e
+npm run test:e2e:gates
+npm run test:e2e:canvas-experimental
 ```
 
+The repository contract is Node `>=24 <26` with npm `>=11 <12`; `package.json`
+pins npm `11.11.0`, CI uses Node 24, and both Vercel projects install through
+the committed lockfile with `npm ci`.
+
 `npm run dev` and `npm run build` intentionally target the landing app for Vercel compatibility.
-`npm run test:build` runs the static architecture guards; `npm run test:smoke` verifies the deployed same-domain Studio rewrites and their `/_next` assets.
+`npm run test:build` runs the static architecture guards; `npm run test:smoke` verifies deployed archive/detail rewrites, every referenced `/_next` asset, RSS, and sitemap after both zones expose the exact expected commit. Playwright builds and owns an isolated production preview on port 4173, so its results cannot accidentally describe a stale local dev process. `test:e2e:canvas-experimental` is the explicit CanvasDrawElement lane; the stable Chromium suite skips those two feature-flag-only assertions.
 
 ## Cross-App Links
 

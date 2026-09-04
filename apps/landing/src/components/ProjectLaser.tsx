@@ -1,8 +1,11 @@
 import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
 import { createLaser, LASER_CONFIG, type LaserHandle } from '../lib/canvas-ui/laser'
-import { isMobileExperience } from '../lib/device'
-import { prefersReducedMotion } from '../lib/motion'
-import { acquireContext, canAcquireOptionalSurface, releaseContext } from '../lib/webgl/contextRegistry'
+import { useMobileExperience } from '../lib/device'
+import { useReducedMotion } from '../lib/motion'
+import {
+  acquireOptionalContextWhenAvailable,
+  type ContextLease,
+} from '../lib/webgl/contextRegistry'
 
 export default function ProjectLaser({
   active,
@@ -14,18 +17,28 @@ export default function ProjectLaser({
   captureRef: RefObject<HTMLElement | null>
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const disabled = prefersReducedMotion() || isMobileExperience()
+  const reducedMotion = useReducedMotion()
+  const mobileExperience = useMobileExperience()
+  const disabled = reducedMotion || mobileExperience
 
   useEffect(() => {
     const host = ref.current
     if (!host || !active || disabled) return
-    if (!canAcquireOptionalSurface()) return
     const canvas = host.querySelector('canvas')
     if (!canvas) return
 
-    acquireContext()
     const capture = captureRef.current
     const beamTarget = capture?.querySelector<HTMLElement>('.projects__bento') ?? null
+    let contextLease: ContextLease | null = null
+    let handle: LaserHandle | null = null
+    let resizeObserver: ResizeObserver | null = null
+    let stopWaiting = () => {}
+    let released = false
+
+    const onContextLost = (event: Event) => {
+      event.preventDefault()
+      cleanup()
+    }
 
     const syncBeamBounds = () => {
       if (!beamTarget) return
@@ -38,28 +51,65 @@ export default function ProjectLaser({
       host.dataset.beamCenter = `${Math.round((bounds.left + bounds.right) * 0.5)}`
     }
 
-    syncBeamBounds()
-    const handle = createLaser(canvas, capture, beamTarget)
-    if (!handle) {
-      releaseContext()
-      return
-    }
-    handleRef.current = handle
-    host.dataset.mode = handle.mode
     const resize = () => {
       syncBeamBounds()
-      handle.resize()
+      handle?.resize()
     }
-    const resizeObserver = beamTarget ? new ResizeObserver(resize) : null
-    if (beamTarget) resizeObserver?.observe(beamTarget)
-    window.addEventListener('resize', resize)
-    return () => {
+    const cleanup = () => {
+      if (released) return
+      released = true
+      stopWaiting()
       window.removeEventListener('resize', resize)
+      canvas.removeEventListener('webglcontextlost', onContextLost)
       resizeObserver?.disconnect()
-      handleRef.current = null
-      handle.destroy()
-      releaseContext()
+      resizeObserver = null
+      if (handleRef.current === handle) handleRef.current = null
+      try {
+        handle?.destroy()
+      } catch {
+        // Continue through lease release even if a driver rejects teardown.
+      } finally {
+        handle = null
+        contextLease?.release()
+        contextLease = null
+        host.dataset.mode = 'unavailable'
+      }
     }
+
+    syncBeamBounds()
+    canvas.addEventListener('webglcontextlost', onContextLost)
+    stopWaiting = acquireOptionalContextWhenAvailable('project-laser', (lease) => {
+      if (released) {
+        lease.release()
+        return
+      }
+      contextLease = lease
+      let created: LaserHandle | null
+      try {
+        created = createLaser(canvas, capture, beamTarget)
+      } catch {
+        cleanup()
+        return
+      }
+      if (!created) {
+        cleanup()
+        return
+      }
+      handle = created
+      try {
+        handleRef.current = created
+        host.dataset.mode = created.mode
+        resizeObserver = beamTarget && typeof ResizeObserver !== 'undefined'
+          ? new ResizeObserver(resize)
+          : null
+        if (beamTarget) resizeObserver?.observe(beamTarget)
+        window.addEventListener('resize', resize)
+        resize()
+      } catch {
+        cleanup()
+      }
+    })
+    return cleanup
   }, [active, captureRef, disabled, handleRef])
 
   if (disabled) return null

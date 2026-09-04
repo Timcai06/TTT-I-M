@@ -1,15 +1,11 @@
-import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react'
 import { ChapterStateContext } from '../lib/chapterState'
 import { useLandingScrollNarrative } from '../lib/useLandingScrollNarrative'
 import { narrativeChapters } from '../lib/narrativeChapters'
 import { useStage } from '../lib/stage'
+import { isKeyboardScrollIntent } from '../lib/scroll/scrollIntent'
 
 const fallbackChapterId = narrativeChapters[0]?.id ?? 'hero'
-const scrollKeys = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '])
-
-function hasStartedScrollNavigation(key: string): boolean {
-  return scrollKeys.has(key)
-}
 
 function resolveChapterUrl(activeId: string): string {
   if (activeId === fallbackChapterId) {
@@ -31,13 +27,16 @@ export default function ChapterStateProvider({ children }: { children: ReactNode
   const { activeId } = useLandingScrollNarrative(narrativeChapters, fallbackChapterId)
   const [userScrollStarted, setUserScrollStarted] = useState(false)
   const stage = useStage()
+  const contextValue = useMemo(() => ({ activeId }), [activeId])
 
   useEffect(() => {
+    if (userScrollStarted) return
+
     const markUserScroll = () => {
       setUserScrollStarted(true)
     }
     const markKeyboardScroll = (event: KeyboardEvent) => {
-      if (hasStartedScrollNavigation(event.key)) {
+      if (isKeyboardScrollIntent(event)) {
         markUserScroll()
       }
     }
@@ -50,7 +49,7 @@ export default function ChapterStateProvider({ children }: { children: ReactNode
       window.removeEventListener('touchmove', markUserScroll)
       window.removeEventListener('keydown', markKeyboardScroll)
     }
-  }, [])
+  }, [userScrollStarted])
 
   useEffect(() => {
     // Explicit chapter jumps already own their hash update. Natural scrolling
@@ -66,7 +65,7 @@ export default function ChapterStateProvider({ children }: { children: ReactNode
   }, [activeId, stage, userScrollStarted])
 
   return (
-    <ChapterStateContext.Provider value={{ activeId }}>
+    <ChapterStateContext.Provider value={contextValue}>
       {children}
     </ChapterStateContext.Provider>
   )

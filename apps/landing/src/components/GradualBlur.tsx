@@ -130,14 +130,6 @@ function getGradientDirection(position: BlurPosition) {
   }[position]
 }
 
-function debounce(fn: () => void, wait: number) {
-  let timeout: number | undefined
-  return () => {
-    window.clearTimeout(timeout)
-    timeout = window.setTimeout(fn, wait)
-  }
-}
-
 function useResponsiveDimension(
   responsive: boolean,
   config: GradualBlurConfig,
@@ -164,10 +156,17 @@ function useResponsiveDimension(
       setValue(nextValue)
     }
 
-    const debounced = debounce(calc, 100)
+    let timeout: number | undefined
+    const debounced = () => {
+      window.clearTimeout(timeout)
+      timeout = window.setTimeout(calc, 100)
+    }
     calc()
     window.addEventListener('resize', debounced)
-    return () => window.removeEventListener('resize', debounced)
+    return () => {
+      window.clearTimeout(timeout)
+      window.removeEventListener('resize', debounced)
+    }
   }, [config, key, responsive])
 
   return responsive ? value : config[key]
@@ -178,6 +177,7 @@ function useIntersectionObserver(ref: React.RefObject<HTMLElement | null>, shoul
 
   useEffect(() => {
     if (!shouldObserve || !ref.current) return
+    if (typeof IntersectionObserver === 'undefined') return
 
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry) return
@@ -188,7 +188,7 @@ function useIntersectionObserver(ref: React.RefObject<HTMLElement | null>, shoul
     return () => observer.disconnect()
   }, [ref, shouldObserve])
 
-  return isVisible
+  return typeof IntersectionObserver === 'undefined' ? true : isVisible
 }
 
 function GradualBlur(props: GradualBlurProps) {

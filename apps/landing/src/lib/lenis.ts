@@ -1,7 +1,7 @@
 import Lenis from 'lenis'
 import { useEffect } from 'react'
 import { gsap, ScrollTrigger } from './gsap'
-import { prefersReducedMotion } from './motion'
+import { useReducedMotion } from './motion'
 import { subscribeStage } from './stage'
 import { requestScrollRefresh } from './scroll/requestRefresh'
 
@@ -12,15 +12,28 @@ export function getLenis() {
 }
 
 export function useLenis() {
+  const reduced = useReducedMotion()
+
   useEffect(() => {
-    // Under "reduce motion", hand scrolling back to the browser: no smooth
-    // interpolation (the chief vestibular trigger), and it's lighter on
-    // low-end hardware too.
-    const reduced = prefersReducedMotion()
+    // Reduced-motion is a separate runtime, not a Lenis configuration. Keeping
+    // a Lenis instance with smoothWheel=false still attaches its resize,
+    // virtual-scroll, ScrollTrigger and GSAP ticker machinery. Native scrolling
+    // gives the browser full ownership and guarantees there is no idle Lenis
+    // rAF path for users who explicitly opted out of motion.
+    if (reduced) {
+      lenisInstance = null
+      document.body.classList.remove('disable-hover')
+      const refreshTimer = window.setTimeout(() => requestScrollRefresh(), 150)
+      return () => {
+        window.clearTimeout(refreshTimer)
+        document.body.classList.remove('disable-hover')
+      }
+    }
+
     const lenis = new Lenis({
       duration: 1.15,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: !reduced,
+      smoothWheel: true,
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
     })
@@ -87,5 +100,5 @@ export function useLenis() {
       lenis.destroy()
       lenisInstance = null
     }
-  }, [])
+  }, [reduced])
 }

@@ -34,6 +34,11 @@ changes are deliberately limited to:
   each local capture into a viewport-sized output so the lens is not clipped by
   project boxes. The refraction model, render passes, optical defaults and HTML
   capture path remain upstream.
+- All vendored engines call the application-owned WebGL validation boundary
+  before accepting shaders, linked programs, buffers, textures, framebuffers,
+  or vertex arrays. Allocation, compile, link, or framebuffer failure throws
+  into the owning DOM-fallback lifecycle instead of reporting an empty first
+  frame. These checks do not alter successful shader output or timing.
 
 The horizontal Bend adapter does not modify the vendored engine. Its Shader is
 a direct X-axis port of the upstream rounded 40-sample fold solver.

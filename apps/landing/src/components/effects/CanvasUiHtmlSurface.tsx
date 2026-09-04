@@ -2,11 +2,9 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useReducer,
   useRef,
   useState,
   useSyncExternalStore,
-  type CSSProperties,
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -15,10 +13,9 @@ import { useCanvasSurfaceSlot } from '../../lib/canvas-ui/canvasSurfaceSlots'
 import { useMobileExperience } from '../../lib/device'
 import { useReducedMotion } from '../../lib/motion'
 import {
-  acquireContext,
-  canAcquireOptionalSurface,
-  releaseContext,
-  subscribeContextRegistry,
+  acquireOptionalContextWhenAvailable,
+  forceLoseCanvasWebGLContext,
+  type ContextLease,
 } from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 
@@ -43,6 +40,9 @@ export type CanvasUiHtmlFactory<Options extends object> = (
 ) => CanvasUiHtmlInstance<Options> | null
 
 const emptySubscribe = () => () => {}
+const INITIAL_IMAGE_WAIT_MS = 1_400
+const FACTORY_STARTUP_WAIT_MS = 2_000
+const FIRST_FRAME_WAIT_MS = 1_600
 
 interface CanvasUiHtmlSurfaceProps<Options extends object> {
   children: ReactNode
@@ -56,17 +56,16 @@ interface CanvasUiHtmlSurfaceProps<Options extends object> {
   onActiveChange?: (active: boolean) => void
   onHostChange?: (element: HTMLDivElement | null) => void
   portalOutput?: boolean
-  retainFallbackUntilReady?: boolean
   renderMargin?: string
   mountMargin?: string
 }
 
 /**
- * Hosts Canvas UI's native HTML-in-Canvas engines. Effects that opt into a
- * seamless handoff retain one semantic fallback sibling while the single
- * captured/interactive subtree prepares; the fallback is hidden only after a
- * successful first frame. Off-screen and hidden-page work is paused, and
- * distant surfaces release their optional context entirely.
+ * Hosts Canvas UI's native HTML-in-Canvas engines over exactly one semantic
+ * DOM subtree. The real DOM always owns layout and interaction; the hidden
+ * source canvas only stages drawElementImage and the output canvas is a
+ * pointer-transparent enhancement. Off-screen/hidden work pauses and distant
+ * surfaces release their optional context entirely.
  */
 export default function CanvasUiHtmlSurface<Options extends object>({
   children,
@@ -80,7 +79,6 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   onActiveChange,
   onHostChange,
   portalOutput = false,
-  retainFallbackUntilReady = false,
   renderMargin = '160px 0px',
   mountMargin = '80% 0px',
 }: CanvasUiHtmlSurfaceProps<Options>) {
@@ -97,11 +95,17 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   const supported = useSyncExternalStore(emptySubscribe, supportsHtmlInCanvas, () => false)
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
-  const [contentHeight, setContentHeight] = useState(0)
   const [failureCount, setFailureCount] = useState(0)
-  const [budgetEpoch, retryBudget] = useReducer((value: number) => value + 1, 0)
   const mobile = useMobileExperience()
   const reducedMotion = useReducedMotion()
+
+  const failLiveInstance = useCallback((instance: CanvasUiHtmlInstance<Options>) => {
+    if (instanceRef.current !== instance) return
+    instanceRef.current = null
+    setReady(false)
+    setFailureCount((count) => count + 1)
+    setFailed(true)
+  }, [])
 
   const bindHost = useCallback((element: HTMLDivElement | null) => {
     hostRef.current = element
@@ -122,22 +126,10 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     // an empty frame even though every image is already in the preload cache.
     if (native) content.setAttribute('drawable', '')
 
-    const syncHeight = () => {
-      const next = Math.ceil(content.getBoundingClientRect().height)
-      if (next > 0) setContentHeight((current) => current === next ? current : next)
-    }
-    syncHeight()
-    const observer = new ResizeObserver(syncHeight)
-    observer.observe(content)
     return () => {
-      observer.disconnect()
       content.removeAttribute('drawable')
     }
   }, [native])
-
-  useEffect(() => subscribeContextRegistry(() => {
-    if (!instanceRef.current && canAcquireOptionalSurface()) retryBudget()
-  }), [])
 
   // A transient GPU reset must never permanently remove an effect for the
   // rest of the visit. Retry twice while the surface is visible, then stay on
@@ -163,14 +155,25 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     const content = contentRef.current
     const output = outputRef.current
     if (!native || !source || !content || !output) return
-    if (!canAcquireOptionalSurface()) return
 
     let disposed = false
-    let registered = false
+    let contextLease: ContextLease | null = null
     let instance: CanvasUiHtmlInstance<Options> | null = null
+    let stopWaitingForContext = () => {}
     const host = hostRef.current
     const paintable = source as HTMLCanvasElement & { requestPaint?: () => void }
     let paintFrame = 0
+    let startupTimer = 0
+    let firstFrameTimer = 0
+    let firstFrameSeen = false
+    let failureReported = false
+    const failSurface = () => {
+      if (disposed || failureReported) return
+      failureReported = true
+      setReady(false)
+      setFailureCount((count) => count + 1)
+      setFailed(true)
+    }
     const requestPaint = () => {
       if (paintFrame) return
       paintFrame = window.requestAnimationFrame(() => {
@@ -180,27 +183,32 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     }
     const images = Array.from(content.querySelectorAll<HTMLImageElement>('img'))
     const imageWaitCleanups: Array<() => void> = []
-    const waitForImage = (image: HTMLImageElement): Promise<void> => new Promise((resolve) => {
+    const waitForImage = (image: HTMLImageElement): Promise<boolean> => new Promise((resolve) => {
       let settled = false
-      const cleanup = () => {
+      let timer = 0
+      const detach = () => {
         image.removeEventListener('load', finish)
         image.removeEventListener('error', finish)
       }
-      const finish = () => {
+      const settle = (available: boolean) => {
         if (settled) return
         settled = true
-        cleanup()
-        if (image.naturalWidth > 0 && typeof image.decode === 'function') {
-          void image.decode().catch(() => undefined).then(() => resolve())
-        } else resolve()
+        window.clearTimeout(timer)
+        detach()
+        resolve(available)
       }
-      imageWaitCleanups.push(() => {
-        cleanup()
-        if (!settled) {
-          settled = true
-          resolve()
-        }
-      })
+      const finish = () => {
+        if (settled) return
+        detach()
+        if (image.naturalWidth > 0 && typeof image.decode === 'function') {
+          void image.decode().then(
+            () => settle(true),
+            () => settle(image.naturalWidth > 0),
+          )
+        } else settle(image.naturalWidth > 0)
+      }
+      imageWaitCleanups.push(() => settle(false))
+      timer = window.setTimeout(() => settle(false), INITIAL_IMAGE_WAIT_MS)
       if (image.complete) finish()
       else {
         image.addEventListener('load', finish, { once: true })
@@ -213,7 +221,11 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     const firstFrameImages = images.filter((image) => (
       image.loading !== 'lazy' || image.classList.contains('is-active')
     ))
-    const initialImagesReady = Promise.all(firstFrameImages.map(waitForImage))
+    const initialImagesReady = Promise.all(firstFrameImages.map(waitForImage)).then((availability) => {
+      if (availability.some((available) => !available)) {
+        throw new Error('Canvas UI first-frame image did not become drawable before its deadline.')
+      }
+    })
     const imageListeners = images.map((image) => {
       image.addEventListener('load', requestPaint)
       image.addEventListener('error', requestPaint)
@@ -226,109 +238,142 @@ export default function CanvasUiHtmlSurface<Options extends object>({
 
     const onContextLost = (event: Event) => {
       event.preventDefault()
-      if (disposed) return
-      setReady(false)
-      setFailureCount((count) => count + 1)
-      setFailed(true)
+      failSurface()
     }
     const onInvalidate = () => requestPaint()
     output.addEventListener('webglcontextlost', onContextLost)
     host?.addEventListener('canvas-ui:invalidate', onInvalidate)
+    startupTimer = window.setTimeout(failSurface, FACTORY_STARTUP_WAIT_MS)
 
     void Promise.all([loadFactory(), initialImagesReady])
       .then(([create]) => {
         if (disposed) return
-        instance = create({
-          source,
-          content,
-          output,
-          onFirstFrame: () => {
-            if (!disposed) {
-              setFailureCount(0)
-              setReady(true)
+        window.clearTimeout(startupTimer)
+        startupTimer = 0
+        stopWaitingForContext = acquireOptionalContextWhenAvailable(
+          `canvas-ui:${effectId}`,
+          (lease) => {
+            if (disposed) {
+              lease.release()
+              return
+            }
+            contextLease = lease
+            try {
+              instance = create({
+                source,
+                content,
+                output,
+                onFirstFrame: () => {
+                  firstFrameSeen = true
+                  window.clearTimeout(firstFrameTimer)
+                  firstFrameTimer = 0
+                  if (!disposed && !failureReported) {
+                    setFailureCount(0)
+                    setReady(true)
+                  }
+                },
+              }, options)
+            } catch {
+              forceLoseCanvasWebGLContext(output)
+              contextLease.release()
+              contextLease = null
+              failSurface()
+              return
+            }
+            if (!instance) {
+              forceLoseCanvasWebGLContext(output)
+              contextLease.release()
+              contextLease = null
+              failSurface()
+              return
+            }
+            instanceRef.current = instance
+            if (!firstFrameSeen) {
+              firstFrameTimer = window.setTimeout(failSurface, FIRST_FRAME_WAIT_MS)
+            }
+            if (!visibleRef.current || document.hidden) {
+              try {
+                instance.pause()
+              } catch {
+                instanceRef.current = null
+                failSurface()
+              }
             }
           },
-        }, options)
-        if (!instance) {
-          setFailureCount((count) => count + 1)
-          setFailed(true)
-          return
-        }
-        instanceRef.current = instance
-        acquireContext()
-        registered = true
-        if (!visibleRef.current || document.hidden) instance.pause()
+        )
       })
       .catch(() => {
-        if (!disposed) {
-          setFailureCount((count) => count + 1)
-          setFailed(true)
-        }
+        failSurface()
       })
 
     return () => {
       disposed = true
+      stopWaitingForContext()
       window.cancelAnimationFrame(paintFrame)
+      window.clearTimeout(startupTimer)
+      window.clearTimeout(firstFrameTimer)
       imageWaitCleanups.forEach((dispose) => dispose())
       imageListeners.forEach((dispose) => dispose())
       output.removeEventListener('webglcontextlost', onContextLost)
       host?.removeEventListener('canvas-ui:invalidate', onInvalidate)
       setReady(false)
       instanceRef.current = null
-      instance?.destroy()
-      if (registered) releaseContext()
+      try {
+        instance?.destroy()
+      } catch {
+        // Cleanup must still release the registry lease after a driver error.
+      } finally {
+        if (instance) forceLoseCanvasWebGLContext(output)
+        contextLease?.release()
+      }
     }
-  }, [budgetEpoch, hostRef, loadFactory, native, options])
+  }, [effectId, hostRef, loadFactory, native, options])
 
   useEffect(() => {
     visibleRef.current = visible
     const instance = instanceRef.current
     if (!instance) return
     const syncActivity = () => {
-      if (visible && !document.hidden) instance.resume()
-      else instance.pause()
+      try {
+        if (visible && !document.hidden) instance.resume()
+        else instance.pause()
+      } catch {
+        failLiveInstance(instance)
+      }
     }
     syncActivity()
     document.addEventListener('visibilitychange', syncActivity)
     return () => document.removeEventListener('visibilitychange', syncActivity)
-  }, [ready, visible])
+  }, [failLiveInstance, ready, visible])
 
   useEffect(() => {
-    if (!native || ready || !visible) return
-    const timer = window.setTimeout(() => {
-      if (!instanceRef.current) return
-      setFailureCount((count) => count + 1)
-      setFailed(true)
-    }, 1600)
-    return () => window.clearTimeout(timer)
-  }, [native, ready, visible])
-
-  useEffect(() => {
-    instanceRef.current?.setOptions(options)
-  }, [options])
+    const instance = instanceRef.current
+    if (!instance) return
+    try {
+      instance.setOptions(options)
+    } catch {
+      failLiveInstance(instance)
+    }
+  }, [failLiveInstance, options])
 
   useEffect(() => {
     onActiveChange?.(native && ready)
   }, [native, onActiveChange, ready])
 
+  useEffect(() => () => onActiveChange?.(false), [onActiveChange])
+
   const state = native
     ? ready ? 'active' : 'loading'
     : nativeCandidate ? 'deferred' : 'fallback'
-  const hostStyle = native && !retainFallbackUntilReady && contentHeight > 0
-    ? { height: `${contentHeight}px` } satisfies CSSProperties
-    : undefined
 
   const nativeSource = native ? (
     <canvas
       ref={sourceRef}
-      // @ts-expect-error Chromium's experimental HTML-in-Canvas attribute is not in React types.
       layoutsubtree="true"
       suppressHydrationWarning
       className="canvas-ui-html__source"
-      aria-hidden={retainFallbackUntilReady && !ready ? true : undefined}
-    >
-      <div ref={contentRef} className={contentClassName}>{children}</div>
-    </canvas>
+      aria-hidden="true"
+    />
   ) : null
   const nativeOutput = native ? (
     <canvas
@@ -349,26 +394,12 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     <>
       <div
         ref={bindHost}
-        className={`canvas-ui-html${retainFallbackUntilReady ? ' canvas-ui-html--retained-fallback' : ''} ${className}`}
+        className={`canvas-ui-html ${className}`}
         data-canvas-ui-effect={effectId}
         data-canvas-ui-state={state}
-        style={hostStyle}
       >
-        {retainFallbackUntilReady ? (
-          <>
-            <div
-              className={`canvas-ui-html__fallback ${contentClassName ?? ''}`}
-              aria-hidden={native && ready ? true : undefined}
-            >
-              {children}
-            </div>
-            {nativeCanvases}
-          </>
-        ) : native ? (
-          nativeCanvases
-        ) : (
-          <div ref={contentRef} className={contentClassName}>{children}</div>
-        )}
+        <div ref={contentRef} className={contentClassName}>{children}</div>
+        {nativeCanvases}
       </div>
       {portaledOutput}
     </>

@@ -1,10 +1,79 @@
 import { getGLQualityProfile } from './quality.ts'
 
-let active = 0
+/** A WebGL context is represented by a single-use lease, never a loose counter. */
+export interface ContextLease {
+  readonly owner: string
+  release(): void
+}
+
+/**
+ * Explicitly release a canvas-owned WebGL context after its renderer has
+ * deleted GPU objects. Removing a canvas from the DOM alone leaves reclamation
+ * to browser heuristics and can exhaust the context budget during long visits.
+ */
+export function forceLoseCanvasWebGLContext(canvas: HTMLCanvasElement): void {
+  try {
+    const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+    context?.getExtension('WEBGL_lose_context')?.loseContext()
+  } catch {
+    // A denied or already-lost context is already in the desired terminal state.
+  }
+}
+
+/**
+ * Verify the exact WebGL generation required by the installed Three.js
+ * renderer before React Three Fiber mounts its asynchronous root. R3F does not
+ * catch a renderer-construction rejection in its layout-effect bootstrap, so a
+ * failed context request would otherwise escape as an unhandled promise.
+ *
+ * The probe context is explicitly lost before returning. It is a capability
+ * check, not a long-lived surface, and therefore never enters the lease
+ * registry.
+ */
+export function canCreateWebGL2Context(): boolean {
+  if (typeof document === 'undefined') return false
+
+  const canvas = document.createElement('canvas')
+  try {
+    const context = canvas.getContext('webgl2', {
+      alpha: true,
+      antialias: false,
+      powerPreference: 'high-performance',
+    })
+    if (!context) return false
+    context.getExtension('WEBGL_lose_context')?.loseContext()
+    return true
+  } catch {
+    return false
+  }
+}
+
+const activeLeases = new Map<symbol, string>()
 const listeners = new Set<() => void>()
 
+function reportRegistryError(error: unknown): void {
+  try {
+    globalThis.reportError?.(error)
+  } catch {
+    // Diagnostics must never corrupt admission accounting. Browsers without a
+    // usable reportError hook still retain the fail-closed lease behavior.
+  }
+}
+
+function normalizeOwner(owner: string): string {
+  const normalizedOwner = owner.trim()
+  if (!normalizedOwner) throw new Error('WebGL context leases require a non-empty owner.')
+  return normalizedOwner
+}
+
 function emitContextChange(): void {
-  listeners.forEach((listener) => listener())
+  for (const listener of [...listeners]) {
+    try {
+      listener()
+    } catch (error) {
+      reportRegistryError(error)
+    }
+  }
 }
 
 /** Subscribe to context-budget changes so deferred optional surfaces can retry. */
@@ -18,43 +87,101 @@ export function subscribeContextRegistry(listener: () => void): () => void {
  * @dependencies 依赖本模块内存态 active；没有跨 tab 或跨页面持久化
  */
 export function activeContextCount(): number {
-  return active
+  return activeLeases.size
 }
 
 /**
- * @description 判断可选 WebGL surface 当前是否还能创建新的 context
- * @dependencies 依赖 getGLQualityProfile().optionalContextLimit
- * @performance 可选转场/氛围层在预算不足时应跳过，而不是和 Hero/About 抢 GPU 资源
- * @caveats 必要 surface 仍应调用 acquireContext/releaseContext 登记数量，但不应该被这个判断阻止渲染
+ * Exposes ownership for diagnostics/tests without exposing mutable registry state.
  */
-export function canAcquire(): boolean {
-  return active < getGLQualityProfile().optionalContextLimit
+export function activeContextOwners(): readonly string[] {
+  return Object.freeze([...activeLeases.values()])
 }
 
 /**
- * @description canAcquire 的语义化别名，给调用方明确表达“可选视觉面”的预算检查
- * @dependencies 复用 canAcquire
+ * Whether the page-level registered-context budget has capacity for another
+ * optional surface. Required contexts count toward this admission ceiling,
+ * which prevents a Hero canvas plus optional effects from silently exceeding
+ * the total page budget. Allocation must still go through
+ * tryAcquireOptionalContext so the check and reservation remain atomic.
  */
 export function canAcquireOptionalSurface(): boolean {
-  return canAcquire()
+  return activeLeases.size < getGLQualityProfile().optionalContextLimit
+}
+
+function createLease(owner: string): ContextLease {
+  const normalizedOwner = normalizeOwner(owner)
+
+  const token = Symbol(normalizedOwner)
+  let released = false
+  activeLeases.set(token, normalizedOwner)
+  emitContextChange()
+
+  return Object.freeze({
+    owner: normalizedOwner,
+    release() {
+      if (released) return
+      released = true
+      if (activeLeases.delete(token)) emitContextChange()
+    },
+  })
 }
 
 /**
- * @description 登记一个已挂载的 WebGL context，保证可选 surface 能看到真实并发压力
- * @dependencies 由 Hero 等 WebGL surface 在挂载时调用
- * @caveats 必须和 releaseContext 成对出现，否则后续可选 surface 会被错误跳过
+ * Acquire a required context lease. Required surfaces are accounted for but
+ * are never denied by the optional-effects budget.
  */
-export function acquireContext(): void {
-  active += 1
-  emitContextChange()
+export function acquireContext(owner: string): ContextLease {
+  return createLease(owner)
 }
 
 /**
- * @description 释放一个已卸载的 WebGL context 登记，防止热更新或路由切换后预算被长期占用
- * @dependencies 与 acquireContext 成对使用
- * @caveats 使用 Math.max 防御重复 cleanup，避免 active 变成负数
+ * Atomically acquire an optional context lease. This prevents two effects from
+ * both observing and consuming the final optional slot.
  */
-export function releaseContext(): void {
-  active = Math.max(0, active - 1)
-  emitContextChange()
+export function tryAcquireOptionalContext(owner: string): ContextLease | null {
+  const normalizedOwner = normalizeOwner(owner)
+  if (!canAcquireOptionalSurface()) return null
+  return createLease(normalizedOwner)
+}
+
+/**
+ * Wait for optional capacity without polling. The callback runs at most once
+ * and receives ownership of the lease; cancelling before delivery removes the
+ * registry listener. Re-entrancy is guarded because acquiring a lease emits a
+ * registry change synchronously.
+ */
+export function acquireOptionalContextWhenAvailable(
+  owner: string,
+  onAcquired: (lease: ContextLease) => void,
+): () => void {
+  const normalizedOwner = normalizeOwner(owner)
+  let cancelled = false
+  let acquiring = false
+  let delivered = false
+  let unsubscribe = () => {}
+
+  const attempt = () => {
+    if (cancelled || delivered || acquiring) return
+    acquiring = true
+    const lease = tryAcquireOptionalContext(normalizedOwner)
+    acquiring = false
+    if (!lease) return
+
+    delivered = true
+    unsubscribe()
+    try {
+      onAcquired(lease)
+    } catch (error) {
+      lease.release()
+      reportRegistryError(error)
+    }
+  }
+
+  unsubscribe = subscribeContextRegistry(attempt)
+  attempt()
+
+  return () => {
+    cancelled = true
+    unsubscribe()
+  }
 }

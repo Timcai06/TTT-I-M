@@ -1,4 +1,10 @@
 // @ts-nocheck -- vendored source is checked upstream with a looser TS config.
+import {
+  compileWebGLShader,
+  linkWebGLProgram,
+  requireWebGLResource,
+} from "../../../webgl/programValidation";
+
 export interface ParticleScrollOptions {
   /** Keep the upstream document-scroll assembly, or dissolve one fixed exposure from top to bottom. */
   mode?: "scroll" | "dissolve";
@@ -287,25 +293,13 @@ export function createParticleScroll(
   }
 
   function compile(type: number, text: string): WebGLShader {
-    const shader = gl!.createShader(type)!;
-    gl!.shaderSource(shader, text);
-    gl!.compileShader(shader);
-    if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
-      console.error(
-        "ParticleScroll shader error:",
-        gl!.getShaderInfoLog(shader),
-      );
-    }
-    return shader;
+    return compileWebGLShader(gl!, type, text, "Particle Scroll");
   }
 
   function link(vertText: string, fragText: string) {
     const vert = compile(gl!.VERTEX_SHADER, vertText);
     const frag = compile(gl!.FRAGMENT_SHADER, fragText);
-    const program = gl!.createProgram()!;
-    gl!.attachShader(program, vert);
-    gl!.attachShader(program, frag);
-    gl!.linkProgram(program);
+    const program = linkWebGLProgram(gl!, vert, frag, "Particle Scroll");
     const uniforms: Record<string, WebGLUniformLocation> = {};
     const count = gl!.getProgramParameter(program, gl!.ACTIVE_UNIFORMS);
     for (let i = 0; i < count; i++) {
@@ -318,9 +312,9 @@ export function createParticleScroll(
   const base = link(QUAD_VERT, BASE_FRAG);
   const points = link(POINT_VERT, POINT_FRAG);
 
-  const quadVao = gl.createVertexArray()!;
+  const quadVao = requireWebGLResource(gl.createVertexArray(), "Particle Scroll quad VAO");
   gl.bindVertexArray(quadVao);
-  const quad = gl.createBuffer();
+  const quad = requireWebGLResource(gl.createBuffer(), "Particle Scroll quad buffer");
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(
     gl.ARRAY_BUFFER,
@@ -329,9 +323,9 @@ export function createParticleScroll(
   );
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  const pointVao = gl.createVertexArray()!;
+  const pointVao = requireWebGLResource(gl.createVertexArray(), "Particle Scroll point VAO");
 
-  const contentTexture = gl.createTexture()!;
+  const contentTexture = requireWebGLResource(gl.createTexture(), "Particle Scroll content texture");
   gl.bindTexture(gl.TEXTURE_2D, contentTexture);
   gl.texParameteri(
     gl.TEXTURE_2D,
@@ -356,7 +350,7 @@ export function createParticleScroll(
 
   let contentMaxX = 1;
 
-  const rowTex = gl.createTexture()!;
+  const rowTex = requireWebGLResource(gl.createTexture(), "Particle Scroll row texture");
   gl.bindTexture(gl.TEXTURE_2D, rowTex);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);

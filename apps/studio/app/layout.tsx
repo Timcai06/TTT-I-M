@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { siteUrl } from '../lib/site'
+import { requireWebNavigationHref } from '../lib/safeHref'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -22,7 +23,10 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard' },
 ]
 
-const landingHref = process.env.NEXT_PUBLIC_LANDING_URL ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : '/')
+const landingHref = requireWebNavigationHref(
+  process.env.NEXT_PUBLIC_LANDING_URL
+    ?? (process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : '/'),
+)
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

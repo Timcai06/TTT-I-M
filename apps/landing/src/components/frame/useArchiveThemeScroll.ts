@@ -46,6 +46,8 @@ export default function useArchiveThemeScroll({
     activeClusterIndex.current = -1
 
     const warmedImages = new Set<string>()
+    const warmLifecycle = new AbortController()
+    const pendingPreloads = new Set<HTMLImageElement>()
     const clusterElements = Array.from(trackEl.querySelectorAll<HTMLElement>(':scope > .archive-cluster'))
     const clustersById = new Map(clusterElements.map((cluster) => [cluster.dataset.cluster, cluster]))
     const imagesByCluster = new Map(clusterElements.map((cluster) => [
@@ -76,9 +78,13 @@ export default function useArchiveThemeScroll({
           preload.fetchPriority = 'low'
           preload.sizes = img.sizes
 
+          const settlePreload = () => pendingPreloads.delete(preload)
           preload.addEventListener('load', () => {
-            void enqueueImageDecode(preload).catch(() => {})
-          }, { once: true })
+            settlePreload()
+            void enqueueImageDecode(preload, warmLifecycle.signal).catch(() => {})
+          }, { once: true, signal: warmLifecycle.signal })
+          preload.addEventListener('error', settlePreload, { once: true, signal: warmLifecycle.signal })
+          pendingPreloads.add(preload)
           preload.srcset = img.srcset
           preload.src = img.src
         })
@@ -179,6 +185,12 @@ export default function useArchiveThemeScroll({
     }, sectionEl)
 
     return () => {
+      warmLifecycle.abort(new Error('Frame image warmup detached'))
+      pendingPreloads.forEach((preload) => {
+        preload.srcset = ''
+        preload.src = 'data:,'
+      })
+      pendingPreloads.clear()
       window.cancelAnimationFrame(activeUpdateFrame.current)
       activeUpdateFrame.current = 0
       mm.revert()

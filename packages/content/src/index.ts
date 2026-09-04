@@ -77,26 +77,33 @@ export interface WorkEntry {
  */
 export interface CollectionRepository<T extends { slug: string }> {
   /** 同步返回所有条目；适合当前静态内容和构建时读取 */
-  all(): T[]
+  all(): readonly T[]
   /** 按 slug 同步查找单条目 */
   get(slug: string): T | undefined
   /** 异步列表接口；给未来远程/数据库适配器保留一致调用形态 */
-  list(): Promise<T[]>
+  list(): Promise<readonly T[]>
 }
 
 /**
  * @description 从静态数组创建只读 repository，供 Studio 当前内容面使用
  * @dependencies JavaScript Map
  * @performance 构造时建立 slug Map，详情页查找为 O(1)
- * @caveats 返回原始数组引用，不做深拷贝；调用方不要在运行时修改内容对象
+ * @caveats 集合会浅拷贝并冻结，条目对象仍由内容层负责保持不可变
  */
-export function createStaticRepository<T extends { slug: string }>(items: T[]): CollectionRepository<T> {
-  const bySlug = new Map(items.map((item) => [item.slug, item]))
+export function createStaticRepository<T extends { slug: string }>(items: readonly T[]): CollectionRepository<T> {
+  const snapshot = Object.freeze([...items])
+  const bySlug = new Map<string, T>()
+  for (const item of snapshot) {
+    const slug = item.slug.trim()
+    if (!slug || slug !== item.slug) throw new Error('Static repository slugs must be non-empty and normalized.')
+    if (bySlug.has(slug)) throw new Error(`Duplicate static repository slug: ${slug}`)
+    bySlug.set(slug, item)
+  }
 
   return {
-    all: () => items,
+    all: () => snapshot,
     get: (slug) => bySlug.get(slug),
-    list: async () => items,
+    list: async () => snapshot,
   }
 }
 
@@ -110,29 +117,39 @@ export function createStaticRepository<T extends { slug: string }>(items: T[]): 
  */
 export interface KeyedCollectionRepository<T> {
   /** 同步获取全量集合（原始数据，不附带 ContentMeta）。 */
-  all(): T[]
+  all(): readonly T[]
   /** 异步获取全量集合，每项附带 ContentMeta。 */
-  list(): Promise<WithMeta<T>[]>
+  list(): Promise<readonly WithMeta<T>[]>
   /** 按 id 获取单条目（id 由工厂函数的 getId 提取）。 */
   get(id: string): Promise<WithMeta<T> | undefined>
 }
 
 /**
  * @description 把手写静态数组包装成 KeyedCollectionRepository（landing 当前的唯一适配器）
- * @performance all() 零拷贝返回原数组；list/get 仅为未来适配器保持异步形态
- * @caveats 返回原始数组引用，调用方不要修改条目对象
+ * @performance 构造时建立 id Map；all/list 返回稳定只读快照，get 为 O(1)
+ * @caveats 集合会浅拷贝并冻结，条目对象仍由内容层负责保持不可变
  */
 export function createKeyedStaticRepository<T>(
-  items: T[],
+  items: readonly T[],
   getId: (item: T) => string,
 ): KeyedCollectionRepository<T> {
+  const snapshot = Object.freeze([...items])
+  const byId = new Map<string, T>()
+  for (const item of snapshot) {
+    const rawId = getId(item)
+    const id = rawId.trim()
+    if (!id || id !== rawId) throw new Error('Static repository ids must be non-empty and normalized.')
+    if (byId.has(id)) throw new Error(`Duplicate static repository id: ${id}`)
+    byId.set(id, item)
+  }
   const withMeta = (item: T): WithMeta<T> => ({ ...item, ...defaultMeta })
+  const entriesWithMeta = Object.freeze(snapshot.map(withMeta))
 
   return {
-    all: () => items,
-    list: () => Promise.resolve(items.map(withMeta)),
+    all: () => snapshot,
+    list: () => Promise.resolve(entriesWithMeta),
     get: (id) => {
-      const found = items.find((item) => getId(item) === id)
+      const found = byId.get(id)
       return Promise.resolve(found ? withMeta(found) : undefined)
     },
   }

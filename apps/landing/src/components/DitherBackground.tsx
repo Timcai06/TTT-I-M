@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { prefersReducedMotion } from '../lib/motion'
+import { useReducedMotion } from '../lib/motion'
+import { tryAcquireOptionalContext } from '../lib/webgl/contextRegistry'
 import VERT from './shaders/Dither.vert.glsl'
 import FRAG from './shaders/Dither.frag.glsl'
 
@@ -50,10 +51,15 @@ export default function DitherBackground({
   className = '',
 }: Props) {
   const mountRef = useRef<HTMLDivElement | null>(null)
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const mount = mountRef.current
-    if (!mount || prefersReducedMotion()) return
+    if (!mount || reducedMotion) return
+    mount.dataset.ditherState = 'fallback'
+
+    const contextLease = tryAcquireOptionalContext('loader-dither')
+    if (!contextLease) return
 
     let renderer: THREE.WebGLRenderer
     try {
@@ -67,90 +73,160 @@ export default function DitherBackground({
         preserveDrawingBuffer: false,
       })
     } catch {
+      contextLease.release()
       // The intro already carries a CSS gradient fallback. A denied or lost
       // WebGL context must not tear down the React tree around it.
       return
     }
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-    renderer.setPixelRatio(dpr)
-    renderer.setClearColor(0x000000, 1)
-    const canvas = renderer.domElement
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    canvas.style.display = 'block'
-    mount.appendChild(canvas)
-
-    const scene = new THREE.Scene()
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3))
-
-    const uniforms: DitherUniforms = {
-      iTime: { value: 0 },
-      iResolution: { value: new THREE.Vector2(1, 1) },
-      uColorLow: { value: COLOR_LOW.clone() },
-      uColorHigh: { value: COLOR_HIGH.clone() },
-      uColorSteps: { value: colorSteps },
-      uScale: { value: scale },
-      uSpeed: { value: speed },
-      uPixelSize: { value: Math.max(1, pixelSize * dpr) },
-      uFade: { value: 0 },
+    let canvas: HTMLCanvasElement | null = null
+    let geometry: THREE.BufferGeometry | null = null
+    let material: THREE.RawShaderMaterial | null = null
+    let resizeObserver: ResizeObserver | null = null
+    let resizeFallbackAttached = false
+    let visibilityAttached = false
+    let contextLossAttached = false
+    let disposed = false
+    let contextLost = false
+    let shaderFailed = false
+    let raf = 0
+    let running = false
+    let lastFrame = 0
+    let elapsed = 0
+    let fade = 0
+    let scene: THREE.Scene | null = null
+    let camera: THREE.OrthographicCamera | null = null
+    let uniforms: DitherUniforms | null = null
+    const stop = () => {
+      running = false
+      window.cancelAnimationFrame(raf)
+      raf = 0
+      lastFrame = 0
     }
-
-    const material = new THREE.RawShaderMaterial({
-      vertexShader: VERT,
-      fragmentShader: FRAG,
-      uniforms,
-      depthTest: false,
-      depthWrite: false,
-    })
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.frustumCulled = false
-    scene.add(mesh)
-
     const setSize = () => {
+      if (!uniforms) return
       const w = mount.clientWidth || 1
       const h = mount.clientHeight || 1
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+      renderer.setPixelRatio(dpr)
       renderer.setSize(w, h, false)
       uniforms.iResolution.value.set(w * dpr, h * dpr)
+      uniforms.uPixelSize.value = Math.max(1, pixelSize * dpr)
     }
-    setSize()
-    const ro = new ResizeObserver(setSize)
-    ro.observe(mount)
-
-    let paused = false
     const onVis = () => {
-      paused = document.hidden
+      if (document.hidden) stop()
+      else start()
     }
-    document.addEventListener('visibilitychange', onVis, { passive: true })
+    const disposeSurface = () => {
+      if (disposed) return
+      disposed = true
+      stop()
+      resizeObserver?.disconnect()
+      if (resizeFallbackAttached) window.removeEventListener('resize', setSize)
+      if (visibilityAttached) document.removeEventListener('visibilitychange', onVis)
+      if (contextLossAttached) canvas?.removeEventListener('webglcontextlost', onContextLost)
+      geometry?.dispose()
+      material?.dispose()
+      renderer.dispose()
+      renderer.forceContextLoss()
+      contextLease.release()
+      canvas?.remove()
+      mount.dataset.ditherState = 'fallback'
+    }
+    const onContextLost = (event: Event) => {
+      event.preventDefault()
+      contextLost = true
+      disposeSurface()
+    }
 
-    const clock = new THREE.Clock()
-    let raf = 0
-    let fade = 0
-    const animate = () => {
-      raf = requestAnimationFrame(animate)
-      if (paused) return
-      const t = clock.getElapsedTime()
-      uniforms.iTime.value = t
+    const animate = (now: number) => {
+      if (!running || contextLost || disposed || !uniforms || !scene || !camera || !canvas) return
+      if (lastFrame === 0) lastFrame = now
+      const delta = Math.min(0.1, Math.max(0, now - lastFrame) / 1000)
+      lastFrame = now
+      elapsed += delta
+      uniforms.iTime.value = elapsed
       if (fade < 1) {
-        fade = Math.min(1, fade + 1 / 60) // ~1s ease-in over frames
+        fade = Math.min(1, fade + delta)
         uniforms.uFade.value = fade
       }
       renderer.render(scene, camera)
+      if (shaderFailed) {
+        disposeSurface()
+        return
+      }
+      if (mount.dataset.ditherState !== 'live') {
+        canvas.style.opacity = '1'
+        mount.dataset.ditherState = 'live'
+      }
+      raf = requestAnimationFrame(animate)
     }
-    animate()
+    const start = () => {
+      if (running || contextLost || disposed || document.hidden) return
+      running = true
+      lastFrame = 0
+      raf = requestAnimationFrame(animate)
+    }
 
-    return () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
-      document.removeEventListener('visibilitychange', onVis)
-      geometry.dispose()
-      material.dispose()
-      renderer.dispose()
-      renderer.forceContextLoss()
-      if (mount.contains(canvas)) mount.removeChild(canvas)
+    try {
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+      renderer.debug.onShaderError = () => { shaderFailed = true }
+      renderer.setPixelRatio(dpr)
+      renderer.setClearColor(0x000000, 1)
+      canvas = renderer.domElement
+      canvas.style.width = '100%'
+      canvas.style.height = '100%'
+      canvas.style.display = 'block'
+      canvas.style.opacity = '0'
+      mount.appendChild(canvas)
+      mount.dataset.ditherState = 'initializing'
+      canvas.addEventListener('webglcontextlost', onContextLost)
+      contextLossAttached = true
+
+      scene = new THREE.Scene()
+      camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+      geometry = new THREE.BufferGeometry()
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3))
+
+      uniforms = {
+        iTime: { value: 0 },
+        iResolution: { value: new THREE.Vector2(1, 1) },
+        uColorLow: { value: COLOR_LOW.clone() },
+        uColorHigh: { value: COLOR_HIGH.clone() },
+        uColorSteps: { value: colorSteps },
+        uScale: { value: scale },
+        uSpeed: { value: speed },
+        uPixelSize: { value: Math.max(1, pixelSize * dpr) },
+        uFade: { value: 0 },
+      }
+
+      material = new THREE.RawShaderMaterial({
+        vertexShader: VERT,
+        fragmentShader: FRAG,
+        uniforms,
+        depthTest: false,
+        depthWrite: false,
+      })
+      const mesh = new THREE.Mesh(geometry, material)
+      mesh.frustumCulled = false
+      scene.add(mesh)
+
+      setSize()
+      resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(setSize)
+      if (resizeObserver) resizeObserver.observe(mount)
+      else {
+        window.addEventListener('resize', setSize, { passive: true })
+        resizeFallbackAttached = true
+      }
+      document.addEventListener('visibilitychange', onVis, { passive: true })
+      visibilityAttached = true
+      start()
+    } catch {
+      disposeSurface()
+      return
     }
-  }, [colorSteps, scale, speed, pixelSize])
+
+    return disposeSurface
+  }, [colorSteps, pixelSize, reducedMotion, scale, speed])
 
   return <div ref={mountRef} className={`intro__dither ${className}`.trim()} aria-hidden="true" />
 }
