@@ -156,6 +156,14 @@ export default function WorkTransition() {
           }
           const deliberateChapterJump = gateBypassRef.current
           if (
+            deliberateChapterJump
+            && self.progress >= WORK_GATE_PROGRESS
+            && !ctaReleasedRef.current
+          ) {
+            ctaReleasedRef.current = true
+            setCtaReleased(true)
+          }
+          if (
             gateLockedRef.current
             && deliberateChapterJump
           ) {

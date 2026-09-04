@@ -34,6 +34,7 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
   }
 
   expect(Math.max(...counts), `canvas samples: ${counts.join(', ')}`).toBeLessThanOrEqual(2)
+  await expect(page.locator('#work-transition .liquid-metal-button')).toHaveCount(0)
   await expect(page.locator('.footer__ascii [data-ascii-state="live"]')).toHaveCount(1)
   await expect(page.locator('.footer__ascii .ascii-filter')).toHaveCount(1)
   await expect(page.locator('.footer__ascii .ascii-filter .ascii-text__glyphs')).toHaveCount(1)

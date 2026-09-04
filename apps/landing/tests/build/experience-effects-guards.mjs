@@ -208,7 +208,7 @@ for (const copy of ['A stack is still', 'Connect the parts.', 'Six projects.', '
 if (/work-transition__edge/.test(workTransition) || /work-transition__edge/.test(workTransitionStyle)) {
   throw new Error('The retired Stack → Work edge gradients must not return.')
 }
-for (const needle of ['WORK_GATE_PROGRESS', "data-gate={gateLocked ? 'locked' : 'open'}", 'Click to continue', 'dispatchWorkHandoff', 'enterWork', 'ctaReleasedRef', 'setCtaReleased(true)', '!ctaReleased']) {
+for (const needle of ['WORK_GATE_PROGRESS', "data-gate={gateLocked ? 'locked' : 'open'}", 'Click to continue', 'dispatchWorkHandoff', 'enterWork', 'deliberateChapterJump', 'ctaReleasedRef', 'setCtaReleased(true)', '!ctaReleased']) {
   if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its deliberate Liquid Metal handoff: ${needle}`)
 }
 for (const gateToken of ['preventForwardScroll', 'preventForwardKey', 'gateLockedRef', 'event.deltaY <= 0']) {
