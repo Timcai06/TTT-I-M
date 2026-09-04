@@ -19,7 +19,7 @@
   pointer-events: none;
 }
 
-.canvas-ui-html > [drawable] {
+.canvas-ui-html__source > [drawable] {
   position: relative;
   z-index: 0;
 }

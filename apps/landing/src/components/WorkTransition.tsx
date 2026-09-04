@@ -20,6 +20,8 @@ type SparkControls = {
 }
 
 const WORK_GATE_PROGRESS = WORK_TRANSITION_NARRATIVE.gate.progress
+const CTA_PREPARE_PROGRESS = 0.72
+const CTA_RELEASE_PROGRESS = 0.66
 
 interface WorkTransitionStyle extends CSSProperties {
   '--work-transition-height-desktop': string
@@ -66,6 +68,7 @@ export default function WorkTransition() {
   const timelineRef = useRef<ReturnType<typeof gsap.timeline> | null>(null)
   const [ctaMounted, setCtaMounted] = useState(false)
   const [ctaReleased, setCtaReleased] = useState(false)
+  const [ctaRendererReady, setCtaRendererReady] = useState(false)
   const [gateLocked, setGateLocked] = useState(false)
   const reducedMotion = useReducedMotion()
   const mobile = useMobileExperience()
@@ -134,7 +137,7 @@ export default function WorkTransition() {
         onUpdate: (self) => {
           postSparkControls(self.progress)
 
-          if (!metalSourceRequestedRef.current && self.progress > 0.82) {
+          if (!metalSourceRequestedRef.current && self.progress > 0.62) {
             metalSourceRequestedRef.current = true
             void preloadLiquidMetalButtonSource().catch(() => {
               metalSourceRequestedRef.current = false
@@ -184,7 +187,9 @@ export default function WorkTransition() {
             clampToGate()
           }
 
-          const shouldMountCta = ctaMountedRef.current ? self.progress > 0.86 : self.progress > 0.9
+          const shouldMountCta = ctaMountedRef.current
+            ? self.progress > CTA_RELEASE_PROGRESS
+            : self.progress > CTA_PREPARE_PROGRESS
           if (shouldMountCta !== ctaMountedRef.current) {
             ctaMountedRef.current = shouldMountCta
             setCtaMounted(shouldMountCta)
@@ -351,17 +356,27 @@ export default function WorkTransition() {
         </div>
 
         <div className="work-transition__cta-shell">
-          <div className="work-transition__cta">
-            {(reducedMotion || ctaMounted) && !ctaReleased && (
-              <LiquidMetalButton
-                text="ENTER THE WORK"
-                variant="pill"
-                rendering="colored"
-                onClick={enterWork}
-              />
-            )}
+          <div
+            className="work-transition__cta"
+            data-renderer-ready={reducedMotion || ctaRendererReady ? 'true' : 'false'}
+          >
+            <div className="work-transition__cta-renderer">
+              {(reducedMotion || ctaMounted) && !ctaReleased && (
+                <LiquidMetalButton
+                  text="ENTER THE WORK"
+                  variant="pill"
+                  rendering="colored"
+                  onClick={enterWork}
+                  onReadyChange={setCtaRendererReady}
+                />
+              )}
+            </div>
             <span className="work-transition__gate-hint" aria-live="polite">
-              {gateLocked ? 'Click to continue · 点击进入作品' : 'Scroll narrative / 03'}
+              {gateLocked
+                ? ctaRendererReady || reducedMotion
+                  ? 'Click to continue · 点击进入作品'
+                  : 'Preparing interaction · 正在完成渲染'
+                : 'Scroll narrative / 03'}
             </span>
           </div>
         </div>

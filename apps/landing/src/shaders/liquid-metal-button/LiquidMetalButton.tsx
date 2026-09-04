@@ -22,6 +22,7 @@ export type LiquidMetalButtonProps = {
   cursorLabel?: string;
   embedded?: boolean;
   onClick?: () => void;
+  onReadyChange?: (ready: boolean) => void;
 };
 
 export function LiquidMetalButton({
@@ -34,6 +35,7 @@ export function LiquidMetalButton({
   cursorLabel,
   embedded = false,
   onClick,
+  onReadyChange,
 }: LiquidMetalButtonProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
@@ -192,6 +194,12 @@ export function LiquidMetalButton({
     syncButtonConfig();
     syncPlayConfig();
   }, [ready, syncButtonConfig, syncPlayConfig]);
+
+  useEffect(() => {
+    onReadyChange?.(ready);
+  }, [onReadyChange, ready]);
+
+  useEffect(() => () => onReadyChange?.(false), [onReadyChange]);
 
   useEffect(() => {
     const receiveMessage = (event: MessageEvent) => {

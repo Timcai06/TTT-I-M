@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -42,8 +41,55 @@ export type CanvasUiHtmlFactory<Options extends object> = (
 
 const emptySubscribe = () => () => {}
 const INITIAL_IMAGE_WAIT_MS = 1_400
-const FACTORY_STARTUP_WAIT_MS = 2_000
-const FIRST_FRAME_WAIT_MS = 1_600
+const FACTORY_STARTUP_WAIT_MS = 4_000
+const FIRST_FRAME_WAIT_MS = 2_400
+const CAPTURE_ATTRIBUTE = 'data-canvas-ui-capture'
+const CAPTURE_INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, [tabindex], [contenteditable]'
+
+/**
+ * HTML-in-Canvas only paints descendants owned by its layoutsubtree canvas.
+ * Keep React's one semantic/interactive tree in normal document flow and
+ * mirror it into a stable, inert capture root owned by the source canvas.
+ * The root itself stays stable because the vendored drivers retain its
+ * reference for resize and drawElementImage calls.
+ */
+function syncCaptureSubtree(content: HTMLElement, capture: HTMLElement): void {
+  const snapshot = content.cloneNode(true) as HTMLElement
+
+  for (const attribute of Array.from(capture.attributes)) {
+    capture.removeAttribute(attribute.name)
+  }
+  for (const attribute of Array.from(snapshot.attributes)) {
+    if (attribute.name !== 'id') capture.setAttribute(attribute.name, attribute.value)
+  }
+
+  capture.setAttribute('drawable', '')
+  capture.setAttribute(CAPTURE_ATTRIBUTE, '')
+  capture.setAttribute('aria-hidden', 'true')
+  capture.setAttribute('inert', '')
+  capture.replaceChildren(...Array.from(snapshot.childNodes))
+
+  capture.querySelectorAll<HTMLElement>('[id]').forEach((element) => {
+    element.removeAttribute('id')
+  })
+  capture.querySelectorAll<HTMLElement>(CAPTURE_INTERACTIVE_SELECTOR).forEach((element) => {
+    element.setAttribute('tabindex', '-1')
+    element.removeAttribute('autofocus')
+  })
+
+  const liveImages = Array.from(content.querySelectorAll<HTMLImageElement>('img'))
+  capture.querySelectorAll<HTMLImageElement>('img').forEach((image, index) => {
+    const liveImage = liveImages[index]
+    const resolvedSource = liveImage?.currentSrc || liveImage?.src
+    if (!resolvedSource) return
+    image.removeAttribute('srcset')
+    image.removeAttribute('sizes')
+    if (liveImage.classList.contains('is-active') || liveImage.loading !== 'lazy') {
+      image.loading = 'eager'
+    }
+    image.src = resolvedSource
+  })
+}
 
 interface CanvasUiHtmlSurfaceProps<Options extends object> {
   children: ReactNode
@@ -117,21 +163,6 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   const slotGranted = useCanvasSurfaceSlot(exclusiveGroup, nativeCandidate && mounted)
   const native = nativeCandidate && mounted && slotGranted
 
-  useLayoutEffect(() => {
-    const content = contentRef.current
-    if (!content) return
-
-    // Chromium's HTML-in-Canvas proposal requires the captured subtree to be
-    // explicitly drawable. `layoutsubtree` on the parent canvas only gives the
-    // fallback children layout; without this marker drawElementImage can yield
-    // an empty frame even though every image is already in the preload cache.
-    if (native) content.setAttribute('drawable', '')
-
-    return () => {
-      content.removeAttribute('drawable')
-    }
-  }, [native])
-
   // A transient GPU reset must never permanently remove an effect for the
   // rest of the visit. Context reclamation after WEBGL_lose_context is
   // asynchronous on software renderers, so visible surfaces use the shared
@@ -165,7 +196,9 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     let stopWaitingForContext = () => {}
     const host = hostRef.current
     const paintable = source as HTMLCanvasElement & { requestPaint?: () => void }
+    const capture = content.cloneNode(false) as HTMLElement
     let paintFrame = 0
+    let captureFrame = 0
     let startupTimer = 0
     let firstFrameTimer = 0
     let firstFrameSeen = false
@@ -177,6 +210,9 @@ export default function CanvasUiHtmlSurface<Options extends object>({
       setFailureCount((count) => count + 1)
       setFailed(true)
     }
+    const refreshCapture = () => {
+      syncCaptureSubtree(content, capture)
+    }
     const requestPaint = () => {
       if (paintFrame) return
       paintFrame = window.requestAnimationFrame(() => {
@@ -184,7 +220,20 @@ export default function CanvasUiHtmlSurface<Options extends object>({
         paintable.requestPaint?.()
       })
     }
-    const images = Array.from(content.querySelectorAll<HTMLImageElement>('img'))
+    const scheduleCaptureRefresh = () => {
+      if (captureFrame) return
+      captureFrame = window.requestAnimationFrame(() => {
+        captureFrame = 0
+        refreshCapture()
+        instance?.resize()
+        requestPaint()
+      })
+    }
+    refreshCapture()
+    source.replaceChildren(capture)
+
+    const images = Array.from(capture.querySelectorAll<HTMLImageElement>('img'))
+    const liveImages = Array.from(content.querySelectorAll<HTMLImageElement>('img'))
     const imageWaitCleanups: Array<() => void> = []
     const waitForImage = (image: HTMLImageElement): Promise<boolean> => new Promise((resolve) => {
       let settled = false
@@ -229,13 +278,16 @@ export default function CanvasUiHtmlSurface<Options extends object>({
         throw new Error('Canvas UI first-frame image did not become drawable before its deadline.')
       }
     })
-    const imageListeners = images.map((image) => {
-      image.addEventListener('load', requestPaint)
-      image.addEventListener('error', requestPaint)
-      if (image.complete) requestPaint()
+    const imageListeners = liveImages.map((image) => {
+      const refreshAndPaint = () => {
+        scheduleCaptureRefresh()
+      }
+      image.addEventListener('load', refreshAndPaint)
+      image.addEventListener('error', refreshAndPaint)
+      if (image.complete) refreshAndPaint()
       return () => {
-        image.removeEventListener('load', requestPaint)
-        image.removeEventListener('error', requestPaint)
+        image.removeEventListener('load', refreshAndPaint)
+        image.removeEventListener('error', refreshAndPaint)
       }
     })
 
@@ -243,8 +295,19 @@ export default function CanvasUiHtmlSurface<Options extends object>({
       event.preventDefault()
       failSurface()
     }
-    const onInvalidate = () => requestPaint()
+    const onCaptureResource = () => requestPaint()
+    const onInvalidate = () => scheduleCaptureRefresh()
+    const mutationObserver = new MutationObserver(scheduleCaptureRefresh)
+    mutationObserver.observe(content, {
+      attributes: true,
+      attributeFilter: ['aria-hidden', 'aria-selected', 'class', 'src', 'srcset'],
+      characterData: true,
+      childList: true,
+      subtree: true,
+    })
     output.addEventListener('webglcontextlost', onContextLost)
+    source.addEventListener('load', onCaptureResource, true)
+    source.addEventListener('error', onCaptureResource, true)
     host?.addEventListener('canvas-ui:invalidate', onInvalidate)
     startupTimer = window.setTimeout(failSurface, FACTORY_STARTUP_WAIT_MS)
 
@@ -264,7 +327,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
             try {
               instance = create({
                 source,
-                content,
+                content: capture,
                 output,
                 onFirstFrame: () => {
                   firstFrameSeen = true
@@ -313,12 +376,17 @@ export default function CanvasUiHtmlSurface<Options extends object>({
       disposed = true
       stopWaitingForContext()
       window.cancelAnimationFrame(paintFrame)
+      window.cancelAnimationFrame(captureFrame)
       window.clearTimeout(startupTimer)
       window.clearTimeout(firstFrameTimer)
       imageWaitCleanups.forEach((dispose) => dispose())
       imageListeners.forEach((dispose) => dispose())
+      mutationObserver.disconnect()
       output.removeEventListener('webglcontextlost', onContextLost)
+      source.removeEventListener('load', onCaptureResource, true)
+      source.removeEventListener('error', onCaptureResource, true)
       host?.removeEventListener('canvas-ui:invalidate', onInvalidate)
+      source.replaceChildren()
       setReady(false)
       instanceRef.current = null
       try {

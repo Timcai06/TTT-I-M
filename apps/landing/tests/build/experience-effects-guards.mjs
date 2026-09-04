@@ -182,7 +182,7 @@ if (!/\.work-transition__spark\s*\{[^}]*pointer-events:\s*none/s.test(workTransi
 if (workTransitionStyle.includes('mask-image: radial-gradient(ellipse 72% 76%')) {
   throw new Error('The Liquid Metal CTA bloom must not be clipped by the retired radial mask.')
 }
-for (const token of ['bridge-ready', 'renderer-ready', 'renderer-failed', 'pointer-bridge', 'portfolio:iframe-pointer', 'syncPendingFrame', 'escapeHtml(text)', 'status: "failed"', 'typeof window.__set', 'webglcontextlost', 'contextLeaseRef', 'acquireOptionalContextWhenAvailable', 'lease?.release()']) {
+for (const token of ['bridge-ready', 'renderer-ready', 'renderer-failed', 'pointer-bridge', 'portfolio:iframe-pointer', 'syncPendingFrame', 'escapeHtml(text)', 'status: "failed"', 'typeof window.__set', 'webglcontextlost', 'contextLeaseRef', 'acquireOptionalContextWhenAvailable', 'lease?.release()', 'onReadyChange?.(ready)']) {
   if (!liquidMetalButton.includes(token)) throw new Error(`Liquid Metal runtime must avoid a blank font-blocked entrance: ${token}`)
 }
 if (/\{mounted\s*\?\s*\(\s*<button[^>]*liquid-metal-button__fallback/s.test(liquidMetalButton)) {
@@ -208,7 +208,7 @@ for (const copy of ['A stack is still', 'Connect the parts.', 'Six projects.', '
 if (/work-transition__edge/.test(workTransition) || /work-transition__edge/.test(workTransitionStyle)) {
   throw new Error('The retired Stack → Work edge gradients must not return.')
 }
-for (const needle of ['WORK_GATE_PROGRESS', "data-gate={gateLocked ? 'locked' : 'open'}", 'Click to continue', 'dispatchWorkHandoff', 'enterWork', 'deliberateChapterJump', 'ctaReleasedRef', 'setCtaReleased(true)', '!ctaReleased']) {
+for (const needle of ['WORK_GATE_PROGRESS', 'CTA_PREPARE_PROGRESS', "data-gate={gateLocked ? 'locked' : 'open'}", 'data-renderer-ready', 'Click to continue', 'Preparing interaction', 'dispatchWorkHandoff', 'enterWork', 'deliberateChapterJump', 'ctaReleasedRef', 'setCtaReleased(true)', '!ctaReleased']) {
   if (!workTransition.includes(needle)) throw new Error(`WorkTransition must preserve its deliberate Liquid Metal handoff: ${needle}`)
 }
 for (const gateToken of ['preventForwardScroll', 'preventForwardKey', 'gateLockedRef', 'event.deltaY <= 0']) {
@@ -239,13 +239,13 @@ for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFl
 for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
   if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
 }
-for (const token of ['supportsHtmlInCanvas', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')"]) {
+for (const token of ['supportsHtmlInCanvas', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'syncCaptureSubtree', 'source.replaceChildren(capture)', 'content: capture']) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
-for (const token of ['failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', 'INITIAL_IMAGE_WAIT_MS', 'FACTORY_STARTUP_WAIT_MS', 'FIRST_FRAME_WAIT_MS', 'availability.some']) {
+for (const token of ['failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', 'INITIAL_IMAGE_WAIT_MS', 'FACTORY_STARTUP_WAIT_MS', 'FIRST_FRAME_WAIT_MS', 'availability.some', 'scheduleCaptureRefresh', 'MutationObserver', "attributeFilter: ['aria-hidden', 'aria-selected', 'class', 'src', 'srcset']"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
 }
-for (const token of ['.canvas-ui-html > [drawable]', '.canvas-ui-html__source', 'opacity: 0', 'pointer-events: none']) {
+for (const token of ['.canvas-ui-html__source > [drawable]', '.canvas-ui-html__source', 'opacity: 0', 'pointer-events: none']) {
   if (!canvasHtmlStyle.includes(token)) throw new Error(`Canvas UI single-DOM handoff CSS is missing ${token}.`)
 }
 if ((canvasHtmlSurface.match(/\{children\}/g) ?? []).length !== 1) {
@@ -256,9 +256,9 @@ for (const forbidden of ['retainFallbackUntilReady', 'canvas-ui-html__fallback',
     throw new Error(`Canvas UI must never duplicate its semantic subtree: ${forbidden}`)
   }
 }
-for (const forbidden of ['preserveDom', 'captureRef', 'MutationObserver']) {
+for (const forbidden of ['preserveDom', 'captureRef']) {
   if (canvasHtmlSurface.includes(forbidden)) {
-    throw new Error(`Canvas UI effects must capture and interact with the same live subtree: ${forbidden}`)
+    throw new Error(`Canvas UI effects must keep one semantic React subtree and avoid broad mutation mirroring: ${forbidden}`)
   }
 }
 for (const token of ['size: 140', 'ior: 1.5', 'edge: 0.7', 'depth: 250', 'reflection: 1.12', 'shine: 0.14', 'zoom: 1.5', 'follow: 0.2', "targets: '[data-glass-target]'"]) {
