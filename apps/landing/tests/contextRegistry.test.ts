@@ -8,10 +8,20 @@ import {
   activeContextOwners,
   canCreateWebGL2Context,
   forceLoseCanvasWebGLContext,
+  getWebGLRecoveryDelay,
   type ContextLease,
   subscribeContextRegistry,
   tryAcquireOptionalContext,
 } from '../src/lib/webgl/contextRegistry.ts'
+
+void test('WebGL recovery backoff is bounded and rejects invalid counters', () => {
+  assert.equal(getWebGLRecoveryDelay(1), 280)
+  assert.equal(getWebGLRecoveryDelay(5), 1_200)
+  assert.equal(getWebGLRecoveryDelay(6), 1_200)
+  assert.equal(getWebGLRecoveryDelay(7), null)
+  assert.throws(() => getWebGLRecoveryDelay(0), /positive integer/)
+  assert.throws(() => getWebGLRecoveryDelay(1.5), /positive integer/)
+})
 
 void test('canvas teardown explicitly loses its existing WebGL context and fails closed', () => {
   let lost = 0

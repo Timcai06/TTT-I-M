@@ -51,6 +51,21 @@ export function canCreateWebGL2Context(): boolean {
 const activeLeases = new Map<symbol, string>()
 const listeners = new Set<() => void>()
 
+/**
+ * Browser and software-renderer context reclamation is asynchronous after
+ * WEBGL_lose_context. Optional surfaces therefore get a short, bounded
+ * recovery window instead of treating the first allocation miss as permanent.
+ */
+export const WEBGL_RECOVERY_ATTEMPTS = 6
+
+export function getWebGLRecoveryDelay(failureCount: number): number | null {
+  if (!Number.isInteger(failureCount) || failureCount < 1) {
+    throw new Error('WebGL recovery failureCount must be a positive integer.')
+  }
+  if (failureCount > WEBGL_RECOVERY_ATTEMPTS) return null
+  return Math.min(1_200, failureCount * 280)
+}
+
 function reportRegistryError(error: unknown): void {
   try {
     globalThis.reportError?.(error)

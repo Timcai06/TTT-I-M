@@ -332,7 +332,7 @@ if (!glassSurface.includes("import('../../lib/canvas-ui/vendor/Glass/GlassVanill
 for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'laserActive']) {
   if (!projects.includes(token)) throw new Error(`Projects laser intro is missing ${token}.`)
 }
-for (const token of ["acquireOptionalContextWhenAvailable('project-laser'", 'contextLease?.release()', 'ResizeObserver', 'retryCountRef', 'setRetryKey', 'window.clearTimeout(retryTimer)']) {
+for (const token of ["acquireOptionalContextWhenAvailable('project-laser'", 'contextLease?.release()', 'ResizeObserver', 'retryCountRef', 'setRetryKey', 'key={retryKey}', 'getWebGLRecoveryDelay', 'window.clearTimeout(retryTimer)']) {
   if (!projectLaser.includes(token)) throw new Error(`Project Laser lifecycle must retain ${token}.`)
 }
 if (projects.includes('--laser-progress')) {

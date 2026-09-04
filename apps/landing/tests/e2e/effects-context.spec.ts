@@ -512,6 +512,11 @@ test('desktop stack-to-work holds its final frame until the metal CTA releases W
     return rect.top + scrollY + (rect.height - innerHeight) * 0.9
   })
   await page.evaluate((scrollTop) => scrollTo({ top: scrollTop, behavior: 'auto' }), rewindTarget)
+  await expect.poll(() => transition.evaluate((section) => {
+    const rect = section.getBoundingClientRect()
+    const top = rect.top + scrollY
+    return (scrollY - top) / (rect.height - innerHeight)
+  })).toBeLessThan(0.94)
   await expect(transition).toHaveAttribute('data-gate', 'open')
   await page.evaluate((scrollTop) => scrollTo({ top: scrollTop, behavior: 'auto' }), target)
   await expect(transition).toHaveAttribute('data-gate', 'locked')

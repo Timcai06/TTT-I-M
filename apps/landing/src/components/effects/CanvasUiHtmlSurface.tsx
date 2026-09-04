@@ -15,6 +15,7 @@ import { useReducedMotion } from '../../lib/motion'
 import {
   acquireOptionalContextWhenAvailable,
   forceLoseCanvasWebGLContext,
+  getWebGLRecoveryDelay,
   type ContextLease,
 } from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
@@ -132,12 +133,14 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   }, [native])
 
   // A transient GPU reset must never permanently remove an effect for the
-  // rest of the visit. Retry twice while the surface is visible, then stay on
-  // the complete DOM fallback. Leaving the mount range resets the allowance so
-  // a later chapter revisit gets one clean recovery opportunity.
+  // rest of the visit. Context reclamation after WEBGL_lose_context is
+  // asynchronous on software renderers, so visible surfaces use the shared
+  // bounded backoff. Leaving the mount range resets the recovery allowance.
   useEffect(() => {
-    if (!failed || !enabled || !mounted || !visible || failureCount > 2) return
-    const timer = window.setTimeout(() => setFailed(false), 420 * failureCount)
+    if (!failed || !enabled || !mounted || !visible) return
+    const delay = getWebGLRecoveryDelay(failureCount)
+    if (delay === null) return
+    const timer = window.setTimeout(() => setFailed(false), delay)
     return () => window.clearTimeout(timer)
   }, [enabled, failed, failureCount, mounted, visible])
 

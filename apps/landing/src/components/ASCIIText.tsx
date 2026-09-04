@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
 import {
   acquireOptionalContextWhenAvailable,
+  getWebGLRecoveryDelay,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
 import { useGLSurface } from '../lib/webgl/useGLSurface'
@@ -353,12 +354,14 @@ export default function ASCIIText({
     let retryTimer = 0
     let stopWaitingForContext = () => {}
     const scheduleRetry = () => {
-      if (cancelled || failureCount >= 2) return
+      if (cancelled) return
+      const delay = getWebGLRecoveryDelay(failureCount)
+      if (delay === null) return
       window.clearTimeout(retryTimer)
       retryTimer = window.setTimeout(() => {
         initializing = false
         void setup()
-      }, 420 * failureCount)
+      }, delay)
     }
     const recoverFromFailure = (instance: AsciiScene) => {
       if (scene === instance) scene = null

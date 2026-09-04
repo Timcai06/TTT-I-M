@@ -4,6 +4,7 @@ import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
 import {
   acquireOptionalContextWhenAvailable,
+  getWebGLRecoveryDelay,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
 
@@ -87,8 +88,8 @@ export default function ProjectLaser({
       if (released) return
       cleanup()
       retryCountRef.current += 1
-      if (retryCountRef.current > 2) return
-      const delay = 420 * retryCountRef.current
+      const delay = getWebGLRecoveryDelay(retryCountRef.current)
+      if (delay === null) return
       retryTimer = window.setTimeout(() => {
         retryTimer = 0
         setRetryKey((key) => key + 1)
@@ -143,7 +144,7 @@ export default function ProjectLaser({
       aria-hidden="true"
       style={{ '--projects-laser-offset': `${LASER_CONFIG.offset}px` } as CSSProperties}
     >
-      {active && <canvas />}
+      {active && <canvas key={retryKey} />}
     </div>
   )
 }
