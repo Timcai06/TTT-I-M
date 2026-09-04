@@ -469,6 +469,7 @@ test('desktop stack-to-work holds its final frame until the metal CTA releases W
 
   await metalButton.click()
   await expect(transition).toHaveAttribute('data-gate', 'open')
+  await expect(transition.locator('.liquid-metal-button')).toHaveCount(0)
   await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-active', 'true')
   await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('#projects')
   await expect.poll(() => page.locator('#projects').evaluate((section) => Math.abs(section.getBoundingClientRect().top - 48))).toBeLessThan(12)
@@ -517,6 +518,7 @@ test('desktop stack-to-work holds its final frame until the metal CTA releases W
     const top = rect.top + scrollY
     return (scrollY - top) / (rect.height - innerHeight)
   })).toBeLessThan(0.94)
+  await expect(transition.locator('.liquid-metal-button')).toHaveCount(1)
   await expect(transition).toHaveAttribute('data-gate', 'open')
   await page.evaluate((scrollTop) => scrollTo({ top: scrollTop, behavior: 'auto' }), target)
   await expect(transition).toHaveAttribute('data-gate', 'locked')

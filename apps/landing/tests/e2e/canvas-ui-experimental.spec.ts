@@ -70,6 +70,7 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   await expect(transition).toHaveAttribute('data-gate', 'locked')
   await transition.frameLocator('.liquid-metal-button__frame').locator('#btn').click()
   await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-active', 'true')
+  await expect(transition.locator('.liquid-metal-button')).toHaveCount(0)
   await expect(page.locator('#projects .projects__laser canvas').first()).toBeAttached()
   await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-mode', 'html-canvas')
   await expect(page.locator('#projects [data-project-laser-capture]')).toHaveCount(1)

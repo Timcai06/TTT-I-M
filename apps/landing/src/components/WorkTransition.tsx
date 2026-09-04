@@ -56,6 +56,7 @@ function controlsForProgress(progress: number, mobile: boolean): SparkControls {
 export default function WorkTransition() {
   const root = useRef<HTMLElement>(null)
   const ctaMountedRef = useRef(false)
+  const ctaReleasedRef = useRef(false)
   const gateLockedRef = useRef(false)
   const gateReleasedRef = useRef(false)
   const gateBypassRef = useRef(false)
@@ -64,6 +65,7 @@ export default function WorkTransition() {
   const observedHashRef = useRef('')
   const timelineRef = useRef<ReturnType<typeof gsap.timeline> | null>(null)
   const [ctaMounted, setCtaMounted] = useState(false)
+  const [ctaReleased, setCtaReleased] = useState(false)
   const [gateLocked, setGateLocked] = useState(false)
   const reducedMotion = useReducedMotion()
   const mobile = useMobileExperience()
@@ -147,6 +149,10 @@ export default function WorkTransition() {
           if (self.direction < 0 && self.progress < 0.94) {
             gateReleasedRef.current = false
             gateBypassRef.current = false
+          }
+          if (ctaReleasedRef.current && self.progress < 0.94) {
+            ctaReleasedRef.current = false
+            setCtaReleased(false)
           }
           const deliberateChapterJump = gateBypassRef.current
           if (
@@ -264,7 +270,9 @@ export default function WorkTransition() {
     if (!work) return
     gateReleasedRef.current = true
     gateLockedRef.current = false
+    ctaReleasedRef.current = true
     setGateLocked(false)
+    setCtaReleased(true)
     timelineRef.current?.scrollTrigger?.getTween(true)?.kill()
     timelineRef.current?.scrollTrigger?.getTween()?.kill()
     dispatchWorkHandoff()
@@ -336,7 +344,7 @@ export default function WorkTransition() {
 
         <div className="work-transition__cta-shell">
           <div className="work-transition__cta">
-            {(reducedMotion || ctaMounted) && (
+            {(reducedMotion || ctaMounted) && !ctaReleased && (
               <LiquidMetalButton
                 text="ENTER THE WORK"
                 variant="pill"
