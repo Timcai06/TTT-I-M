@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type RefObject } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { createLaser, LASER_CONFIG, type LaserHandle } from '../lib/canvas-ui/laser'
 import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
@@ -17,13 +17,18 @@ export default function ProjectLaser({
   captureRef: RefObject<HTMLElement | null>
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const retryCountRef = useRef(0)
+  const [retryKey, setRetryKey] = useState(0)
   const reducedMotion = useReducedMotion()
   const mobileExperience = useMobileExperience()
   const disabled = reducedMotion || mobileExperience
 
   useEffect(() => {
     const host = ref.current
-    if (!host || !active || disabled) return
+    if (!host || !active || disabled) {
+      if (!active) retryCountRef.current = 0
+      return
+    }
     const canvas = host.querySelector('canvas')
     if (!canvas) return
 
@@ -34,10 +39,11 @@ export default function ProjectLaser({
     let resizeObserver: ResizeObserver | null = null
     let stopWaiting = () => {}
     let released = false
+    let retryTimer = 0
 
     const onContextLost = (event: Event) => {
       event.preventDefault()
-      cleanup()
+      retry()
     }
 
     const syncBeamBounds = () => {
@@ -56,6 +62,8 @@ export default function ProjectLaser({
       handle?.resize()
     }
     const cleanup = () => {
+      window.clearTimeout(retryTimer)
+      retryTimer = 0
       if (released) return
       released = true
       stopWaiting()
@@ -75,6 +83,17 @@ export default function ProjectLaser({
         host.dataset.mode = 'unavailable'
       }
     }
+    const retry = () => {
+      if (released) return
+      cleanup()
+      retryCountRef.current += 1
+      if (retryCountRef.current > 2) return
+      const delay = 420 * retryCountRef.current
+      retryTimer = window.setTimeout(() => {
+        retryTimer = 0
+        setRetryKey((key) => key + 1)
+      }, delay)
+    }
 
     syncBeamBounds()
     canvas.addEventListener('webglcontextlost', onContextLost)
@@ -88,15 +107,16 @@ export default function ProjectLaser({
       try {
         created = createLaser(canvas, capture, beamTarget)
       } catch {
-        cleanup()
+        retry()
         return
       }
       if (!created) {
-        cleanup()
+        retry()
         return
       }
       handle = created
       try {
+        retryCountRef.current = 0
         handleRef.current = created
         host.dataset.mode = created.mode
         resizeObserver = beamTarget && typeof ResizeObserver !== 'undefined'
@@ -106,11 +126,11 @@ export default function ProjectLaser({
         window.addEventListener('resize', resize)
         resize()
       } catch {
-        cleanup()
+        retry()
       }
     })
     return cleanup
-  }, [active, captureRef, disabled, handleRef])
+  }, [active, captureRef, disabled, handleRef, retryKey])
 
   if (disabled) return null
 

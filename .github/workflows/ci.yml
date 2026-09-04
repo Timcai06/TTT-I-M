@@ -14,8 +14,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -56,8 +56,8 @@ jobs:
       PERF_FRAME_P95_MS: '160'
       PERF_FRAME_MIN_SAMPLES: '20'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -80,8 +80,8 @@ jobs:
       CROSS_ZONE_EXPECTED_SHA: ${{ github.sha }}
       CROSS_ZONE_DEPLOY_WAIT_MS: '540000'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - run: node tests/runtime/cross-zone-smoke.mjs
@@ -93,8 +93,8 @@ jobs:
   e2e-gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -113,8 +113,8 @@ jobs:
     env:
       HTML_CANVAS_EXPERIMENTAL: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm

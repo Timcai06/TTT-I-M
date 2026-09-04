@@ -3,7 +3,6 @@ import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
 import {
   acquireOptionalContextWhenAvailable,
-  canCreateWebGL2Context,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
 import { useGLSurface } from '../lib/webgl/useGLSurface'
@@ -343,7 +342,7 @@ export default function ASCIIText({
     const container = containerRef.current
     if (!container) return
     container.dataset.asciiState = 'idle'
-    if (reducedMotion || !mounted || !visible || !canCreateWebGL2Context()) {
+    if (reducedMotion || !mounted || !visible) {
       container.dataset.asciiState = 'fallback'
       return
     }

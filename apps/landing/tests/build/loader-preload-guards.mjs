@@ -264,8 +264,11 @@ if (
 if (!ditherSource.includes("tryAcquireOptionalContext('loader-dither')") || !ditherSource.includes('webglcontextlost') || !ditherSource.includes('contextLease.release()') || !ditherSource.includes('renderer.debug.onShaderError') || !ditherSource.includes('disposeSurface()')) {
   throw new Error('loader-dither must fail closed and release its owned context after allocation, shader, or context failure.')
 }
-for (const token of ["acquireOptionalContextWhenAvailable('contact-ascii'", 'useGLSurface', 'canCreateWebGL2Context', 'stopWaitingForContext()', 'webglcontextlost', 'contextLease?.release()', 'renderer.debug.onShaderError', 'recoverFromFailure']) {
+for (const token of ["acquireOptionalContextWhenAvailable('contact-ascii'", 'useGLSurface', 'stopWaitingForContext()', 'webglcontextlost', 'contextLease?.release()', 'renderer.debug.onShaderError', 'recoverFromFailure']) {
   if (!asciiSource.includes(token)) throw new Error(`Contact ASCII lifecycle is missing ${token}.`)
+}
+if (asciiSource.includes('canCreateWebGL2Context')) {
+  throw new Error('Contact ASCII must not allocate a competing WebGL2 probe before waiting for its optional lease.')
 }
 
 if (chapterTransitionSource.includes('quality.transitionParticles') || chapterTransitionSource.includes('canAcquireOptionalSurface') || chapterTransitionSource.includes("import('three')")) {
