@@ -4,6 +4,7 @@ import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
 import {
   acquireOptionalContextWhenAvailable,
+  activeContextOwners,
   getWebGLRecoveryDelay,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
@@ -86,10 +87,18 @@ export default function ProjectLaser({
     }
     const retry = () => {
       if (released) return
+      const failure = canvas.dataset.laserFailure ?? 'Laser lifecycle failed after initialization.'
       cleanup()
       retryCountRef.current += 1
+      host.dataset.lifecycle = 'recovering'
+      host.dataset.failure = failure
+      host.dataset.recoveryAttempt = `${retryCountRef.current}`
+      host.dataset.contextOwners = activeContextOwners().join(',') || 'none'
       const delay = getWebGLRecoveryDelay(retryCountRef.current)
-      if (delay === null) return
+      if (delay === null) {
+        host.dataset.lifecycle = 'exhausted'
+        return
+      }
       retryTimer = window.setTimeout(() => {
         retryTimer = 0
         setRetryKey((key) => key + 1)
@@ -97,6 +106,8 @@ export default function ProjectLaser({
     }
 
     syncBeamBounds()
+    host.dataset.lifecycle = 'waiting-context'
+    host.dataset.contextOwners = activeContextOwners().join(',') || 'none'
     canvas.addEventListener('webglcontextlost', onContextLost)
     stopWaiting = acquireOptionalContextWhenAvailable('project-laser', (lease) => {
       if (released) {
@@ -104,6 +115,8 @@ export default function ProjectLaser({
         return
       }
       contextLease = lease
+      host.dataset.lifecycle = 'initializing'
+      host.dataset.contextOwners = activeContextOwners().join(',') || 'none'
       let created: LaserHandle | null
       try {
         created = createLaser(canvas, capture, beamTarget)
@@ -120,6 +133,10 @@ export default function ProjectLaser({
         retryCountRef.current = 0
         handleRef.current = created
         host.dataset.mode = created.mode
+        host.dataset.lifecycle = 'live'
+        delete host.dataset.failure
+        delete host.dataset.recoveryAttempt
+        delete host.dataset.contextOwners
         resizeObserver = beamTarget && typeof ResizeObserver !== 'undefined'
           ? new ResizeObserver(resize)
           : null

@@ -37,6 +37,7 @@ export function createLaser(
 ): LaserHandle | null {
   const host = canvas.parentElement
   if (!host) return null
+  delete canvas.dataset.laserFailure
 
   const htmlCanvasMode = supportsHtmlInCanvas() && Boolean(capture)
   const source = document.createElement('canvas')
@@ -62,13 +63,17 @@ export function createLaser(
       { source, content, output: canvas, beamTarget: beamTarget ?? undefined },
       LASER_CONFIG,
     )
-  } catch {
+  } catch (error) {
+    canvas.dataset.laserFailure = error instanceof Error
+      ? error.message.slice(0, 240)
+      : 'Laser initialization threw a non-Error value.'
     source.removeEventListener('paint', markCaptureReady)
     source.remove()
     forceLoseCanvasWebGLContext(canvas)
     return null
   }
   if (!instance) {
+    canvas.dataset.laserFailure = 'Laser renderer returned no WebGL2 instance.'
     source.removeEventListener('paint', markCaptureReady)
     source.remove()
     forceLoseCanvasWebGLContext(canvas)
