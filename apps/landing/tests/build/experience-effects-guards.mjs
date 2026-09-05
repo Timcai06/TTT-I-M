@@ -243,13 +243,17 @@ for (const token of ['supportsHtmlInCanvas', 'captureSupported', 'effectCandidat
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
 if (!canvasHtmlSurface.includes('captureSupported && captureHasVisiblePixels(source)')) {
-  throw new Error('Canvas UI must validate captured pixels without suppressing its WebGL presentation backend.')
+  throw new Error('Canvas UI must validate real captured pixels before presenting its effect.')
 }
 for (const token of ['failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', 'INITIAL_IMAGE_WAIT_MS', 'FACTORY_STARTUP_WAIT_MS', 'FIRST_FRAME_WAIT_MS', 'availability.some', 'scheduleCaptureRefresh', 'MutationObserver', "attributeFilter: ['aria-hidden', 'aria-selected', 'class', 'src', 'srcset']"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
 }
-for (const token of ['.canvas-ui-html__source > [drawable]', '.canvas-ui-html__source', 'transform: translate3d(-200vw, 0, 0)', 'pointer-events: none']) {
+for (const token of ['.canvas-ui-html__source > [drawable]', '.canvas-ui-html__source', 'pointer-events: none']) {
   if (!canvasHtmlStyle.includes(token)) throw new Error(`Canvas UI single-DOM handoff CSS is missing ${token}.`)
+}
+const captureSourceStyle = canvasHtmlStyle.match(/\.canvas-ui-html__source\s*\{([^}]+)\}/)?.[1] ?? ''
+if (/transform\s*:|opacity\s*:\s*0\b|visibility\s*:\s*hidden|display\s*:\s*none/.test(captureSourceStyle)) {
+  throw new Error('Native capture must stay paintable in the viewport; hiding or translating it produces empty textures.')
 }
 if ((canvasHtmlSurface.match(/\{children\}/g) ?? []).length !== 1) {
   throw new Error('Canvas UI host must render exactly one semantic React subtree.')
@@ -274,7 +278,7 @@ for (const token of ['subscribePointer', 'getPointerSnapshot', 'continuityStates
   if (!glassVendor.includes(token)) throw new Error(`Project Glass continuous pointer lifecycle is missing ${token}.`)
 }
 if (!glassVendor.includes('source.parentElement ?? source')) {
-  throw new Error('Project Glass geometry must remain attached to the in-document host while its capture canvas is off-screen.')
+  throw new Error('Project Glass geometry must remain attached to its in-document capture host.')
 }
 if (glassVendor.includes('interaction = content')) {
   throw new Error('Glass pointer mapping must remain attached to its captured content subtree.')
@@ -297,11 +301,14 @@ for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="22
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
 }
 for (const vendor of [glassVendor, decryptVendor]) {
-  if (!vendor.includes('(!htmlInCanvas || contentReady) && !firstFrameSent')) {
-    throw new Error('Canvas UI effects must complete their first frame with either rendering backend.')
+  if (!/uploadContent\(\);\s*wake\(\);[\s\S]*?finally\s*\{\s*sourceCtx!\.clearRect/.test(vendor)) {
+    throw new Error('Capture drivers must upload during paint, then clear the staging canvas before presentation.')
+  }
+  if (!vendor.includes('contentReady && contentUsable && !firstFrameSent')) {
+    throw new Error('Canvas UI effects must upload real content before reporting readiness.')
   }
   if (!vendor.includes('hasVisibleCapture') || !vendor.includes('contentUsable')) {
-    throw new Error('Canvas UI effects must keep rendering when native HTML capture is empty.')
+    throw new Error('Canvas UI effects must validate native capture before using its texture.')
   }
 }
 for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemove'", "addEventListener('scroll'", 'elementFromPoint', 'portfolio:iframe-pointer']) {

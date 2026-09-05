@@ -347,9 +347,13 @@ export function createGlass(
         sourceCtx!.reset();
         sourceCtx!.drawElementImage!(content, 0, 0);
         contentDirty = true;
-        contentReady = true;
+        uploadContent();
         wake();
-      } catch {}
+      } catch {
+        // A later paint may become drawable; retain the last valid texture.
+      } finally {
+        sourceCtx!.clearRect(0, 0, source.width, source.height);
+      }
     };
   }
 
@@ -431,6 +435,7 @@ export function createGlass(
   function uploadContent() {
     if (!htmlInCanvas || !contentDirty) return;
     contentDirty = false;
+    if (hasVisibleCapture && !hasVisibleCapture()) return;
     gl!.bindTexture(gl!.TEXTURE_2D, contentTexture);
     gl!.texImage2D(
       gl!.TEXTURE_2D,
@@ -441,13 +446,13 @@ export function createGlass(
       source,
     );
     gl!.generateMipmap(gl!.TEXTURE_2D);
-    contentUsable = hasVisibleCapture?.() ?? true;
+    contentUsable = true;
+    contentReady = true;
+    source.dataset.captureStatus = "uploaded";
   }
 
   const outputRectCache = createRectCache(output);
-  // The capture canvas is deliberately translated off-screen so Chromium can
-  // paint it without exposing the duplicate bitmap. Geometry must stay tied
-  // to the in-document Canvas UI host that the texture represents.
+  // The texture and the live DOM share the in-document host's geometry.
   const sourceGeometryElement = source.parentElement ?? source;
   const sourceRectCache = createRectCache(sourceGeometryElement);
   const scopeElement = config.scopeSelector
@@ -509,7 +514,7 @@ export function createGlass(
     gl!.disable(gl!.SCISSOR_TEST);
     gl!.clearColor(0, 0, 0, 0);
     gl!.clear(gl!.COLOR_BUFFER_BIT);
-    if ((!htmlInCanvas || contentReady) && !firstFrameSent) {
+    if (contentReady && contentUsable && !firstFrameSent) {
       firstFrameSent = true;
       onFirstFrame?.();
     }

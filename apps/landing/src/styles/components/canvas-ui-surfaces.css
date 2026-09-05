@@ -15,10 +15,8 @@
 
 .canvas-ui-html__source {
   z-index: 0;
-  /* drawElementImage includes ancestor opacity in the captured result. Keep
-     the source paintable and move its display plane off-screen instead of
-     making it transparent, otherwise Glass/Decrypt receive an empty texture. */
-  transform: translate3d(-200vw, 0, 0);
+  /* Keep the capture inside the viewport's paint area. The drivers upload
+     its pixels and clear this staging bitmap during the same paint event. */
   pointer-events: none;
 }
 

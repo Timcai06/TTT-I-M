@@ -548,9 +548,13 @@ export function createDecryptReveal(
         sourceCtx!.reset();
         sourceCtx!.drawElementImage!(content, 0, 0);
         contentDirty = true;
-        contentReady = true;
+        uploadContent();
         wake();
-      } catch {}
+      } catch {
+        // A later paint may become drawable; retain the last valid texture.
+      } finally {
+        sourceCtx!.clearRect(0, 0, source.width, source.height);
+      }
     };
   }
 
@@ -788,6 +792,7 @@ export function createDecryptReveal(
   function uploadContent() {
     if (!htmlInCanvas || !contentDirty) return;
     contentDirty = false;
+    if (hasVisibleCapture && !hasVisibleCapture()) return;
     cellsDirty = true;
     gl!.bindTexture(gl!.TEXTURE_2D, contentTexture);
     gl!.texImage2D(
@@ -798,7 +803,9 @@ export function createDecryptReveal(
       gl!.UNSIGNED_BYTE,
       source,
     );
-    contentUsable = hasVisibleCapture?.() ?? true;
+    contentUsable = true;
+    contentReady = true;
+    source.dataset.captureStatus = "uploaded";
   }
 
   function renderCells() {
@@ -891,7 +898,7 @@ export function createDecryptReveal(
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
     gl!.viewport(0, 0, output.width, output.height);
     gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
-    if ((!htmlInCanvas || contentReady) && !firstFrameSent) {
+    if (contentReady && contentUsable && !firstFrameSent) {
       firstFrameSent = true;
       onFirstFrame?.();
     }

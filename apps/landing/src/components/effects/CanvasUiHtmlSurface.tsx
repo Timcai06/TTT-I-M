@@ -129,8 +129,8 @@ interface CanvasUiHtmlSurfaceProps<Options extends object> {
 
 /**
  * Hosts Canvas UI's WebGL presentation over exactly one semantic DOM subtree.
- * Native HTML-in-Canvas enriches the texture when available; the visible
- * effect remains mounted without it. The real DOM always owns layout and
+ * Native HTML-in-Canvas must supply real pixels before the effect is ready.
+ * The real DOM always owns layout and
  * interaction, while off-screen work pauses and distant surfaces release
  * their optional context entirely.
  */
@@ -179,10 +179,8 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     onHostChange?.(element)
   }, [hostRef, onHostChange])
 
-  // WebGL is the presentation contract; HTML-in-Canvas is only the richer
-  // content-sampling backend. Never remove the visible effect just because
-  // drawElementImage is unavailable in the visitor's browser.
-  const effectCandidate = enabled && !mobile && !reducedMotion && !failed
+  // These effects are ready only when real page pixels reach their texture.
+  const effectCandidate = enabled && captureSupported && !mobile && !reducedMotion && !failed
   const slotGranted = useCanvasSurfaceSlot(exclusiveGroup, effectCandidate && mounted)
   const effectActive = effectCandidate && mounted && slotGranted
 
