@@ -15,7 +15,10 @@
 
 .canvas-ui-html__source {
   z-index: 0;
-  opacity: 0;
+  /* drawElementImage includes ancestor opacity in the captured result. Keep
+     the source paintable and move its display plane off-screen instead of
+     making it transparent, otherwise Glass/Decrypt receive an empty texture. */
+  transform: translate3d(-200vw, 0, 0);
   pointer-events: none;
 }
 

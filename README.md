@@ -35,6 +35,8 @@ the committed lockfile with `npm ci`.
 `npm run dev` and `npm run build` intentionally target the landing app for Vercel compatibility.
 `npm run test:build` runs the static architecture guards; `npm run test:smoke` verifies deployed archive/detail rewrites, every referenced `/_next` asset, RSS, and sitemap after both zones expose the exact expected commit. Playwright builds and owns an isolated production preview on port 4173, so its results cannot accidentally describe a stale local dev process. `test:e2e:canvas-experimental` is the explicit CanvasDrawElement lane; the stable Chromium suite skips those two feature-flag-only assertions.
 
+Canvas UI's HTML capture effects require Chromium's experimental `CanvasDrawElement` capability. A normal `npm run dev` tab intentionally keeps the complete DOM fallback when that capability is absent. Run `npm run dev:canvas` from the repository root instead; it starts Landing on port 5191 and opens an isolated Chrome profile with both required CanvasDrawElement feature flags enabled. Test the URL in that launched window rather than an already-running Chrome profile.
+
 ## Cross-App Links
 
 - Landing brand link: production uses same-origin `/blog` so the public domain stays canonical; local dev can set `VITE_STUDIO_URL` for `landing:5173 → studio:5174/blog`.

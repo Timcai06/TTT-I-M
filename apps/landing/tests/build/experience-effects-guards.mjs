@@ -239,13 +239,13 @@ for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFl
 for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
   if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
 }
-for (const token of ['supportsHtmlInCanvas', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'syncCaptureSubtree', 'source.replaceChildren(capture)', 'content: capture']) {
+for (const token of ['supportsHtmlInCanvas', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'syncCaptureSubtree', 'source.replaceChildren(capture)', 'content: capture', 'captureHasVisiblePixels(source)']) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
 }
 for (const token of ['failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', 'INITIAL_IMAGE_WAIT_MS', 'FACTORY_STARTUP_WAIT_MS', 'FIRST_FRAME_WAIT_MS', 'availability.some', 'scheduleCaptureRefresh', 'MutationObserver', "attributeFilter: ['aria-hidden', 'aria-selected', 'class', 'src', 'srcset']"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
 }
-for (const token of ['.canvas-ui-html__source > [drawable]', '.canvas-ui-html__source', 'opacity: 0', 'pointer-events: none']) {
+for (const token of ['.canvas-ui-html__source > [drawable]', '.canvas-ui-html__source', 'transform: translate3d(-200vw, 0, 0)', 'pointer-events: none']) {
   if (!canvasHtmlStyle.includes(token)) throw new Error(`Canvas UI single-DOM handoff CSS is missing ${token}.`)
 }
 if ((canvasHtmlSurface.match(/\{children\}/g) ?? []).length !== 1) {
@@ -269,6 +269,9 @@ for (const token of ['sampleRefraction', 'fresnelSchlick', 'iorForWavelength', '
 }
 for (const token of ['subscribePointer', 'getPointerSnapshot', 'continuityStates', 'persistContinuity', 'resolveGlassSourceGeometry', 'uSourceOrigin', 'uSourceResolution', 'scopeSelector', 'float body =', 'paintable.requestPaint!()']) {
   if (!glassVendor.includes(token)) throw new Error(`Project Glass continuous pointer lifecycle is missing ${token}.`)
+}
+if (!glassVendor.includes('source.parentElement ?? source')) {
+  throw new Error('Project Glass geometry must remain attached to the in-document host while its capture canvas is off-screen.')
 }
 if (glassVendor.includes('interaction = content')) {
   throw new Error('Glass pointer mapping must remain attached to its captured content subtree.')

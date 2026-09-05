@@ -46,6 +46,25 @@ const FIRST_FRAME_WAIT_MS = 2_400
 const CAPTURE_ATTRIBUTE = 'data-canvas-ui-capture'
 const CAPTURE_INTERACTIVE_SELECTOR = 'a, button, input, select, textarea, [tabindex], [contenteditable]'
 
+function captureHasVisiblePixels(source: HTMLCanvasElement): boolean {
+  const probe = document.createElement('canvas')
+  probe.width = 16
+  probe.height = 16
+  const context = probe.getContext('2d', { willReadFrequently: true })
+  if (!context || source.width < 1 || source.height < 1) return false
+
+  try {
+    context.drawImage(source, 0, 0, probe.width, probe.height)
+    const pixels = context.getImageData(0, 0, probe.width, probe.height).data
+    for (let index = 3; index < pixels.length; index += 4) {
+      if ((pixels[index] ?? 0) > 0) return true
+    }
+  } catch {
+    return false
+  }
+  return false
+}
+
 /**
  * HTML-in-Canvas only paints descendants owned by its layoutsubtree canvas.
  * Keep React's one semantic/interactive tree in normal document flow and
@@ -330,6 +349,10 @@ export default function CanvasUiHtmlSurface<Options extends object>({
                 content: capture,
                 output,
                 onFirstFrame: () => {
+                  if (!captureHasVisiblePixels(source)) {
+                    failSurface()
+                    return
+                  }
                   firstFrameSeen = true
                   window.clearTimeout(firstFrameTimer)
                   firstFrameTimer = 0

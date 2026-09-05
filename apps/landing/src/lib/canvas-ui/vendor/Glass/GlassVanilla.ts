@@ -441,7 +441,11 @@ export function createGlass(
   }
 
   const outputRectCache = createRectCache(output);
-  const sourceRectCache = createRectCache(source);
+  // The capture canvas is deliberately translated off-screen so Chromium can
+  // paint it without exposing the duplicate bitmap. Geometry must stay tied
+  // to the in-document Canvas UI host that the texture represents.
+  const sourceGeometryElement = source.parentElement ?? source;
+  const sourceRectCache = createRectCache(sourceGeometryElement);
   const scopeElement = config.scopeSelector
     ? source.closest(config.scopeSelector)
     : null;
