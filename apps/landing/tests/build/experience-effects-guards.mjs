@@ -67,6 +67,16 @@ const projects = [
   'src/chapters/projects/useProjectsNarrative.ts',
 ].map(read).join('\n')
 const projectsIntroStyle = read('src/chapters/projects/styles/intro-bento.css')
+// The inert capture clone cannot receive :hover or :focus-visible itself.
+// Preview activation must survive cloneNode and the class mutation refresh.
+for (const token of ['is-preview-active', 'onPointerEnter', 'onPointerLeave', 'onPointerCancel', 'onFocus', 'onBlur']) {
+  if (!projects.includes(token)) throw new Error(`Bento capture interaction state is missing ${token}.`)
+}
+for (const child of ['img', 'scrim', 'name', 'tag', 'line']) {
+  if (!projectsIntroStyle.includes(`:is(:hover, :focus-visible, .is-preview-active) .bento-tile__${child}`)) {
+    throw new Error(`Bento ${child} must share its active style with the inert Glass capture.`)
+  }
+}
 const projectsCardStyle = read('src/chapters/projects/styles/card-media.css')
 const projectLaser = read('src/components/ProjectLaser.tsx')
 const laserRuntime = read('src/lib/canvas-ui/laser.ts')

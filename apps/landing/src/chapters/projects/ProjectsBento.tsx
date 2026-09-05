@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { projects } from '../../content'
 import BorderGlow from '../../components/BorderGlow'
 import { getLenis } from '../../lib/lenis'
@@ -16,6 +16,11 @@ function scrollToProject(id: string, source: HTMLElement) {
 }
 
 export default function ProjectsBento() {
+  // Pseudo-classes are not inherited by the inert HTML-in-Canvas mirror.
+  // Keep the interaction state in the DOM so capture and live CSS agree.
+  const [hoveredProject, setHoveredProject] = useState<string | null>(null)
+  const [focusedProject, setFocusedProject] = useState<string | null>(null)
+
   return (
     <div className="projects__bento-shell">
       <div className="projects__bento" role="list" aria-label="项目速览">
@@ -31,9 +36,19 @@ export default function ProjectsBento() {
               <BorderGlow
                 as="button"
                 type="button"
-                className={`bento-tile${shot ? '' : ' bento-tile--soon'}`}
+                className={`bento-tile${shot ? '' : ' bento-tile--soon'}${hoveredProject === project.id || focusedProject === project.id ? ' is-preview-active' : ''}`}
                 style={{ '--tile-accent': project.accent } as CSSProperties}
                 onClick={(event) => scrollToProject(project.id, event.currentTarget)}
+                onPointerEnter={(event) => {
+                  if (event.pointerType !== 'touch') setHoveredProject(project.id)
+                }}
+                onPointerLeave={() => setHoveredProject(null)}
+                onPointerCancel={() => setHoveredProject(null)}
+                onPointerDown={() => setFocusedProject(null)}
+                onFocus={(event) => {
+                  if (event.currentTarget.matches(':focus-visible')) setFocusedProject(project.id)
+                }}
+                onBlur={() => setFocusedProject(null)}
                 aria-label={`跳到项目 ${project.name} — ${project.tagline}`}
                 data-cursor="hover"
                 data-glass-target

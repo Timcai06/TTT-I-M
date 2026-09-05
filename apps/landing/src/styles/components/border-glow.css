@@ -45,9 +45,9 @@ button.border-glow-card {
   transition: opacity 0.25s ease-out;
 }
 
-.border-glow-card:not(:hover):not(:focus-visible):not(.sweep-active)::before,
-.border-glow-card:not(:hover):not(:focus-visible):not(.sweep-active)::after,
-.border-glow-card:not(:hover):not(:focus-visible):not(.sweep-active) > .edge-light {
+.border-glow-card:not(:hover):not(:focus-visible):not(.is-preview-active):not(.sweep-active)::before,
+.border-glow-card:not(:hover):not(:focus-visible):not(.is-preview-active):not(.sweep-active)::after,
+.border-glow-card:not(:hover):not(:focus-visible):not(.is-preview-active):not(.sweep-active) > .edge-light {
   opacity: 0;
   transition: opacity 0.75s ease-in-out;
 }
@@ -99,12 +99,12 @@ button.border-glow-card {
   mix-blend-mode: soft-light;
 }
 
-.border-glow-card:is(:hover, :focus-visible)::before {
+.border-glow-card:is(:hover, :focus-visible, .is-preview-active)::before {
   opacity: calc((var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
   box-shadow: none;
 }
 
-.border-glow-card:is(:hover, :focus-visible)::after {
+.border-glow-card:is(:hover, :focus-visible, .is-preview-active)::after {
   inset: 0;
   height: auto;
   transform: none;
