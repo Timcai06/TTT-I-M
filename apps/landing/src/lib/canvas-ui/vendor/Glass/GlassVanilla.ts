@@ -64,6 +64,8 @@ export interface GlassElements {
   content: HTMLElement;
   /** Canvas the WebGL effect renders to. */
   output: HTMLCanvasElement;
+  /** True only when the current HTML texture contains painted pixels. */
+  hasVisibleCapture?: () => boolean;
   /** Application lifecycle handshake fired after captured HTML reaches the output. */
   onFirstFrame?: () => void;
 }
@@ -314,7 +316,7 @@ export function createGlass(
   options: GlassOptions = {},
 ): GlassInstance | null {
   const config = { ...DEFAULTS, ...options };
-  const { source, content, output, onFirstFrame } = elements;
+  const { source, content, output, hasVisibleCapture, onFirstFrame } = elements;
 
   const gl = output.getContext("webgl2", {
     alpha: true,
@@ -335,6 +337,7 @@ export function createGlass(
 
   let contentDirty = false;
   let contentReady = false;
+  let contentUsable = false;
   let firstFrameSent = false;
   let wake = () => {};
 
@@ -438,6 +441,7 @@ export function createGlass(
       source,
     );
     gl!.generateMipmap(gl!.TEXTURE_2D);
+    contentUsable = hasVisibleCapture?.() ?? true;
   }
 
   const outputRectCache = createRectCache(output);
@@ -505,7 +509,7 @@ export function createGlass(
     gl!.disable(gl!.SCISSOR_TEST);
     gl!.clearColor(0, 0, 0, 0);
     gl!.clear(gl!.COLOR_BUFFER_BIT);
-    if (contentReady && !firstFrameSent) {
+    if ((!htmlInCanvas || contentReady) && !firstFrameSent) {
       firstFrameSent = true;
       onFirstFrame?.();
     }
@@ -553,7 +557,10 @@ export function createGlass(
       halfW,
       halfH,
     );
-    gl!.uniform1f(uniforms.uHasContent, htmlInCanvas && lensHasSource ? 1 : 0);
+    gl!.uniform1f(
+      uniforms.uHasContent,
+      htmlInCanvas && contentUsable && lensHasSource ? 1 : 0,
+    );
     gl!.uniform1f(uniforms.uClipToContent, config.viewportOutput ? 0 : 1);
     gl!.uniform2f(uniforms.uCenter, cx, cy);
     gl!.uniform2f(uniforms.uHalf, halfW * dpr, halfH * dpr);

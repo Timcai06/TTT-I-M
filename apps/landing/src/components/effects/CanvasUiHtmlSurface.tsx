@@ -23,6 +23,7 @@ export interface CanvasUiHtmlElements {
   source: HTMLCanvasElement
   content: HTMLElement
   output: HTMLCanvasElement
+  hasVisibleCapture: () => boolean
   onFirstFrame: () => void
 }
 
@@ -127,11 +128,11 @@ interface CanvasUiHtmlSurfaceProps<Options extends object> {
 }
 
 /**
- * Hosts Canvas UI's native HTML-in-Canvas engines over exactly one semantic
- * DOM subtree. The real DOM always owns layout and interaction; the hidden
- * source canvas only stages drawElementImage and the output canvas is a
- * pointer-transparent enhancement. Off-screen/hidden work pauses and distant
- * surfaces release their optional context entirely.
+ * Hosts Canvas UI's WebGL presentation over exactly one semantic DOM subtree.
+ * Native HTML-in-Canvas enriches the texture when available; the visible
+ * effect remains mounted without it. The real DOM always owns layout and
+ * interaction, while off-screen work pauses and distant surfaces release
+ * their optional context entirely.
  */
 export default function CanvasUiHtmlSurface<Options extends object>({
   children,
@@ -158,7 +159,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   const outputRef = useRef<HTMLCanvasElement>(null)
   const instanceRef = useRef<CanvasUiHtmlInstance<Options> | null>(null)
   const visibleRef = useRef(visible)
-  const supported = useSyncExternalStore(emptySubscribe, supportsHtmlInCanvas, () => false)
+  const captureSupported = useSyncExternalStore(emptySubscribe, supportsHtmlInCanvas, () => false)
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
   const [failureCount, setFailureCount] = useState(0)
@@ -178,9 +179,12 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     onHostChange?.(element)
   }, [hostRef, onHostChange])
 
-  const nativeCandidate = enabled && supported && !mobile && !reducedMotion && !failed
-  const slotGranted = useCanvasSurfaceSlot(exclusiveGroup, nativeCandidate && mounted)
-  const native = nativeCandidate && mounted && slotGranted
+  // WebGL is the presentation contract; HTML-in-Canvas is only the richer
+  // content-sampling backend. Never remove the visible effect just because
+  // drawElementImage is unavailable in the visitor's browser.
+  const effectCandidate = enabled && !mobile && !reducedMotion && !failed
+  const slotGranted = useCanvasSurfaceSlot(exclusiveGroup, effectCandidate && mounted)
+  const effectActive = effectCandidate && mounted && slotGranted
 
   // A transient GPU reset must never permanently remove an effect for the
   // rest of the visit. Context reclamation after WEBGL_lose_context is
@@ -207,7 +211,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     const source = sourceRef.current
     const content = contentRef.current
     const output = outputRef.current
-    if (!native || !source || !content || !output) return
+    if (!effectActive || !source || !content || !output) return
 
     let disposed = false
     let contextLease: ContextLease | null = null
@@ -292,11 +296,13 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     const firstFrameImages = images.filter((image) => (
       image.loading !== 'lazy' || image.classList.contains('is-active')
     ))
-    const initialImagesReady = Promise.all(firstFrameImages.map(waitForImage)).then((availability) => {
-      if (availability.some((available) => !available)) {
-        throw new Error('Canvas UI first-frame image did not become drawable before its deadline.')
-      }
-    })
+    const initialImagesReady = captureSupported
+      ? Promise.all(firstFrameImages.map(waitForImage)).then((availability) => {
+          if (availability.some((available) => !available)) {
+            throw new Error('Canvas UI first-frame image did not become drawable before its deadline.')
+          }
+        })
+      : Promise.resolve()
     const imageListeners = liveImages.map((image) => {
       const refreshAndPaint = () => {
         scheduleCaptureRefresh()
@@ -348,11 +354,10 @@ export default function CanvasUiHtmlSurface<Options extends object>({
                 source,
                 content: capture,
                 output,
+                hasVisibleCapture: () => (
+                  captureSupported && captureHasVisiblePixels(source)
+                ),
                 onFirstFrame: () => {
-                  if (!captureHasVisiblePixels(source)) {
-                    failSurface()
-                    return
-                  }
                   firstFrameSeen = true
                   window.clearTimeout(firstFrameTimer)
                   firstFrameTimer = 0
@@ -421,7 +426,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
         contextLease?.release()
       }
     }
-  }, [effectId, hostRef, loadFactory, native, options])
+  }, [captureSupported, effectActive, effectId, hostRef, loadFactory, options])
 
   useEffect(() => {
     visibleRef.current = visible
@@ -451,16 +456,16 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   }, [failLiveInstance, options])
 
   useEffect(() => {
-    onActiveChange?.(native && ready)
-  }, [native, onActiveChange, ready])
+    onActiveChange?.(effectActive && ready)
+  }, [effectActive, onActiveChange, ready])
 
   useEffect(() => () => onActiveChange?.(false), [onActiveChange])
 
-  const state = native
+  const state = effectActive
     ? ready ? 'active' : 'loading'
-    : nativeCandidate ? 'deferred' : 'fallback'
+    : effectCandidate ? 'deferred' : 'fallback'
 
-  const nativeSource = native ? (
+  const effectSource = effectActive ? (
     <canvas
       ref={sourceRef}
       layoutsubtree="true"
@@ -469,7 +474,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
       aria-hidden="true"
     />
   ) : null
-  const nativeOutput = native ? (
+  const effectOutput = effectActive ? (
     <canvas
       ref={outputRef}
       className={`canvas-ui-html__output${portalOutput ? ' canvas-ui-html__output--viewport' : ''}${ready ? ' is-ready' : ''}`}
@@ -478,11 +483,11 @@ export default function CanvasUiHtmlSurface<Options extends object>({
       aria-hidden="true"
     />
   ) : null
-  const portaledOutput = portalOutput && nativeOutput && typeof document !== 'undefined'
-    ? createPortal(nativeOutput, document.body)
+  const portaledOutput = portalOutput && effectOutput && typeof document !== 'undefined'
+    ? createPortal(effectOutput, document.body)
     : null
-  const localOutput = portalOutput ? null : nativeOutput
-  const nativeCanvases = native ? <>{nativeSource}{localOutput}</> : null
+  const localOutput = portalOutput ? null : effectOutput
+  const effectCanvases = effectActive ? <>{effectSource}{localOutput}</> : null
 
   return (
     <>
@@ -493,7 +498,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
         data-canvas-ui-state={state}
       >
         <div ref={contentRef} className={contentClassName}>{children}</div>
-        {nativeCanvases}
+        {effectCanvases}
       </div>
       {portaledOutput}
     </>

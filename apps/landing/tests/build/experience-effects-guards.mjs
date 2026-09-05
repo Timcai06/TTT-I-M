@@ -239,8 +239,11 @@ for (const token of ['CELL_FRAG', 'MAIN_FRAG', 'INNER[6]', 'OUTER[10]', 'uEdgeFl
 for (const forbidden of ['scanline', 'linear-gradient', 'clipPath']) {
   if (decryptSurface.includes(forbidden)) throw new Error(`Decrypt Reveal must not become a custom scanning mask: ${forbidden}`)
 }
-for (const token of ['supportsHtmlInCanvas', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'syncCaptureSubtree', 'source.replaceChildren(capture)', 'content: capture', 'captureHasVisiblePixels(source)']) {
+for (const token of ['supportsHtmlInCanvas', 'captureSupported', 'effectCandidate', 'effectActive', 'acquireOptionalContextWhenAvailable', 'stopWaitingForContext()', 'contextLease?.release()', 'webglcontextlost', 'visibilitychange', 'onFirstFrame', 'hasVisibleCapture', "setAttribute('drawable', '')", 'requestPaint', "querySelectorAll<HTMLImageElement>('img')", 'syncCaptureSubtree', 'source.replaceChildren(capture)', 'content: capture', 'captureHasVisiblePixels(source)']) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`HTML-in-Canvas lifecycle is missing ${token}.`)
+}
+if (!canvasHtmlSurface.includes('captureSupported && captureHasVisiblePixels(source)')) {
+  throw new Error('Canvas UI must validate captured pixels without suppressing its WebGL presentation backend.')
 }
 for (const token of ['failureCount', "addEventListener('canvas-ui:invalidate'", 'firstFrameImages', 'initialImagesReady', 'INITIAL_IMAGE_WAIT_MS', 'FACTORY_STARTUP_WAIT_MS', 'FIRST_FRAME_WAIT_MS', 'availability.some', 'scheduleCaptureRefresh', 'MutationObserver', "attributeFilter: ['aria-hidden', 'aria-selected', 'class', 'src', 'srcset']"]) {
   if (!canvasHtmlSurface.includes(token)) throw new Error(`Glass first-frame recovery is missing ${token}.`)
@@ -290,8 +293,16 @@ for (const token of ['projects__header', '<ProjectsBento />']) {
     throw new Error(`Project Glass overview must capture the complete Work opening: ${token}.`)
   }
 }
-for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'portalOutput', 'preloadProjectGlass', 'registerWorkGlassSurface', 'selectedSurface']) {
+for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'portalOutput', 'preloadProjectGlass', 'void preloadProjectGlass()', 'registerWorkGlassSurface', 'selectedSurface']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
+}
+for (const vendor of [glassVendor, decryptVendor]) {
+  if (!vendor.includes('(!htmlInCanvas || contentReady) && !firstFrameSent')) {
+    throw new Error('Canvas UI effects must complete their first frame with either rendering backend.')
+  }
+  if (!vendor.includes('hasVisibleCapture') || !vendor.includes('contentUsable')) {
+    throw new Error('Canvas UI effects must keep rendering when native HTML capture is empty.')
+  }
 }
 for (const token of ['requestAnimationFrame(flush)', "addEventListener('mousemove'", "addEventListener('scroll'", 'elementFromPoint', 'portfolio:iframe-pointer']) {
   if (!pointerCoordinator.includes(token)) throw new Error(`Shared pointer coordinator is missing ${token}.`)

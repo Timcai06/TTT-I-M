@@ -3,7 +3,6 @@ import CanvasUiHtmlSurface, {
   type CanvasUiHtmlFactory,
 } from './CanvasUiHtmlSurface'
 import { PROJECT_GLASS_CONFIG } from '../../lib/canvas-ui/glassConfig'
-import { supportsHtmlInCanvas } from '../../lib/canvas-ui/runtime'
 import {
   getWorkGlassSelection,
   registerWorkGlassSurface,
@@ -39,7 +38,7 @@ const loadGlass = async (): Promise<CanvasUiHtmlFactory<GlassOptions>> => {
 // Projects is fetched while the Loader is still active. Warm the small shader
 // chunk at module evaluation so entering Work never starts with a network-bound
 // Glass initialization.
-if (supportsHtmlInCanvas()) void preloadProjectGlass().catch(() => undefined)
+void preloadProjectGlass().catch(() => undefined)
 
 interface ProjectGlassSurfaceProps {
   children: ReactNode

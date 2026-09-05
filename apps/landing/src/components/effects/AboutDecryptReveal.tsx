@@ -5,12 +5,22 @@ import CanvasUiHtmlSurface, {
 import { DECRYPT_REVEAL_CONFIG } from '../../lib/canvas-ui/decryptRevealConfig'
 import type { DecryptRevealOptions } from '../../lib/canvas-ui/vendor/DecryptReveal/DecryptRevealVanilla'
 
-const loadDecryptReveal = async (): Promise<CanvasUiHtmlFactory<DecryptRevealOptions>> => {
-  const { createDecryptReveal } = await import(
-    '../../lib/canvas-ui/vendor/DecryptReveal/DecryptRevealVanilla'
-  )
-  return createDecryptReveal
+let decryptFactory: Promise<CanvasUiHtmlFactory<DecryptRevealOptions>> | null = null
+
+const loadDecryptReveal = (): Promise<CanvasUiHtmlFactory<DecryptRevealOptions>> => {
+  if (!decryptFactory) {
+    const request = import('../../lib/canvas-ui/vendor/DecryptReveal/DecryptRevealVanilla')
+      .then(({ createDecryptReveal }) => createDecryptReveal)
+      .catch((error: unknown) => {
+        if (decryptFactory === request) decryptFactory = null
+        throw error
+      })
+    decryptFactory = request
+  }
+  return decryptFactory
 }
+
+void loadDecryptReveal().catch(() => undefined)
 
 export default function AboutDecryptReveal({ children }: { children: ReactNode }) {
   return (

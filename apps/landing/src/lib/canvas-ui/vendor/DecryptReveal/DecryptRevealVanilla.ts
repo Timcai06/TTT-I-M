@@ -60,6 +60,8 @@ export interface DecryptRevealElements {
   content: HTMLElement;
   /** Canvas the WebGL effect renders to. */
   output: HTMLCanvasElement;
+  /** True only when the current HTML texture contains painted pixels. */
+  hasVisibleCapture?: () => boolean;
   /** Application lifecycle handshake fired after captured HTML reaches the output. */
   onFirstFrame?: () => void;
 }
@@ -514,7 +516,7 @@ export function createDecryptReveal(
   options: DecryptRevealOptions = {},
 ): DecryptRevealInstance | null {
   const config = { ...DEFAULTS, ...options };
-  const { source, content, output, onFirstFrame } = elements;
+  const { source, content, output, hasVisibleCapture, onFirstFrame } = elements;
 
   const gl = output.getContext("webgl2", {
     alpha: true,
@@ -535,6 +537,7 @@ export function createDecryptReveal(
 
   let contentDirty = false;
   let contentReady = false;
+  let contentUsable = false;
   let firstFrameSent = false;
   let cellsDirty = true;
   let wake = () => {};
@@ -795,6 +798,7 @@ export function createDecryptReveal(
       gl!.UNSIGNED_BYTE,
       source,
     );
+    contentUsable = hasVisibleCapture?.() ?? true;
   }
 
   function renderCells() {
@@ -883,11 +887,11 @@ export function createDecryptReveal(
     gl!.uniform3f(u.uBg, bg[0], bg[1], bg[2]);
     gl!.uniform1f(u.uTime, time);
     gl!.uniform1f(u.uMaxX, contentMaxX);
-    gl!.uniform1f(u.uCrisp, reducedMotion || !htmlInCanvas ? 1 : 0);
+    gl!.uniform1f(u.uCrisp, reducedMotion || !contentUsable ? 1 : 0);
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
     gl!.viewport(0, 0, output.width, output.height);
     gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
-    if (contentReady && !firstFrameSent) {
+    if ((!htmlInCanvas || contentReady) && !firstFrameSent) {
       firstFrameSent = true;
       onFirstFrame?.();
     }
