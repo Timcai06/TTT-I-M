@@ -1,0 +1,5 @@
+# Preserve the previous local-only treatment of large assets from output/design.
+/source/
+/textures/
+/reviews/
+/history/
