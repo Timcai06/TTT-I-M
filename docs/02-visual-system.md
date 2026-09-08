@@ -1,5 +1,7 @@
 # Visual System & Art Direction
 
+个人空间专项的最新方向见 [空间与滚动叙事](landing/experience/spatial-narrative.md)：延续本页的排版与摄影气质，同时允许胡桃木、纸张、布面、暖灰墙面和局部暖光。下方材质及转场建议不要求每个物件采用金属/玻璃，也不要求每段衔接都使用强烈冲击动效。
+
 ## Core Aesthetics
 - **Keywords**: Darkroom exposure, engineering blueprints, mechanical precision, editorial layout, minimal but powerful.
 - **Vibe**: Cold, photographic, academic/engineering hybrid, slightly experimental.

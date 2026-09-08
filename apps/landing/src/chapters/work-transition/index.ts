@@ -1,1 +1,1 @@
-export { default } from '../../components/WorkTransition'
+export { default } from './ArchiveWorkTransition'

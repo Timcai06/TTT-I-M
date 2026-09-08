@@ -379,8 +379,15 @@
 }
 
 body[data-particle-portal^='case-'] .project-dialog,
-body[data-particle-portal^='case-'] .project-dialog__backdrop {
+body[data-particle-portal^='case-'] .project-dialog__backdrop,
+body[data-case-image-transition] .project-dialog,
+body[data-case-image-transition] .project-dialog__backdrop {
   transition-duration: 0s;
+}
+
+body[data-case-image-transition] .project-dialog[data-starting-style] {
+  opacity: 1;
+  transform: none;
 }
 
 .project-dialog__shots a:hover img {

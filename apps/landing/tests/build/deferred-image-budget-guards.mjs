@@ -68,3 +68,17 @@ console.log(
     breakdown.map(({ dir, bytes }) => `${dir.replace('dist/', '')} ${mib(bytes)}`).join(', ') +
     ')'
 )
+
+// Desktop also prepares original photographs for the lightbox, the selected
+// lower-resolution candidate, one retained GLB and the finite film/sound pair.
+const desktopFrameBytes = Object.values(frameSources).reduce((sum, candidates) => {
+  const largestTwo = [...candidates].sort((a, b) => b.width - a.width).slice(0, 2)
+  return sum + largestTwo.reduce((bytes, item) => bytes + statSync(join('dist', item.src)).size, 0)
+}, 0)
+const modelFiles = readdirSync('dist/assets').filter(name => /^personal-space-.*\.glb$/.test(name))
+if (modelFiles.length !== 1) throw new Error('Desktop boot requires exactly one archive asset')
+const modelBytes = statSync(join('dist/assets', modelFiles[0])).size
+const mediaBytes = ['sciscope-concept-film.mp4', 'sciscope-soundtrack.mp3'].reduce((sum, name) => sum + statSync(join('dist/projects/sciscope', name)).size, 0)
+const desktopBytes = totalBytes - frameBytes + desktopFrameBytes + modelBytes + mediaBytes
+if (desktopBytes > 50 * 1024 * 1024) throw new Error(`Desktop prepared assets exceed 50 MiB: ${mib(desktopBytes)}`)
+console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / 50 MiB for images, room and finite media; JS/fonts budget separately.`)

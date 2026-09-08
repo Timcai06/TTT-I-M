@@ -1,12 +1,21 @@
-import { useRef } from 'react'
+import { useRef, type MouseEvent } from 'react'
 import { photos } from '../content'
 import { useMobileExperience } from '../lib/device'
 import { gsap, useGSAP } from '../lib/gsap'
 import DriftWall from './DriftWall'
+import { openImageLightbox } from '../shared/media/openImageLightbox'
 
 export default function LifeGallery() {
   const root = useRef<HTMLElement>(null)
   const mobile = useMobileExperience()
+  const openPhoto = (event: MouseEvent<HTMLDivElement>) => {
+    if (mobile || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[href]')
+    const index = photos.findIndex(photo => photo.src === anchor?.getAttribute('href'))
+    if (!anchor || index < 0) return
+    event.preventDefault()
+    void openImageLightbox({ items: photos, index, opener: anchor }).catch(() => window.location.assign(anchor.href))
+  }
 
   useGSAP(() => {
     gsap.from('.life__eyebrow', {
@@ -40,9 +49,9 @@ export default function LifeGallery() {
         </p>
       </div>
 
-      <div className="life__wall" data-drift-wall>
+      <div className="life__wall" data-drift-wall onClick={openPhoto}>
         <DriftWall
-          items={photos.map((photo) => ({ image: photo.src, title: photo.alt, tone: photo.tone }))}
+          items={photos.map((photo) => ({ image: photo.src, title: photo.alt, tone: photo.tone, href: mobile ? undefined : photo.src }))}
           columns={mobile ? 3 : 7}
           tileWidth={mobile ? 154 : 188}
           tileHeight={mobile ? 116 : 160}

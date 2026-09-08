@@ -1,1 +1,1 @@
-export { default } from '../../components/Frame'
+export { default } from './ArchiveFrame'

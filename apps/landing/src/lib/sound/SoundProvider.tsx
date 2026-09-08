@@ -11,6 +11,7 @@ import {
   type SoundContextValue,
   type SoundCue,
 } from './SoundContext'
+import { getPreparedSoundtrack } from '../resources/mediaCache'
 
 type Segment = { offset: number; duration: number }
 
@@ -89,6 +90,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 
   const ensureBuffer = useCallback(async () => {
     if (bufferRef.current) return bufferRef.current
+    const prepared = getPreparedSoundtrack()
+    if (prepared) { bufferRef.current = prepared; return prepared }
     if (bufferPromiseRef.current) return bufferPromiseRef.current
     const context = ensureContext()
     if (!context) throw new Error('Web Audio is unavailable')

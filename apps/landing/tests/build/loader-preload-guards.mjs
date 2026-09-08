@@ -148,20 +148,24 @@ const requiredControllerInputs = [
   'TASK_TIMEOUT_MS',
   'runTaskWithDeadline',
   'lifecycle.abort',
-  'non-fatal',
-  'renderReady: true',
+  'preparationFinished: true',
+  'renderReady: failed.length === 0',
 ]
 const missingController = requiredControllerInputs.filter((needle) => !controllerSource.includes(needle))
 if (missingController.length > 0) {
   throw new Error(`Preload controller is missing: ${missingController.join(', ')}`)
 }
 
-// A1 regression guard: a single failed/slow resource must never leave the intro
-// stranded. Only the initial state may be renderReady:false — a second occurrence
-// signals a fatal completion path (the old "block intro on failure" bug).
-const readyFalseCount = (controllerSource.match(/renderReady: false/g) ?? []).length
-if (readyFalseCount > 1) {
-  throw new Error('Preload controller has a renderReady:false completion path (A1): failures must be non-fatal.')
+// Incomplete assets must expose recovery without pretending to be render-ready.
+for (const token of ['preload.preparationFinished', 'preload.failed.length', 'role="alert"', 'location.reload()']) {
+  if (!loaderSource.includes(token)) throw new Error(`Loader recovery is missing ${token}`)
+}
+for (const token of ['renderer:personal-archive', 'media:site', 'layout:chapter-pages', 'chunks:interactions']) {
+  if (!manifestSource.includes(token)) throw new Error(`Desktop preparation is missing ${token}`)
+}
+const runtimeSource = readFileSync('src/components/personal-archive/archiveRuntime.ts', 'utf8')
+for (const token of ['gl.initTexture', 'gl.compileAsync', 'composer.render()', 'host.appendChild(canvas)']) {
+  if (!runtimeSource.includes(token)) throw new Error(`Retained GPU preparation is missing ${token}`)
 }
 
 if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('preloadLazyChapters')) {
@@ -198,11 +202,11 @@ for (const token of ['settleRenderLayout(lifecycle.signal)', "signal.addEventLis
 }
 
 // Gate contract: criticalReady marks the phase boundary; renderReady is the
-// only intro-exit gate. Failed resources remain non-fatal through runTask.
+// only intro-exit gate. Failed resources expose a retry control.
 if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {
   throw new Error('Preload controller must still expose the critical-tier fields (criticalReady/criticalCompleted/criticalTotal) for diagnostics.')
 }
-if (!controllerSource.includes('renderReady') || !controllerSource.includes('renderReady: true')) {
+if (!controllerSource.includes('renderReady') || !controllerSource.includes('renderReady: failed.length === 0')) {
   throw new Error('Preload controller must expose a full-manifest renderReady gate.')
 }
 for (const token of ['window.__portfolioPreloadDebug', 'snapshot', 'if (!import.meta.env.DEV) return', 'Object.freeze']) {
@@ -310,4 +314,4 @@ if (missingIntroInputs.length > 0) {
   throw new Error(`Pretext intro interaction is missing: ${missingIntroInputs.join(', ')}`)
 }
 
-console.log('[loader-preload-guards] Tiered resources/ preload (manifest + loaders + controller) is wired to the Loader, keeps Pretext paths, and is failure-tolerant (A1).')
+console.log('[loader-preload-guards] Tiered resources/ preload (manifest + loaders + controller) is wired to the Loader, keeps Pretext paths, and prepares desktop media, chapter pages and a retained GPU scene with explicit failure recovery.')

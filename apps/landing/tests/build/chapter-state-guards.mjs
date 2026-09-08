@@ -148,7 +148,7 @@ if (
   throw new Error('Reduced-motion must use native scrolling without constructing or ticking a partially-disabled Lenis runtime.')
 }
 
-if (!providerSource.includes('userScrollStarted') || !providerSource.includes("window.history.replaceState(null, '', nextUrl)")) {
+if (!providerSource.includes('userScrollStarted') || !providerSource.includes("window.history.replaceState(window.history.state, '', nextUrl)") || !providerSource.includes("searchParams.has('project')")) {
   throw new Error('Natural chapter scrolling must keep the URL hash aligned without adding browser history entries.')
 }
 if (

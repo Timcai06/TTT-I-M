@@ -29,6 +29,11 @@ const labPath = window.location.pathname.replace(/\/+$/, '') === '/lab'
 
 async function renderLanding() {
   if (import.meta.env.DEV && labPath) {
+    if (new URLSearchParams(window.location.search).get('scene') === 'personal-space') {
+      const { default: PersonalSpaceLab } = await import('./lab/personal-space/PersonalSpaceLab.tsx')
+      root.render(<StrictMode><PersonalSpaceLab /></StrictMode>)
+      return
+    }
     const { default: VisualLab } = await import('./lab/VisualLab.tsx')
     root.render(<StrictMode><VisualLab /></StrictMode>)
     return

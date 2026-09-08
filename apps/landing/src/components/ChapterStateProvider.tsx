@@ -58,10 +58,11 @@ export default function ChapterStateProvider({ children }: { children: ReactNode
     // so browser history is not polluted and deep links are not overwritten on
     // initial load or while the cinematic transition owns the viewport.
     if (!userScrollStarted || stage !== 'live') return
+    if (new URL(window.location.href).searchParams.has('project')) return
 
     const nextUrl = resolveChapterUrl(activeId)
     if (hasMatchingChapterUrl(activeId, nextUrl)) return
-    window.history.replaceState(null, '', nextUrl)
+    window.history.replaceState(window.history.state, '', nextUrl)
   }, [activeId, stage, userScrollStarted])
 
   return (

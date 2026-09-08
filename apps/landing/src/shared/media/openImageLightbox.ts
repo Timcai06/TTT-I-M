@@ -60,10 +60,15 @@ export async function openImageLightbox({
   })
 
   activeLightbox = lightbox
+  let closeRequested = false
+  lightbox.on('openingAnimationEnd', () => {
+    if (closeRequested) lightbox.close()
+  })
   const closeBeforeParentOverlays = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return
     event.preventDefault()
     event.stopImmediatePropagation()
+    closeRequested = true
     lightbox.close()
   }
   window.addEventListener('keydown', closeBeforeParentOverlays, true)

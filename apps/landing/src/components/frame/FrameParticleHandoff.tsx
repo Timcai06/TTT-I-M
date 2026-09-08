@@ -14,6 +14,7 @@ import {
 } from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { markDrawableSubtree } from '../../lib/canvas-ui/runtime'
+import ArchiveChapterBridge from '../personal-archive/ArchiveChapterBridge'
 
 type ArchiveImage = (typeof archiveThemes)[number]['clusters'][number]['slots'][number]['image']
 
@@ -50,6 +51,11 @@ function ParticleDocument({
 }
 
 export default function FrameParticleHandoff() {
+  const mobile = useMobileExperience(), reduced = useReducedMotion()
+  return mobile || reduced ? <LegacyFrameParticleHandoff /> : <ArchiveChapterBridge track="frame-stack" />
+}
+
+function LegacyFrameParticleHandoff() {
   const root = useRef<HTMLElement>(null)
   const captureRef = useRef<HTMLDivElement>(null)
   const sourceRef = useRef<HTMLCanvasElement>(null)

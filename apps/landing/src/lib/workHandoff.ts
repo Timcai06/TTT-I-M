@@ -1,7 +1,7 @@
 export const WORK_HANDOFF_EVENT = 'portfolio:work-enter'
 
 export interface WorkHandoffDetail {
-  source: 'work-transition-cta'
+  source: 'work-transition-cta' | 'archive-scroll'
 }
 
 let pending = false
@@ -21,9 +21,9 @@ export function consumePendingWorkHandoff(): boolean {
  * gate; Projects owns the short visual response. Keeping the event here avoids
  * coupling the two lazy chapters through React composition or global state.
  */
-export function dispatchWorkHandoff(): void {
+export function dispatchWorkHandoff(source: WorkHandoffDetail['source'] = 'work-transition-cta'): void {
   markWorkHandoffPending()
   window.dispatchEvent(new CustomEvent<WorkHandoffDetail>(WORK_HANDOFF_EVENT, {
-    detail: { source: 'work-transition-cta' },
+    detail: { source },
   }))
 }

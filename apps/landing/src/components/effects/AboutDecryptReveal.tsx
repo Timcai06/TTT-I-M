@@ -22,9 +22,10 @@ const loadDecryptReveal = (): Promise<CanvasUiHtmlFactory<DecryptRevealOptions>>
 
 void loadDecryptReveal().catch(() => undefined)
 
-export default function AboutDecryptReveal({ children }: { children: ReactNode }) {
+export default function AboutDecryptReveal({ children, enabled = true }: { children: ReactNode; enabled?: boolean }) {
   return (
     <CanvasUiHtmlSurface
+      enabled={enabled}
       className="about-decrypt"
       contentClassName="about-decrypt__content"
       effectId="about-decrypt-reveal"

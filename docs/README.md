@@ -7,9 +7,11 @@
 
 > 文档区分「当前实现」与「已确定、待实现的设计」。现状以代码为准；设计方向不得误写为已上线能力。旧平台升级计划见 [`/plan`](../plan/)。
 
-> **2026-09-07 当前执行顺序**：先完成 Blender 模型供 tim 验收。收到 tim 后续明确指示后，才更新网页模型资源并开始整站设计开发。见 [模型验收版](landing/delivery/model-review.md)。
+> **当前交付：温暖档案室与整站预备加载（2026-09-07）。** 原位增加房间软装、收敛材质噪点、烘焙网页材质与间接光，桌面使用开屏预备和共享空间 renderer。查看[本轮制作与检查记录](landing/delivery/warm-archive.md)。视觉由 tim 检验，未提交远程。
 
-> **本次操作边界：仅目录整理。** 活跃模型已移动到 [制作入口](../art/personal-archive/README.md)下的 `source/`，模型内容、前端代码及网页资源不变；近景收尾没有执行。见 [目录迁移记录](landing/delivery/directory-organization.md)。
+2026-09-08 后续修复：[空间初始化与转场叠层](landing/delivery/space-recovery.md)，包含预览尺寸恢复、热更新、投射背景清理与镜头避让；模型资产保持不变。
+
+历史阶段依次为[目录整理](landing/delivery/directory-organization.md)、[近景制作](landing/delivery/transition-closeups.md)、[网页主线](landing/delivery/web-choreography.md)、[电影感模型](landing/delivery/cinematic-model.md)。这些文档的阶段边界不替代当前交付状态。
 
 ## 按责任查阅
 
@@ -17,14 +19,14 @@
 | --- | --- | --- |
 | 系统现状 | 下方 01–05 | 架构、视觉基础、性能、文件结构、检查；保留已有链接 |
 | Landing 体验设计 | [空间与滚动叙事](landing/experience/spatial-narrative.md) | 已确认方向、章节节奏、交互边界 |
-| Landing 全站效果 | [整站空间编排](landing/experience/full-site-choreography.md) | 全章节转场、项目详情、全局交互与实施顺序；待开发规格 |
+| Landing 全站效果 | [整站空间编排](landing/experience/full-site-choreography.md) | 全章节方向；已实现主线与取舍见[网页交付](landing/delivery/web-choreography.md) |
 | Landing 交互规格 | [分镜与状态交接](landing/experience/interaction-contracts.md) | 默认进度、源图对应、详情历史、加载和失败处理；设计 v1 |
 | Landing 首段实现 | [桌面空间过渡](landing/experience/desktop-archive-entry.md) | Hero → 空间 → About 的滚动编排与模块职责 |
 | Landing 设计参考 | [Unseen Studio](landing/experience/unseen-reference.md) | 首要学习对象、来源事实、转化提案与待研究问题 |
 | Landing 资产制作 | [个人空间制作规范](landing/assets/personal-space.md) | 模型、材质、灯光、导出及版本 |
 | Landing 章节建模 | [章节建模任务](landing/assets/chapter-modeling-plan.md) | 照片墙、屏幕、抽屉的局部制作与导出契约 |
 | Landing 交付记录 | [空间阶段记录](landing/delivery/personal-space.md) | 实际完成情况与待验收项 |
-| Landing 模型验收 | [模型验收版](landing/delivery/model-review.md) | 当前 Blender 工程、七个预览视角、动作状态与接入边界 |
+| Landing 当前交付 | [温暖档案室](landing/delivery/warm-archive.md) | 装修来源、活跃工程、网页准备和技术证据 |
 | Studio 历史专项 | `superpowers/specs`、`superpowers/plans` | 保持既有目录，本次空间任务不涉及 Studio |
 
 新增专项按「功能 / experience、assets、delivery」归档。现有系统文档不批量搬迁，避免破坏引用；专项文档要标明状态，并由交付记录区分计划和实现。

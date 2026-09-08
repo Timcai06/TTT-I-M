@@ -33,6 +33,7 @@ apps/landing/public/server.glb
 !.vscode/extensions.json
 .idea
 .omx/
+.omo/
 .DS_Store
 *.suo
 *.ntvs*

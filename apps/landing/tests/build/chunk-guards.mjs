@@ -81,13 +81,18 @@ const PER_CHUNK_BUDGET_KB = {
   'ChapterTransition': 5,
   'layout': 24,
   'workHandoff': 5,
-  'projects': 18,
+  'projects': 19, // Case deep links, history restoration and deferred-chunk recovery.
   'ProjectCaseDialog': 20,
   'photoswipe.esm': 30,
   'MobileProjectCarousel': 12,
   'ProjectMetrics': 8,
+  'PersonalArchiveSurface': 4,
+  'archiveRuntime': 12,
 }
-const TOTAL_JS_BUDGET_KB = 540
+// The retained scene replaces both per-section renderers and adds GPU prewarm,
+// irradiance, subtle depth of field and bloom (571.1 KiB measured total).
+// Entry/Hero retain their caps; the shared archive runtime has a 12 KiB ceiling.
+const TOTAL_JS_BUDGET_KB = 576
 const TOTAL_CSS_BUDGET_KB = 160
 
 const jsFiles = readdirSync(distDir).filter((file) => file.endsWith('.js'))
@@ -112,6 +117,9 @@ if (liquidSourceEmbeddedInJs) {
 }
 
 const budgetFailures = []
+// The vertical-slice entrypoint is named index; identify this slice by its unique root.
+const archiveChunk = jsFiles.find(file => readFileSync(resolve(distDir, file), 'utf8').includes('archive-sequence'))
+if (!archiveChunk || gzipKb(archiveChunk) > 6) budgetFailures.push('About spatial slice missing or over 6 KB gzip')
 for (const [prefix, budget] of Object.entries(PER_CHUNK_BUDGET_KB)) {
   const file = jsFiles.find((name) => new RegExp(`^${prefix}-[A-Za-z0-9_-]+\\.js$`).test(name))
   if (!file) {

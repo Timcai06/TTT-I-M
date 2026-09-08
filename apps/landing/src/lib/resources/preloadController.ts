@@ -5,7 +5,7 @@ import { runTaskWithDeadline } from './taskDeadline'
 
 // A stuck resource (hung socket, dead CDN) must never strand the intro on a
 // black screen. Every task receives a child AbortSignal; a deadline cancels
-// the underlying loader before becoming a non-fatal skip.
+// the underlying loader and exposes retry UI instead of silently opening an incomplete site.
 const TASK_TIMEOUT_MS = 12000
 
 type PreloadTaskDebugStatus = 'pending' | 'fulfilled' | 'rejected'
@@ -27,7 +27,7 @@ interface PreloadTaskDebugEntry {
   label: string
   /** performance.now() 起始时间。 */
   startedAt: number
-  /** 当前任务状态；rejected 在本预加载器中表示“非致命跳过”。 */
+  /** 当前任务状态；rejected 在本预加载器中表示“准备失败，等待重试”。 */
   status: PreloadTaskDebugStatus
 }
 
@@ -47,19 +47,20 @@ interface PreloadDebugHandle {
  * 全站预加载状态。Loader 使用该状态驱动真实进度条，而不是播放假的 fixed-duration 进度。
  *
  * 闸门语义：`criticalReady` 只标记 SYSTEM 阶段结束；`renderReady` 才是 intro
- * 的退场闸门。后者表示 bounded landing manifest 已完成或按非致命容错跳过，
+ * 的退场闸门。后者表示 bounded landing manifest 已成功完成，
  * 包括当前设备实际选择的图片候选及其 decode。
  */
 export interface WholeSitePreloadState {
-  /** 已完成或已跳过的任务数量（critical + visual 全量）。 */
+  preparationFinished: boolean
+  /** 已结束的任务数量（critical + visual 全量）。 */
   completed: number
-  /** critical 层已完成或已跳过的任务数量；进度条显示它。 */
+  /** critical 层已结束的任务数量；进度条显示它。 */
   criticalCompleted: number
   /** critical 层是否全部结束 —— SYSTEM → ARCHIVE 的阶段标记。 */
   criticalReady: boolean
   /** critical 层任务总数。 */
   criticalTotal: number
-  /** 非致命失败任务 id 列表；失败不会阻塞 ready。 */
+  /** 失败任务 id 列表；失败阻止正常退场，并显示重新加载入口。 */
   failed: string[]
   /** 当前完成任务的展示标签。 */
   label: string
@@ -92,7 +93,7 @@ function errorMessage(error: unknown) {
 
 /**
  * @description 创建预加载诊断器。所有构建都提供确定性的任务快照；DEV 额外定时输出
- *   pending / fulfilled / skipped 表格。
+ *   pending / fulfilled / failed 表格。
  * @dependencies `ResourceTask` manifest、浏览器 console API、`import.meta.env.DEV`
  * @performance / @caveats stall report timers 只在 DEV 创建，并在 hook cleanup/ready 后 stop。
  * @steps
@@ -134,7 +135,7 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
     const { failed, fulfilled, pending } = snapshot()
     const elapsed = Math.round(performance.now() - startedAt)
     console.groupCollapsed(
-      `[resources] ${reason}: ${fulfilled.length}/${entries.length} fulfilled, ${failed.length} skipped, ${pending.length} pending after ${elapsed}ms`
+      `[resources] ${reason}: ${fulfilled.length}/${entries.length} fulfilled, ${failed.length} failed, ${pending.length} pending after ${elapsed}ms`
     )
     if (pending.length > 0) {
       console.info('Pending preload tasks')
@@ -146,7 +147,7 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
       })))
     }
     if (failed.length > 0) {
-      console.info('Skipped (non-fatal) preload tasks')
+      console.info('Failed preload tasks')
       console.table(failed.map(({ durationMs, error, id, label, status }) => ({
         durationMs,
         error,
@@ -236,18 +237,19 @@ function settleRenderLayout(signal: AbortSignal): Promise<void> {
  *   - DEV 环境下的 `createPreloadDebug`
  * @performance / @caveats
  *   - visual 并发固定为 8，在网络利用率和图片解码压力之间取平衡。
- *   - 任何单任务失败都只记录到 `failed`，不会让 intro 永久卡住；这是 Loader A1 黑屏修复的关键边界。
+ *   - 任何单任务失败都记录到 `failed`，完成后显示重试入口；不能把失败伪装为就绪。
  *   - `tasks` 用 `useState(buildResourceManifest)` 固定一次，避免组件重渲染时重建 manifest 并重跑预加载。
  * @steps
  *   step1: 初始化 manifest 和可视化 preload state
  *   step2: critical indexes 全并发执行，结束即 criticalReady=true（切换到 ARCHIVE 阶段）
  *   step3: visual indexes 按 `VISUAL_CONCURRENCY` 分片执行并等待完成
  *   step4: 每个任务完成/跳过后更新 completed/criticalCompleted/label/failed
- *   step5: 全部结束后标记 renderReady=true（允许 intro 退场），并关闭 DEV debug timers
+ *   step5: 全部成功后才标记 renderReady（允许 intro 退场），并关闭 DEV debug timers
  */
 export function useWholeSitePreload(): WholeSitePreloadState {
   const [tasks] = useState(buildResourceManifest)
   const [state, setState] = useState<WholeSitePreloadState>(() => ({
+    preparationFinished: false,
     completed: 0,
     criticalCompleted: 0,
     criticalReady: false,
@@ -268,15 +270,15 @@ export function useWholeSitePreload(): WholeSitePreloadState {
 
     const runTask = async (task: ResourceTask, index: number) => {
       try {
-        await runTaskWithDeadline(task.load, TASK_TIMEOUT_MS, lifecycle.signal)
+        await runTaskWithDeadline(task.load, task.timeoutMs ?? TASK_TIMEOUT_MS, lifecycle.signal)
         debug?.finish(index)
       } catch (error) {
         if (lifecycle.signal.aborted) return
-        // Non-fatal: a missing/slow resource is skipped, never a black screen.
+        // Non-fatal: a missing/slow resource is failed, never a black screen.
         debug?.fail(index, error)
         if (!failed.includes(task.id)) failed.push(task.id)
         if (import.meta.env.DEV) {
-          console.warn(`[resources] non-fatal skip: ${task.id}`, error)
+          console.warn(`[resources] preparation failed: ${task.id}`, error)
         }
       } finally {
         completed += 1
@@ -329,16 +331,17 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     void run().then(() => {
       if (cancelled) return
       setState({
+        preparationFinished: true,
         completed,
         criticalCompleted,
         criticalReady: true,
         criticalTotal: criticalIndexes.length,
         failed: [...failed],
-        label: 'Ready',
-        renderReady: true,
+        label: failed.length > 0 ? 'Preparation incomplete' : 'Ready',
+        renderReady: failed.length === 0,
         total: tasks.length,
       })
-      debug?.report(failed.length > 0 ? `landing ready with ${failed.length} skipped` : 'whole-site preload completed')
+      debug?.report(failed.length > 0 ? `preparation failed for ${failed.length} tasks` : 'whole-site preload completed')
       debug?.stop()
     })
 

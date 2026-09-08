@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { gsap, useGSAP } from '../lib/gsap'
 import { isMobileExperience } from '../lib/device'
 import { prefersReducedMotion } from '../lib/motion'
+import { runCaseImageTransition } from '../lib/caseImageTransition'
 import {
   onParticlePortalRequest,
   type ParticlePortalRequest,
@@ -115,11 +116,26 @@ export default function ParticlePortal() {
         || isMobileExperience()
         || !source.isConnected
         || !source.complete
-        || !canRenderParticlePortal()
       ) {
         await runSemanticFallback()
         return
       }
+
+      if (request.mode.startsWith('case-')) {
+        const controller = new AbortController()
+        activeAbortRef.current = controller
+        const cancel = (event: KeyboardEvent) => { if (event.key === 'Escape') controller.abort() }
+        window.addEventListener('keydown', cancel, true)
+        try {
+          await runCaseImageTransition(request, commit, controller.signal, timeline => { timelineRef.current = timeline })
+        } finally {
+          window.removeEventListener('keydown', cancel, true)
+          activeAbortRef.current = null; busyRef.current = false
+          request.onComplete?.(); runQueued()
+        }
+        return
+      }
+      if (!canRenderParticlePortal()) { await runSemanticFallback(); return }
 
       const root = rootRef.current
       const veil = veilRef.current

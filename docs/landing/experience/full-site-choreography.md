@@ -1,5 +1,7 @@
 # 整站空间叙事与交互设计
 
+> 当前实现更新：空间主线与项目详情已接入，最新[房间装修与整站准备](../delivery/warm-archive.md)也已完成。下文保留设计 v1 原始分镜，实际实现、差异与检查入口见[网页交付](../delivery/web-choreography.md)，不再将下文的「待开发」作为当前状态。
+
 版本：设计 v1 · 2026-09-07 定稿。范围：桌面 Landing。全站体验与行为设计已完成，新增效果待开发；当前可运行范围见 [交付记录](../delivery/personal-space.md)。手机端与 Studio 继续暂缓。具体分镜区间、详情 URL 和失败行为见 [交互交接规格](interaction-contracts.md)。
 
 ## 体验主张

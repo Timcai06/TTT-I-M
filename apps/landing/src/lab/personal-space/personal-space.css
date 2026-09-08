@@ -1,0 +1,48 @@
+@layer utilities {
+  .space-lab { position: relative; height: 100svh; min-height: 600px; overflow: hidden; background: #c8c2b7; color: #292b27; font-family: 'Inter', sans-serif; }
+  .space-lab__scene { position: absolute; inset: 0; }
+  .space-lab__scene::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, #ede8dcba, transparent 48%), linear-gradient(0deg, #eee8d8bd, transparent 18%); }
+  .space-lab--reading .space-lab__scene::after { background: linear-gradient(0deg, #eee8d866, transparent 20%); }
+  .space-lab__header { position: absolute; inset: 28px 36px auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .space-lab a { color: inherit; text-decoration: none; }
+  .space-lab__brand { font-size: 13px; font-weight: 500; letter-spacing: .08em; }
+  .space-lab__brand span, .space-lab__edition { font-size: 10px; letter-spacing: .12em; }
+  .space-lab__intro { position: absolute; top: 21%; left: 6%; pointer-events: none; }
+  .space-lab__eyebrow { font-size: 10px; letter-spacing: .2em; margin-bottom: 22px; }
+  .space-lab__intro h1 { font-family: 'Noto Serif SC', serif; font-weight: 300; font-size: clamp(32px, 4vw, 58px); line-height: 1.55; letter-spacing: -.025em; margin: 0 0 18px; }
+  .space-lab__intro > p:last-child { font-size: 13px; }
+  .space-lab__controls { position: absolute; left: 36px; bottom: 54px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .space-lab button { font: inherit; font-size: 12px; min-height: 44px; border: 1px solid #777766; background: #f5f0e6ed; padding: 12px 20px; color: #292b27; cursor: pointer; }
+  .space-lab button:hover { background: #fffaf0; }
+  .space-lab button span { margin-left: 22px; }
+  .space-lab a:focus-visible, .space-lab button:focus-visible { outline: 2px solid #843e30; outline-offset: 4px; }
+  .space-lab__controls a { padding: 14px 6px; font-size: 11px; }
+  .space-lab__status { position: absolute; bottom: 20px; left: 36px; font-size: 10px; letter-spacing: .06em; }
+  .space-lab__reader { position: absolute; right: 3%; top: 86px; bottom: 112px; width: min(410px, 39%); padding: 25px 30px; overflow: auto; overscroll-behavior: contain; background: #f4eee1f5; box-shadow: 0 14px 50px #322b2524; }
+  .space-lab__reader-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; font-size: 9px; letter-spacing: .1em; }
+  .space-lab__reader-top button { border: 0; background: transparent; padding: 8px 12px; font-size: 24px; }
+  .space-lab__reader h2 { font-family: 'Noto Serif SC', serif; font-weight: 400; font-size: 25px; line-height: 1.6; margin: 0 0 26px; }
+  .space-lab__reader h2:focus { outline: none; }
+  .space-lab__reader > p:not(.space-lab__eyebrow) { font-size: 13px; line-height: 2; margin-bottom: 16px; }
+  .space-lab__facts { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #b9b2a6; padding-top: 20px; margin: 28px 0; }
+  .space-lab__facts div { display: flex; flex-direction: column-reverse; gap: 8px; }
+  .space-lab__facts dt { font-size: 8px; }
+  .space-lab__facts dd { font-family: 'Playfair Display', serif; font-size: 27px; margin: 0; }
+  .space-lab__reader > a { font-size: 11px; display: inline-block; padding: 12px 0; }
+  @media (max-width: 699px) {
+    .space-lab { min-height: 500px; }
+    .space-lab__header { inset: 22px 20px auto; align-items: start; }
+    .space-lab__brand span { display: block; margin-top: 6px; font-size: 8px; }
+    .space-lab__edition { font-size: 8px; }
+    .space-lab__intro { left: 24px; top: 16%; }
+    .space-lab__intro h1 { font-size: 32px; }
+    .space-lab__scene::after { background: linear-gradient(180deg, #ede8dca6, transparent 64%), linear-gradient(0deg, #eee8d8ed, transparent 22%); }
+    .space-lab__controls { left: 20px; right: 20px; bottom: 49px; gap: 8px; }
+    .space-lab__controls button { padding: 10px 13px; }
+    .space-lab__controls button span { margin-left: 8px; }
+    .space-lab__status { left: 20px; bottom: 19px; font-size: 9px; }
+    .space-lab__reader { top: 38%; bottom: 110px; right: 12px; left: 12px; width: auto; padding: 16px 23px; }
+    .space-lab__reader-top { margin-bottom: 10px; }
+    .space-lab__reader h2 { font-size: 23px; }
+  }
+}

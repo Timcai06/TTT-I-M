@@ -4,11 +4,12 @@ import { useReducedMotion } from '../lib/motion'
 import { useSound } from '../lib/sound/SoundContext'
 import { LiquidMetalButton } from '../shaders/liquid-metal-button/LiquidMetalButton'
 import ScrollExpand from './ScrollExpand'
+import { FILM_URL, usePreparedMediaUrl } from '../lib/resources/mediaCache'
 
-const FILM_URL = '/projects/sciscope/sciscope-concept-film.mp4'
 const POSTER_URL = '/projects/sciscope/sciscope-film-poster.jpg'
 
 export default function SciScopeFilm() {
+  const preparedFilm = usePreparedMediaUrl(FILM_URL)
   const dialog = useRef<HTMLDialogElement>(null)
   const filmVideo = useRef<HTMLVideoElement>(null)
   const playButton = useRef<HTMLDivElement>(null)
@@ -127,7 +128,7 @@ export default function SciScopeFilm() {
           </div>
           <video
             ref={filmVideo}
-            src={FILM_URL}
+            src={preparedFilm}
             poster={POSTER_URL}
             preload="metadata"
             controls

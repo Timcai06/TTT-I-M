@@ -49,6 +49,7 @@ export function canCreateWebGL2Context(): boolean {
 }
 
 const activeLeases = new Map<symbol, string>()
+const retainedLeases = new Set<symbol>()
 const listeners = new Set<() => void>()
 
 /**
@@ -114,20 +115,21 @@ export function activeContextOwners(): readonly string[] {
 
 /**
  * Whether the page-level registered-context budget has capacity for another
- * optional surface. Required contexts count toward this admission ceiling,
+ * optional surface. Ordinary required contexts count toward this admission ceiling,
  * which prevents a Hero canvas plus optional effects from silently exceeding
- * the total page budget. Allocation must still go through
+ * the chapter budget, alongside at most one registered retained room. Allocation must still go through
  * tryAcquireOptionalContext so the check and reservation remain atomic.
  */
 export function canAcquireOptionalSurface(): boolean {
-  return activeLeases.size < getGLQualityProfile().optionalContextLimit
+  return activeLeases.size - retainedLeases.size < getGLQualityProfile().optionalContextLimit
 }
 
-function createLease(owner: string): ContextLease {
+function createLease(owner: string, retained = false): ContextLease {
   const normalizedOwner = normalizeOwner(owner)
 
   const token = Symbol(normalizedOwner)
   let released = false
+  if (retained) retainedLeases.add(token)
   activeLeases.set(token, normalizedOwner)
   emitContextChange()
 
@@ -136,9 +138,19 @@ function createLease(owner: string): ContextLease {
     release() {
       if (released) return
       released = true
+      retainedLeases.delete(token)
       if (activeLeases.delete(token)) emitContextChange()
     },
   })
+}
+
+/** One resident room plus the existing two-context chapter composition budget.
+ * The resident slot remains accounted in activeContextCount/Owners; it must not
+ * starve ordinary chapter effects while its canvas is detached between scenes.
+ */
+export function acquireRetainedContext(owner: string): ContextLease {
+  if (retainedLeases.size >= 1) throw new Error('The retained WebGL context slot is already owned.')
+  return createLease(owner, true)
 }
 
 /**

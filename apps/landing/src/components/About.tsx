@@ -4,6 +4,7 @@ import { revealWords } from '../lib/wordReveal'
 import { facts } from '../content'
 import AboutDecryptReveal from './effects/AboutDecryptReveal'
 import CountUp from './CountUp'
+import AboutDossier from './AboutDossier'
 
 /** Split a fact value like `'10+'` into its leading number and trailing suffix. */
 function parseFact(value: string): { to: number; suffix: string } {
@@ -33,7 +34,7 @@ function parseFact(value: string): { to: number; suffix: string } {
  *
  * @steps Decrypt 首屏保持稳定 capture；下方段落、统计与 Tech 路径独立进入。
  */
-export default function About() {
+export default function About({ decryptEnabled = true }: { decryptEnabled?: boolean }) {
   const root = useRef<HTMLElement>(null)
   const techPathRef = useRef<SVGPathElement>(null)
 
@@ -98,43 +99,8 @@ export default function About() {
 
   return (
     <section className="section about" id="about" ref={root}>
-      <AboutDecryptReveal>
-        <div className="about__dossier">
-          <div className="about__dossier-header">
-            <div className="section__label">About — 自述</div>
-            <div className="about__dossier-kicker">IDENTITY DOSSIER / 00—06</div>
-          </div>
-
-          <div className="about__dossier-copy">
-            <h2 className="about__lead">
-              <span>上海大一在读，</span>
-              <span>我把模型、数据和交互</span>
-              <span><em>做成能运行、能复盘的</em></span>
-              <span><em>系统。</em></span>
-            </h2>
-            <p className="about__dossier-summary">
-              我关心的不只是模型有没有跑通，而是证据从哪来、运行时发生了什么，以及别人能不能复现。
-            </p>
-          </div>
-
-          <div className="about__portrait-frame">
-            <div className="about__portrait-glow" />
-            <img className="about__portrait-img" src="/portrait/about_me.jpg" alt="Tim's Portrait" />
-            <div className="about__portrait-vignette" />
-            <div className="about__portrait-meta">PROFILE CAPTURE → V3.0</div>
-          </div>
-
-          <dl className="about__dossier-meta">
-            <div><dt>PROFILE</dt><dd>TIM CAI</dd></div>
-            <div><dt>FOCUS</dt><dd>AI SYSTEMS × INTERACTION</dd></div>
-            <div><dt>BASE</dt><dd>SHANGHAI / CN</dd></div>
-          </dl>
-
-          <div className="about__decrypt-hint" aria-hidden="true">
-            <span>MOVE TO DECRYPT</span>
-            <span>移动以解密</span>
-          </div>
-        </div>
+      <AboutDecryptReveal enabled={decryptEnabled}>
+        <AboutDossier />
       </AboutDecryptReveal>
 
       <div className="about__grid about__grid--evidence">

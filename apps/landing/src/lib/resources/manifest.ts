@@ -23,6 +23,7 @@ export type ResourceType = 'image' | 'font' | 'texture' | 'chunk' | 'particles'
  * @description landing preloadController 可执行的资源任务，区分开屏 gate 和后台预热两类加载
  */
 export interface ResourceTask {
+  timeoutMs?: number
   /** 稳定唯一 id，用于进度统计、错误定位和 build guard 检查 */
   id: string
   /** 面向 loading UI / 调试日志的资源名称 */
@@ -62,6 +63,7 @@ function collectImageUrls() {
     '/noise/grain-128.png',
     '/projects/sciscope/sciscope-film-poster.jpg',
     ...photos.map((photo) => photo.src),
+    ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? archiveImages.map((image) => image.src) : []),
     ...projectUrls,
   ])
 }
@@ -73,9 +75,9 @@ function collectImageUrls() {
  * `visual` is the bounded visual set. Loader waits for the complete manifest.
  * Static images and exactly one
  * browser-selected responsive candidate per Frame image are downloaded and
- * decoded before hand-off. The SciScope film itself remains click-to-play; only
- * its poster participates in render-ready so the original audio/video rhythm is
- * not turned into a boot-time tax.
+ * decoded before hand-off. Desktop also prepares full-size photography, the
+ * finite film/sound assets and the retained room GPU runtime before revealing.
+ * Playback still requires a visitor gesture.
  */
 export function buildResourceManifest(): ResourceTask[] {
   const critical: ResourceTask[] = [
@@ -94,6 +96,29 @@ export function buildResourceManifest(): ResourceTask[] {
   }))
 
   const interactiveVisuals: ResourceTask[] = [
+    ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? [{
+      id: 'renderer:personal-archive', label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
+      timeoutMs: 120_000,
+      load: async (signal: AbortSignal) => {
+        const { prepareArchiveRuntime } = await import('../../components/personal-archive/archiveRuntime')
+        await prepareArchiveRuntime(signal)
+        await import('../../components/personal-archive/PersonalArchiveSurface')
+      },
+    }, {
+      id: 'layout:chapter-pages', label: 'Preparing chapters', tier: 'visual' as const, type: 'chunk' as const,
+      load: async (signal: AbortSignal) => { const { prepareChapterPages } = await import('./prepareChapterPages'); await prepareChapterPages(signal) },
+    }, {
+      id: 'media:site', label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,
+      timeoutMs: 120_000,
+      load: async (signal: AbortSignal) => { const { prepareSiteMedia } = await import('./mediaCache'); await prepareSiteMedia(signal) },
+    }, {
+      id: 'chunks:interactions', label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
+      load: async () => { await Promise.all([
+        import('../../chapters/projects/ProjectCaseDialog'), import('../../chapters/projects/ProjectCaseContent'),
+        import('../../chapters/projects/ProjectMetrics'), import('../../shared/media/openImageLightbox'),
+        import('photoswipe/lightbox'), import('photoswipe'),
+      ]) },
+    }] : []),
     {
       id: 'shader:liquid-metal',
       label: 'Liquid Metal control',

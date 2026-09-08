@@ -327,7 +327,7 @@ export default function Loader() {
   return (
     <div className="intro" ref={panelRef}>
       <Suspense fallback={null}>
-        <DitherBackground />
+        {!preload.criticalReady && <DitherBackground />}
       </Suspense>
       <div className="intro__meta">// Portfolio · 2026</div>
 
@@ -346,6 +346,10 @@ export default function Loader() {
         <span className="intro__spinner" aria-hidden="true">{spinnerGlyph}</span>
         <span className="intro__stage">{stageText}</span>
       </div>
+      {preload.preparationFinished && preload.failed.length > 0 && <div className="intro__retry" role="alert">
+        <p>还有部分内容未能准备好，请重试。</p>
+        <button type="button" onClick={() => window.location.reload()}>重新加载</button>
+      </div>}
 
       <div className="intro__bar-track">
         <span className="intro__bar" ref={barRef} />

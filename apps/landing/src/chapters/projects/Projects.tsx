@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useCallback, useRef, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { projects, type Project, type ProjectShot } from '../../content'
 import SciScopeFilm from '../../components/SciScopeFilm'
 import ProjectGlassSurface from '../../components/effects/ProjectGlassSurface'
@@ -7,17 +7,19 @@ import { requestPointerHitTest } from '../../lib/pointerCoordinator'
 import ProjectCard from './ProjectCard'
 import ProjectsIntro from './ProjectsIntro'
 import { useProjectsNarrative } from './useProjectsNarrative'
+import { projectLocation, readProjectLocation } from './projectLocation'
+import CaseStudyBoundary from './CaseStudyBoundary'
 
 const loadProjectCaseDialog = () => import('./ProjectCaseDialog')
 const ProjectCaseDialog = lazy(loadProjectCaseDialog)
 
 // Projects is already a below-the-fold lazy chapter. Warm the dialog chunk at
 // chapter evaluation so the particle cloud never waits on a network boundary.
-void loadProjectCaseDialog()
+void loadProjectCaseDialog().catch(() => undefined)
 
 interface ActiveCaseStudy {
   project: Project
-  trigger: HTMLButtonElement
+  trigger: HTMLButtonElement | null
   heroShot: ProjectShot
   open: boolean
   closing: boolean
@@ -57,6 +59,26 @@ export default function Projects() {
   const [glassActive, setGlassActive] = useState(false)
   const [glassSuppressed, setGlassSuppressed] = useState(false)
   const activeGlassSurfaces = useRef(new Set<string>())
+  const ownsHistory = useRef(false)
+  useEffect(() => {
+    const sync = () => {
+      const id = readProjectLocation(location.href, projects.map(project => project.id))
+      const project = projects.find(item => item.id === id)
+      if (!project) {
+        if (new URL(location.href).searchParams.has('project')) history.replaceState(history.state, '', projectLocation(location.href, null))
+        setActiveCaseStudy(current => current ? { ...current, open: false, closing: true } : null)
+        setGlassSuppressed(false); ownsHistory.current = false
+        return
+      }
+      const heroShot = projectShots(project)[0]
+      if (!heroShot) return
+      const trigger = root.current?.querySelector<HTMLButtonElement>(`[data-project-id="${project.id}"] button`) ?? null
+      setGlassSuppressed(true)
+      setActiveCaseStudy({ project, heroShot, trigger, open: true, closing: false })
+    }
+    sync(); window.addEventListener('popstate', sync)
+    return () => window.removeEventListener('popstate', sync)
+  }, [])
   const { laserActive, laserHandle, glassReady } = useProjectsNarrative(root, glassActive)
   const changeGlassActive = useCallback((surfaceId: string, active: boolean) => {
     const surfaces = activeGlassSurfaces.current
@@ -70,7 +92,7 @@ export default function Projects() {
     trigger: HTMLButtonElement,
     sourceImage: HTMLImageElement | null,
   ) => {
-    void import('./ProjectCaseContent')
+    void import('./ProjectCaseContent').catch(() => undefined)
     const heroShot = resolveHeroShot(project, sourceImage)
     if (!heroShot) return
 
@@ -78,6 +100,10 @@ export default function Projects() {
       // Keep Glass alive through the particle detach, then release it beneath
       // the cloud's densest frame as the dialog becomes the interaction owner.
       setGlassSuppressed(true)
+      if (new URL(location.href).searchParams.get('project') !== project.id) {
+        history.pushState({ ...history.state, archiveProject: true }, '', projectLocation(location.href, project.id))
+        ownsHistory.current = true
+      }
       setActiveCaseStudy({ project, trigger, heroShot, open: true, closing: false })
     }
     if (!sourceImage) {
@@ -109,13 +135,15 @@ export default function Projects() {
 
     const commit = () => {
       setActiveCaseStudy((latest) => latest ? { ...latest, open: false, closing: true } : latest)
+      if (ownsHistory.current) { ownsHistory.current = false; history.back() }
+      else history.replaceState(history.state, '', projectLocation(location.href, null))
     }
     const resumeGlass = () => setGlassSuppressed(false)
     const hero = document.querySelector<HTMLImageElement>(
       `[data-project-dialog="${current.project.id}"] [data-particle-portal-target] img`,
     )
     const returnImage = findProjectReturnImage(root.current, current.project.id)
-    if (!hero || !isVisibleImage(returnImage)) {
+    if (!isVisibleImage(hero) || !isVisibleImage(returnImage)) {
       commit()
       resumeGlass()
       return
@@ -171,6 +199,10 @@ export default function Projects() {
       </div>
 
       {activeCaseStudy ? (
+        <CaseStudyBoundary key={activeCaseStudy.project.id} onClose={() => {
+          history.replaceState(history.state, '', projectLocation(location.href, null))
+          ownsHistory.current = false; setActiveCaseStudy(null); setGlassSuppressed(false)
+        }}>
         <Suspense fallback={<span className="project-dialog__loading" role="status">Loading case study…</span>}>
           <ProjectCaseDialog
             project={activeCaseStudy.project}
@@ -180,11 +212,12 @@ export default function Projects() {
             onOpenChange={changeCaseStudyOpen}
             onOpenChangeComplete={(open) => {
               if (!open) {
-                setActiveCaseStudy(null)
+                setActiveCaseStudy(current => current?.open ? current : null)
               }
             }}
           />
         </Suspense>
+        </CaseStudyBoundary>
       ) : null}
     </section>
   )

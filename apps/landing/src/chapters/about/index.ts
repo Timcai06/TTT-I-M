@@ -1,1 +1,1 @@
-export { default } from '../../components/About'
+export { default } from '../../components/personal-archive/ArchiveAbout'

@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   acquireOptionalContextWhenAvailable,
   acquireContext,
+  acquireRetainedContext,
   activeContextCount,
   activeContextOwners,
   canCreateWebGL2Context,
@@ -13,6 +14,21 @@ import {
   subscribeContextRegistry,
   tryAcquireOptionalContext,
 } from '../src/lib/webgl/contextRegistry.ts'
+
+void test('one retained room preserves two ordinary slots and all three remain accounted', () => {
+  const room = acquireRetainedContext('retained-test')
+  const glass = tryAcquireOptionalContext('glass-test'), button = tryAcquireOptionalContext('button-test')
+  try {
+    assert.ok(glass); assert.ok(button)
+    assert.equal(activeContextCount(), 3)
+    assert.equal(tryAcquireOptionalContext('excess-effect'), null)
+    assert.throws(() => acquireRetainedContext('excess-room'), /already owned/)
+    assert.ok(activeContextOwners().includes('retained-test'))
+  } finally { room.release(); glass?.release(); button?.release() }
+  assert.equal(activeContextCount(), 0)
+  const replacement = acquireRetainedContext('replacement-room'); replacement.release(); replacement.release()
+  assert.equal(activeContextCount(), 0)
+})
 
 void test('WebGL recovery backoff is bounded and rejects invalid counters', () => {
   assert.equal(getWebGLRecoveryDelay(1), 280)

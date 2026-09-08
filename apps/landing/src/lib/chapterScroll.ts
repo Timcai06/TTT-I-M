@@ -30,21 +30,26 @@ export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) 
   // The spacer remains in normal document flow and is the stable chapter start.
   const parent = el.parentElement
   const target = parent?.classList.contains('pin-spacer') ? parent : el
+  // Spatial handoffs end at the exact reading viewport. A negative offset would
+  // leave their final projected frame covering a deliberate chapter jump.
+  const offset = document.querySelector(`[data-archive-target="${CSS.escape(id)}"]`) ? 0 : -40
 
   if (options.updateHash) {
-    window.history.replaceState(null, '', `#${id}`)
+    const url = new URL(window.location.href)
+    url.hash = id
+    window.history.replaceState(window.history.state, '', url)
   }
 
   const lenis = getLenis()
   if (lenis) {
     lenis.scrollTo(target, {
-      offset: -40,
+      offset,
       duration: options.immediate ? 0 : 1.4,
       force: options.immediate,
       immediate: options.immediate,
     })
   } else {
-    const top = target.getBoundingClientRect().top + window.scrollY - 40
+    const top = target.getBoundingClientRect().top + window.scrollY + offset
     window.scrollTo({
       top,
       behavior: options.immediate ? 'auto' : 'smooth',

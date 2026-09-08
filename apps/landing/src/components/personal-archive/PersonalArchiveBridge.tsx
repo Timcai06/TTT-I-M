@@ -1,0 +1,87 @@
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ScrollTrigger, useGSAP } from '../../lib/gsap'
+import { useStage } from '../../lib/stage'
+import { useGLSurface } from '../../lib/webgl/useGLSurface'
+import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
+import { scrollToChapter } from '../../lib/chapterScroll'
+import { archiveScrollPose, createArchiveProgress } from './scrollPose'
+import AboutDossier from '../AboutDossier'
+import './personal-archive.css'
+
+const Surface = lazy(() => import('./PersonalArchiveSurface'))
+
+class SurfaceBoundary extends Component<{ children: ReactNode; onFailure: () => void }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch() { this.props.onFailure() }
+  render() { return this.state.failed ? null : this.props.children }
+}
+
+export default function PersonalArchiveBridge({ onReadingChange }: { onReadingChange?: (reading: boolean) => void }) {
+  const root = useRef<HTMLElement>(null)
+  const backdrop = useRef<HTMLDivElement>(null)
+  const page = useRef<HTMLDivElement>(null)
+  const progress = useMemo(() => createArchiveProgress(), [])
+  const { ref: surfaceRef, mounted, visible } = useGLSurface({ mountMargin: '350px 0px', renderMargin: '0px', initiallyMounted: false })
+  const stage = useStage()
+  const [failed, setFailed] = useState(false)
+  const [ready, setReady] = useState(false)
+  const [completed, setCompleted] = useState(false)
+  const fail = useCallback(() => { setFailed(true); setReady(false) }, [])
+  const loaded = useCallback(() => { setReady(true) }, [])
+  const resetReady = useCallback(() => { setReady(false) }, [])
+
+  useGSAP(() => {
+    if (!root.current || !backdrop.current) return
+    const room = backdrop.current
+    const sync = (self: ScrollTrigger) => {
+      progress.set(self.progress)
+      const pose = archiveScrollPose(self.progress)
+      room.style.opacity = String(pose.reveal)
+      const reading = self.progress >= 0.9999 || failed
+      root.current?.parentElement?.style.setProperty('--archive-reading', reading || !ready ? 'visible' : 'hidden')
+      root.current?.style.setProperty('--archive-stage', self.progress >= 0.9999 ? 'hidden' : 'visible')
+      onReadingChange?.(reading)
+      setCompleted(reading)
+      root.current?.style.setProperty('--archive-copy', String(!ready || failed ? 1 : 1 - pose.camera))
+    }
+    const trigger = ScrollTrigger.create({
+      trigger: root.current, start: 'top top', end: 'bottom bottom',
+      onUpdate: sync, onRefresh: sync,
+    })
+    sync(trigger)
+    requestScrollRefresh()
+    return () => { progress.set(0); root.current?.parentElement?.style.removeProperty('--archive-reading') }
+  }, { scope: root, dependencies: [failed, ready, onReadingChange], revertOnUpdate: true })
+
+  useEffect(() => () => requestScrollRefresh(), [])
+
+  return <section ref={root} id="archive-entry" data-archive-target="about" className="archive-bridge archive-bridge--entry" aria-label="个人档案空间" data-scene-ready={ready} data-failed={failed}>
+    <div ref={surfaceRef} className="archive-bridge__stage">
+      <div ref={backdrop} className="archive-bridge__backdrop" aria-hidden="true">
+        {mounted && !completed && (stage === 'live' || stage === 'transitioning') && !failed && <SurfaceBoundary onFailure={fail}>
+          <Suspense fallback={null}>
+            <Surface host={backdrop} page={page} progress={progress} visible={visible && stage === 'live'} onReady={loaded} onFailure={fail} onRelease={resetReady} />
+          </Suspense>
+        </SurfaceBoundary>}
+      </div>
+      <div className="archive-bridge__veil" aria-hidden="true" />
+      <div ref={page} className="archive-bridge__page" aria-hidden="true" inert>
+        <AboutDossier />
+      </div>
+      <div className="archive-bridge__arrival">
+        <p className="archive-bridge__index">PERSONAL ARCHIVE / 001</p>
+        <h2>从一页笔记，<br /><em>开始认识我。</em></h2>
+        <p className="archive-bridge__caption">想法、记录，以及它们变成现实的过程。</p>
+      </div>
+      <div className="archive-bridge__footer">
+        <span>{failed ? '空间暂不可用，可直接阅读。' : !ready ? '正在加载空间，可直接阅读。' : 'SCROLL TO UNFOLD'}</span>
+        {failed && <button type="button" onClick={() => window.location.reload()}>重新加载空间 ↻</button>}
+        <a href="#about" onClick={(event) => {
+          event.preventDefault()
+          scrollToChapter('about', { updateHash: true })
+        }}>直接阅读 About ↘</a>
+      </div>
+    </div>
+  </section>
+}

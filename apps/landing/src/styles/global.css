@@ -171,6 +171,8 @@ main {
 }
 
 /* ── Grain overlay ── */
+html[data-archive-visible='true'] .grain { opacity: .012; }
+
 .grain {
   position: fixed;
   inset: 0;
@@ -181,6 +183,9 @@ main {
   background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   background-size: 200px 200px;
 }
+
+.intro__retry { position:absolute; left:8%; bottom:15%; color:#eee9df; font-size:13px; z-index:2; }
+.intro__retry button { color:inherit; background:transparent; border:1px solid currentColor; padding:10px 18px; cursor:pointer; }
 
 .disable-hover .grain {
   opacity: var(--grain-static-opacity);

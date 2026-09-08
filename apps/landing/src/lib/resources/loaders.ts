@@ -10,6 +10,7 @@ import { enqueueImageDecode } from './imageDecodeQueue'
 /** Hero 粒子肖像使用的源照片路径，同时用于 preload manifest 和 texture cache 预热。 */
 export const HERO_TEXTURE = '/portrait/tim.jpg'
 const FONT_READY_DEV_TIMEOUT_MS = 6000
+const preparedImages = new Map<string, HTMLImageElement>()
 const EMPTY_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 type ImageDecodeMode = 'eager' | 'idle' | 'none'
 
@@ -59,9 +60,7 @@ async function decodeLoadedImage(
     try {
       await image.decode()
     } catch (error) {
-      if (import.meta.env.DEV && !signal?.aborted) {
-        console.warn(`[resources] eager image decode rejected for ${label}`, error)
-      }
+      throw new Error(`Image decode failed for ${label}`, { cause: error })
     }
   } else if (decode === 'idle') {
     await enqueueImageDecode(image, signal).catch((error: unknown) => {
@@ -90,6 +89,7 @@ function loadConfiguredImage(
       if (settled) return
       settled = true
       cleanup()
+      if (options.decode === 'eager') preparedImages.set(image.currentSrc || label, image)
       resolve()
     }
     const fail = (error: Error) => {
@@ -165,7 +165,7 @@ export interface ResponsiveImageSource {
  * @steps
  *   step1: 创建 Image 并设置 decoding/loading/fetchPriority
  *   step2: onload 后根据 decode 策略执行 eager 或 idle decode
- *   step3: decode 失败仅 DEV warning 或静默跳过，最终 resolve
+ *   step3: eager decode 失败会拒绝；idle 仍保留非阻塞策略
  *   step4: onerror 或 complete 但 naturalWidth<=0 时 reject
  */
 export function loadImage(src: string, {
@@ -207,9 +207,9 @@ export function loadResponsiveImage({ sizes, src, srcSet }: ResponsiveImageSourc
 
 /**
  * @description 等待字体系统就绪。生产环境直接等待 `document.fonts.ready`；
- *   开发环境增加 6000ms 安全超时，避免本地字体加载异常导致 Loader 永久停住。
+ *   开发环境增加 6000ms 超时，失败交给 Loader 显示重试入口。
  * @dependencies CSS Font Loading API (`document.fonts.ready`)
- * @performance / @caveats DEV 超时只 warning 并继续；生产不设置额外 timer，保持浏览器原生字体门控语义。
+ * @performance / @caveats 生产使用统一任务 deadline；字体错误不能被报告为成功。
  */
 export function loadFonts(signal: AbortSignal): Promise<void> {
   if (typeof document === 'undefined' || !document.fonts) return Promise.resolve()
@@ -226,7 +226,8 @@ export function loadFonts(signal: AbortSignal): Promise<void> {
         settled = true
         window.clearTimeout(timer)
         cleanup()
-        resolve()
+        if ([...document.fonts].some(face => face.status === 'error')) reject(new Error('A document font failed to load'))
+        else resolve()
       }
       const onAbort = () => {
         if (settled) return
@@ -237,14 +238,16 @@ export function loadFonts(signal: AbortSignal): Promise<void> {
       }
       const timer = window.setTimeout(() => {
         if (settled) return
-        console.warn(`[resources] document.fonts.ready exceeded ${FONT_READY_DEV_TIMEOUT_MS}ms in dev; continuing with current font fallback.`)
-        finish()
+        settled = true; cleanup()
+        reject(new Error(`Document fonts exceeded ${FONT_READY_DEV_TIMEOUT_MS}ms`))
       }, FONT_READY_DEV_TIMEOUT_MS)
       signal.addEventListener('abort', onAbort, { once: true })
       void document.fonts.ready.then(finish)
     })
   }
-  return awaitWithSignal(document.fonts.ready.then(() => undefined), signal)
+  return awaitWithSignal(document.fonts.ready.then(() => {
+    if ([...document.fonts].some(face => face.status === 'error')) throw new Error('A document font failed to load')
+  }), signal)
 }
 
 /**

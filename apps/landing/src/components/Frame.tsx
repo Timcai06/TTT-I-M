@@ -31,6 +31,7 @@ void loadFrameParticleHandoff()
  */
 export default function Frame() {
   return (
+    <>
     <section className="frame-horizontal" id="frame" data-horizontal-section>
       <ArchiveTextPanel layout="intro" panel={archiveIntro} />
       <div className="frame-accordion container" data-frame-accordion>
@@ -63,9 +64,10 @@ export default function Frame() {
       {archiveThemes.map((theme, index) => (
         <ArchiveThemeSection key={theme.id} theme={theme} themeIndex={index} />
       ))}
+    </section>
       <Suspense fallback={<div className="frame-particle-handoff frame-particle-handoff--loading" aria-hidden="true" />}>
         <FrameParticleHandoff />
       </Suspense>
-    </section>
+    </>
   )
 }
