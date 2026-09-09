@@ -57,6 +57,8 @@ interface PretextTextInteractionOptions {
   strength?: number
   /** 原始文本，用于 Pretext 自然宽度测量的兜底输入 */
   text: string
+  /** Optional local interaction plane, used by the projected monitor Index. */
+  interactionRoot?: RefObject<HTMLElement | null>
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -268,6 +270,7 @@ export function usePretextTextInteraction(
     refreshKey = 0,
     strength = 1,
     text,
+    interactionRoot,
   }: PretextTextInteractionOptions
 ) {
   const reducedMotion = useReducedMotion()
@@ -437,22 +440,24 @@ export function usePretextTextInteraction(
       frame = 0
     }
 
+    const pointerTarget: EventTarget = interactionRoot?.current ?? window
+    const onPointerMoveEvent: EventListener = (event) => onPointerMove(event as PointerEvent)
     const attachListeners = () => {
       if (listenersAttached) return
       listenersAttached = true
-      window.addEventListener('pointermove', onPointerMove, { passive: true })
-      window.addEventListener('pointerleave', onPointerLeave)
-      window.addEventListener('pointerdown', onPointerDown, { passive: true })
-      window.addEventListener('pointerup', onPointerUp, { passive: true })
+      pointerTarget.addEventListener('pointermove', onPointerMoveEvent, { passive: true })
+      pointerTarget.addEventListener('pointerleave', onPointerLeave)
+      pointerTarget.addEventListener('pointerdown', onPointerDown, { passive: true })
+      pointerTarget.addEventListener('pointerup', onPointerUp, { passive: true })
       window.addEventListener('resize', prepareGlyphs, { passive: true })
     }
     const detachListeners = () => {
       if (!listenersAttached) return
       listenersAttached = false
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerleave', onPointerLeave)
-      window.removeEventListener('pointerdown', onPointerDown)
-      window.removeEventListener('pointerup', onPointerUp)
+      pointerTarget.removeEventListener('pointermove', onPointerMoveEvent)
+      pointerTarget.removeEventListener('pointerleave', onPointerLeave)
+      pointerTarget.removeEventListener('pointerdown', onPointerDown)
+      pointerTarget.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('resize', prepareGlyphs)
     }
     const pauseInteraction = () => {
@@ -505,7 +510,7 @@ export function usePretextTextInteraction(
       detachListeners()
       resetGlyphs()
     }
-  }, [enabled, glyphSelector, reducedMotion, refreshKey, strength, text, textRef])
+  }, [enabled, glyphSelector, interactionRoot, reducedMotion, refreshKey, strength, text, textRef])
 }
 
 /**

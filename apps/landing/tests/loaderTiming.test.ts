@@ -7,6 +7,7 @@ import {
   introRiseStagger,
   progressDampFactor,
   stepDisplayedProgress,
+  usableResourceProgress,
 } from '../src/lib/loaderTiming.ts'
 
 // Groups are positional over 'Tim Cai.': [T] [im␣] [Cai] [.]
@@ -56,4 +57,13 @@ void test('display value reaches exactly 100 once the render-ready gate opens', 
   assert.equal(displayedProgressValue(1, true), 100)
   // ceil, so a freshly-ready low value still rounds up rather than stalling
   assert.equal(displayedProgressValue(0.001, true), 1)
+})
+
+void test('failed resources leave a real gap in the progress bar', () => {
+  assert.equal(usableResourceProgress(10, 10, 0), 1)
+  assert.equal(usableResourceProgress(10, 10, 1), 0.9)
+  assert.equal(usableResourceProgress(100, 100, 1), 0.94, 'a large manifest failure must still leave a visible retry gap')
+  assert.equal(usableResourceProgress(7, 10, 2), 0.5)
+  assert.equal(usableResourceProgress(Number.NaN, 10, 0), 0)
+  assert.equal(usableResourceProgress(10, 0, 0), 0)
 })

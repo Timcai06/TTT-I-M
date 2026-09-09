@@ -83,6 +83,6 @@ header.write('glTF');header.writeUInt32LE(2,4);header.writeUInt32LE(28+json.leng
 header.writeUInt32LE(json.length,12);header.writeUInt32LE(0x4e4f534a,16)
 binHeader.writeUInt32LE(bin.length);binHeader.writeUInt32LE(0x004e4942,4)
 const result=Buffer.concat([header,json,binHeader,bin])
-if(result.length>20*1024*1024)throw new Error(`Archive asset exceeds 20 MiB: ${result.length}`)
+// Record size; art quality is not constrained by the former 20 MiB cap.
 await fs.writeFile(file,result)
 console.log(JSON.stringify({before:source.length,after:result.length,meshes:doc.meshes.length,colorImagesOptimized:replacements.size}))

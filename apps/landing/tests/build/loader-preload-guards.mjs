@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 const loaderSource = readFileSync('src/components/Loader.tsx', 'utf8')
 const aboutSource = readFileSync('src/components/About.tsx', 'utf8')
 const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
+const archiveIndexSource = readFileSync('src/components/personal-archive/ArchiveIndexSurface.tsx', 'utf8')
 const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
 
@@ -80,6 +81,12 @@ if (!loaderSource.includes('intro__stage')) {
 
 for (const token of ['DOTS12', 'intro__spinner', 'visibilitychange', 'preload.renderReady']) {
   if (!loaderSource.includes(token)) throw new Error(`Loader dots12 status is missing ${token}.`)
+}
+if (!loaderSource.includes('<DitherBackground />') || loaderSource.includes('!preload.criticalReady && <DitherBackground />')) {
+  throw new Error('Loader Dither must remain mounted through the complete render-ready phase.')
+}
+if (!loaderSource.includes('usableResourceProgress') || !loaderSource.includes('current.failed.length')) {
+  throw new Error('Loader progress must count usable resources instead of failed-but-settled tasks.')
 }
 if (!spinnerSource.includes('interval: 80') || !spinnerSource.includes("'⢀⠀'") || !spinnerSource.includes("'⠀⡀'")) {
   throw new Error('Loader must keep the complete local cli-spinners dots12 definition.')
@@ -163,9 +170,30 @@ for (const token of ['preload.preparationFinished', 'preload.failed.length', 'ro
 for (const token of ['renderer:personal-archive', 'media:site', 'layout:chapter-pages', 'chunks:interactions']) {
   if (!manifestSource.includes(token)) throw new Error(`Desktop preparation is missing ${token}`)
 }
+if (!manifestSource.includes("id: 'layout:chapter-pages'") || !manifestSource.includes('timeoutMs: 120_000')) {
+  throw new Error('Chapter-page preparation must use the cold-cache visual deadline instead of the 12 s network default.')
+}
 const runtimeSource = readFileSync('src/components/personal-archive/archiveRuntime.ts', 'utf8')
-for (const token of ['gl.initTexture', 'gl.compileAsync', 'composer.render()', 'host.appendChild(canvas)']) {
+const archiveStageSource = readFileSync('src/components/personal-archive/ArchiveStage.tsx', 'utf8')
+const archiveRouteSource = readFileSync('src/lib/archiveRoute.ts', 'utf8')
+const archiveDirectorSource = readFileSync('src/components/personal-archive/archiveDirector.ts', 'utf8')
+for (const token of ['gl.initTexture', 'gl.compileAsync', 'composer.render()', 'host.appendChild(canvas)', 'mount(host)', 'activate(page, sourcePage', 'navigate(from, to, progress', '--archive-route-source-matrix', 'getInternalformatParameter', 'RGBA16F', 'FXAAShader', 'composer.addPass(finite); composer.addPass(focus)']) {
   if (!runtimeSource.includes(token)) throw new Error(`Retained GPU preparation is missing ${token}`)
+}
+for (const token of ['cloneViewport', 'originalCanvases', 'originalVideos', 'bridgeDestination', 'cancelActiveRoute', "setStage('transitioning')", "setStage('live')"]) {
+  if (!archiveRouteSource.includes(token)) throw new Error(`Direct archive routing is missing ${token}`)
+}
+if (!archiveDirectorSource.includes('navigationPose(fromView') || !archiveDirectorSource.includes('viewAction(fromView')) {
+  throw new Error('The room director must own seekable object-to-object camera routes.')
+}
+for (const token of ['runtime.mount(host.current)', 'archive-stage']) {
+  if (!archiveStageSource.includes(token)) throw new Error(`Persistent archive stage is missing ${token}`)
+}
+if (!ditherSource.includes("acquireContext('loader-dither')") || ditherSource.includes("tryAcquireOptionalContext('loader-dither')")) {
+  throw new Error('The authored loader Dither must own a required short-lived context lease.')
+}
+if (!archiveIndexSource.includes('track="index"') || !heroSource.includes('interactionRoot: screenPage')) {
+  throw new Error('The opening Index must remain a locally interactive monitor surface.')
 }
 
 if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('preloadLazyChapters')) {
@@ -270,7 +298,7 @@ if (
 ) {
   throw new Error('ParticlePortrait must reserve and own its required context before the actual R3F Canvas subtree mounts.')
 }
-if (!ditherSource.includes("tryAcquireOptionalContext('loader-dither')") || !ditherSource.includes('webglcontextlost') || !ditherSource.includes('contextLease.release()') || !ditherSource.includes('renderer.debug.onShaderError') || !ditherSource.includes('disposeSurface()')) {
+if (!ditherSource.includes("acquireContext('loader-dither')") || !ditherSource.includes('webglcontextlost') || !ditherSource.includes('contextLease.release()') || !ditherSource.includes('renderer.debug.onShaderError') || !ditherSource.includes('disposeSurface()')) {
   throw new Error('loader-dither must fail closed and release its owned context after allocation, shader, or context failure.')
 }
 for (const token of ["acquireOptionalContextWhenAvailable('contact-ascii'", 'useGLSurface', 'stopWaitingForContext()', 'webglcontextlost', 'contextLease?.release()', 'renderer.debug.onShaderError', 'recoverFromFailure']) {

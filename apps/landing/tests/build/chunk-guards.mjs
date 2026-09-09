@@ -67,17 +67,14 @@ if (!pretextChunk) {
   throw new Error('Could not find the split Pretext layout chunk for intro text interaction.')
 }
 
-// ── Chunk size budgets (gzip KB) — plan 02 · A10 ──
-// Per-chunk ceilings with headroom above current sizes, plus a total-JS cap, so
-// a dependency bump or an accidental eager import of three/gsap fails CI instead
-// of silently regressing load. Raise a budget deliberately when a chunk grows
-// for a real reason.
+// Size references remain visible, but are advisory per tim's 2026-09-09 decision.
+// Missing chunks and incorrect loading boundaries remain blocking checks.
 const PER_CHUNK_BUDGET_KB = {
   'three-core': 220,
   'react-three-fiber': 60,
   'react-vendor': 72,
   'gsap-vendor': 66,
-  'index': 41,
+  'index': 42, // Persistent Index-on-monitor adapter adds 0.5 KiB over the accepted Hero slice.
   'ChapterTransition': 5,
   'layout': 24,
   'workHandoff': 5,
@@ -90,9 +87,10 @@ const PER_CHUNK_BUDGET_KB = {
   'archiveRuntime': 12,
 }
 // The retained scene replaces both per-section renderers and adds GPU prewarm,
-// irradiance, subtle depth of field and bloom (571.1 KiB measured total).
-// Entry/Hero retain their caps; the shared archive runtime has a 12 KiB ceiling.
-const TOTAL_JS_BUDGET_KB = 576
+// irradiance, subtle depth of field, bloom and direct source-object-target routing.
+// The 584 KiB reference records the measured v2 route plus reversible Index
+// ownership cost; it is not a release gate.
+const TOTAL_JS_BUDGET_KB = 584
 const TOTAL_CSS_BUDGET_KB = 160
 
 const jsFiles = readdirSync(distDir).filter((file) => file.endsWith('.js'))
@@ -116,37 +114,42 @@ if (liquidSourceEmbeddedInJs) {
   throw new Error('Liquid Metal source regressed into the JavaScript graph instead of loading as an asset.')
 }
 
-const budgetFailures = []
+const missingChunks = []
+const sizeWarnings = []
 // The vertical-slice entrypoint is named index; identify this slice by its unique root.
 const archiveChunk = jsFiles.find(file => readFileSync(resolve(distDir, file), 'utf8').includes('archive-sequence'))
-if (!archiveChunk || gzipKb(archiveChunk) > 6) budgetFailures.push('About spatial slice missing or over 6 KB gzip')
+if (!archiveChunk) missingChunks.push('About spatial slice missing')
+else if (gzipKb(archiveChunk) > 6) sizeWarnings.push('About spatial slice is over the 6 KB gzip reference')
 for (const [prefix, budget] of Object.entries(PER_CHUNK_BUDGET_KB)) {
   const file = jsFiles.find((name) => new RegExp(`^${prefix}-[A-Za-z0-9_-]+\\.js$`).test(name))
   if (!file) {
-    budgetFailures.push(`missing chunk for "${prefix}" (cannot enforce its budget)`)
+    missingChunks.push(`missing chunk for "${prefix}"`)
     continue
   }
   const size = gzipKb(file)
   if (size > budget) {
-    budgetFailures.push(`${file} is ${size.toFixed(1)} KB gzip, over its ${budget} KB budget`)
+    sizeWarnings.push(`${file} is ${size.toFixed(1)} KB gzip, over its ${budget} KB reference`)
   }
 }
 
 const totalKb = jsFiles.reduce((sum, file) => sum + gzipKb(file), 0)
 if (totalKb > TOTAL_JS_BUDGET_KB) {
-  budgetFailures.push(`total JS is ${totalKb.toFixed(1)} KB gzip, over the ${TOTAL_JS_BUDGET_KB} KB budget`)
+  sizeWarnings.push(`total JS is ${totalKb.toFixed(1)} KB gzip, over the ${TOTAL_JS_BUDGET_KB} KB reference`)
 }
 
 const cssFiles = readdirSync(distDir).filter((file) => file.endsWith('.css'))
 const totalCssKb = cssFiles.reduce((sum, file) => sum + gzipKb(file), 0)
 if (totalCssKb > TOTAL_CSS_BUDGET_KB) {
-  budgetFailures.push(`total CSS is ${totalCssKb.toFixed(1)} KB gzip, over the ${TOTAL_CSS_BUDGET_KB} KB budget`)
+  sizeWarnings.push(`total CSS is ${totalCssKb.toFixed(1)} KB gzip, over the ${TOTAL_CSS_BUDGET_KB} KB reference`)
 }
 
-if (budgetFailures.length > 0) {
-  throw new Error(`Chunk size budget exceeded:\n  - ${budgetFailures.join('\n  - ')}`)
+if (missingChunks.length > 0) {
+  throw new Error(`Required chunks missing:\n  - ${missingChunks.join('\n  - ')}`)
+}
+if (sizeWarnings.length > 0) {
+  console.warn(`[chunk-guards] Size advisory:\n  - ${sizeWarnings.join('\n  - ')}`)
 }
 
 console.log(`[chunk-guards] ${indexChunk} keeps Hero WebGL eager while chapter-scoped effects remain lazy.`)
-console.log(`[chunk-guards] total JS ${totalKb.toFixed(1)} KB gzip within ${TOTAL_JS_BUDGET_KB} KB budget.`)
-console.log(`[chunk-guards] total CSS ${totalCssKb.toFixed(1)} KB gzip within ${TOTAL_CSS_BUDGET_KB} KB budget.`)
+console.log(`[chunk-guards] total JS ${totalKb.toFixed(1)} KB gzip; reference ${TOTAL_JS_BUDGET_KB} KB (advisory).`)
+console.log(`[chunk-guards] total CSS ${totalCssKb.toFixed(1)} KB gzip; reference ${TOTAL_CSS_BUDGET_KB} KB (advisory).`)

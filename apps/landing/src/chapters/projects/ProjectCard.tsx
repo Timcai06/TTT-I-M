@@ -1,6 +1,7 @@
 import { lazy, Suspense, type MouseEvent } from 'react'
 import type { Project } from '../../content'
 import ProjectMedia from './ProjectMedia'
+import ProjectIdentity from './ProjectIdentity'
 
 const ProjectMetrics = lazy(() => import('./ProjectMetrics'))
 
@@ -31,15 +32,7 @@ export default function ProjectCard({ project, alternate, onOpenCaseStudy }: Pro
       data-layout={alternate ? 'reverse' : 'forward'}
     >
       <div className="project-card__text">
-        <div className="project-card__top">
-          <span className="project-card__index">{project.index}</span>
-          <span className="project-card__year">{project.year}</span>
-        </div>
-
-        <h3 className="project-card__title" data-glass-target>{project.name}</h3>
-        <div className="project-card__cn">{project.cnTitle}</div>
-        <div className="project-card__tagline">{project.tagline}</div>
-        <p className="project-card__desc">{project.description}</p>
+        <ProjectIdentity project={project} />
 
         {project.metrics?.length ? (
           <Suspense fallback={null}>

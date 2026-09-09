@@ -9,16 +9,22 @@ export const chapterTracks = {
   'life-frame': { target: 'frame', surface: 'FrameReading', title: '生活的切片，成为摄影档案。', index: '02 / FRAME', height: '210svh' },
   'frame-stack': { target: 'skills', surface: 'StackReading', title: '从观看，到构建。', index: '03 / STACK', height: '240svh' },
   'stack-work': { target: 'projects', surface: 'WorkReading', title: '让想法成为可以打开的作品。', index: '04 / WORK', height: '220svh' },
-  'work-contact': { target: 'contact', surface: 'WorkReading', title: '下一份记录，一起完成。', index: '05 / CONTACT', height: '180svh' },
+  'work-contact': { target: 'contact', surface: 'ContactReading', title: '下一份记录，一起完成。', index: '05 / CONTACT', height: '180svh' },
 } as const
+
+/** Shared handoff timing: travel, align, dolly, then settle the reading rectangle. */
+export function chapterHandoffPose(_track: ArchiveTrack, value: number) {
+  const p = clamp(value)
+  return { roomOpacity: 1, vignette: 0, guidance: 1 - phase(p, .035, .20), targetOpacity: phase(p, .66, .72) }
+}
 
 /** Seekable, history-independent choreography; normal reading is never gated. */
 export function chapterPose(track: ArchiveTrack, value: number) {
   const p = clamp(value)
   return {
-    travel: phase(p, .10, .60),
-    approach: phase(p, .53, .88),
-    flatten: phase(p, .76, 1),
+    travel: phase(p, .24, .56),
+    approach: phase(p, .56, .72),
+    flatten: phase(p, .94, 1),
     ink: track === 'work-contact' ? phase(p, .52, .84) : phase(p, .60, .77),
     drawer: track === 'stack-work' ? phase(p, .14, .52) : track === 'work-contact' ? 1 - .65 * phase(p, .08, .56) : 0,
     folder: track === 'stack-work' ? phase(p, .38, .73) : track === 'work-contact' ? 1 - phase(p, .08, .5) : 0,

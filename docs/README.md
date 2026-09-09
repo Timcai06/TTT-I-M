@@ -1,19 +1,12 @@
-# TTT-I-M — Platform Docs
+# TTT-I-M · 文档入口
 
-> 从「电影感个人作品集」演进为「landing + 内容平台」的工程文档。
-> **Monorepo（npm workspaces）**：`apps/landing`（React 19 + Vite + GSAP + Three/R3F + Lenis）
-> 承载电影感首页；`apps/studio`（Next.js App Router）承载 `/blog`·`/work`·`/dashboard`
-> 内容面；`packages/{tokens,content}` 共享设计 token 与内容 schema/repository。
+> **当前阶段（2026-09-09）：桌面 Personal Archive 体验精修。** 从 [PM 工作入口](pm/README.md) 开始；产品方向看 [产品简报](pm/product-brief.md)，授权任务与进度看 [执行看板](pm/board.md)，协作方式看 [流程](pm/workflow.md)。
 
-> 文档区分「当前实现」与「已确定、待实现的设计」。现状以代码为准；设计方向不得误写为已上线能力。旧平台升级计划见 [`/plan`](../plan/)。
+本页下方保留架构与历史专项索引，便于追溯。它们不是并行生效的多套“当前方向”。`experience` 是设计资料，`assets` 是资产资料，`delivery` 是历史交付证据；实际能力须结合当前代码和运行验证。`plan/` 属于 Builder Graph OS 独立路线，不自动加入本阶段。
 
-> **当前交付：温暖档案室与整站预备加载（2026-09-07）。** 原位增加房间软装、收敛材质噪点、烘焙网页材质与间接光，桌面使用开屏预备和共享空间 renderer。查看[本轮制作与检查记录](landing/delivery/warm-archive.md)。视觉由 tim 检验，未提交远程。
+最近一次进入本阶段前的执行修订见 [自然光房间规范](landing/experience/natural-room-production.md) 顶部，历史报告见 [实现记录](landing/delivery/natural-room-implementation.md)。用户决定已汇入产品简报；旧文中的执行人、时长、精确参数和完成结论不可直接继承为本阶段约束或验收。
 
-2026-09-08 后续修复：[空间初始化与转场叠层](landing/delivery/space-recovery.md)，包含预览尺寸恢复、热更新、投射背景清理与镜头避让；模型资产保持不变。
-
-历史阶段依次为[目录整理](landing/delivery/directory-organization.md)、[近景制作](landing/delivery/transition-closeups.md)、[网页主线](landing/delivery/web-choreography.md)、[电影感模型](landing/delivery/cinematic-model.md)。这些文档的阶段边界不替代当前交付状态。
-
-## 按责任查阅
+## 架构与历史专项索引
 
 | 层次 | 入口 | 责任 |
 | --- | --- | --- |
@@ -26,7 +19,7 @@
 | Landing 资产制作 | [个人空间制作规范](landing/assets/personal-space.md) | 模型、材质、灯光、导出及版本 |
 | Landing 章节建模 | [章节建模任务](landing/assets/chapter-modeling-plan.md) | 照片墙、屏幕、抽屉的局部制作与导出契约 |
 | Landing 交付记录 | [空间阶段记录](landing/delivery/personal-space.md) | 实际完成情况与待验收项 |
-| Landing 当前交付 | [温暖档案室](landing/delivery/warm-archive.md) | 装修来源、活跃工程、网页准备和技术证据 |
+| Landing 历史交付 | [温暖档案室](landing/delivery/warm-archive.md) | 装修来源、活跃工程、网页准备和技术证据 |
 | Studio 历史专项 | `superpowers/specs`、`superpowers/plans` | 保持既有目录，本次空间任务不涉及 Studio |
 
 新增专项按「功能 / experience、assets、delivery」归档。现有系统文档不批量搬迁，避免破坏引用；专项文档要标明状态，并由交付记录区分计划和实现。
@@ -57,7 +50,7 @@ apps/
 packages/
   tokens/    @timcai/tokens  — 共享设计 token（CSS 变量）
   content/   @timcai/content — 内容 schema + repository 接口 + adapters
-plan/        下一阶段蓝图：粒子连续体（00–06 + README）；已交付平台架构冻结于 06
+plan/        Builder Graph OS 独立路线；本阶段不自动执行
 tests/build/ platform-guards.mjs（跨 workspace 守卫）
 ```
 

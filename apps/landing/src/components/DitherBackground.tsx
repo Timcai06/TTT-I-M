@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { useReducedMotion } from '../lib/motion'
-import { tryAcquireOptionalContext } from '../lib/webgl/contextRegistry'
+import { acquireContext } from '../lib/webgl/contextRegistry'
 import VERT from './shaders/Dither.vert.glsl'
 import FRAG from './shaders/Dither.frag.glsl'
 
@@ -58,8 +58,10 @@ export default function DitherBackground({
     if (!mount || reducedMotion) return
     mount.dataset.ditherState = 'fallback'
 
-    const contextLease = tryAcquireOptionalContext('loader-dither')
-    if (!contextLease) return
+    // The dither field is the authored opening, not a disposable chapter
+    // enhancement. Reserve its own short-lived lease so an eagerly mounted
+    // Hero/Archive context cannot silently replace it with the CSS fallback.
+    const contextLease = acquireContext('loader-dither')
 
     let renderer: THREE.WebGLRenderer
     try {

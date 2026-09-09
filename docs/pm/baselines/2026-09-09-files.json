@@ -1,0 +1,342 @@
+{
+  "parent_commit": "55c4ad384f15dea3147db5832f8810d7f34ccf47",
+  "branch": "baseline/personal-archive-20260909",
+  "scope": "Changed/new product, model and tooling files; ignored Blender source fingerprint only, not a complete backup of local assets",
+  "files": [
+    {
+      "path": "apps/landing/src/App.tsx",
+      "bytes": 6849,
+      "sha256": "fc434de08860aceb4dc8698095ccf97340bb19f8713ae67bbbe8e5cdb1520d54"
+    },
+    {
+      "path": "apps/landing/src/assets/personal-archive/personal-space.glb",
+      "bytes": 22891272,
+      "sha256": "e90528fa2340ead3fbaca7557e38714e8965e1f96a53aec9bb1321cb516fc40f"
+    },
+    {
+      "path": "apps/landing/src/assets/personal-archive/scene-contract.json",
+      "bytes": 2784,
+      "sha256": "ef93d05a2a20798ba0ed53400d103370f1543aad8427a258cf4ce4ebdc37056a"
+    },
+    {
+      "path": "apps/landing/src/chapters/contact/useFooterReveal.ts",
+      "bytes": 7578,
+      "sha256": "20efeea70486208a35d9f9ddfa8a0f4e50d2f9c4eba74f41317437de9085396c"
+    },
+    {
+      "path": "apps/landing/src/chapters/projects/ProjectCard.tsx",
+      "bytes": 3100,
+      "sha256": "89d9bdce514065c541b6dfbe01621937a3ede3e0445cae0ac160f71f85ac3d19"
+    },
+    {
+      "path": "apps/landing/src/chapters/projects/ProjectIdentity.tsx",
+      "bytes": 704,
+      "sha256": "0d3a7c683b4cf45b9e6cdec7d265149569948ed7b80a871fe7ae7e75c671af3a"
+    },
+    {
+      "path": "apps/landing/src/chapters/projects/ProjectsIntro.tsx",
+      "bytes": 2464,
+      "sha256": "c2d1b3f2e321fd066c418332a290a08136bce2455e4e61ae0a6c0930ecd7dc8f"
+    },
+    {
+      "path": "apps/landing/src/components/About.tsx",
+      "bytes": 7980,
+      "sha256": "746d3d21f2e0b0abc05db5bd8b43c300fae7b5a4ee3a621e297725444895a1f9"
+    },
+    {
+      "path": "apps/landing/src/components/ChapterTransition.tsx",
+      "bytes": 11828,
+      "sha256": "f1981f8620877d5eef1d8a1a8b367c174c14c387326c6794e6e9f4649d6277eb"
+    },
+    {
+      "path": "apps/landing/src/components/DitherBackground.tsx",
+      "bytes": 8296,
+      "sha256": "56bc47821e489f45dc91a3953ac574977037ee28697f521201583356a15fe758"
+    },
+    {
+      "path": "apps/landing/src/components/Hero.tsx",
+      "bytes": 19916,
+      "sha256": "771540a1babe6b75184d33b021666158d538bae9d8c55fcbf3605ceaa4108832"
+    },
+    {
+      "path": "apps/landing/src/components/LifeGallery.tsx",
+      "bytes": 3291,
+      "sha256": "80d403c31948cb4da997b4d57341544f165f7c0ca97e4fbc18a8f79315fd4bfe"
+    },
+    {
+      "path": "apps/landing/src/components/Loader.tsx",
+      "bytes": 12874,
+      "sha256": "90b8415f10ce2a254bb1e17a894978bfdb2a9bf9895de81a7253f448301e829a"
+    },
+    {
+      "path": "apps/landing/src/components/Nav.tsx",
+      "bytes": 5665,
+      "sha256": "620371c186a0e3c730f0e9ad341b0fd7dfa1cf7a0cb02def1403078f45d183a8"
+    },
+    {
+      "path": "apps/landing/src/components/ParticlePortrait.tsx",
+      "bytes": 16118,
+      "sha256": "9d680990bb343cfa390e3c65db61de33378d011a00017a78e528de10eee7bdea"
+    },
+    {
+      "path": "apps/landing/src/components/Skills.tsx",
+      "bytes": 5563,
+      "sha256": "8dddfa5a2b84367dcd7f14869e96db3b0e7b7f887987c2ebb759f1e6fb631b93"
+    },
+    {
+      "path": "apps/landing/src/components/frame/ArchiveTextPanel.tsx",
+      "bytes": 1142,
+      "sha256": "438a3fd8d0dbf16b880d17283dededb941a79fac5711b67b682605ccb4e82dd4"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/ArchiveChapterBridge.tsx",
+      "bytes": 6219,
+      "sha256": "e6a18b2f91d612d12c8b4174be3ac1f489259f2463c33f0f48eba05b3eead479"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/ArchiveHandoffPage.tsx",
+      "bytes": 1996,
+      "sha256": "304f446ecf5db8c198fb08466be471164d397618afa4b95556592897b1491075"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/ArchiveIndexSurface.tsx",
+      "bytes": 6628,
+      "sha256": "1a4b60264aa364011ee5d8b42619da9ec14fa877d21009b566eaf9a92d4076f8"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/ArchiveReturnControl.tsx",
+      "bytes": 1047,
+      "sha256": "4a1fea7c818097cf0b4e2943d3ecc1e151cb2bf3cefc8c4ce80e235c54dec44e"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/ArchiveStage.tsx",
+      "bytes": 2754,
+      "sha256": "fd71171861c867d5ee9df9f4c1f72d5c3d9871e8f4b9996bd5b21c31721c3053"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/PersonalArchiveBridge.tsx",
+      "bytes": 5542,
+      "sha256": "1e68f1b2519bae174e79859c8fccb76414dcd444cb9e218da69bc9d7e39e00c4"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/PersonalArchiveSurface.tsx",
+      "bytes": 1692,
+      "sha256": "7c1379233eba6e84cb1234274c0144f8da892be64922c3be6d0c55ec89e4de00"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/archiveAtmosphere.ts",
+      "bytes": 1693,
+      "sha256": "9d4d2639b122d94e5fb2e278139635bc0b313cfd983726e427f460a1f339c35f"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/archiveDirector.ts",
+      "bytes": 12105,
+      "sha256": "54d965734764a8d5e4586482a57f07f27587aa546c13a37ac14bd6db3d8582e3"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/archiveMaterials.ts",
+      "bytes": 1682,
+      "sha256": "15eed7ed83b4a521396e0ff57985c28eafb30e1302042d9b6026712bb737dec7"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/archiveReadingSurface.ts",
+      "bytes": 5387,
+      "sha256": "7c59bf4dfce9222b4a10d720598ced6e452f15ecca8bb97ae36f710f6773cc9f"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/archiveRuntime.ts",
+      "bytes": 24662,
+      "sha256": "fdbfb8f5b5c7c9cba9fd513e5a3f7519d37450daeb3a44ed144060af21c7348f"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/archiveRuntimeLighting.ts",
+      "bytes": 2039,
+      "sha256": "ba847040157c3b7e96e3a41237223250825d8589fef17f8b6585d6e220146a20"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/chapterTracks.ts",
+      "bytes": 2166,
+      "sha256": "37a78ff89d56b711c70434b8255f6ae5419e99267236d61177d14e7ff5a4d3b7"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/natural-room.css",
+      "bytes": 4806,
+      "sha256": "3b49b22cfbc29748df31a86e65da7a5b2d55f24748721bd482ffc3b66135b827"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/pageProjection.ts",
+      "bytes": 2011,
+      "sha256": "654e1a1a411d03fb3910a340202bd38fc54919b9facb5cada84034a6e9bd0e80"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/personal-archive.css",
+      "bytes": 11464,
+      "sha256": "4f4c0a3c3509d807d1f045c85c92e1ddbd7f7c937682b7c257e128d3271bbc11"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/readingFrame.ts",
+      "bytes": 2195,
+      "sha256": "4f4663e37c7808414b998e4b0658965bf0c9a2f929d9d6b56720d73f974218fc"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/readingSnapshot.ts",
+      "bytes": 1830,
+      "sha256": "b7b72325bf8eab657cefe52c3547b6a34173f036b37e693f854ccd87bdc1f10b"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/roomPalette.ts",
+      "bytes": 2352,
+      "sha256": "4f61dc5c3ebed05d9fd2805029d0636cb0129399e02cb6a57323760c8c6835a4"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/scrollPose.ts",
+      "bytes": 1323,
+      "sha256": "d5c83fc099f16837e6804b1b35b6816bf693041b5d85f19b4c01f5825270c2f0"
+    },
+    {
+      "path": "apps/landing/src/components/personal-archive/useChapterPreview.ts",
+      "deleted": true
+    },
+    {
+      "path": "apps/landing/src/lib/archiveReadingMemory.ts",
+      "bytes": 899,
+      "sha256": "27fd332aaf7f95f91eb4aa87b104762566bfa47e3f7482d9626be0e4f6827515"
+    },
+    {
+      "path": "apps/landing/src/lib/archiveReturn.ts",
+      "bytes": 685,
+      "sha256": "b0c5defb9544e914760fff48d7007ae5364e6bfc60153f923afd62c696d3a58b"
+    },
+    {
+      "path": "apps/landing/src/lib/archiveRoute.ts",
+      "bytes": 8131,
+      "sha256": "1e40c7fff616e7e5e7176fbb17dd63cbe376518dbed8e02214e61ad62682a123"
+    },
+    {
+      "path": "apps/landing/src/lib/chapterScroll.ts",
+      "bytes": 3407,
+      "sha256": "a7bd7957059a98b59f89b3a05d8ea2ecfd1b72e6c89e22fc6232d5f58f56fe57"
+    },
+    {
+      "path": "apps/landing/src/lib/loaderTiming.ts",
+      "bytes": 2928,
+      "sha256": "15491ce96e28bb309cec442d114c8f36f68ebd973bd98c763f35e78cab39c535"
+    },
+    {
+      "path": "apps/landing/src/lib/pretextIntroText.ts",
+      "bytes": 19130,
+      "sha256": "f8a089c3acc4fbc8ce105d208954285853128eb1beae344872b591499a1de3a8"
+    },
+    {
+      "path": "apps/landing/src/lib/resources/manifest.ts",
+      "bytes": 6826,
+      "sha256": "6b8ed7543e4953d3b969f6d7f4fb0d29a15cf07c1fb6474b4f290ba9714424b0"
+    },
+    {
+      "path": "apps/landing/src/lib/resources/prepareChapterPages.ts",
+      "bytes": 1331,
+      "sha256": "0f6e69dabb42ea1b2fd397a36e770a99c443c9cfc4ca2ed64a27e68129e36a81"
+    },
+    {
+      "path": "apps/landing/src/styles/app.css",
+      "bytes": 2226,
+      "sha256": "6ff381ce8f12c6347f67d41e7987263001d359cd84fe9d796f37868b8735fd49"
+    },
+    {
+      "path": "apps/landing/src/styles/components/hero.css",
+      "bytes": 7030,
+      "sha256": "d974fe1fe4aab466030f3248df6fafdaf881063f099298124d28dcac6bec8764"
+    },
+    {
+      "path": "apps/landing/src/styles/components/skills.css",
+      "bytes": 7877,
+      "sha256": "ea95c8967a12765137a67b3be13cd96e78989ec586b9a68ba6d64372ca03d864"
+    },
+    {
+      "path": "apps/landing/tests/archiveChapters.test.ts",
+      "bytes": 3262,
+      "sha256": "f32cf35edb409ba075df3f7be9a94537abde429267350cb5bbec5135afb75127"
+    },
+    {
+      "path": "apps/landing/tests/archiveScrollPose.test.ts",
+      "bytes": 4117,
+      "sha256": "3ea252dea6bf95a672cf67a6cd005e54b67696a4f6d1cef41b0aaaa43b696418"
+    },
+    {
+      "path": "apps/landing/tests/build/chunk-guards.mjs",
+      "bytes": 6818,
+      "sha256": "b5a95d1cf8b83a1043efaaef0497459a2b2c632788e934c8b30813d46dc93c43"
+    },
+    {
+      "path": "apps/landing/tests/build/experience-effects-guards.mjs",
+      "bytes": 37805,
+      "sha256": "71f62ab280f83b1967f45fb836ea5dbed011f4a12cbb3bee36bc887c01d0e373"
+    },
+    {
+      "path": "apps/landing/tests/build/loader-preload-guards.mjs",
+      "bytes": 18859,
+      "sha256": "80c7ee0918884c5101a02f576b6b4e7dc392e60afdc227eaf82a7aa9a4ab0e08"
+    },
+    {
+      "path": "apps/landing/tests/loaderTiming.test.ts",
+      "bytes": 2870,
+      "sha256": "02651be6c171687ed664555006a6fa72f6d5fe58c1d45a86b6e2e4beebf9610f"
+    },
+    {
+      "path": "tools/personal_space/README.md",
+      "bytes": 5605,
+      "sha256": "45a81364efaef66b77050361467d4678d73f71515d87d4fb7a1021a744474728"
+    },
+    {
+      "path": "tools/personal_space/checks/verify-model.mjs",
+      "bytes": 6508,
+      "sha256": "3f20e8d022242e2fec380384035b23a9f5577da2288dbc5f3e50945ff97ee264"
+    },
+    {
+      "path": "tools/personal_space/checks/verify-pixels.mjs",
+      "bytes": 10932,
+      "sha256": "df23702f3a5bd04024fe5d9ed866d629e4ab262b9e087bc889228dc3235117c8"
+    },
+    {
+      "path": "tools/personal_space/checks/verify-routes.mjs",
+      "bytes": 4677,
+      "sha256": "43874b8db3d15dddfb6df1a17d5b9334859c134162bddd6cdb81ce7c44ef1a42"
+    },
+    {
+      "path": "tools/personal_space/exporting/export_web_scene.py",
+      "bytes": 9427,
+      "sha256": "2ade396531a17541207e18158157974b71f0175fd1ebe6fac7fc554ac505012c"
+    },
+    {
+      "path": "tools/personal_space/exporting/optimize_web_scene.mjs",
+      "bytes": 5925,
+      "sha256": "4a01b01fa08485d277ecd44bbe336409c9114fbf9009620efd33da5d805faf46"
+    },
+    {
+      "path": "tools/personal_space/modeling/finish_lake_window.py",
+      "bytes": 12522,
+      "sha256": "dff1e4122b5807d507dc60c60c80bb3d329588b0ee1fda933c49b5822bd64026"
+    },
+    {
+      "path": "tools/personal_space/modeling/finish_natural_room.py",
+      "bytes": 4028,
+      "sha256": "0ac3f0aade45da712f5ac21178cd5c9066ed552afef98f589fd58b39b020fe89"
+    },
+    {
+      "path": "tools/personal_space/modeling/finish_window_room.py",
+      "bytes": 28916,
+      "sha256": "8c534f081f3fc550a56a00838e4480cfe58d35a07e2b5c3014813eb0ced5fe08"
+    },
+    {
+      "path": "tools/personal_space/modeling/lake_landscape.py",
+      "bytes": 10106,
+      "sha256": "d906ebe1ee6700653a491fb2d1bef5da4dfd7c3eedf708d247edd0a2e510a882"
+    },
+    {
+      "path": "art/personal-archive/source/tim-cai-personal-archive.blend",
+      "bytes": 15946132,
+      "sha256": "4e04c95b48951a99975e94f9e9e326091e372106b6da77b9f1d4939be182e68b",
+      "local_only": true
+    }
+  ]
+}

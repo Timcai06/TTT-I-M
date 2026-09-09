@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal Archive — 空间体验分镜</title>
+<style>
+:root{color-scheme:dark;--bg:#11120f;--panel:#1a1b17;--ink:#e8e3d6;--muted:#adae9e;--line:#383a31;--accent:#d9b985;--green:#9ea990}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}main{max-width:1460px;margin:auto;padding:38px 42px 48px}header{border-bottom:1px solid var(--line);padding-bottom:24px;display:flex;justify-content:space-between;gap:30px}.eyebrow,.num{font:11px/1.6 ui-monospace,monospace;letter-spacing:.16em;color:var(--accent)}h1{font-family:Georgia,"Songti SC",serif;font-size:36px;font-weight:400;margin:9px 0}header p{color:var(--muted);max-width:650px;margin:8px 0}.status{text-align:right;color:var(--muted);font-size:12px;white-space:nowrap;padding-top:7px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}button{font:inherit;cursor:pointer;color:var(--ink);background:none;border:1px solid var(--line);border-radius:3px;padding:9px 15px}button:hover,button:focus-visible{border-color:var(--accent);outline:2px solid transparent}button[aria-pressed=true]{color:var(--bg);background:var(--accent);border-color:var(--accent)}.layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(360px,1fr);gap:24px}.plan,.detail{background:var(--panel);border:1px solid var(--line)}.plan{padding:24px}.plan-head{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.plan svg{width:100%;height:auto;display:block;margin:12px 0}.caption{font-size:12px;color:var(--muted);margin:0}.detail{padding:28px}.detail h2{font:30px/1.35 Georgia,"Songti SC",serif;margin:9px 0 20px}.detail p{margin:6px 0 17px}.field{font-size:11px;letter-spacing:.1em;color:var(--accent);margin-top:20px}.detail .hint{border-top:1px solid var(--line);padding-top:16px;color:var(--green);font-size:13px}.phasebar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:24px}.phasebar button{font-size:12px;padding:9px 4px}.phasecopy{min-height:62px;color:var(--muted);font-size:13px;padding:12px 0}.bottom{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:16px}.principles{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:26px}.principles article{border-top:1px solid var(--line);padding-top:16px}.principles h3{font-size:15px;font-weight:500;margin:4px 0}.principles p{font-size:13px;color:var(--muted);margin:6px 0}a{color:var(--accent)}svg text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.object{fill:#272921;stroke:#777966;stroke-width:1.3}.object.active{fill:#544a34;stroke:#e3c590;stroke-width:2.5}.object-label{fill:#e8e3d6;font-size:13px}.sub-label{fill:#a9ac98;font-size:11px}.route{fill:none;stroke:#666b59;stroke-width:1.3;stroke-dasharray:4 7}.focus-path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round}.badge{fill:var(--accent)}#visitor{transition:transform .35s ease}.legend{display:flex;gap:18px;margin-top:14px;color:var(--muted);font-size:12px}.dot{display:inline-block;background:var(--accent);width:7px;height:7px;border-radius:50%;margin-right:7px}footer{font-size:12px;color:var(--muted);margin-top:26px} @media(max-width:950px){main{padding:24px}.layout{grid-template-columns:1fr}.status{display:none}.principles{grid-template-columns:1fr}h1{font-size:29px}}@media(prefers-reduced-motion:reduce){#visitor{transition:none}}
+</style>
+</head>
+<body><main>
+<header><div><div class="eyebrow">PERSONAL ARCHIVE / EXPERIENCE V2</div><h1>一个房间，一次完整的探索。</h1><p>房间承载旅程，物品展开内容。选择下面的章节，查看进入、阅读与返回的关系。</p></div><div class="status">NATURAL ROOM · 2026.09.09<br>已接入网页 · 待 tim 美术验收<br>布局关系示意，不是模型渲染</div></header>
+<p>当前基准：<a href="natural-room-production.md">自然光房间制作规范</a> · <a href="../delivery/natural-room-implementation.md">实际交付记录</a> · <a href="http://127.0.0.1:5173/">打开网站</a>。纸张、相纸与屏幕分别承载内容，纯黑不再是所有章节的归宿。</p>
+<nav class="tabs" aria-label="选择章节" id="chapters"></nav>
+<div class="layout">
+<section class="plan" aria-label="房间方位示意">
+<div class="plan-head"><span>持续存在的房间 / 俯视关系图</span><span id="map-label">01 · 电脑</span></div>
+<svg viewBox="0 0 650 520" role="img" aria-labelledby="maptitle mapdesc">
+<title id="maptitle">房间内的内容位置</title><desc id="mapdesc">左侧窗和书架，后方书桌上有书、电脑与台灯，右侧照片墙及档案柜。当前选择对应的物品高亮。</desc>
+<defs><pattern id="floor" width="58" height="58" patternUnits="userSpaceOnUse"><path d="M0 0H58V58" fill="none" stroke="#303329" stroke-width=".6"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="none" stroke="#d9b985" stroke-width="1.4"/></marker></defs>
+<path d="M56 454V51H596V454" fill="url(#floor)" stroke="#747764" stroke-width="4"/>
+<path d="M56 194V335" stroke="#b2c3c8" stroke-width="7"/><text x="24" y="285" class="sub-label" transform="rotate(-90 24 285)">侧窗 · 环境补光</text>
+<path d="M160 51H520" stroke="#c8b17a" stroke-width="8"/><text x="250" y="36" class="sub-label">景观窗 · 湖面与夕照</text>
+<rect x="156" y="84" width="365" height="147" rx="3" fill="#343328" stroke="#777561"/><text x="467" y="217" class="sub-label">书桌</text>
+<rect id="obj-life" class="object" x="74" y="78" width="65" height="140" rx="2"/><path d="M84 144H129M84 154L106 168L129 154" fill="none" stroke="#a8a38a"/><text x="84" y="111" class="object-label">书架</text><text x="84" y="193" class="sub-label">LIFE</text>
+<path id="obj-about" class="object" d="M177 145Q204 133 234 148Q262 133 290 145V202Q260 190 234 204Q204 190 177 202Z"/><path d="M234 149V203" stroke="#bcb399"/><text x="194" y="179" class="object-label">ABOUT</text>
+<rect id="obj-screen" class="object active" x="312" y="100" width="142" height="72" rx="4"/><rect x="321" y="109" width="124" height="47" fill="#0e100d"/><text x="332" y="134" class="object-label" id="screen-title">TIM CAI / Index</text><path d="M377 173V186H396" fill="none" stroke="#a4a48f"/>
+<circle cx="484" cy="125" r="16" fill="#67553a" stroke="#c3aa7d"/><path d="M484 141L464 176" stroke="#c3aa7d"/><text x="472" y="90" class="sub-label">台灯</text>
+<rect id="obj-frame" class="object" x="548" y="90" width="35" height="181" rx="2"/><path d="M552 144H579M552 203H579" stroke="#969785"/><text x="539" y="293" class="object-label">FRAME</text><text x="539" y="312" class="sub-label">照片墙</text>
+<rect id="obj-work" class="object" x="414" y="247" width="111" height="76" rx="3"/><path d="M425 265H515M425 282H515M425 299H515" stroke="#a4a18c"/><text x="431" y="346" class="object-label">WORK / 档案</text>
+<path class="route" d="M349 274Q276 249 252 239Q188 263 153 246Q300 376 487 247Q442 249 386 257Q430 355 462 366Q358 415 307 398" marker-end="url(#arrow)"/>
+<path id="focus-path" class="focus-path" d="M349 274L384 178" marker-end="url(#arrow)"/>
+<g id="visitor" transform="translate(349 274)"><circle r="8" fill="#d9b985"/><circle r="17" fill="none" stroke="#d9b985" opacity=".35"/></g>
+<ellipse id="obj-contact" class="object" cx="292" cy="406" rx="65" ry="22"/><text x="254" y="411" class="object-label">CONTACT</text>
+<text x="210" y="484" class="sub-label">入口 · 先看见电脑和身边的书</text>
+</svg>
+<p class="caption" id="map-caption">电脑与笔记本同框。用户从第一眼就知道下一段内容在桌上的哪里。</p>
+<div class="legend"><span><i class="dot"></i>相机停留位置</span><span>实线：当前视线</span><span>虚线：探索顺序</span></div>
+</section>
+<section class="detail" aria-live="polite" aria-atomic="true">
+<div class="num" id="counter"></div><h2 id="title"></h2>
+<div class="field">空间动作</div><p id="action"></p>
+<div class="field">内容体验</div><p id="content"></p>
+<div class="field">返回之后</div><p id="return"></p>
+<p class="hint" id="rule"></p>
+<div class="phasebar" id="phases" aria-label="查看阶段"></div>
+<div class="phasecopy" id="phase-copy"></div>
+<div class="bottom"><button id="prev" aria-label="上一章节">← 上一站</button><span id="count" class="num"></span><button id="next" aria-label="下一章节">下一站 →</button></div>
+</section>
+</div>
+<section class="principles" aria-label="三个设计底线">
+<article><div class="num">01 / SPACE</div><h3>空间有连续的状态</h3><p>书打开后仍在桌上，照片抽出后仍在架上。阅读完成后先收回到物品，再移动到下一站。</p></article>
+<article><div class="num">02 / CONTENT</div><h3>保留原站的表达</h3><p>About 完整排版与照片、Frame 横向叙事、Stack 红线、Work Glass 都是内容本身。阅读时镜头停稳。</p></article>
+<article><div class="num">03 / CONTROL</div><h3>滚动由用户掌握</h3><p>停下就停止推进，倒滚能沿路返回；不用重复进入房间，不为了播放动画锁住滚轮。</p></article>
+</section>
+<footer>第一批开发样段：房间中的 Index 真交互 → 书本 About → 返回打开的书 → 看向信封。<br>此图只说明设计关系，不表示效果已经实现或通过验收。完整规格：<a href="spatial-experience-v2.md">spatial-experience-v2.md</a></footer>
+</main>
+<script>
+const shots=[
+{name:'Index',place:'电脑',object:'screen',pos:[349,274],target:[384,178],screen:'TIM CAI / Index',title:'第一眼，就在书桌前。',action:'电脑是首屏的视觉中心，笔记本、台灯和书架建立方位。可以直接在屏幕上互动，也可以轻轻靠近。',content:'仅呈现现有 Index 本页的身份排版、粒子、文字与签名交互。电脑里不运行另一套整站。',return:'滚动时相机向左下方的书靠近；电脑保持 Index。',rule:'指针交给屏幕本页；滚轮交给空间路线。没有额外的“进入网站”按钮。',caption:'电脑与笔记本同框。用户从第一眼就知道下一段内容在桌上的哪里。',phases:['开屏退出，完整房间与已准备好的 Index 同时可见。','可选靠近屏幕：放大交互目标，仍能看见屏幕边框和桌面。','Index 本页保持真实响应，滚轮随时可开始探索。','视线移向桌上的书，电脑留在身后，房间没有重新加载。']},
+{name:'About',place:'笔记本',object:'about',pos:[253,253],target:[234,183],screen:'TIM CAI / Index',title:'你的档案，在书里展开。',action:'从电脑偏转视线，书脊和封面进入前景；书打开，完整 About 已在页上，然后逐渐靠近归正。',content:'保留原 About 标题、照片、排版与全部正文。默认保留一线书页边缘；深读时相机停住。',return:'刚读到的内容收回书页，露出纸张厚度与桌面。书保持打开，相机再抬向书架。',rule:'退出不能先跳回 About 第一屏。收回的必须是用户正在看的内容。',caption:'离开电脑只需沿桌面看向左下。退出 About 后，仍能看到同一盏灯和打开的书。',phases:['相机从屏幕旁转向书；书还没打开也能识别其位置。','封面打开，完整 About 与照片跟随真实书页四角。','文字归正，滚轮接管原 About；书脊或纸边维持载体关系。','当前阅读面缩回打开的书，先露桌面，再向书架移动。']},
+{name:'Life',place:'书架信封',object:'life',pos:[173,243],target:[106,165],screen:'TIM CAI / Index',title:'从记录，走进生活。',action:'从打开的书抬起视线到书架。信封打开，真实生活照片抽出并逐渐展开。',content:'同一张照片接入原 Life 图组与 DriftWall。原文案保留，图组稳定后开始阅读。',return:'照片组收束到信封附近，信封保持打开，照片留在架上；相机转向右侧照片墙。',rule:'每张用于交接的图都必须有真实来源；不随机更换人物或裁切。',caption:'书架和桌面在同一个房间角落。照片抽出后，后续镜头也保留这件事发生过的痕迹。',phases:['通过打开的书与书架立柱建立从桌面向上的方向。','信封打开，照片抬起；相纸边缘仍然可见。','原 Life 叙事展开，照片图组可交互，相机稳定。','照片收束在架上；视线沿空间转向墙面，而非出现新黑场。']},
+{name:'Frame',place:'照片墙',object:'frame',pos:[474,302],target:[565,191],screen:'TIM CAI / Index',title:'整面墙，成为摄影档案。',action:'从书架转向右侧照片墙，先看见台灯和墙角，再靠近挂杆上的照片。',content:'保持原 Frame 索引与建筑、食物、风景的横向叙事。图像可以铺满屏幕，进入和退出都回到同一张相纸。',return:'最后的 Final Horizon 收回墙面。相机退到照片与电脑能够同框的位置，为下一站建立方向。',rule:'横向内容滚动时，相机不同时沿墙漂移；一段时间只强调一个运动。',caption:'让挂杆、台灯和墙角成为稳定地标。横向摄影叙事是这份档案展开后的内容。',phases:['先看见照片墙局部和台灯，确认从书架转过来的方向。','真实照片与 Frame 索引对齐；原图比例和文字位置连续。','保留原横向大图与主题分组；阅读时相机锁定。','Final Horizon 回到墙面，稍微退开，看见墙与电脑的关系。']},
+{name:'Stack',place:'再看电脑',object:'screen',pos:[417,258],target:[384,147],screen:'Final Horizon',title:'同一张图，从墙上到屏幕。',action:'墙上的 Final Horizon 与电脑短暂同框。电脑显示同一张图，相机顺势靠近屏幕。',content:'图片铺开，接续真正的 Stack 内容与红色结构线。没有额外的替代标题卡；保留原技能与工作方式叙事。',return:'从屏幕退回桌面，屏幕停留在 Stack 状态，视线沿底座向下找到档案抽屉。',rule:'初始 Index、这段照片、Stack 阅读是不同的屏幕状态，切换有明确时机。',caption:'这是再回到开场那台电脑。用同图与同框建立连接，不让一张挂画飞过房间。',phases:['墙面与电脑短暂同框，同一张照片明确出现在两个载体中。','相机接近显示器，屏幕内图片逐渐成为阅读面的首帧。','图像交给原 Stack 红线和真实内容，屏幕边框仍有位置线索。','退出屏幕，沿显示器底座和桌沿看向抽屉。']},
+{name:'Work',place:'档案抽屉',object:'work',pos:[459,377],target:[470,287],screen:'Stack / Working set',title:'拉开抽屉，展开作品。',action:'从显示器向下看，抽屉沿导轨拉开，档案抬起；真实项目内容成为展开的页面。',content:'保留原 Work 开场、Glass 卡片、项目内容和详情。进入某个项目，从点击的真实卡片展开。',return:'退出详情回原卡片；退出整个 Work 才收回档案，抽屉保持微开。',rule:'“关闭项目”和“离开 Work”是两个层次，不能每次关详情都把人拉回房间。',caption:'电脑与档案柜属于同一张桌子。作品是抽屉中的档案内容，而非一个新的展厅。',phases:['从屏幕边缘退回桌面，沿底座向下看见抽屉位置。','抽屉打开，真实档案页抬起，与 Work 第一屏接续。','原项目列表与详情完整可读，深层阅读位置可以恢复。','当前档案收回，抽屉留缝；视线抬向桌边暖光。']},
+{name:'Contact',place:'桌边暖光',object:'contact',pos:[289,359],target:[319,207],screen:'Stack / Working set',title:'最后，仍在这个房间。',action:'从抽屉抬头、略微退开。打开的书、电脑、照片与台灯重新组成一个有浏览痕迹的房间。',content:'原 Contact 在桌边安静展开，邮箱与社交链接直接可操作；灯光提供空间归属。',return:'房间保持停稳。返回 Index 回到电脑，恢复 Index，而不是重新播放整站开场。',rule:'这里不复用 Work 档案纸冒充联系方式，也不需要先建一张新名片。',caption:'结尾看见的是同一间、刚刚被探索过的房间。灯不熄，内容仍然可操作。',phases:['从微开的抽屉抬起视线，其他已打开的物件仍在原位。','桌边出现原 Contact 阅读面，暖光方向与开场一致。','联系方式清晰且可点击；相机停住，不再自动绕行。','返回电脑并恢复 Index；本次会话的物件和阅读记录保留。']}
+];
+let selected=0,phase=0;
+const get=id=>document.getElementById(id);
+shots.forEach((s,i)=>{const b=document.createElement('button');b.textContent=`0${i+1} · ${s.name}`;b.addEventListener('click',()=>{selected=i;phase=0;render()});get('chapters').append(b)});
+['抵达','展开','阅读','返回'].forEach((label,i)=>{const b=document.createElement('button');b.textContent=label;b.addEventListener('click',()=>{phase=i;render()});get('phases').append(b)});
+function render(){const s=shots[selected];get('counter').textContent=`0${selected+1} / ${s.name.toUpperCase()}`;for(const key of ['title','action','content','return','rule'])get(key).textContent=s[key];get('count').textContent=`${selected+1} / ${shots.length}`;get('map-label').textContent=`0${selected+1} · ${s.place}`;get('map-caption').textContent=s.caption;get('screen-title').textContent=s.screen;get('screen-title').style.fontSize=selected===5||selected===6?'10px':'13px';get('phase-copy').textContent=s.phases[phase];get('visitor').setAttribute('transform',`translate(${s.pos.join(' ')})`);get('focus-path').setAttribute('d',`M${s.pos.join(' ')}L${s.target.join(' ')}`);document.querySelectorAll('.object').forEach(n=>n.classList.toggle('active',n.id===`obj-${s.object}`));[...get('chapters').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===selected)));[...get('phases').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i===phase)));get('prev').disabled=selected===0;get('next').disabled=selected===shots.length-1}
+get('prev').addEventListener('click',()=>{selected=Math.max(0,selected-1);phase=0;render()});get('next').addEventListener('click',()=>{selected=Math.min(shots.length-1,selected+1);phase=0;render()});render();
+</script>
+</body></html>

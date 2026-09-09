@@ -46,3 +46,20 @@ export function displayedProgressValue(displayed: number, renderReady: boolean):
     ? Math.min(100, Math.ceil(displayed * 100))
     : Math.min(99, Math.floor(displayed * 100))
 }
+
+/**
+ * Progress represents resources that are actually usable, not merely settled.
+ * A rejected task still finishes its promise, but must leave a visible gap so
+ * the bar can never say 100% beside an incomplete-preparation warning.
+ */
+export function usableResourceProgress(completed: number, total: number, failed: number): number {
+  const safeTotal = Number.isFinite(total) ? Math.max(0, total) : 0
+  if (safeTotal === 0) return 0
+  const safeCompleted = Number.isFinite(completed) ? Math.max(0, completed) : 0
+  const safeFailed = Number.isFinite(failed) ? Math.max(0, failed) : 0
+  const usable = Math.min(1, Math.max(0, safeCompleted - safeFailed) / safeTotal)
+  // A one-file failure in a large image manifest used to paint a bar that was
+  // visually indistinguishable from 100%. Keep a deliberate, legible gap while
+  // retry is required; only renderReady is allowed to close the final segment.
+  return safeFailed > 0 ? Math.min(.94, usable) : usable
+}

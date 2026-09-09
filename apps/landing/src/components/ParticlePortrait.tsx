@@ -34,7 +34,7 @@ function PortraitPoints({
   const mouseRef = useRef(new THREE.Vector2(99, 99))
   const targetMouseRef = useRef(new THREE.Vector2(99, 99))
   const isHoveringRef = useRef(false)
-  const { size, viewport } = useThree()
+  const { gl, size, viewport } = useThree()
 
   const [started, setStarted] = useState(() => isLive())
 
@@ -79,10 +79,13 @@ function PortraitPoints({
       targetMouseRef.current.set(99, 99)
       return
     }
-    const onMove = (e: MouseEvent) => {
+    const interactionCanvas = gl.domElement
+    const onMove = (e: PointerEvent) => {
       // 1. 获取归一化设备坐标 (NDC) [-1, 1]
-      const x = (e.clientX / size.width) * 2 - 1
-      const y = -((e.clientY / size.height) * 2 - 1)
+      // offsetX/Y are resolved in the transformed canvas' local coordinate
+      // system, so the monitor's CSS perspective does not drift hit-testing.
+      const x = (e.offsetX / Math.max(1, interactionCanvas.clientWidth || size.width)) * 2 - 1
+      const y = -((e.offsetY / Math.max(1, interactionCanvas.clientHeight || size.height)) * 2 - 1)
 
       // 2. 将 NDC 映射到 z=0 平面的 ThreeJS 世界坐标
       const worldX = x * (viewport.width / 2)
@@ -112,13 +115,13 @@ function PortraitPoints({
       isHoveringRef.current = false
       targetMouseRef.current.set(99, 99)
     }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseleave', onLeave)
+    interactionCanvas.addEventListener('pointermove', onMove)
+    interactionCanvas.addEventListener('pointerleave', onLeave)
     return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseleave', onLeave)
+      interactionCanvas.removeEventListener('pointermove', onMove)
+      interactionCanvas.removeEventListener('pointerleave', onLeave)
     }
-  }, [aspect, interactive, size.height, size.width, viewport.height, viewport.width])
+  }, [aspect, gl.domElement, interactive, size.height, size.width, viewport.height, viewport.width])
 
   useFrame((_, delta) => {
     if (!matRef.current) return

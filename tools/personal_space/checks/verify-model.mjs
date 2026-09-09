@@ -25,7 +25,7 @@ assert.ok(animation?.channels.some((channel) => channel.target.node === hinge &&
 assert.ok(model.images.length >= 4, 'Real portfolio photographs must survive export')
 assert.ok(model.images.every((image) => Number.isInteger(image.bufferView)), 'GLB must package its textures')
 for (const name of ['Walnut_oiled', 'Plaster_warm', 'Linen_natural', 'Paper_fiber', 'Ceramic_speckle', 'Warm oatmeal upholstery', 'Warm muted clay wool']) {
-  const material = model.materials.find(item => item.name === `RoomBake_${name}`)
+  const material = model.materials.find(item => item.name === `RoomBake_${name}` || item.name === name)
   assert.ok(material?.pbrMetallicRoughness?.baseColorTexture, `${name}: color map missing`)
   assert.ok(material?.normalTexture, `${name}: normal map missing`)
   assert.ok(material?.pbrMetallicRoughness?.metallicRoughnessTexture, `${name}: roughness map missing`)
@@ -56,7 +56,7 @@ for (const primitive of room.primitives) {
 }
 assert.ok(checkedImages.size > 0, 'No irradiance image checked')
 assert.ok(model.meshes.length <= 100, 'Static batching regressed')
-assert.ok(bytes.length < 20 * 1024 * 1024, 'Shared model exceeds its explicit 20 MiB texture budget')
+// Size is reported below; tim explicitly prioritizes final art over the old cap.
 const contract = JSON.parse(readFileSync(path.join(root, 'apps/landing/src/assets/personal-archive/scene-contract.json'), 'utf8'))
 for (const name of Object.values(contract.surfaces).flat().concat(contract.monitorStates)) {
   assert.ok(model.nodes.some(node => node.name === name), `${name}: web handoff anchor missing`)

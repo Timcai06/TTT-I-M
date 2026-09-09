@@ -1,4 +1,8 @@
+> 当前入口：`modeling/finish_natural_room.py`。独立窗景打包进唯一源工程，旧三维景观隐藏保留；之后按 exporting 流程烘焙并接入网页。见[当前规范](../../docs/landing/experience/natural-room-production.md)。以下均为历史阶段说明。
+
 # 个人空间制作工具
+
+最新模型入口：`modeling/finish_lake_window.py`，PM 直接完成景观窗收尾，配套 `lake_landscape.py`。原位更新唯一工程，后续执行只验证，不覆盖手工编辑；不导出网站。见[景观窗交付](../../docs/landing/delivery/lake-window-model.md)。下方脚本为历史阶段，勿重跑覆盖新模型。
 
 最新制作：`modeling/furnish_warm_archive.py` 原位追加温暖软装；`exporting/bake_web_materials.py` 与 `export_web_scene.py` 制作网页贴图和间接光，再运行优化及契约检查。见[当前交付](../../docs/landing/delivery/warm-archive.md)。下方电影感脚本是前一阶段入口，不应重建覆盖现在的软装。
 

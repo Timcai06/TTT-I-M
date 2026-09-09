@@ -3,7 +3,7 @@ import { useLenis } from './lib/lenis'
 import { getStage, subscribeStage } from './lib/stage'
 import { requestScrollRefresh } from './lib/scroll/requestRefresh'
 import { onChaptersReady } from './lib/chaptersReady'
-import { scrollToChapter } from './lib/chapterScroll'
+import { getChapterScrollTarget, getChapterScrollViewportTop, scrollToChapter } from './lib/chapterScroll'
 import { isKeyboardScrollIntent } from './lib/scroll/scrollIntent'
 import { SoundProvider } from './lib/sound/SoundProvider'
 import Loader from './components/Loader'
@@ -20,6 +20,8 @@ import './styles/app.css'
 const ParticlePortal = lazy(() => import('./components/ParticlePortal'))
 const ProductionTelemetry = lazy(() => import('./components/ProductionTelemetry'))
 const ChapterTransition = lazy(() => import('./components/ChapterTransition'))
+const ArchiveStage = lazy(() => import('./components/personal-archive/ArchiveStage'))
+const ArchiveReturnControl = lazy(() => import('./components/personal-archive/ArchiveReturnControl'))
 
 export default function App() {
   // Smooth scroll + scroll-driven side effects (incl. the disable-hover
@@ -97,10 +99,10 @@ export default function App() {
         timers.push(window.setTimeout(() => {
           if (correctionsCancelled) return
           if (delay === 1100) detachCorrectionListeners()
-          const el = document.getElementById(hash)
+          const el = getChapterScrollTarget(hash)
           if (!el) return
           const top = Math.round(el.getBoundingClientRect().top)
-          if (Math.abs(top - 40) > 8) {
+          if (Math.abs(top - getChapterScrollViewportTop(hash)) > 8) {
             requestScrollRefresh(true)
             scrollToChapter(hash, { immediate: true })
           }
@@ -138,9 +140,11 @@ export default function App() {
       <Cursor />
       <SoundProvider>
         <ChapterStateProvider>
+          <Suspense fallback={null}><ArchiveStage /></Suspense>
           <ScrollIndicator />
           <Nav />
           <ChapterThemeDriver />
+          <Suspense fallback={null}><ArchiveReturnControl /></Suspense>
         </ChapterStateProvider>
         <Suspense fallback={null}>
           <ChapterTransition />

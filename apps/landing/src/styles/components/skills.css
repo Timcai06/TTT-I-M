@@ -3,6 +3,66 @@
   position: relative;
 }
 
+.skills__body {
+  position: relative;
+}
+
+.skills-continuity {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .skills {
+    padding-top: 0;
+  }
+
+  .skills-continuity {
+    position: relative;
+    left: 50%;
+    display: block;
+    width: 100vw;
+    height: 100svh;
+    margin-left: -50vw;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .skills-continuity img,
+  .skills-continuity__shade {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .skills-continuity img {
+    object-fit: cover;
+  }
+
+  .skills-continuity__shade {
+    background:
+      linear-gradient(180deg, rgb(0 0 0 / 8%), transparent 38%, rgb(0 0 0 / 54%)),
+      linear-gradient(90deg, rgb(0 0 0 / 18%), transparent 42%, rgb(0 0 0 / 8%));
+  }
+
+  .skills-continuity__trace {
+    position: absolute;
+    right: 3.5vw;
+    bottom: 3.5vh;
+    left: 3.5vw;
+    display: flex;
+    justify-content: space-between;
+    color: rgb(238 233 223 / 68%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .16em;
+  }
+
+  .skills__body {
+    padding-top: clamp(100px, 16vw, 240px);
+  }
+}
+
 .skills::before {
   content: '';
   position: absolute;

@@ -5,6 +5,23 @@ import { gsap, useGSAP } from '../lib/gsap'
 import DriftWall from './DriftWall'
 import { openImageLightbox } from '../shared/media/openImageLightbox'
 
+/** Shared first-screen copy used by the live Life chapter and its spatial handoff. */
+export function LifeIntro() {
+  return (
+    <div className="life__copy container">
+      <div className="life__eyebrow">Life archive · 生活切片</div>
+      <h2 className="life__statement" aria-label="Off the clock, still looking for movement and light.">
+        <span className="life__statement-mask"><span className="life__statement-line">Off the clock,</span></span>
+        <span className="life__statement-mask"><span className="life__statement-line"><em>still looking</em> for movement and light.</span></span>
+      </h2>
+      <p className="life__note">
+        我喜欢球场上突然出现的空当，也会停下来拍城市里的一束光。
+        和朋友把一件事做完的那一刻，也值得留着。这些片段最后都会跑回我的界面里。
+      </p>
+    </div>
+  )
+}
+
 export default function LifeGallery() {
   const root = useRef<HTMLElement>(null)
   const mobile = useMobileExperience()
@@ -37,17 +54,7 @@ export default function LifeGallery() {
 
   return (
     <section className="life" id="life" ref={root}>
-      <div className="life__copy container">
-        <div className="life__eyebrow">Life archive · 生活切片</div>
-        <h2 className="life__statement" aria-label="Off the clock, still looking for movement and light.">
-          <span className="life__statement-mask"><span className="life__statement-line">Off the clock,</span></span>
-          <span className="life__statement-mask"><span className="life__statement-line"><em>still looking</em> for movement and light.</span></span>
-        </h2>
-        <p className="life__note">
-          我喜欢球场上突然出现的空当，也会停下来拍城市里的一束光。
-          和朋友把一件事做完的那一刻，也值得留着。这些片段最后都会跑回我的界面里。
-        </p>
-      </div>
+      <LifeIntro />
 
       <div className="life__wall" data-drift-wall onClick={openPhoto}>
         <DriftWall

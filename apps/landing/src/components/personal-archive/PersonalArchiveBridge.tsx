@@ -4,7 +4,8 @@ import { useStage } from '../../lib/stage'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
 import { scrollToChapter } from '../../lib/chapterScroll'
-import { archiveScrollPose, createArchiveProgress } from './scrollPose'
+import { createArchiveProgress } from './scrollPose'
+import { phase } from './chapterTracks'
 import AboutDossier from '../AboutDossier'
 import './personal-archive.css'
 
@@ -22,11 +23,12 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
   const backdrop = useRef<HTMLDivElement>(null)
   const page = useRef<HTMLDivElement>(null)
   const progress = useMemo(() => createArchiveProgress(), [])
-  const { ref: surfaceRef, mounted, visible } = useGLSurface({ mountMargin: '350px 0px', renderMargin: '0px', initiallyMounted: false })
+  const { ref: surfaceRef, visible } = useGLSurface({ mountMargin: '350px 0px', renderMargin: '0px', initiallyMounted: true })
   const stage = useStage()
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
   const [completed, setCompleted] = useState(false)
+  const [active, setActive] = useState(false)
   const fail = useCallback(() => { setFailed(true); setReady(false) }, [])
   const loaded = useCallback(() => { setReady(true) }, [])
   const resetReady = useCallback(() => { setReady(false) }, [])
@@ -36,17 +38,23 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
     const room = backdrop.current
     const sync = (self: ScrollTrigger) => {
       progress.set(self.progress)
-      const pose = archiveScrollPose(self.progress)
-      room.style.opacity = String(pose.reveal)
+      // Keep the prepared room continuous while the book takes over the view.
+      const roomOpacity = ready && !failed ? 1 : 0
+      room.style.opacity = String(roomOpacity)
+      root.current?.style.setProperty('--archive-room', String(roomOpacity))
+      root.current?.style.setProperty('--archive-progress', String(self.progress))
+      root.current!.dataset.phase = self.progress < .20 ? 'prepare' : self.progress < .90 ? 'visible' : 'transfer'
       const reading = self.progress >= 0.9999 || failed
+      const bounds = root.current?.getBoundingClientRect()
+      setActive(Boolean(bounds && bounds.top < innerHeight - 1 && bounds.bottom > 1 && !reading))
       root.current?.parentElement?.style.setProperty('--archive-reading', reading || !ready ? 'visible' : 'hidden')
       root.current?.style.setProperty('--archive-stage', self.progress >= 0.9999 ? 'hidden' : 'visible')
       onReadingChange?.(reading)
       setCompleted(reading)
-      root.current?.style.setProperty('--archive-copy', String(!ready || failed ? 1 : 1 - pose.camera))
+      root.current?.style.setProperty('--archive-copy', String(!ready || failed ? 1 : 1 - phase(self.progress, .035, .20)))
     }
     const trigger = ScrollTrigger.create({
-      trigger: root.current, start: 'top top', end: 'bottom bottom',
+      trigger: root.current, start: 'top bottom', end: 'bottom bottom',
       onUpdate: sync, onRefresh: sync,
     })
     sync(trigger)
@@ -59,9 +67,9 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
   return <section ref={root} id="archive-entry" data-archive-target="about" className="archive-bridge archive-bridge--entry" aria-label="个人档案空间" data-scene-ready={ready} data-failed={failed}>
     <div ref={surfaceRef} className="archive-bridge__stage">
       <div ref={backdrop} className="archive-bridge__backdrop" aria-hidden="true">
-        {mounted && !completed && (stage === 'live' || stage === 'transitioning') && !failed && <SurfaceBoundary onFailure={fail}>
+        {(stage === 'live' || stage === 'transitioning') && !failed && <SurfaceBoundary onFailure={fail}>
           <Suspense fallback={null}>
-            <Surface host={backdrop} page={page} progress={progress} visible={visible && stage === 'live'} onReady={loaded} onFailure={fail} onRelease={resetReady} />
+            <Surface page={page} progress={progress} visible={visible && active && !completed && stage === 'live'} onReady={loaded} onFailure={fail} onRelease={resetReady} />
           </Suspense>
         </SurfaceBoundary>}
       </div>
@@ -69,6 +77,8 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
       <div ref={page} className="archive-bridge__page" aria-hidden="true" inert>
         <AboutDossier />
       </div>
+      <button className="archive-bridge__room-hit archive-bridge__room-hit--entry" type="button" aria-label="打开 About 书本"
+        onClick={() => scrollToChapter('about', { updateHash: true, immediate: true, restore: true })}><span>OPEN</span></button>
       <div className="archive-bridge__arrival">
         <p className="archive-bridge__index">PERSONAL ARCHIVE / 001</p>
         <h2>从一页笔记，<br /><em>开始认识我。</em></h2>

@@ -106,6 +106,10 @@ export function buildResourceManifest(): ResourceTask[] {
       },
     }, {
       id: 'layout:chapter-pages', label: 'Preparing chapters', tier: 'visual' as const, type: 'chunk' as const,
+      // The room runtime and this task both wait for the five real chapter
+      // previews. On a cold cache their image decode can legitimately outlive
+      // the generic 12 s network deadline while the 19 MB room is compiling.
+      timeoutMs: 120_000,
       load: async (signal: AbortSignal) => { const { prepareChapterPages } = await import('./prepareChapterPages'); await prepareChapterPages(signal) },
     }, {
       id: 'media:site', label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,

@@ -11,6 +11,23 @@ OUT=ROOT/'apps/landing/src/assets/personal-archive'
 before=hashlib.sha256(SOURCE.read_bytes()).hexdigest()
 bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
 scene=bpy.context.scene;scene.frame_set(1)
+# Hidden historical architecture must never reappear when glTF exports all objects.
+for obj in list(scene.objects):
+    if obj.get('monitor_state') in {'photo','project'}: continue
+    if obj.hide_render or obj.hide_get() or obj.get('natural_room_superseded') or obj.get('window_room_superseded') or obj.get('lake_superseded'):
+        bpy.data.objects.remove(obj,do_unlink=True)
+# Export thin architectural glass as portable PBR. Native Fresnel graph stays in source.
+for obj in scene.objects:
+    if not obj.get('archive_glass'): continue
+    mat=bpy.data.materials.get('Web / clear window')
+    if not mat:
+        mat=bpy.data.materials.new('Web / clear window');mat.use_nodes=True
+        bs=next(n for n in mat.node_tree.nodes if n.type=='BSDF_PRINCIPLED')
+        bs.inputs['Base Color'].default_value=(.85,.93,1,1)
+        bs.inputs['Metallic'].default_value=.15;bs.inputs['Roughness'].default_value=.08
+        bs.inputs['Alpha'].default_value=.055;mat.surface_render_method='BLENDED'
+    obj.data.materials.clear();obj.data.materials.append(mat)
+
 # Hidden monitor objects are not evaluated at frame 1. Make both preview states
 # evaluable BEFORE reading matrix_world or reparenting, then flush the depsgraph.
 for obj in scene.objects:
@@ -38,13 +55,13 @@ for name,maps in bakes['materials'].items():
 
 # Native volume and study cameras are not portable geometry.
 for obj in list(scene.objects):
-    if obj.name=='Cinema_Atmosphere':
+    if obj.name=='Cinema_Atmosphere' or any(m and m.use_nodes and any(n.type in {'VOLUME_SCATTER','VOLUME_PRINCIPLED'} for n in m.node_tree.nodes) for m in getattr(obj.data,'materials',[])):
         bpy.data.objects.remove(obj,do_unlink=True)
 
 def web(v):return [v[0],v[2],-v[1]]
 
 views={}
-for key,name in [('home','Cinema_01_Room'),('about','Cinema_02_Book'),('life','Cinema_03_Life'),('frame','Cinema_04_Frame'),('stack','Cinema_05_Stack'),('work','Cinema_06_Work'),('contact','Cinema_07_Contact')]:
+for key,name in [('home','WindowRoom_01_Overview'),('about','WindowRoom_05_Book'),('life','Cinema_03_Life'),('frame','Cinema_04_Frame'),('stack','WindowRoom_06_Screen'),('work','Cinema_06_Work'),('contact','Cinema_07_Contact')]:
     cam=bpy.data.objects[name]
     direction=cam.matrix_world.to_quaternion()@Vector((0,0,-1))
     target=cam.data.dof.focus_object.matrix_world.translation if cam.data.dof.focus_object else cam.matrix_world.translation+direction
@@ -74,7 +91,7 @@ bpy.context.view_layer.update()
 keep={'NotebookCover','NotebookReadingSurface','LifeMemoryPhoto','StackScreenSurface','StackPhotoViewerSurface',*[f'ArchivePhoto_{i:02}' for i in range(1,5)]}
 batch={}
 for obj in list(scene.objects):
-    if obj.type!='MESH' or obj.name in keep or obj.name.startswith(('Notebook','About_')) or obj.animation_data or len(obj.data.materials)!=1:continue
+    if obj.type!='MESH' or obj.name in keep or obj.name.startswith(('Notebook','About_')) or obj.animation_data or len(obj.data.materials)!=1 or obj.get('archive_panorama') or obj.get('archive_glass'):continue
     key=(obj.parent.name if obj.parent else '',obj.data.materials[0].name)
     batch.setdefault(key,[]).append(obj)
 for (parent,mat),objects in batch.items():
@@ -98,12 +115,12 @@ if static:
     bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.uv.smart_project(angle_limit=1.15,island_margin=.006)
     bpy.ops.object.mode_set(mode='OBJECT')
-    image=bpy.data.images.new('Archive indirect light',width=2048,height=2048,alpha=False,float_buffer=True)
+    image=bpy.data.images.new('Archive indirect light',width=4096,height=4096,alpha=False,float_buffer=True)
     image.colorspace_settings.name='Non-Color'
     materials=set(room.data.materials)
     for mat in materials:
         tex=mat.node_tree.nodes.new('ShaderNodeTexImage');tex.image=image;mat.node_tree.nodes.active=tex
-    scene.render.engine='CYCLES';scene.cycles.device='GPU';scene.cycles.samples=48
+    scene.render.engine='CYCLES';scene.cycles.device='GPU';scene.cycles.samples=96
     scene.cycles.use_adaptive_sampling=False
     prefs=bpy.context.preferences.addons['cycles'].preferences;prefs.compute_device_type='METAL';prefs.get_devices()
     for d in prefs.devices:d.use=d.type=='METAL'

@@ -9,6 +9,7 @@ import {
   introCharGroup,
   introRiseStagger,
   stepDisplayedProgress,
+  usableResourceProgress,
 } from '../lib/loaderTiming'
 import { DOTS12, advanceLoaderSpinnerFrame, loaderSpinnerGlyph } from '../lib/spinner'
 import { useReducedMotion } from '../lib/motion'
@@ -191,9 +192,11 @@ export default function Loader() {
       const current = preloadRef.current
       if (!current) return
 
-      const actualProgress = current.total > 0
-        ? current.completed / current.total
-        : 0
+      const actualProgress = usableResourceProgress(
+        current.completed,
+        current.total,
+        current.failed.length,
+      )
       const target = current.renderReady ? 1 : actualProgress
 
       displayedProgress = stepDisplayedProgress(displayedProgress, target, current.renderReady)
@@ -327,7 +330,7 @@ export default function Loader() {
   return (
     <div className="intro" ref={panelRef}>
       <Suspense fallback={null}>
-        {!preload.criticalReady && <DitherBackground />}
+        <DitherBackground />
       </Suspense>
       <div className="intro__meta">// Portfolio · 2026</div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { navChapters, progressChapters } from '../chapters/registry'
+import { chapters, navChapters, progressChapters } from '../chapters/registry'
 import { gsap, ScrollTrigger } from '../lib/gsap'
 import {
   dispatchChapterArrived,
@@ -16,6 +16,7 @@ import {
 } from '../lib/timelines/transitionTimeline'
 import { prefersReducedMotion } from '../lib/motion'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
+import { cancelArchiveRouting, routeBetweenChapters } from '../lib/archiveRoute'
 import GlitchText from './GlitchText'
 
 const transitionChapters = navChapters.map((chapter) => {
@@ -27,6 +28,21 @@ const transitionChapters = navChapters.map((chapter) => {
     name: progress?.name ?? chapter.nav.label,
   }
 })
+
+function currentChapterElement() {
+  const center = innerHeight / 2
+  let match: HTMLElement | null = null
+  let distance = Number.POSITIVE_INFINITY
+  const candidates = [...chapters.map(chapter => document.getElementById(chapter.id)), ...document.querySelectorAll<HTMLElement>('[data-archive-target]')]
+  for (const element of candidates) {
+    if (!element) continue
+    const rect = element.getBoundingClientRect()
+    if (rect.bottom <= 0 || rect.top >= innerHeight) continue
+    const nextDistance = Math.abs((Math.max(rect.top, 0) + Math.min(rect.bottom, innerHeight)) / 2 - center)
+    if (nextDistance < distance) { match = element; distance = nextDistance }
+  }
+  return match
+}
 
 function nextFrame(signal: AbortSignal): Promise<boolean> {
   if (signal.aborted) return Promise.resolve(false)
@@ -120,16 +136,36 @@ export default function ChapterTransition() {
     const lifecycle = new AbortController()
     const { signal } = lifecycle
     let activeTimeline: gsap.core.Timeline | null = null
+    let desktopGeneration = 0
 
     const runTransition = async (request: ChapterTransitionRequest) => {
       if (signal.aborted) return
-      if (getStage() === 'transitioning') {
+      const desktopRoute = matchMedia('(min-width: 769px)').matches
+      if (getStage() === 'transitioning' && !desktopRoute) {
         queuedRef.current = request
         return
       }
 
       if (prefersReducedMotion()) {
         scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
+        return
+      }
+
+      if (desktopRoute) {
+        // Desktop navigation is one direct spatial cut: the visible reading
+        // surface is captured, the document jumps without traversing all
+        // intermediate chapters, and the destination grows out of its archive
+        // object. A generation token prevents stale arrival notifications.
+        const generation = ++desktopGeneration
+        const source = currentChapterElement()
+        if (!source || source.id === request.id) {
+          scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash, restore: true })
+          await nextFrame(signal)
+          if (!signal.aborted && generation === desktopGeneration) dispatchChapterArrived(request.id)
+          return
+        }
+        const arrived = await routeBetweenChapters(source, request.id, request.updateHash)
+        if (arrived && !signal.aborted && generation === desktopGeneration) dispatchChapterArrived(request.id)
         return
       }
 
@@ -213,6 +249,8 @@ export default function ChapterTransition() {
     return () => {
       unsubscribe()
       queuedRef.current = null
+      desktopGeneration++
+      cancelArchiveRouting()
       lifecycle.abort(new Error('Chapter transition detached'))
       activeTimeline?.kill()
       activeTimeline = null

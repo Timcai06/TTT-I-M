@@ -13,8 +13,8 @@ export function archiveScrollPose(progress: number, exit = false) {
     camera: smooth(range(0.08, 0.42)),
     cover: smooth(range(0.22, 0.48)),
     reveal: smooth(range(0, 0.12)), departure: 0,
-    approach: smooth(range(0.48, 0.94)),
-    flatten: smooth(range(0.80, 1)),
+    approach: smooth(range(0.48, 0.72)),
+    flatten: smooth(range(0.94, 1)),
     ink: smooth(range(0.42, 0.54)), shelf: 0,
   }
 }

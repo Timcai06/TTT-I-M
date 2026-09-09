@@ -4,6 +4,7 @@ import { useChapterState } from '../lib/chapterState'
 import { transitionToChapter } from '../lib/chapterTransition'
 import { useSound } from '../lib/sound/SoundContext'
 import type { StaggeredSectionMenuItem } from './StaggeredSectionMenu'
+import { rememberChapterPosition } from '../lib/archiveReadingMemory'
 
 const StaggeredSectionMenu = lazy(() => import('./StaggeredSectionMenu'))
 
@@ -73,6 +74,7 @@ export default function Nav() {
 
   const handleChapterClick = (id: string) => {
     setMenuOpen(false)
+    rememberChapterPosition(activeId)
     transitionToChapter(id, { updateHash: true })
   }
 

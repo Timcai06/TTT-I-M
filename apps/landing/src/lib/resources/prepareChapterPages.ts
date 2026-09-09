@@ -12,6 +12,8 @@ export async function prepareChapterPages(signal: AbortSignal): Promise<void> {
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-preview-ready'] })
     signal.addEventListener('abort', abort, { once: true }); check()
   })
-  await Promise.all([...document.querySelectorAll<HTMLImageElement>('#archive-entry .archive-bridge__page img')].map(image => image.decode()))
+  const images = [...document.querySelectorAll<HTMLImageElement>('.archive-bridge__page:not(.archive-bridge__page--source) img')]
+  await Promise.all(images.map(image => image.decode().catch(() => undefined)))
+  await document.fonts.ready
   signal.throwIfAborted()
 }

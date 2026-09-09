@@ -10,6 +10,45 @@
   padding-bottom: clamp(40px, 6vw, 80px);
 }
 
+.hero__screen-page { display: contents; }
+.hero__archive-marker { position: absolute; inset: 0; pointer-events: none; }
+
+@media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
+  .hero--archive-index {
+    min-height: 100svh;
+    padding-bottom: 0;
+    background: transparent;
+    isolation: isolate;
+  }
+
+  .hero--archive-index .hero__screen-page {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    padding-bottom: clamp(40px, 6vw, 80px);
+    overflow: hidden;
+    opacity: 0;
+    transform-origin: 0 0;
+    background: #070708;
+    will-change: transform, opacity;
+  }
+  .hero--archive-index .hero__screen-page:focus-visible {
+    outline: 2px solid var(--accent-pop, #ff4a33);
+    outline-offset: -4px;
+  }
+
+  .hero--archive-index[data-archive-failed='true'] .hero__screen-page {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+}
+
 .hero__canvas {
   position: absolute;
   inset: 0;

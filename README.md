@@ -1,5 +1,7 @@
 # TTT I M Platform
 
+> 当前桌面 Personal Archive 精修阶段请从 [PM 工作入口](docs/pm/README.md) 开始。任务卡、模型分工与验收以该入口为准；下方 `plan/` 为独立产品路线。
+
 Monorepo for Tim Cai's cinematic landing and future content studio.
 
 ## Structure

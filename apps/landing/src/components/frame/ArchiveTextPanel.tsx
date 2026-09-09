@@ -6,22 +6,24 @@ import type { ArchiveTextPanel as ArchiveTextPanelData } from '../../content'
 export default function ArchiveTextPanel({
   panel,
   layout,
+  preview = false,
 }: {
   panel: ArchiveTextPanelData
   layout: 'intro' | 'outro'
+  preview?: boolean
 }) {
   const ref = useRef<HTMLElement>(null)
 
   // Vertical panels use a one-shot per-word reveal on enter.
   useEffect(() => {
     const el = ref.current
-    if (!el) return
+    if (!el || preview) return
     const ctx = gsap.context(() => {
       revealWordsOnce(el, '.archive-theme-marker__title', { start: 'top 82%' })
       revealWordsOnce(el, '.frame-panel__body', { start: 'top 78%' })
     }, el)
     return () => ctx.revert()
-  }, [])
+  }, [preview])
 
   return (
     <article ref={ref} className={`archive-frame-text archive-frame-text--${layout}`}>

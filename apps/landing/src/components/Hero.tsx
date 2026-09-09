@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { createHeroParallax } from '../lib/timelines/heroParallax'
 import { onIntroExit } from '../lib/intro'
@@ -6,6 +6,7 @@ import { usePretextTextInteraction } from '../lib/pretextIntroText'
 import { onChapterArrived } from '../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
 import SignatureMark from './SignatureMark'
+const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSurface'))
 
 /**
  * @description Hero 章节 —— 首页视口顶部的身份视觉锚点。同时处理两大动画轨道：
@@ -41,6 +42,7 @@ import SignatureMark from './SignatureMark'
  */
 export default function Hero() {
   const root = useRef<HTMLElement>(null)
+  const screenPage = useRef<HTMLDivElement>(null)
   const nameRef = useRef<HTMLHeadingElement>(null)
   const pretextEnableTimer = useRef<number | undefined>(undefined)
   /** 标题入场完成计数器：timeline onComplete 或 chapter-arrived 各 ＋1。唤醒 pretextRefreshKey。 */
@@ -188,6 +190,7 @@ export default function Hero() {
 
       // ── 标题裂分 parallax (由 heroParallax timeline 独立管理) ──
       if (root.current) createHeroParallax(root.current)
+
     }, root)
 
     // ── 签名锚定：把 swash 起笔点（viewBox 的 6,18）钉在 "Cai." 句点圆心上。
@@ -269,6 +272,7 @@ export default function Hero() {
   /** 绑定 pretext 文字交互到标题 heading。strength=0.78 为经过视觉调优后的弹性值。 */
   usePretextTextInteraction(nameRef, {
     enabled: heroPretextEnabled,
+    interactionRoot: screenPage,
     refreshKey: pretextRefreshKey,
     strength: 0.78,
     text: 'Tim Cai.',
@@ -291,7 +295,15 @@ export default function Hero() {
   })
 
   return (
-    <section className="hero" id="hero" ref={root}>
+    <section className="hero hero--archive-index" id="hero" ref={root}>
+      <Suspense fallback={null}><ArchiveIndexSurface root={root} page={screenPage} /></Suspense>
+      <div
+        ref={screenPage}
+        className="hero__screen-page"
+        role="group"
+        tabIndex={0}
+        aria-label="Interactive Index on the archive monitor. Press Enter to move closer and Escape to return."
+      >
       {/* Canvas 层：幽灵照片 → 粒子肖像 (条件渲染) → 扫描线光泽，三层堆叠 */}
       <div className="hero__canvas">
         <img className="hero__ghost hero__portrait-ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
@@ -356,6 +368,7 @@ export default function Hero() {
             </svg>
           </span>
         </div>
+      </div>
       </div>
     </section>
   )

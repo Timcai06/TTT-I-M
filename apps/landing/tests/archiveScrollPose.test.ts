@@ -44,6 +44,21 @@ void test('paper homography preserves every corner and becomes identity at full 
   assert.equal(pageMatrix([], 1200, 800), null)
 })
 
+void test('paper handoff remains an exact identity after common desktop viewport resizes', async () => {
+  const { contactReadingPoints, pageMatrix } = await import('../src/components/personal-archive/pageProjection.ts')
+  for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]] as const) {
+    const corners = [{ x: 0, y: 0 }, { x: width, y: 0 }, { x: width, y: height }, { x: 0, y: height }]
+    assert.deepEqual(
+      pageMatrix(corners, width, height)?.map(value => value === 0 ? 0 : value),
+      [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      `${width}x${height} must finish without a resize seam`,
+    )
+    assert.deepEqual(contactReadingPoints(width, height, 1), corners, `${width}x${height} Contact must finish on the real footer viewport`)
+    const desk = contactReadingPoints(width, height, 0)
+    assert.ok(desk[0].x > 0 && desk[0].y > 0 && desk[2].x < width && desk[2].y < height, 'Contact begins on an inset desk plane, not the Work folder')
+  }
+})
+
 void test('paper projection rejects non-finite, folded and edge-on surfaces', async () => {
   const { pageMatrix } = await import('../src/components/personal-archive/pageProjection.ts')
   const square = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }]

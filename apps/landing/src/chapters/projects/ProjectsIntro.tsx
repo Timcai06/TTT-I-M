@@ -10,6 +10,31 @@ const headingSources = projects
   .map((project) => project.media?.shots[0]?.src)
   .filter((source): source is string => Boolean(source))
 
+/** Shared Work first screen; preview mode keeps the real SVG typography but removes its own scroll timeline. */
+export function ProjectsHeader({ preview = false }: { preview?: boolean }) {
+  return (
+    <div className="projects__header">
+      <div className="projects__heading-wrap">
+        <div className="section__label">Work — 选作</div>
+        <MaskedHeading
+          className="projects__masked-heading"
+          text={'Six things I made\nin 2026.'}
+          sources={headingSources}
+          emphasis="I made"
+          fillScale={1.12}
+          parallax={preview ? 0 : 18}
+          reveal={preview ? 'none' : 'wipe'}
+          trigger={preview ? 'load' : 'view'}
+        />
+      </div>
+      <p className="projects__header-side">
+        我不想把项目写成一张技术栈清单。每个仓库里都留着输入、运行结果、
+        踩过的坑和复现方法。
+      </p>
+    </div>
+  )
+}
+
 interface ProjectsIntroProps {
   laserActive: boolean
   laserHandle: RefObject<LaserHandle | null>
@@ -36,25 +61,7 @@ export default function ProjectsIntro({
             enabled={glassEnabled}
             onActiveChange={onGlassActiveChange}
           >
-            <div className="projects__header">
-              <div className="projects__heading-wrap">
-                <div className="section__label">Work — 选作</div>
-                <MaskedHeading
-                  className="projects__masked-heading"
-                  text={'Six things I made\nin 2026.'}
-                  sources={headingSources}
-                  emphasis="I made"
-                  fillScale={1.12}
-                  parallax={18}
-                  reveal="wipe"
-                  trigger="view"
-                />
-              </div>
-              <p className="projects__header-side">
-                我不想把项目写成一张技术栈清单。每个仓库里都留着输入、运行结果、
-                踩过的坑和复现方法。
-              </p>
-            </div>
+            <ProjectsHeader />
             <ProjectsBento />
           </ProjectGlassSurface>
         </div>

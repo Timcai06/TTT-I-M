@@ -1,10 +1,28 @@
 import { getLenis } from './lenis'
+import { restoredChapterTop } from './archiveReadingMemory'
 
 interface ChapterScrollOptions {
   /** true 时不播放平滑滚动，转场落点和 reduced-motion 路径使用。 */
   immediate?: boolean
   /** true 时用 replaceState 更新 hash，不新增浏览器历史记录。 */
   updateHash?: boolean
+  /** Restore the last in-session reading position when revisiting a chapter. */
+  restore?: boolean
+}
+
+/**
+ * A chapter may expose a reading landing inside its visual continuity frame.
+ * Natural scrolling still sees the whole section, while explicit navigation
+ * lands on the first readable viewport instead of replaying the handoff.
+ */
+export function getChapterScrollTarget(id: string): HTMLElement | null {
+  const chapter = document.getElementById(id)
+  if (!chapter) return null
+  return chapter.querySelector<HTMLElement>('[data-chapter-reading-target]') ?? chapter
+}
+
+export function getChapterScrollViewportTop(id: string): number {
+  return document.querySelector(`[data-archive-target="${CSS.escape(id)}"]`) ? 0 : 40
 }
 
 /**
@@ -21,7 +39,7 @@ interface ChapterScrollOptions {
  *   step3: Lenis 可用则调用 lenis.scrollTo，否则用原生 scrollTo
  */
 export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) {
-  const el = document.getElementById(id)
+  const el = getChapterScrollTarget(id)
   if (!el) return
 
   // GSAP wraps pinned chapter triggers in a generated spacer. Once pinned, the
@@ -32,7 +50,9 @@ export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) 
   const target = parent?.classList.contains('pin-spacer') ? parent : el
   // Spatial handoffs end at the exact reading viewport. A negative offset would
   // leave their final projected frame covering a deliberate chapter jump.
-  const offset = document.querySelector(`[data-archive-target="${CSS.escape(id)}"]`) ? 0 : -40
+  const restoredTop = options.restore ? restoredChapterTop(id) : null
+  const offset = restoredTop === null ? -getChapterScrollViewportTop(id) : 0
+  const destination: HTMLElement | number = restoredTop ?? target
 
   if (options.updateHash) {
     const url = new URL(window.location.href)
@@ -42,14 +62,16 @@ export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) 
 
   const lenis = getLenis()
   if (lenis) {
-    lenis.scrollTo(target, {
+    lenis.scrollTo(destination, {
       offset,
-      duration: options.immediate ? 0 : 1.4,
+      duration: options.immediate ? 0 : 1.0,
       force: options.immediate,
       immediate: options.immediate,
     })
   } else {
-    const top = target.getBoundingClientRect().top + window.scrollY + offset
+    const top = typeof destination === 'number'
+      ? destination
+      : destination.getBoundingClientRect().top + window.scrollY + offset
     window.scrollTo({
       top,
       behavior: options.immediate ? 'auto' : 'smooth',

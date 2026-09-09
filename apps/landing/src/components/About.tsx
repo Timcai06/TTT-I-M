@@ -5,6 +5,8 @@ import { facts } from '../content'
 import AboutDecryptReveal from './effects/AboutDecryptReveal'
 import CountUp from './CountUp'
 import AboutDossier from './AboutDossier'
+import { useMobileExperience } from '../lib/device'
+import { useReducedMotion } from '../lib/motion'
 
 /** Split a fact value like `'10+'` into its leading number and trailing suffix. */
 function parseFact(value: string): { to: number; suffix: string } {
@@ -34,12 +36,14 @@ function parseFact(value: string): { to: number; suffix: string } {
  *
  * @steps Decrypt 首屏保持稳定 capture；下方段落、统计与 Tech 路径独立进入。
  */
-export default function About({ decryptEnabled = true }: { decryptEnabled?: boolean }) {
+export default function About({ decryptEnabled = true, preview = false }: { decryptEnabled?: boolean; preview?: boolean }) {
   const root = useRef<HTMLElement>(null)
   const techPathRef = useRef<SVGPathElement>(null)
+  const mobile = useMobileExperience()
+  const reducedMotion = useReducedMotion()
 
   useGSAP(() => {
-    if (!root.current) return
+    if (!root.current || preview) return
       // Independent paragraph blocks reveal. The manifesto is excluded here —
       // it gets a word-level blur→clear reveal instead (see below).
       gsap.utils
@@ -95,11 +99,11 @@ export default function About({ decryptEnabled = true }: { decryptEnabled?: bool
           },
         })
       }
-  }, { scope: root })
+  }, { scope: root, dependencies: [preview] })
 
   return (
-    <section className="section about" id="about" ref={root}>
-      <AboutDecryptReveal enabled={decryptEnabled}>
+    <section className={`section about${preview ? ' about--archive-return' : ''}`} id={preview ? undefined : 'about'} ref={root}>
+      <AboutDecryptReveal enabled={decryptEnabled && (mobile || reducedMotion)}>
         <AboutDossier />
       </AboutDecryptReveal>
 

@@ -1,12 +1,12 @@
 import { useEffect, type RefObject } from 'react'
 import { getPreparedArchiveRuntime, prepareArchiveRuntime, type ArchiveRuntime } from './archiveRuntime'
-import type { ArchiveTrack } from './chapterTracks'
+import type { SpatialShot } from './archiveDirector'
 import type { ArchiveProgress } from './scrollPose'
 
 interface Props {
-  host: RefObject<HTMLDivElement | null>
   page: RefObject<HTMLDivElement | null>
-  track?: ArchiveTrack
+  sourcePage?: RefObject<HTMLDivElement | null>
+  track?: SpatialShot
   progress: ArchiveProgress
   visible: boolean
   onReady: () => void
@@ -15,13 +15,13 @@ interface Props {
 }
 
 /** Chapter adapter only. The boot-owned renderer and model survive every chapter. */
-export default function PersonalArchiveSurface({ host, page, track, progress, visible, onReady, onFailure, onRelease }: Props) {
+export default function PersonalArchiveSurface({ page, sourcePage, track, progress, visible, onReady, onFailure, onRelease }: Props) {
   useEffect(() => {
     const lifecycle = new AbortController()
     let detach: (() => void) | undefined
     const attach = (runtime: ArchiveRuntime) => {
       if (lifecycle.signal.aborted) return
-      if (visible && host.current) detach = runtime.attach(host.current, page.current, track ?? 'entry', progress, {
+      if (visible) detach = runtime.activate(page.current, sourcePage?.current ?? null, track ?? 'entry', progress, {
         ready: onReady, pending: onRelease, failed: onFailure,
       })
       else onReady()
@@ -34,7 +34,7 @@ export default function PersonalArchiveSurface({ host, page, track, progress, vi
       onFailure()
     })
     return () => { detach?.(); lifecycle.abort(new Error('Archive adapter released')) }
-  }, [host, page, track, progress, visible, onReady, onFailure, onRelease])
+  }, [page, sourcePage, track, progress, visible, onReady, onFailure, onRelease])
   useEffect(() => onRelease, [onRelease])
   return null
 }

@@ -1,5 +1,23 @@
 export type Point = { x: number; y: number }
 
+/**
+ * Contact has no exported model surface in v2. Keep it on a calm desk-aligned
+ * reading plane instead of falsely reusing the Work folder anchors.
+ */
+export function contactReadingPoints(width: number, height: number, expand = 0): Point[] {
+  const safe = Math.max(0, Math.min(1, Number.isFinite(expand) ? expand : 0))
+  const scale = 1 - safe
+  const x = Math.min(64, width * .05) * scale
+  const top = Math.min(88, height * .12) * scale
+  const bottom = Math.min(42, height * .065) * scale
+  return [
+    { x, y: top + 7 * scale },
+    { x: width - x * .82, y: top },
+    { x: width - x * .56, y: height - bottom },
+    { x: x * .84, y: height - bottom + 6 * scale },
+  ]
+}
+
 /** Map a CSS rectangle onto the four projected paper corners (TL, TR, BR, BL). */
 export function pageMatrix(points: Point[], width: number, height: number) {
   const [a, b, c, d] = points

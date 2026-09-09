@@ -302,11 +302,14 @@ for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data
 }
 const overviewSurfaceStart = projects.indexOf('surfaceId="project-overview"')
 const overviewSurfaceEnd = projects.indexOf('</ProjectGlassSurface>', overviewSurfaceStart)
-for (const token of ['projects__header', '<ProjectsBento />']) {
+for (const token of ['<ProjectsHeader />', '<ProjectsBento />']) {
   const position = projects.indexOf(token, overviewSurfaceStart)
   if (position < overviewSurfaceStart || position > overviewSurfaceEnd) {
     throw new Error(`Project Glass overview must capture the complete Work opening: ${token}.`)
   }
+}
+for (const token of ['projects__header', 'projects__heading-wrap', 'projects__header-side']) {
+  if (!projects.includes(token)) throw new Error(`Shared ProjectsHeader is missing ${token}.`)
 }
 for (const token of ['exclusiveGroup="canvas-ui-html-primary"', 'mountMargin="220% 0px"', 'viewportOutput: true', "scopeSelector: '#projects'", 'surfaceId', 'portalOutput', 'preloadProjectGlass', 'void preloadProjectGlass()', 'registerWorkGlassSurface', 'selectedSurface']) {
   if (!glassSurface.includes(token)) throw new Error(`Project Glass single-surface handoff is missing ${token}.`)
@@ -513,7 +516,7 @@ for (const [source, component, owner] of [
   if (!source.includes(component)) throw new Error(`${owner} must mount ${component}.`)
 }
 
-for (const token of ['MaskedHeading', 'sources={headingSources}', 'emphasis="I made"', 'parallax={18}', 'reveal="wipe"']) {
+for (const token of ['MaskedHeading', 'sources={headingSources}', 'emphasis="I made"', 'parallax={preview ? 0 : 18}', "reveal={preview ? 'none' : 'wipe'}"]) {
   if (!projects.includes(token)) throw new Error(`Work heading must preserve its project-media mask treatment: ${token}`)
 }
 for (const token of ['useGSAP', 'useReducedMotion', '<mask', '<foreignObject', "mediaType === 'video'", 'once: true']) {

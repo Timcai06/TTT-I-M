@@ -29,6 +29,61 @@ const workingSetLogos: LogoItem[] = workingSet.map(([index, name, kind]) => ({
   title: `${name} — ${kind}`,
 }))
 
+/** The chapter's real closing composition, also used when Stack folds back into the room. */
+export function SkillsWorkingSet() {
+  return (
+    <div className="skills-working-set">
+      <div className="skills-working-set__header">
+        <span>Working set · 当前工具链</span>
+        <small>Used across shipped systems / 2026</small>
+      </div>
+      <LogoLoop
+        className="skills-working-set__loop"
+        logos={workingSetLogos}
+        speed={38}
+        direction="left"
+        logoHeight={24}
+        gap={64}
+        hoverSpeed={8}
+        fadeOut
+        fadeOutColor="#000000"
+        ariaLabel="Tools used across shipped systems"
+      />
+    </div>
+  )
+}
+
+/** Shared chapter heading; the spatial bridge reuses the exact line breaks and emphasis. */
+export function SkillsHeading() {
+  return (
+    <>
+      <div className="section__label">Stack — 技术栈</div>
+      <h2 className="section__title">
+        <span className="split-line"><span className="split-line__inner">The stack <em>I work</em></span></span>
+        <span className="split-line"><span className="split-line__inner">with.</span></span>
+      </h2>
+    </>
+  )
+}
+
+/**
+ * The last Frame photograph is also the first physical surface of Stack.
+ * Keeping this as one shared component means the spatial bridge and the real
+ * chapter use the same asset, crop and viewport geometry at the handoff.
+ */
+export function StackContinuityFrame() {
+  return (
+    <div className="skills-continuity" aria-hidden="true">
+      <img src="/frame/scenery/scenery-11.webp" alt="" decoding="async" />
+      <div className="skills-continuity__shade" />
+      <div className="skills-continuity__trace">
+        <span>FRAME / FINAL HORIZON</span>
+        <span>IMAGE → INTERFACE</span>
+      </div>
+    </div>
+  )
+}
+
 /**
  * @description Skills 章节 —— 技术栈与工程交付能力矩阵（组合层）。
  *   每行代表一个技能领域 (Frontend / Motion·3D / Backend / AI·Data / Infra / Math·Modeling)，
@@ -49,73 +104,55 @@ const workingSetLogos: LogoItem[] = workingSet.map(([index, name, kind]) => ({
  *   step2: 标题与首屏技能行保持稳定，避免 Canvas 接棒后再次整体展开
  */
 export default function Skills() {
-  const root = useRef<HTMLElement>(null)
-  const { pathRef, pathD, svgLeft, svgWidth } = useSkillsFlowLine(root)
+  const body = useRef<HTMLDivElement>(null)
+  const { pathRef, pathD, svgLeft, svgWidth } = useSkillsFlowLine(body)
 
   return (
-    <section className="section skills container" id="skills" ref={root} style={{ position: 'relative' }}>
-      {/* Stack 深处的红色 active flow；从视口外连续接入，不再阈值式整段显现。 */}
-      <svg
-        className="skills__flow-svg"
-        style={{ left: svgLeft, width: svgWidth }}
-        fill="none"
-        pointerEvents="none"
-        aria-hidden="true"
-      >
-        {pathD && (
-          <>
-            {/* 红色背景引导轨道 */}
-            <path
-              className="skills__flow-guide"
-              d={pathD}
-              stroke="rgba(255, 51, 51, 0.05)"
-              strokeWidth="46"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* active 流动高亮 */}
-            <path
-              className="skills__flow-active"
-              ref={pathRef}
-              d={pathD}
-              stroke="#ff3333"
-              strokeWidth="46"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </>
-        )}
-      </svg>
+    <section className="section skills container" id="skills" style={{ position: 'relative' }}>
+      <StackContinuityFrame />
+      <div className="skills__body" ref={body} data-chapter-reading-target>
+        {/* Stack 深处的红色 active flow；从视口外连续接入，不再阈值式整段显现。 */}
+        <svg
+          className="skills__flow-svg"
+          style={{ left: svgLeft, width: svgWidth }}
+          fill="none"
+          pointerEvents="none"
+          aria-hidden="true"
+        >
+          {pathD && (
+            <>
+              {/* 红色背景引导轨道 */}
+              <path
+                className="skills__flow-guide"
+                d={pathD}
+                stroke="rgba(255, 51, 51, 0.05)"
+                strokeWidth="46"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* active 流动高亮 */}
+              <path
+                className="skills__flow-active"
+                ref={pathRef}
+                d={pathD}
+                stroke="#ff3333"
+                strokeWidth="46"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </>
+          )}
+        </svg>
 
-      <div className="section__label">Stack — 技术栈</div>
-      <h2 className="section__title">
-        <span className="split-line"><span className="split-line__inner">The stack <em>I work</em></span></span>
-        <span className="split-line"><span className="split-line__inner">with.</span></span>
-      </h2>
+        <SkillsHeading />
 
-      <div className="skills__list">
-        {rows.map((row) => (
-          <SkillRowItem key={row.index} row={row} />
-        ))}
-      </div>
-
-      <div className="skills-working-set">
-        <div className="skills-working-set__header">
-          <span>Working set · 当前工具链</span>
-          <small>Used across shipped systems / 2026</small>
+        <div className="skills__list">
+          {rows.map((row) => (
+            <SkillRowItem key={row.index} row={row} />
+          ))}
         </div>
-        <LogoLoop
-          className="skills-working-set__loop"
-          logos={workingSetLogos}
-          speed={38}
-          direction="left"
-          logoHeight={24}
-          gap={64}
-          hoverSpeed={8}
-          fadeOut
-          fadeOutColor="#000000"
-          ariaLabel="Tools used across shipped systems"
-        />
+
+        <SkillsWorkingSet />
       </div>
     </section>
   )

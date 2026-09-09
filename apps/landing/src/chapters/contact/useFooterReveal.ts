@@ -36,7 +36,11 @@ export function useFooterReveal(): FooterRevealResult {
     const wrapEl = wrapRef.current
     if (!rootEl || !svgEl || !wrapEl) return
 
-    const animated = !reducedMotion && !mobileExperience
+    // Desktop archive v2 already expands Contact from its desk-aligned reading
+    // plane. The legacy full-screen iris would become a second, unrelated
+    // transition and can cover the room before the handoff is ready.
+    const spatialHandoff = Boolean(rootEl.closest('[data-archive-destination="contact"]'))
+    const animated = !reducedMotion && !mobileExperience && !spatialHandoff
     const aura = svgEl.querySelector<SVGCircleElement>('[data-iris-aura]')
     const core = svgEl.querySelector<SVGCircleElement>('[data-iris-core]')
     const rim = svgEl.querySelector<SVGCircleElement>('[data-iris-rim]')
@@ -98,7 +102,7 @@ export function useFooterReveal(): FooterRevealResult {
         iris.progress = 1
         renderIris()
       }
-      gsap.set(wrapEl, { autoAlpha: isNearContact && progress > 0.001 ? 1 : 0 })
+      gsap.set(wrapEl, { autoAlpha: animated && isNearContact && progress > 0.001 ? 1 : 0 })
       const liquidActive = animated && isNearContact && progress > 0.88
       liquidRef.current?.setActive(liquidActive)
       setFooterCursorState(liquidActive)
