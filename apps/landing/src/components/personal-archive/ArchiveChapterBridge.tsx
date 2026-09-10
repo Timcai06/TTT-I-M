@@ -42,7 +42,10 @@ export default function ArchiveChapterBridge({ track, id }: { track: ArchiveTrac
     let previous = -1
     const sync = (self: ScrollTrigger) => {
       const p = self.progress
-      if (stage === 'live' && p < .26 && sourcePage.current && (previous <= 0 || !sourcePage.current.firstChild)) {
+      // Capture early as the chapter leaves, and re-capture at ANY progress while
+      // the panel is still empty. The old `p < .26` gate meant a ScrollTrigger
+      // refresh landing past that point left the source page permanently empty.
+      if (stage === 'live' && sourcePage.current && (!sourcePage.current.firstChild || (p < .26 && previous <= 0))) {
         const original = document.getElementById(sourceId)
         if (original) sourcePage.current.replaceChildren(readingSnapshot(original))
       }

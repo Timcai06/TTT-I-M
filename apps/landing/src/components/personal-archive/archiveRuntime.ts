@@ -321,7 +321,13 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
           return { ...snapshot, originX: currentLayout.originX, originY: currentLayout.originY }
         }
         const target = !route && page && sampled.presentation.targetReveal > 0 && (!sampled.presentation.readingOwner || sampled.presentation.readingOwner === 'index') ? projectArchiveQuad(world.anchors[sampled.presentation.targetSurface]!, finalCamera, pageLayout(page, 'target'), sampled.presentation.targetExpand, .0015) : null
-        const source = !route && sourcePage && sampled.presentation.sourceSurface && sampled.presentation.sourceReveal > 0 ? projectArchiveQuad(world.anchors[sampled.presentation.sourceSurface]!, finalCamera, pageLayout(sourcePage, 'source'), sampled.presentation.sourceExpand, .0018) : null
+        // An empty source page must never be presented. It carries the paper
+        // surface as its own background, so with nothing cloned into it a full
+        // viewport of near-white is all the reader sees. That was survivable while
+        // the sheet retracted onto the notebook within progress .18; now that it
+        // holds its registration and only dissolves, an empty one is a white screen.
+        const sourceHasContent = Boolean(sourcePage?.firstChild)
+        const source = !route && sourcePage && sourceHasContent && sampled.presentation.sourceSurface && sampled.presentation.sourceReveal > 0 ? projectArchiveQuad(world.anchors[sampled.presentation.sourceSurface]!, finalCamera, pageLayout(sourcePage, 'source'), sampled.presentation.sourceExpand, .0018) : null
         // Direct open/return reuses the sampled bridge coordinate. The route
         // layer therefore retracts into the same real surface at the same T
         // that expands it, rather than owning a second animation curve.

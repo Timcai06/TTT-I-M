@@ -35,7 +35,13 @@ export function readingSnapshot(source: HTMLElement) {
   // Nested bridges own separate room adapters and never belong to a reading snapshot.
   clone.querySelectorAll('.archive-bridge').forEach(node => node.remove())
   const rect = source.getBoundingClientRect()
-  Object.assign(clone.style, { position: 'absolute', top: `${rect.top}px`, left: `${rect.left}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', opacity: '1', transform: 'none', visibility: 'visible' })
+  // Hold the tail of the chapter in view. The offset is the source's live viewport
+  // rect, which is right when the capture happens as the chapter is leaving. If it
+  // happens later, the raw rect would park the clone entirely outside its container
+  // and the panel would show blank paper, so clamp it to the last screen instead.
+  const container = Math.max(0, source.parentElement?.clientHeight ?? rect.height)
+  const top = Math.min(0, Math.max(rect.top, container - rect.height))
+  Object.assign(clone.style, { position: 'absolute', top: `${top}px`, left: `${rect.left}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', opacity: '1', transform: 'none', visibility: 'visible' })
   for (const node of [clone, ...clone.querySelectorAll<HTMLElement>('[data-archive-live-target]')]) {
     node.style.opacity = '1'; node.style.visibility = 'visible'
     node.style.setProperty('--archive-live-target','1')
