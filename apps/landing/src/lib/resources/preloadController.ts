@@ -71,6 +71,13 @@ export interface WholeSitePreloadState {
   readingFallbackReady: boolean
   /** manifest 总任务数。 */
   total: number
+  /** Weighted equivalents of completed/failed/total, plus live sub-task progress.
+   *  The intro bar reads these instead of the counts: ~55 fast image fetches and
+   *  one 22.9 MB model are not the same fraction of the wait. */
+  completedWeight: number
+  failedWeight: number
+  totalWeight: number
+  partialWeight: number
 }
 
 const STALL_REPORT_DELAYS = [3000, 8000, 15000, 30000]
@@ -262,36 +269,97 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     renderReady: false,
     readingFallbackReady: false,
     total: tasks.length,
+    completedWeight: 0,
+    failedWeight: 0,
+    totalWeight: tasks.reduce((sum, task) => sum + (task.weight ?? 1), 0),
+    partialWeight: 0,
   }))
 
   useEffect(() => {
     let cancelled = false
     let completed = 0
     let criticalCompleted = 0
+    let completedWeight = 0
+    let failedWeight = 0
+    const totalWeight = tasks.reduce((sum, task) => sum + (task.weight ?? 1), 0)
+    const running = new Set<ResourceTask>()
     const failed: string[] = []
+    // Sub-task progress for anything big enough that "finished" is too coarse a
+    // signal. Only the room model reports it today; the loop is generic so the
+    // controller never has to know which task that is.
+    const livePartialWeight = () => {
+      let partial = 0
+      for (const task of running) if (task.progress) {
+        const value = task.progress()
+        if (Number.isFinite(value)) partial += (task.weight ?? 1) * Math.max(0, Math.min(1, value))
+      }
+      return partial
+    }
+    let partialFrame = 0
+    let lastPartial = 0
+    const pumpPartial = () => {
+      partialFrame = 0
+      if (cancelled) return
+      const partial = livePartialWeight()
+      // Only repaint on a move the bar can actually show, so a 22.9 MB stream
+      // does not re-render React on every chunk.
+      if (Math.abs(partial - lastPartial) > totalWeight * .002) {
+        lastPartial = partial
+        setState((current) => ({ ...current, partialWeight: partial }))
+      }
+      let pending = false
+      for (const task of running) if (task.progress) pending = true
+      if (pending) partialFrame = requestAnimationFrame(pumpPartial)
+    }
     const debug = createPreloadDebug(tasks)
     const lifecycle = new AbortController()
 
+    // A critical task is what the first paint and the six chapters are made of, so
+    // a single transient network hiccup must not end the run — that is exactly the
+    // case where a reader hit the retry panel and a plain refresh then worked.
+    const CRITICAL_ATTEMPTS = 3
     const runTask = async (task: ResourceTask, index: number) => {
+      running.add(task)
+      if (task.progress) pumpPartial()
       try {
-        await runTaskWithDeadline(task.load, task.timeoutMs ?? TASK_TIMEOUT_MS, lifecycle.signal)
+        const attempts = task.tier === 'critical' ? CRITICAL_ATTEMPTS : 1
+        let lastError: unknown
+        for (let attempt = 0; attempt < attempts; attempt++) {
+          try {
+            await runTaskWithDeadline(task.load, task.timeoutMs ?? TASK_TIMEOUT_MS, lifecycle.signal)
+            lastError = undefined
+            break
+          } catch (error) {
+            lastError = error
+            if (lifecycle.signal.aborted || attempt === attempts - 1) break
+            await new Promise((resolve) => window.setTimeout(resolve, 400 * (attempt + 1)))
+            if (lifecycle.signal.aborted) break
+          }
+        }
+        if (lastError) throw lastError
         debug?.finish(index)
       } catch (error) {
-        if (lifecycle.signal.aborted) return
+        if (lifecycle.signal.aborted) { running.delete(task); return }
         // Non-fatal: a missing/slow resource is failed, never a black screen.
         debug?.fail(index, error)
-        if (!failed.includes(task.id)) failed.push(task.id)
+        if (!failed.includes(task.id)) { failed.push(task.id); failedWeight += task.weight ?? 1 }
         if (import.meta.env.DEV) {
           console.warn(`[resources] preparation failed: ${task.id}`, error)
         }
       } finally {
+        running.delete(task)
         completed += 1
+        completedWeight += task.weight ?? 1
         if (task.tier === 'critical') criticalCompleted += 1
         if (!cancelled) {
           setState((current) => ({
             ...current,
             completed,
             criticalCompleted,
+            completedWeight,
+            failedWeight,
+            totalWeight,
+            partialWeight: livePartialWeight(),
             failed: [...failed],
             label: task.label,
           }))
@@ -336,7 +404,12 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     void run().then(() => {
       if (cancelled) return
       const readingFallbackReady = isReadingFallbackReady({ completed, total: tasks.length, failed, optional: optionalTaskIds })
+      cancelAnimationFrame(partialFrame)
       setState({
+        completedWeight,
+        failedWeight,
+        totalWeight,
+        partialWeight: 0,
         preparationFinished: true,
         completed,
         criticalCompleted,
@@ -354,6 +427,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
 
     return () => {
       cancelled = true
+      cancelAnimationFrame(partialFrame)
       lifecycle.abort(new Error('Whole-site preload unmounted'))
       debug?.stop()
     }

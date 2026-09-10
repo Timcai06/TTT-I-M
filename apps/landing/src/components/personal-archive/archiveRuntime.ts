@@ -19,6 +19,7 @@ import { prepareArchiveMaterials } from './archiveMaterials'
 import { createArchiveFinitePass } from './archiveRenderSafety'
 import type { ArchiveProgress } from './scrollPose'
 import { createSharedResource } from '../../lib/resources/sharedResource'
+import { reportArchiveBytes, resetArchiveBytes } from '../../lib/resources/downloadProgress'
 import { prepareChapterPages } from '../../lib/resources/prepareChapterPages'
 import { addContactReadingPlane } from './readingFrame'
 import { calibrateRoomPaper } from './roomPalette'
@@ -72,7 +73,32 @@ function disposeModel(model: GLTF) {
 async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
   const response = await fetch(modelUrl, { signal })
   if (!response.ok) throw new Error(`Archive model HTTP ${response.status}`)
-  const bytes = await response.arrayBuffer()
+  // Stream instead of arrayBuffer() so the intro can show this download moving.
+  // It is the single largest thing the site fetches, and it used to be one opaque
+  // wait. Falls back to the buffered read when the body cannot be streamed or the
+  // length is unknown, in which case the bar simply keeps its task-level weight.
+  const declared = Number(response.headers.get('content-length') ?? 0)
+  let bytes: ArrayBuffer
+  if (response.body && Number.isFinite(declared) && declared > 0) {
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let received = 0
+    reportArchiveBytes(0, declared)
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        if (value) { chunks.push(value); received += value.byteLength; reportArchiveBytes(received, declared) }
+      }
+    } catch (error) { resetArchiveBytes(); throw error }
+    const joined = new Uint8Array(received)
+    let offset = 0
+    for (const chunk of chunks) { joined.set(chunk, offset); offset += chunk.byteLength }
+    bytes = joined.buffer as ArrayBuffer
+  } else {
+    bytes = await response.arrayBuffer()
+  }
+  reportArchiveBytes(1, 1)
   const assetHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('')
   const model = await new GLTFLoader().parseAsync(bytes, '')
   let lease: ContextLease | undefined, renderer: WebGLRenderer | undefined

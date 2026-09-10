@@ -193,10 +193,14 @@ export default function Loader() {
       const current = preloadRef.current
       if (!current) return
 
+      // Weighted, not counted, and including live bytes of whatever is still
+      // downloading. Counting tasks put ~55 quick image fetches and one 22.9 MB
+      // model on the same footing, which is why the bar sprinted to the nineties
+      // and then stopped dead for the rest of the wait.
       const actualProgress = usableResourceProgress(
-        current.completed,
-        current.total,
-        current.failed.length,
+        current.completedWeight + current.partialWeight,
+        current.totalWeight,
+        current.failedWeight,
       )
       const currentHandoffReady = current.renderReady || current.readingFallbackReady
       const target = currentHandoffReady ? 1 : actualProgress

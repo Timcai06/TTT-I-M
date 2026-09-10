@@ -87,7 +87,11 @@ for (const token of ['DOTS12', 'intro__spinner', 'visibilitychange', 'preload.re
 if (!loaderSource.includes('<DitherBackground />') || loaderSource.includes('!preload.criticalReady && <DitherBackground />')) {
   throw new Error('Loader Dither must remain mounted through the complete render-ready phase.')
 }
-if (!loaderSource.includes('usableResourceProgress') || !loaderSource.includes('current.failed.length')) {
+// Same contract, weighted: failures must still leave a visible gap, and the bar
+// must divide by manifest weight rather than task count — ~55 quick image fetches
+// and one 22.9 MB model are not equal fractions of the wait.
+if (!loaderSource.includes('usableResourceProgress') || !loaderSource.includes('current.failedWeight')
+  || !loaderSource.includes('current.completedWeight') || !loaderSource.includes('current.totalWeight')) {
   throw new Error('Loader progress must count usable resources instead of failed-but-settled tasks.')
 }
 if (!spinnerSource.includes('interval: 80') || !spinnerSource.includes("'⢀⠀'") || !spinnerSource.includes("'⠀⡀'")) {

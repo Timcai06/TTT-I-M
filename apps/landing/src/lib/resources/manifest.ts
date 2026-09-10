@@ -1,4 +1,5 @@
 import { archiveImages, photos, projects } from '../../content'
+import { archiveDownloadFraction } from './downloadProgress'
 import {
   loadFonts,
   loadHeroTexture,
@@ -29,6 +30,14 @@ import {
  */
 const PREWARM_DEADLINE_MS = 600_000
 
+/**
+ * Image prewarm deadline. The generic 12s network default was set for a fast
+ * path; sharing bandwidth with the room means individual images legitimately
+ * take longer, and dropping them there is what left photographs popping in
+ * after the intro had already promised they were ready.
+ */
+const IMAGE_DEADLINE_MS = 90_000
+
 /** 资源加载阶段：critical 准备运行时，visual 准备当前设备会展示的视觉资源。 */
 export type ResourceTier = 'critical' | 'visual'
 /** 资源成本分类，用于调试 preload 进度和定位卡顿来源。 */
@@ -53,6 +62,15 @@ export interface ResourceTask {
   tier: ResourceTier
   /** 资源类型，用于理解成本来源：image/font/texture/chunk/particles */
   type: ResourceType
+  /**
+   * Share of the intro this task represents. The bar used to divide by task
+   * count, so ~55 quick image fetches carried it into the nineties while the
+   * 22.9 MB room — one task — held it there for the rest of the wait. Weights
+   * are in units of one average preloaded image (~0.23 MB).
+   */
+  weight?: number
+  /** 0-1 while running, for tasks large enough that finishing is too coarse. */
+  progress?: () => number
   /** 实际加载函数；必须响应 signal，确保超时或卸载不会留下孤儿下载/解码任务 */
   load: (signal: AbortSignal) => Promise<void>
 }
@@ -102,10 +120,10 @@ function collectImageUrls() {
  */
 export function buildResourceManifest(): ResourceTask[] {
   const critical: ResourceTask[] = [
-    { id: 'chunks:pretext', label: 'Pretext', tier: 'critical', type: 'chunk', load: loadPretext },
-    { id: 'texture:hero', label: 'hero texture', tier: 'critical', type: 'texture', load: loadHeroTexture },
-    { id: 'fonts:document', label: 'fonts', tier: 'critical', type: 'font', load: loadFonts },
-    { id: 'chunks:chapters', label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
+    { id: 'chunks:pretext', weight: 3, label: 'Pretext', tier: 'critical', type: 'chunk', load: loadPretext },
+    { id: 'texture:hero', weight: 4, label: 'hero texture', tier: 'critical', type: 'texture', load: loadHeroTexture },
+    { id: 'fonts:document', weight: 6, label: 'fonts', tier: 'critical', type: 'font', load: loadFonts },
+    { id: 'chunks:chapters', weight: 8, label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
   ]
 
   // Prewarm, not the only load path: every one of these is an <img> the browser
@@ -117,12 +135,13 @@ export function buildResourceManifest(): ResourceTask[] {
     label: src,
     tier: 'visual',
     type: 'image',
+    timeoutMs: IMAGE_DEADLINE_MS,
     load: (signal) => loadImage(src, { decode: 'eager', fetchPriority: 'auto', loading: 'eager' }, signal),
   }))
 
   const interactiveVisuals: ResourceTask[] = [
     ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? [{
-      id: 'renderer:personal-archive', optional: true, label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
+      id: 'renderer:personal-archive', optional: true, weight: 98, progress: archiveDownloadFraction, label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => {
         const { prepareArchiveRuntime } = await import('../../components/personal-archive/archiveRuntime')
@@ -130,18 +149,18 @@ export function buildResourceManifest(): ResourceTask[] {
         await import('../../components/personal-archive/PersonalArchiveSurface')
       },
     }, {
-      id: 'layout:chapter-pages', optional: true, label: 'Preparing chapters', tier: 'visual' as const, type: 'chunk' as const,
+      id: 'layout:chapter-pages', optional: true, weight: 8, label: 'Preparing chapters', tier: 'visual' as const, type: 'chunk' as const,
       // The room runtime and this task both wait for the five real chapter
       // previews. On a cold cache their image decode can legitimately outlive
       // the generic 12 s network deadline while the 19 MB room is compiling.
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareChapterPages } = await import('./prepareChapterPages'); await prepareChapterPages(signal) },
     }, {
-      id: 'media:site', optional: true, label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,
+      id: 'media:site', optional: true, weight: 28, label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareSiteMedia } = await import('./mediaCache'); await prepareSiteMedia(signal) },
     }, {
-      id: 'chunks:interactions', optional: true, label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
+      id: 'chunks:interactions', optional: true, weight: 3, label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
       load: async () => { await Promise.all([
         import('../../chapters/projects/ProjectCaseDialog'), import('../../chapters/projects/ProjectCaseContent'),
         import('../../chapters/projects/ProjectMetrics'), import('../../shared/media/openImageLightbox'),
@@ -172,6 +191,7 @@ export function buildResourceManifest(): ResourceTask[] {
     label: image.src,
     tier: 'visual',
     type: 'image',
+    timeoutMs: IMAGE_DEADLINE_MS,
     load: (signal) => loadResponsiveImage(image, {
       decode: 'eager',
       fetchPriority: 'auto',
