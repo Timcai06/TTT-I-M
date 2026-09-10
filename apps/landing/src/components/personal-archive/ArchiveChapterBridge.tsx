@@ -8,7 +8,11 @@ import { createArchiveProgress } from './scrollPose'
 import { chapterTracks, type ArchiveTrack } from './chapterTracks'
 import ArchiveHandoffPage from './ArchiveHandoffPage'
 import { readingSnapshot } from './readingSnapshot'
-import './personal-archive.css'
+// personal-archive.css is imported once by styles/app.css into layer(chapters),
+// ahead of natural-room.css. Importing it again here appended a second, later
+// copy that re-applied rules natural-room.css had deliberately reset — that is
+// why #life kept its transparent right border and showed the room through the
+// last 30px of every viewport. Do not re-add this import.
 
 const Surface = lazy(() => import('./PersonalArchiveSurface'))
 class Boundary extends Component<{ children: ReactNode; onFailure: () => void }, { failed: boolean }> {
