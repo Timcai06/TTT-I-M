@@ -50,8 +50,8 @@ export interface LaserElements {
 }
 
 export interface LaserInstance {
-  /** Feed externally-driven scroll velocity into the original heat/reactivity pipeline. */
-  setScrollActivity: (delta: number) => void;
+  /** Feed absolute local progress plus velocity into the original heat/reactivity pipeline. */
+  setScrollActivity: (progress: number, delta: number) => void;
   /** Update effect options live. */
   setOptions: (options: LaserOptions) => void;
   /** Re-read canvas size. Call when the element is resized. */
@@ -466,6 +466,7 @@ export function createLaser(
 
   let time = 0;
   let activity = 0;
+  let controlledProgress = 0;
 
   const fract = (x: number) => x - Math.floor(x);
   const hash2 = (x: number, y: number) =>
@@ -504,9 +505,13 @@ export function createLaser(
     gl!.uniform1f(uniforms.uTime, time);
     const dpr = output.width / Math.max(output.clientWidth, 1);
     const clientH = Math.max(output.clientHeight, 1);
+    const localInset = Math.min(
+      Math.max(config.offset, 0) / clientH,
+      0.22,
+    );
     gl!.uniform1f(
       uniforms.uBeamY,
-      Math.min(Math.max(config.offset, 0) / clientH, 0.95),
+      localInset + controlledProgress * (1 - localInset * 2),
     );
     gl!.uniform1f(uniforms.uWaveAmp, Math.max(config.wave, 0) / clientH);
     gl!.uniform1f(uniforms.uBeamCX, beamCX);
@@ -625,7 +630,10 @@ export function createLaser(
   intersection.observe(output);
 
   return {
-    setScrollActivity(delta) {
+    setScrollActivity(progress, delta) {
+      controlledProgress = Number.isFinite(progress)
+        ? Math.min(Math.max(progress, 0), 1)
+        : 0;
       if (!reducedMotion) {
         activity = Math.min(1, activity + Math.abs(delta) / 600);
       }

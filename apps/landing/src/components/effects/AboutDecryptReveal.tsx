@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useCallback, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { canCaptureAbout, observeAboutCapture } from './aboutCaptureEligibility'
 import CanvasUiHtmlSurface, {
   type CanvasUiHtmlFactory,
 } from './CanvasUiHtmlSurface'
@@ -23,9 +24,15 @@ const loadDecryptReveal = (): Promise<CanvasUiHtmlFactory<DecryptRevealOptions>>
 void loadDecryptReveal().catch(() => undefined)
 
 export default function AboutDecryptReveal({ children, enabled = true }: { children: ReactNode; enabled?: boolean }) {
+  const [host, setHost] = useState<HTMLDivElement | null>(null)
+  const subscribe = useCallback((notify: () => void) => observeAboutCapture(host, notify), [host])
+  const isCaptureAllowed = useCallback(() => canCaptureAbout(host), [host])
+  const readable = useSyncExternalStore(subscribe, isCaptureAllowed, () => false)
   return (
     <CanvasUiHtmlSurface
-      enabled={enabled}
+      enabled={enabled && readable}
+      isCaptureAllowed={isCaptureAllowed}
+      onHostChange={setHost}
       className="about-decrypt"
       contentClassName="about-decrypt__content"
       effectId="about-decrypt-reveal"

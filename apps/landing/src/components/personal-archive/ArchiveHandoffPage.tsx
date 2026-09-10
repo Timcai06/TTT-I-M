@@ -16,21 +16,21 @@ import type { ArchiveTrack } from './chapterTracks'
 export default function ArchiveHandoffPage({ track }: { track: ArchiveTrack }) {
   const contactClock = useRef<HTMLTimeElement>(null)
   if (track === 'about-life') {
-    return <div className="archive-handoff-page archive-handoff-page--life life"><LifeIntro /></div>
+    return <div className="archive-handoff-page archive-handoff-page--life life" data-archive-reading-theme="life"><LifeIntro /></div>
   }
   if (track === 'life-frame') {
-    return <div className="archive-handoff-page archive-handoff-page--frame frame-horizontal">
+    return <div className="archive-handoff-page archive-handoff-page--frame frame-horizontal" data-archive-reading-theme="frame">
       <ArchiveTextPanel layout="intro" panel={archiveIntro} preview />
     </div>
   }
   if (track === 'frame-stack') {
-    return <div className="archive-handoff-page archive-handoff-page--stack">
+    return <div className="archive-handoff-page archive-handoff-page--stack" data-archive-reading-theme="stack">
       <StackContinuityFrame />
     </div>
   }
   if (track === 'stack-work') {
-    return <div className="archive-handoff-page archive-handoff-page--work">
-      <div className="projects container">
+    return <div className="archive-handoff-page archive-handoff-page--work" data-archive-reading-theme="work">
+      <div className="projects container" data-archive-reading-theme="work">
         <div className="projects__intro">
           <div className="projects__intro-sticky">
             <div className="projects__intro-content"><ProjectsHeader preview /></div>
@@ -39,7 +39,7 @@ export default function ArchiveHandoffPage({ track }: { track: ArchiveTrack }) {
       </div>
     </div>
   }
-  return <div className="archive-handoff-page archive-handoff-page--contact footer">
+  return <div className="archive-handoff-page archive-handoff-page--contact footer" data-archive-reading-theme="contact">
     <div className="container footer__content"><div className="footer__inner">
       <FooterContact />
       <FooterMeta clockRef={contactClock} />

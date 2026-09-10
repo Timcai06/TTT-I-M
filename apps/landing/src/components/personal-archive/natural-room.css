@@ -1,5 +1,6 @@
-/* Room illumination owns every reading surface, including projected and routing copies.
-   --room-paper is calibrated once behind the loader from the lit WebGL book. */
+/* Each 2D chapter inherits the material family of its physical carrier.
+   About's --room-paper is calibrated behind the loader from the lit book;
+   the other values mirror the shelf paper, gallery print, monitor, file and stationery. */
 @media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
   :root { --room-paper: #e9e0d0; --room-ink: #292720; }
   html[data-archive-visible] .grain { display: none; }
@@ -7,14 +8,46 @@
   .archive-bridge__veil { background: none; }
   :is(.archive-sequence, .archive-chapter-sequence, .archive-bridge, .archive-route-layer,
       .about, .life, .frame-horizontal, .skills, .projects, .footer, .archive-handoff-page) {
-    --bg: var(--room-paper); --bg-soft: color-mix(in srgb, var(--room-paper), var(--room-ink) 5%);
-    --bg-elev: color-mix(in srgb, var(--room-paper), white 5%);
-    --fg: var(--room-ink); --fg-soft: color-mix(in srgb, var(--room-ink), var(--room-paper) 22%);
-    --fg-mute: color-mix(in srgb, var(--room-ink), var(--room-paper) 40%);
-    --fg-dim: color-mix(in srgb, var(--room-ink), var(--room-paper) 52%);
-    --line: color-mix(in srgb, var(--room-ink) 20%, transparent);
+    --archive-surface: var(--room-paper); --archive-ink: var(--room-ink);
+    --bg: var(--archive-surface); --bg-soft: color-mix(in srgb, var(--archive-surface), var(--archive-ink) 5%);
+    --bg-elev: color-mix(in srgb, var(--archive-surface), white 5%);
+    --fg: var(--archive-ink); --fg-soft: color-mix(in srgb, var(--archive-ink), var(--archive-surface) 22%);
+    --fg-mute: color-mix(in srgb, var(--archive-ink), var(--archive-surface) 20%);
+    --fg-dim: color-mix(in srgb, var(--archive-ink), var(--archive-surface) 24%);
+    --line: color-mix(in srgb, var(--archive-ink) 20%, transparent);
+    --line-strong: color-mix(in srgb, var(--archive-ink) 34%, transparent);
     --accent-warm: #875b40; --accent: #566962;
-    --archive-bg: var(--room-paper); --archive-fg: var(--fg); --archive-fg-soft: var(--fg-soft);
+    --archive-bg: var(--archive-surface); --archive-fg: var(--fg); --archive-fg-soft: var(--fg-soft);
+    --archive-fg-mute: var(--fg-mute); --archive-fg-dim: var(--fg-dim); --archive-line: var(--line);
+    color: var(--fg);
+  }
+  :is(#about, [data-archive-reading-theme='about'], [data-archive-clone='about']) {
+    --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #647067; --accent-warm: #875b40;
+  }
+  :is(#life, [data-archive-reading-theme='life'], [data-archive-clone='life']) {
+    --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #6b745f; --accent-warm: #875b40;
+  }
+  :is(#frame, [data-archive-reading-theme='frame'], [data-archive-clone='frame']) {
+    --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #315f49; --accent-warm: #875b40;
+  }
+  :is(#skills, [data-archive-reading-theme='stack'], [data-archive-clone='skills']) {
+    --archive-surface: #17191a; --archive-ink: #eee9df; --accent: #ff3333; --accent-warm: #d8bd86;
+  }
+  :is(#projects, [data-archive-reading-theme='work'], [data-archive-clone='projects']) {
+    --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #3d435e; --accent-warm: #875b40;
+  }
+  :is(#contact, [data-archive-reading-theme='contact'], [data-archive-clone='contact']) {
+    --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #6f342c; --accent-warm: #875b40;
+  }
+  :is(#about, #life, #frame, #skills, #projects, #contact, [data-archive-reading-theme]) {
+    --bg: var(--archive-surface); --bg-soft: color-mix(in srgb, var(--archive-surface), var(--archive-ink) 5%);
+    --bg-elev: color-mix(in srgb, var(--archive-surface), white 5%);
+    --fg: var(--archive-ink); --fg-soft: color-mix(in srgb, var(--archive-ink), var(--archive-surface) 22%);
+    --fg-mute: color-mix(in srgb, var(--archive-ink), var(--archive-surface) 20%);
+    --fg-dim: color-mix(in srgb, var(--archive-ink), var(--archive-surface) 24%);
+    --line: color-mix(in srgb, var(--archive-ink) 20%, transparent);
+    --line-strong: color-mix(in srgb, var(--archive-ink) 34%, transparent);
+    --archive-bg: var(--archive-surface); --archive-fg: var(--fg); --archive-fg-soft: var(--fg-soft);
     --archive-fg-mute: var(--fg-mute); --archive-fg-dim: var(--fg-dim); --archive-line: var(--line);
     color: var(--fg);
   }
@@ -26,7 +59,7 @@
   :is(#life, #frame, #contact, [data-archive-clone='life'], [data-archive-clone='frame'], [data-archive-clone='contact']),
   .frame-horizontal, .skills-working-set,
   :is(#skills, #projects, [data-archive-clone='skills'], [data-archive-clone='projects'])::before {
-    background: var(--room-paper);
+    background: var(--archive-surface);
     color: var(--fg);
     box-shadow: none;
   }
@@ -42,15 +75,15 @@
   #skills .skills-continuity, .archive-handoff-page--stack .skills-continuity {
     width: 100vw; margin-left: -50vw;
   }
-  .skills-continuity { background: var(--room-paper); }
+  .skills-continuity { background: var(--archive-surface); }
   .skills__flow-svg, .projects__laser-wrap { mix-blend-mode: normal; }
   .skills-working-set__header { border-color: var(--line); }
   .skills-working-set__mark { color: var(--fg-soft); }
   .skills-working-set__header small, .skills-working-set__mark small { color: var(--fg-mute); }
   .life__statement em { color: var(--accent-warm); }
-  .life__wall { background: var(--room-paper); box-shadow: none; }
-  .life__wall::before { box-shadow: inset 0 0 65px 8px color-mix(in srgb, var(--room-ink) 4%, transparent); }
-  .life__wall::after { background: linear-gradient(to top, var(--room-paper), transparent); }
+  .life__wall { background: var(--archive-surface); border-color: var(--line); box-shadow: none; }
+  .life__wall::before { box-shadow: inset 0 0 65px 8px color-mix(in srgb, var(--archive-ink) 4%, transparent); }
+  .life__wall::after { background: linear-gradient(to top, var(--archive-surface), transparent); }
   .life__wall-index { color: var(--fg-mute); }
   .archive-theme-section { background: transparent; }
   .archive-editorial-copy__theme-title { color: var(--fg-soft); }
@@ -61,12 +94,15 @@
   }
   .archive-sequence .about__portrait-meta, .archive-bridge__page .about__portrait-meta { color: #f1e8d8; }
   .archive-sequence .about__decrypt-hint, .archive-bridge__page .about__decrypt-hint {
-    background: var(--room-paper); color: var(--fg-soft); backdrop-filter: none;
+    background: var(--archive-surface); color: var(--fg-soft); backdrop-filter: none;
   }
   .footer__title, .footer__now-time { color: var(--fg); }
   .footer__kicker, .footer__meta, .footer__now { color: var(--fg-soft); border-color: var(--line); }
   .contact__btn, .contact__btn:hover, .contact__btn::before { background: var(--bg-elev); color: var(--fg); border-color: var(--line); }
-  .contact__iris-goo { fill: var(--room-paper); }
+  .contact__btn-arrow, .footer__meta a { color: var(--fg-soft); }
+  .footer__meta a:hover { color: var(--fg); }
+  .contact__btn:focus-visible { outline-color: var(--accent-warm); }
+  .contact__iris-goo { fill: var(--archive-surface); }
   /* Media can be dark; that local art direction never becomes the reading paper. */
   :is(#projects, [data-archive-clone='projects']) :is(.bento-tile, .project-glass) {
     --fg: #eee9df; --fg-soft: #bcb7ae; --fg-mute: #99968f; --bg-elev: #171b1d;

@@ -14,6 +14,7 @@ const resourceFiles = {
   manifest: 'src/lib/resources/manifest.ts',
   loaders: 'src/lib/resources/loaders.ts',
   controller: 'src/lib/resources/preloadController.ts',
+  readiness: 'src/lib/resources/preloadReadiness.ts',
   imageDecodeQueue: 'src/lib/resources/imageDecodeQueue.ts',
   sharedResource: 'src/lib/resources/sharedResource.ts',
   taskDeadline: 'src/lib/resources/taskDeadline.ts',
@@ -27,6 +28,7 @@ for (const [name, path] of Object.entries(resourceFiles)) {
 const manifestSource = readFileSync(resourceFiles.manifest, 'utf8')
 const loadersSource = readFileSync(resourceFiles.loaders, 'utf8')
 const controllerSource = readFileSync(resourceFiles.controller, 'utf8')
+const readinessSource = readFileSync(resourceFiles.readiness, 'utf8')
 const imageDecodeQueueSource = readFileSync(resourceFiles.imageDecodeQueue, 'utf8')
 const sharedResourceSource = readFileSync(resourceFiles.sharedResource, 'utf8')
 const taskDeadlineSource = readFileSync(resourceFiles.taskDeadline, 'utf8')
@@ -176,15 +178,16 @@ if (!manifestSource.includes("id: 'layout:chapter-pages'") || !manifestSource.in
 const runtimeSource = readFileSync('src/components/personal-archive/archiveRuntime.ts', 'utf8')
 const archiveStageSource = readFileSync('src/components/personal-archive/ArchiveStage.tsx', 'utf8')
 const archiveRouteSource = readFileSync('src/lib/archiveRoute.ts', 'utf8')
-const archiveDirectorSource = readFileSync('src/components/personal-archive/archiveDirector.ts', 'utf8')
-for (const token of ['gl.initTexture', 'gl.compileAsync', 'composer.render()', 'host.appendChild(canvas)', 'mount(host)', 'activate(page, sourcePage', 'navigate(from, to, progress', '--archive-route-source-matrix', 'getInternalformatParameter', 'RGBA16F', 'FXAAShader', 'composer.addPass(finite); composer.addPass(focus)']) {
+for (const token of ['gl.initTexture', 'gl.compileAsync', 'composer.render()', 'host.appendChild(canvas)', 'mount(host)', 'activate(page, sourcePage', 'sampleStory(', 'execution.sample(', 'solveArchiveCamera(', 'preparePosition(', 'readingTransition(requestId', 'currentArchiveRequest()', 'getInternalformatParameter', 'RGBA16F', 'FXAAShader', 'composer.addPass(finite); composer.addPass(focus)']) {
   if (!runtimeSource.includes(token)) throw new Error(`Retained GPU preparation is missing ${token}`)
 }
-for (const token of ['cloneViewport', 'originalCanvases', 'originalVideos', 'bridgeDestination', 'cancelActiveRoute', "setStage('transitioning')", "setStage('live')"]) {
+for (const token of ['getSampleLayout', 'positionAtScroll', 'scrollAtPosition', 'currentArchiveRequest', 'readingTransition', 'bridgeDestination', 'cancelActiveRoute', "setStage('live')"]) {
   if (!archiveRouteSource.includes(token)) throw new Error(`Direct archive routing is missing ${token}`)
 }
-if (!archiveDirectorSource.includes('navigationPose(fromView') || !archiveDirectorSource.includes('viewAction(fromView')) {
-  throw new Error('The room director must own seekable object-to-object camera routes.')
+for (const retired of ['createArchiveDirector', 'execution.legacy(', '.navigationPose(', '--archive-route-source-matrix']) {
+  if (runtimeSource.includes(retired) || archiveRouteSource.includes(retired)) {
+    throw new Error(`Retired archive writer returned to the production path: ${retired}`)
+  }
 }
 for (const token of ['runtime.mount(host.current)', 'archive-stage']) {
   if (!archiveStageSource.includes(token)) throw new Error(`Persistent archive stage is missing ${token}`)
@@ -194,6 +197,12 @@ if (!ditherSource.includes("acquireContext('loader-dither')") || ditherSource.in
 }
 if (!archiveIndexSource.includes('track="index"') || !heroSource.includes('interactionRoot: screenPage')) {
   throw new Error('The opening Index must remain a locally interactive monitor surface.')
+}
+if (archiveIndexSource.includes('setIndexInspection') || archiveIndexSource.includes('targetProgress = 520')) {
+  throw new Error('The opening Index must not add a timer-driven camera slide over the real monitor interaction.')
+}
+if (loaderSource.includes('yPercent: -100') || !loaderSource.includes('autoAlpha: 0')) {
+  throw new Error('The ready Loader panel must fade in place instead of sliding a second grey viewport upward.')
 }
 
 if (!registrySource.includes('lazyChapterLoaders') || !registrySource.includes('preloadLazyChapters')) {
@@ -229,21 +238,27 @@ for (const token of ['settleRenderLayout(lifecycle.signal)', "signal.addEventLis
   }
 }
 
-// Gate contract: criticalReady marks the phase boundary; renderReady is the
-// only intro-exit gate. Failed resources expose a retry control.
+// Gate contract: criticalReady marks the phase boundary; renderReady remains
+// the full spatial-ready fact. The one explicit room failure may hand off only
+// after every other bounded task has completed successfully.
 if (!controllerSource.includes('criticalReady') || !controllerSource.includes('criticalCompleted') || !controllerSource.includes('criticalTotal')) {
   throw new Error('Preload controller must still expose the critical-tier fields (criticalReady/criticalCompleted/criticalTotal) for diagnostics.')
 }
 if (!controllerSource.includes('renderReady') || !controllerSource.includes('renderReady: failed.length === 0')) {
   throw new Error('Preload controller must expose a full-manifest renderReady gate.')
 }
+for (const token of ['readingFallbackReady', 'isArchiveReadingFallbackReady', 'completed === total', 'failed.length === 1', "failed[0] === ARCHIVE_RENDERER_TASK_ID"]) {
+  if (!controllerSource.includes(token) && !readinessSource.includes(token)) {
+    throw new Error(`Archive reading fallback readiness is missing ${token}`)
+  }
+}
 for (const token of ['window.__portfolioPreloadDebug', 'snapshot', 'if (!import.meta.env.DEV) return', 'Object.freeze']) {
   if (!controllerSource.includes(token)) {
     throw new Error(`Production preload diagnostics must retain a timer-free read-only snapshot: missing ${token}`)
   }
 }
-if (!loaderSource.includes('preload.renderReady') || !loaderSource.includes('current.renderReady')) {
-  throw new Error('Loader exit and progress must be driven by the full renderReady state.')
+for (const token of ['preload.renderReady', 'preload.readingFallbackReady', 'current.renderReady', 'current.readingFallbackReady', 'reading mode ready']) {
+  if (!loaderSource.includes(token)) throw new Error(`Loader hand-off contract is missing ${token}`)
 }
 if (/!introReady \|\| !preload\.criticalReady/.test(loaderSource)) {
   throw new Error('Loader must not exit at the SYSTEM phase boundary before device assets are decoded.')

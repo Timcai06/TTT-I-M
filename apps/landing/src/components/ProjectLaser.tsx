@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
-import { createLaser, LASER_CONFIG, type LaserHandle } from '../lib/canvas-ui/laser'
+import { useEffect, useRef, useState, type RefObject } from 'react'
+import { createLaser, type LaserHandle } from '../lib/canvas-ui/laser'
+import {
+  createLocalEffectCommit,
+  type LocalEffectState,
+} from '../lib/canvas-ui/localEffectControl'
 import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
 import {
@@ -8,15 +12,18 @@ import {
   getWebGLRecoveryDelay,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
+import { canRunLocalEffect } from './effects/localEffectEligibility'
 
 export default function ProjectLaser({
   active,
   handleRef,
   captureRef,
+  stateRef,
 }: {
   active: boolean
   handleRef: RefObject<LaserHandle | null>
   captureRef: RefObject<HTMLElement | null>
+  stateRef: RefObject<LocalEffectState>
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const retryCountRef = useRef(0)
@@ -27,15 +34,25 @@ export default function ProjectLaser({
 
   useEffect(() => {
     const host = ref.current
-    if (!host || !active || disabled) {
+    const capture = captureRef.current
+    if (!host || !capture || !active || disabled || !canRunLocalEffect(capture, 'projects')) {
       if (!active) retryCountRef.current = 0
       return
     }
+    const commit = createLocalEffectCommit<LaserHandle>({
+      apply: (current, state) => current.setScrollActivity(state),
+      destroy: (current) => current.destroy(),
+      onAttach: (current) => { handleRef.current = current },
+      onDetach: (current) => {
+        if (handleRef.current === current) handleRef.current = null
+      },
+    })
     const canvas = host.querySelector('canvas')
     if (!canvas) return
 
-    const capture = captureRef.current
-    const beamTarget = capture?.querySelector<HTMLElement>('.projects__bento') ?? null
+    const beamTarget = capture
+    commit.update(stateRef.current)
+    const generation = commit.activate()
     let contextLease: ContextLease | null = null
     let handle: LaserHandle | null = null
     let resizeObserver: ResizeObserver | null = null
@@ -49,13 +66,7 @@ export default function ProjectLaser({
     }
 
     const syncBeamBounds = () => {
-      if (!beamTarget) return
       const bounds = beamTarget.getBoundingClientRect()
-      const inset = Math.max(0, bounds.width * (1 - LASER_CONFIG.width) * 0.5)
-      const left = Math.max(0, bounds.left + inset)
-      const right = Math.max(0, window.innerWidth - bounds.right + inset)
-      host.style.setProperty('--projects-laser-left', `${left}px`)
-      host.style.setProperty('--projects-laser-right', `${right}px`)
       host.dataset.beamCenter = `${Math.round((bounds.left + bounds.right) * 0.5)}`
     }
 
@@ -73,17 +84,11 @@ export default function ProjectLaser({
       canvas.removeEventListener('webglcontextlost', onContextLost)
       resizeObserver?.disconnect()
       resizeObserver = null
-      if (handleRef.current === handle) handleRef.current = null
-      try {
-        handle?.destroy()
-      } catch {
-        // Continue through lease release even if a driver rejects teardown.
-      } finally {
-        handle = null
-        contextLease?.release()
-        contextLease = null
-        host.dataset.mode = 'unavailable'
-      }
+      commit.deactivate()
+      handle = null
+      contextLease?.release()
+      contextLease = null
+      host.dataset.mode = 'unavailable'
     }
     const retry = () => {
       if (released) return
@@ -110,7 +115,7 @@ export default function ProjectLaser({
     host.dataset.contextOwners = activeContextOwners().join(',') || 'none'
     canvas.addEventListener('webglcontextlost', onContextLost)
     stopWaiting = acquireOptionalContextWhenAvailable('project-laser', (lease) => {
-      if (released) {
+      if (released || !canRunLocalEffect(capture, 'projects')) {
         lease.release()
         return
       }
@@ -130,8 +135,12 @@ export default function ProjectLaser({
       }
       handle = created
       try {
+        if (!commit.accept(generation, created)) {
+          handle = null
+          retry()
+          return
+        }
         retryCountRef.current = 0
-        handleRef.current = created
         host.dataset.mode = created.mode
         host.dataset.lifecycle = 'live'
         delete host.dataset.failure
@@ -148,7 +157,7 @@ export default function ProjectLaser({
       }
     })
     return cleanup
-  }, [active, captureRef, disabled, handleRef, retryKey])
+  }, [active, captureRef, disabled, handleRef, retryKey, stateRef])
 
   if (disabled) return null
 
@@ -159,7 +168,6 @@ export default function ProjectLaser({
       data-active={active ? 'true' : 'false'}
       data-mode="unavailable"
       aria-hidden="true"
-      style={{ '--projects-laser-offset': `${LASER_CONFIG.offset}px` } as CSSProperties}
     >
       {active && <canvas key={retryKey} />}
     </div>

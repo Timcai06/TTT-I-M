@@ -6,6 +6,19 @@ import { subscribeStage } from './stage'
 import { requestScrollRefresh } from './scroll/requestRefresh'
 
 let lenisInstance: Lenis | null = null
+const pauseOwners=new Set<symbol>()
+let stagePaused=false
+
+function syncPause(){
+  if(!lenisInstance)return
+  if(stagePaused||pauseOwners.size)lenisInstance.stop()
+  else lenisInstance.start()
+}
+
+export function acquireLenisPause(label:string){
+  const token=Symbol(label);pauseOwners.add(token);syncPause()
+  return ()=>{pauseOwners.delete(token);syncPause()}
+}
 
 export function getLenis() {
   return lenisInstance
@@ -39,6 +52,7 @@ export function useLenis() {
     })
 
     lenisInstance = lenis
+    syncPause()
 
     // Mark active scroll bursts so expensive decorative layers can reduce
     // repaint work. Pointer hit-testing stays enabled: the Frame archive must
@@ -80,8 +94,7 @@ export function useLenis() {
     // Lenis owner) as a stage side-effect instead of being driven imperatively
     // from inside ChapterTransition. stop()/start() are idempotent.
     const unsubStage = subscribeStage((stage) => {
-      if (stage === 'transitioning') lenis.stop()
-      else if (stage === 'live') lenis.start()
+      stagePaused=stage==='transitioning';syncPause()
     })
 
     // Refresh ScrollTrigger after a tick to make sure the DOM heights have settled

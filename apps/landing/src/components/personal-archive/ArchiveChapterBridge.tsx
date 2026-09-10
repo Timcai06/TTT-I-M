@@ -5,7 +5,7 @@ import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
 import { scrollToChapter } from '../../lib/chapterScroll'
 import { createArchiveProgress } from './scrollPose'
-import { chapterHandoffPose, chapterPose, chapterTracks, type ArchiveTrack } from './chapterTracks'
+import { chapterTracks, type ArchiveTrack } from './chapterTracks'
 import ArchiveHandoffPage from './ArchiveHandoffPage'
 import { readingSnapshot } from './readingSnapshot'
 import './personal-archive.css'
@@ -28,18 +28,17 @@ export default function ArchiveChapterBridge({ track, id }: { track: ArchiveTrac
   const stage = useStage()
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
-  const [completed, setCompleted] = useState(false)
   const [active, setActive] = useState(false)
   const fail = useCallback(() => { setFailed(true); setReady(false) }, [])
   const loaded = useCallback(() => setReady(true), [])
   const released = useCallback(() => setReady(false), [])
   const config = chapterTracks[track]
   const sourceId = { 'about-life': 'about', 'life-frame': 'life', 'frame-stack': 'frame', 'stack-work': 'skills', 'work-contact': 'projects' }[track]
+  const sourceTheme = { 'about-life': 'about', 'life-frame': 'life', 'frame-stack': 'frame', 'stack-work': 'stack', 'work-contact': 'work' }[track]
+  const targetTheme = { 'about-life': 'life', 'life-frame': 'frame', 'frame-stack': 'stack', 'stack-work': 'work', 'work-contact': 'contact' }[track]
   useGSAP(() => {
     const element = root.current
     if (!element) return
-    const liveTarget = document.getElementById(config.target)
-    liveTarget?.setAttribute('data-archive-live-target', '')
     let previous = -1
     const sync = (self: ScrollTrigger) => {
       const p = self.progress
@@ -49,27 +48,12 @@ export default function ArchiveChapterBridge({ track, id }: { track: ArchiveTrac
       }
       previous = p
       progress.set(p)
-      const pose = chapterPose(track, p)
-      const handoff = chapterHandoffPose(track, p)
-      liveTarget?.style.setProperty('--archive-live-target', pose.reading ? '1' : '0')
-      element.dataset.phase = pose.reading ? 'released' : !ready ? 'prepare' : p < .6 ? 'visible' : p < .9 ? 'transfer' : 'reading'
-      element.style.setProperty('--archive-stage', pose.reading ? 'hidden' : 'visible')
-      element.style.setProperty('--archive-progress', String(p))
-      element.style.setProperty('--archive-copy', String(ready && !failed ? handoff.guidance : 1))
-      element.style.setProperty('--archive-room', String(ready && !failed ? handoff.roomOpacity : 0))
-      element.style.setProperty('--archive-vignette', String(handoff.vignette))
-      element.style.setProperty('--archive-target-opacity', String(ready && !failed ? handoff.targetOpacity : 0))
-      setCompleted(pose.reading)
       const bounds = element.getBoundingClientRect()
-      setActive(bounds.top < innerHeight - 1 && bounds.bottom > 1 && !pose.reading)
+      setActive(bounds.top < innerHeight - 1 && bounds.bottom > 1)
     }
     const trigger = ScrollTrigger.create({ trigger: element, start: 'top bottom', end: 'bottom bottom', onUpdate: sync, onRefresh: sync, refreshPriority: -100 })
     sync(trigger); requestScrollRefresh()
-    return () => {
-      liveTarget?.removeAttribute('data-archive-live-target')
-      liveTarget?.style.removeProperty('--archive-live-target')
-    }
-  }, { scope: root, dependencies: [track, ready, failed], revertOnUpdate: true })
+  }, { scope: root, dependencies: [track], revertOnUpdate: true })
 
   return <section ref={root} id={id} className="archive-bridge archive-chapter-bridge" data-archive-track={track} data-archive-target={config.target}
     data-scene-ready={ready} data-failed={failed} aria-label={config.title} style={{ '--archive-height': config.height } as CSSProperties}>
@@ -77,19 +61,19 @@ export default function ArchiveChapterBridge({ track, id }: { track: ArchiveTrac
       <div ref={backdrop} className="archive-bridge__backdrop" aria-hidden="true">
         {!failed && (stage === 'live' || stage === 'transitioning') && <Boundary onFailure={fail}>
           <Suspense fallback={null}><Surface page={page} sourcePage={sourcePage} track={track} progress={progress}
-            visible={visible && active && !completed && stage === 'live'} onReady={loaded} onFailure={fail} onRelease={released} /></Suspense>
+            visible={visible && active && stage === 'live'} onReady={loaded} onFailure={fail} onRelease={released} /></Suspense>
         </Boundary>}
       </div>
       <div className="archive-bridge__veil" aria-hidden="true" />
-      <button className={`archive-bridge__room-hit archive-bridge__room-hit--${track}`} type="button"
-        aria-label={`打开 ${config.target}`} onClick={() => scrollToChapter(config.target, { updateHash: true, immediate: true, restore: true })}><span>OPEN</span></button>
-      <div ref={page} className="archive-bridge__page archive-chapter-bridge__page" data-preview-ready="true" aria-hidden="true" inert>
+      <button className={`archive-bridge__room-hit archive-bridge__room-hit--${track}`} type="button" aria-disabled="true" tabIndex={-1}
+        aria-label={`打开 ${config.target}`} onClick={() => void scrollToChapter(config.target, { updateHash: true, immediate: true, restore: true })}><span>OPEN</span></button>
+      <div ref={page} className="archive-bridge__page archive-chapter-bridge__page" data-archive-reading-theme={targetTheme} data-preview-ready="true" aria-hidden="true" inert>
         <ArchiveHandoffPage track={track} />
       </div>
-      <div ref={sourcePage} className="archive-bridge__page archive-bridge__page--source" aria-hidden="true" inert />
+      <div ref={sourcePage} className="archive-bridge__page archive-bridge__page--source" data-archive-reading-theme={sourceTheme} aria-hidden="true" inert />
       <div className="archive-bridge__footer"><span>{failed ? '可直接进入下一章' : ready ? 'SCROLL TO CONTINUE' : '正在加载空间，可直接阅读'}</span>
         {failed && <button type="button" onClick={() => window.location.reload()}>重新加载空间 ↻</button>}
-        <a href={`#${config.target}`} onClick={event => { event.preventDefault(); scrollToChapter(config.target, { updateHash: true, immediate: true, restore: true }) }}>继续阅读 ↘</a>
+        <a href={`#${config.target}`} onClick={event => { event.preventDefault(); void scrollToChapter(config.target, { updateHash: true, immediate: true, restore: true }) }}>继续阅读 ↘</a>
       </div>
     </div>
   </section>

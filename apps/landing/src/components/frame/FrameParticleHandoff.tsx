@@ -15,6 +15,7 @@ import {
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { markDrawableSubtree } from '../../lib/canvas-ui/runtime'
 import ArchiveChapterBridge from '../personal-archive/ArchiveChapterBridge'
+import { resolveFinalHorizonImage } from '../../content/narrativeObjects'
 
 type ArchiveImage = (typeof archiveThemes)[number]['clusters'][number]['slots'][number]['image']
 
@@ -73,11 +74,7 @@ function LegacyFrameParticleHandoff() {
   const disabled = reducedMotion || mobileExperience
   const supported = canRenderFrameParticles()
 
-  const image = useMemo(() => {
-    const lastTheme = archiveThemes[archiveThemes.length - 1]
-    const lastCluster = lastTheme?.clusters[lastTheme.clusters.length - 1]
-    return lastCluster?.slots[0]?.image
-  }, [])
+  const image = useMemo(() => resolveFinalHorizonImage(), [])
 
   useEffect(() => {
     const capture = captureRef.current

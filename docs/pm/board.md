@@ -1,26 +1,34 @@
-# 执行看板
+# PM 看板
 
-2026-09-09，PM 维护。**先确定计划再开发；本轮获授权提交和推送基线，NR-00 仅负责只读规划。** 状态：DRAFT → READY → RUNNING → REVIEW → ACCEPTED；分支状态 BLOCKED / REWORK / PAUSED。涉及视觉的任务另记 tim 验收：PENDING / ACCEPTED / CHANGES_REQUESTED / N/A。
+**2026-09-10：全站技术推广及本轮授权空间/捕获修改已完成；等待tim前端检验与效果测试。**
 
-| ID | 工作 | 负责会话 / 模型 | 状态 | 文件所有权 | 验收 |
-| --- | --- | --- | --- | --- | --- |
-| PM-SETUP | 流程、入口与模板 | PM / 当前会话模型 | ACCEPTED | docs/pm（下方任务报告除外）、docs/README.md、README.md | PM 链接与范围检查通过 |
-| [PA-001](cards/PA-001-baseline.md) | 当前版本与证据盘点 | 修复产品页转场与配色 / GPT-5.6 Terra medium | PAUSED | 只读产品代码；独占 reports/PA-001-baseline.md、output/pm/PA-001/ | 无有效报告，未验收；停止重试 |
+[本轮PM验收](reports/VR-pm-acceptance.md) · ACCEPTED_TECHNICAL / WAIT_TIM_VISUAL。
 
-## 只读规划与待确认开发队列
+## 当前状态
 
-用户方案已存档，具体建议见 [叙事内核迁移计划 DRAFT v1](narrative-runtime-plan.md)。NR-00 为 RUNNING（已完成基线远程核验并投递 ARCH）；NR-01 至 NR-08 的实施部分仍为 DRAFT。
+DEV、ARCH、QA均已停止。全部沿用tim为各会话配置的模型，没有更改模型。没有提交、推送、部署或操作原5173服务。
 
-- [NR-00](cards/NR-00-architecture.md)：ARCH / `gpt-6-astra` high；只读产品。报告独占 `reports/NR-00-architecture.md`、`reports/NR-00-contract.md` 与 `output/pm/NR-00/`。
-- 再由 DEV 串行完成确定性内核、同帧绑定及 About → Life → Frame 样段。
-- QA 按交付定点复核；ART 在可体验样段成立后参与。
-- 已有会话：ARCH `01a08483-8c0c-7fd0-b1a5-9ecc926e4f30`，DEV `01a08484-5199-7c22-b54e-38778cd5ed1d`，QA `01a08484-af37-72b1-ab52-deaec8bb1184`。DEV/QA 待命；不新建会话。
-- [基线记录](baselines/2026-09-09.md)：保存到 `baseline/personal-archive-20260909`；远程已核验为 `6137099b950745d06c1f2894d83cdf7a1826684a`，NR-00 已派发。计划待 tim 确认，未授权实施。
+| 范围 | 状态 | 结果 |
+| --- | --- | --- |
+| NR-00至NR-05全站推广 | ACCEPTED_TECHNICAL | 唯一故事执行链、真实照片、全局导航、Work/Contact与书签；历史见NR验收 |
+| VR-01空间与阅读 | ACCEPTED_TECHNICAL | 放缓六段过渡、正文返回载体、配色对应；移除Index下滑与灰幕上移；第三层照片源/GLB同步修复 |
+| VR-02A域名配置 | ACCEPTED_TECHNICAL | 保留www正式域名token-only配置；Preview不冒用生产token；9项独立检查通过 |
+| VR-02B About捕获 | ACCEPTED_TECHNICAL | 真实可读资格、有效像素与异步清理；13项独立检查通过 |
+| VR-03及R1/R2局部增强 | ACCEPTED_TECHNICAL | Frame静态标题与有效像素、Work自足SVG捕获及真实标题资格、Contact局部Liquid；全部返工关闭 |
+| VR-Q01最终技术QA | PASS | 最终R2定点检查和8类完整构建守卫通过；不代表浏览器或视觉接受 |
+| 前端检验与效果测试 | WAIT_TIM | tim负责本地、正式域名与最终观感验收 |
+| 最终收尾 / 提交推送 / 发布 | WAIT_TIM_DIRECTION | 不自动执行 |
 
-## 派发记录
+## 接受版本与证据
 
-- NR-00 v1：已向 ARCH `01a08483-8c0c-7fd0-b1a5-9ecc926e4f30` 投递，配置 `gpt-6-astra` / `high`。等待工具确认 active；尚未收到或验收报告。DEV/QA 没有执行卡。
+- 分支feat/narrative-kernel，HEAD 55c08029051b11e9687d869747907e20291940fa；本轮成果尚未新增提交。
+- 本轮最终清单output/pm/VR-final/pm-accepted-files.json：PM逐字节核对64/64，完整文本62份及VR-01二进制快照可追溯。范围仅本轮，非全仓备份。
+- [最终独立QA](reports/VR-Q01-R2-final-review.md)、[本轮人工验收路线](reports/VR-user-review.md)、[HTML-in-Canvas部署说明](../html-in-canvas-deployment.md)。
+- [此前NR最终验收](reports/NR-05-pm-acceptance.md)及output/pm/NR-05-R3/原接受快照继续保留。两条既有资源政策E2E冲突不称全绿。
+- 本轮未运行浏览器、Playwright、截图或前端效果测试。类型/构建/单元与有限几何采样不替代tim视觉接受。体积参考保持advisory。
 
-- PA-001：2026-09-09 已向 `01a06eed-d3a1-7711-84a6-f480b00a2696` 发送 v1；工具确认投递，配置 `gpt-5.6-terra` / `medium`。首轮及一次受控重试均由工具报告结束，但未取得正文或报告文件。不能判断原因，PM 不予验收，停止重试；依最新用户指示暂停。2026-09-09 再查会话为 idle，报告路径仍不存在。
+## 下一步
 
-新任务先填卡片再登记写入范围；已完成报告不得覆盖重写，返工用任务编号与修订号区分。
+tim按人工验收路线检查现有本地页面并给出优化方向。PM根据反馈再派具体卡；最终收尾、提交推送及发布等待明确指示。
+
+[协作流程](workflow.md) · [会话职责](sessions/README.md) · [迁移计划](narrative-runtime-plan.md) · [历史看板](board-history-2026-09-10.md)。

@@ -4,6 +4,7 @@ import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import glsl from 'vite-plugin-glsl'
 import {
   HTML_IN_CANVAS_ORIGIN_TRIAL_ENV,
+  HTML_IN_CANVAS_ORIGIN_TRIAL_ORIGIN_ENV,
   htmlInCanvasOriginTrial,
 } from './config/htmlInCanvasOriginTrial.ts'
 
@@ -32,7 +33,12 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       deploymentMetadata(),
-      htmlInCanvasOriginTrial(originTrialToken),
+      htmlInCanvasOriginTrial(originTrialToken, {
+        expectedOrigin: process.env[HTML_IN_CANVAS_ORIGIN_TRIAL_ORIGIN_ENV]
+          ?? fileEnv[HTML_IN_CANVAS_ORIGIN_TRIAL_ORIGIN_ENV],
+        deploymentEnvironment: process.env.VERCEL_ENV,
+        deploymentOrigin: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
+      }),
       react(),
       // GLSL `#include` support for authored shader modules.
       glsl({ warnDuplicatedImports: true, removeDuplicatedImports: true }),

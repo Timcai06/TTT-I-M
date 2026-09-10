@@ -4,6 +4,7 @@ import MaskedHeading from '../../components/MaskedHeading'
 import ProjectLaser from '../../components/ProjectLaser'
 import ProjectGlassSurface from '../../components/effects/ProjectGlassSurface'
 import type { LaserHandle } from '../../lib/canvas-ui/laser'
+import type { LocalEffectState } from '../../lib/canvas-ui/localEffectControl'
 import ProjectsBento from './ProjectsBento'
 
 const headingSources = projects
@@ -38,6 +39,7 @@ export function ProjectsHeader({ preview = false }: { preview?: boolean }) {
 interface ProjectsIntroProps {
   laserActive: boolean
   laserHandle: RefObject<LaserHandle | null>
+  laserState: RefObject<LocalEffectState>
   glassEnabled: boolean
   onGlassActiveChange: (surfaceId: string, active: boolean) => void
 }
@@ -45,23 +47,33 @@ interface ProjectsIntroProps {
 export default function ProjectsIntro({
   laserActive,
   laserHandle,
+  laserState,
   glassEnabled,
   onGlassActiveChange,
 }: ProjectsIntroProps) {
-  const portalContent = useRef<HTMLDivElement>(null)
+  const laserTarget = useRef<HTMLDivElement>(null)
 
   return (
     <div className="projects__intro">
       <div className="projects__intro-sticky">
-        <ProjectLaser active={laserActive} handleRef={laserHandle} captureRef={portalContent} />
-        <div className="projects__intro-content" ref={portalContent} data-project-laser-target>
+        <div className="projects__local-title">
+          <div ref={laserTarget} data-project-laser-target>
+            <ProjectsHeader />
+          </div>
+          <ProjectLaser
+            active={laserActive}
+            handleRef={laserHandle}
+            captureRef={laserTarget}
+            stateRef={laserState}
+          />
+        </div>
+        <div className="projects__intro-content">
           <ProjectGlassSurface
             surfaceId="project-overview"
             variant="overview"
             enabled={glassEnabled}
             onActiveChange={onGlassActiveChange}
           >
-            <ProjectsHeader />
             <ProjectsBento />
           </ProjectGlassSurface>
         </div>

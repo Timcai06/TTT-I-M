@@ -5,7 +5,7 @@
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
-    background: var(--room-paper, #000);
+    background: var(--room-paper, #e9e0d0);
     contain: strict;
   }
   .archive-stage canvas { width: 100%; height: 100%; display: block; }
@@ -27,8 +27,8 @@
   .archive-return:hover,
   .archive-return:focus-visible { color: #eee9df; }
   main { position: relative; z-index: 1; }
-  .archive-bridge { position: relative; height: 340svh; background: transparent; color: #eee9df; }
-  .archive-bridge__stage { position: sticky; top: 0; height: 100svh; overflow: clip; isolation: isolate; }
+  .archive-bridge { position: relative; height: 400svh; background: transparent; color: #eee9df; pointer-events: none; }
+  .archive-bridge__stage { position: sticky; top: 0; height: 100svh; overflow: clip; isolation: isolate; pointer-events: none; }
   .archive-bridge__backdrop { position: absolute; inset: 0; opacity: 1; pointer-events: none; }
   .archive-bridge__veil { opacity: var(--archive-vignette, var(--archive-copy, 1)); position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, #050505f0, #08080850 42%, #05050510 70%), linear-gradient(0deg, #000000ef, transparent 24%, transparent 74%, #000000b8); }
   .archive-bridge__arrival, .archive-bridge__handoff { opacity: var(--archive-copy, 1); position: absolute; left: 8%; top: 31%; width: 38%; pointer-events: none; }
@@ -39,11 +39,17 @@
   .archive-bridge__handoff { visibility: hidden; opacity: 0; top: 35%; }
   .archive-bridge__footer { position: absolute; left: 8%; right: 8%; bottom: 7%; display: flex; justify-content: space-between; align-items: center; gap: 24px; font-family: var(--font-mono, monospace); font-size: 10px; letter-spacing: .08em; }
   .archive-bridge__footer > span { opacity: .6; }
-  .archive-bridge__footer :is(a, button) { color: inherit; text-decoration: none; padding: 14px 0; border: 0; border-bottom: 1px solid currentColor; background: none; font: inherit; cursor: pointer; }
+  .archive-bridge__footer :is(a, button) { color: inherit; text-decoration: none; padding: 14px 0; border: 0; border-bottom: 1px solid currentColor; background: none; font: inherit; cursor: pointer; pointer-events: auto; }
   .archive-bridge__footer :is(a, button):focus-visible { outline: 2px solid var(--accent, #c6b89b); outline-offset: 6px; }
 }
 
 html[data-archive-routing] main { visibility: hidden; }
+html[data-archive-sample-fallback] :is(#about, #life, #frame) { opacity: 1 !important; }
+html[data-archive-sample-fallback] .archive-sequence > .about > .about-decrypt { visibility: visible; }
+html[data-archive-sample-fallback] :is([data-archive-track='about-life'], [data-archive-track='life-frame']) .archive-bridge__footer {
+  visibility: visible;
+  opacity: 1;
+}
 .archive-route-layer {
   position: fixed;
   inset: 0;
@@ -55,8 +61,13 @@ html[data-archive-routing] main { visibility: hidden; }
   will-change: transform, opacity, filter;
 }
 .archive-route-layer--target { opacity: 0; }
+.archive-route-layer--reading { contain: layout paint; background: var(--bg, #171818); }
 
 @layer chapters {
+  .archive-sequence,
+  .archive-chapter-sequence { pointer-events: none; }
+  .archive-sequence > :not(.archive-bridge),
+  .archive-chapter-sequence > :not(.archive-bridge) { pointer-events: auto; }
   .archive-sequence { --archive-fg: var(--fg); --archive-fg-soft: var(--fg-soft); --archive-fg-mute: var(--fg-mute); --archive-fg-dim: var(--fg-dim); --archive-bg: var(--bg); --archive-line: var(--line); }
   .archive-sequence > .about { padding-top: 0; }
   .archive-sequence .about-decrypt { height: 100svh; min-height: 0; }
@@ -76,7 +87,7 @@ html[data-archive-routing] main { visibility: hidden; }
   .archive-bridge__page { display: none; opacity: 0; }
   .archive-bridge--entry .archive-bridge__page {
     display: block; position: absolute; inset: 0; width: 100%; height: 100%;
-    color: var(--fg); background: var(--room-paper, #e9e0d0);
+    color: var(--fg); background: var(--archive-surface, var(--room-paper, #e9e0d0));
     transform-origin: 0 0; overflow: hidden; pointer-events: none; will-change: transform;
   }
   .archive-bridge--entry .archive-bridge__page .about__decrypt-hint { visibility: visible; opacity: var(--paper-hint, 0); }
@@ -103,7 +114,7 @@ html[data-archive-routing] main { visibility: hidden; }
     height: 100%;
     overflow: hidden;
     color: var(--fg);
-    background: var(--room-paper, #e9e0d0);
+    background: var(--archive-surface, var(--room-paper, #e9e0d0));
     transform-origin: 0 0;
     pointer-events: none;
     will-change: transform, opacity;
@@ -118,7 +129,7 @@ html[data-archive-routing] main { visibility: hidden; }
     height: 100%;
     overflow: hidden;
     color: var(--fg);
-    background: var(--room-paper, #000);
+    background: var(--archive-surface, var(--room-paper, #e9e0d0));
     transform-origin: 0 0;
     pointer-events: none;
     will-change: transform, opacity;
@@ -152,7 +163,7 @@ html[data-archive-routing] main { visibility: hidden; }
     min-height: min(78vh, 760px);
     margin: 0;
   }
-  .archive-chapter-bridge[data-archive-track='work-contact'] .archive-chapter-bridge__page { background: var(--room-paper, #e9e0d0); }
+  .archive-chapter-bridge[data-archive-track='work-contact'] .archive-chapter-bridge__page { background: var(--archive-surface, var(--room-paper, #e9e0d0)); }
   .archive-chapter-sequence[data-archive-destination='contact'] > .footer { min-height: 100svh; z-index: 0; }
 
   .archive-handoff-page {
@@ -171,9 +182,9 @@ html[data-archive-routing] main { visibility: hidden; }
 
   .archive-handoff-page--life { padding-bottom: 0; }
   .archive-handoff-page--life .life__copy { margin-bottom: 0; }
-  .archive-handoff-page--stack { background: var(--room-paper, #000); }
+  .archive-handoff-page--stack { background: var(--archive-surface, var(--room-paper, #e9e0d0)); }
   .archive-handoff-page--stack > .skills { min-height: 100%; }
-  .archive-handoff-page--work { background: var(--room-paper, #000); }
+  .archive-handoff-page--work { background: var(--archive-surface, var(--room-paper, #e9e0d0)); }
   .archive-handoff-page--work > .projects { min-height: 100%; }
   .archive-handoff-page--work .projects__intro-sticky { justify-content: flex-start; }
   .archive-handoff-page--work .projects__header { width: 100%; }
@@ -181,8 +192,8 @@ html[data-archive-routing] main { visibility: hidden; }
     min-height: clamp(620px, 70svh, 700px);
     display: flex;
     align-items: flex-end;
-    background: var(--room-paper, #f5f2ea);
-    color: #0a0a0a;
+    background: var(--archive-surface, var(--room-paper, #f5f2ea));
+    color: var(--fg, #0a0a0a);
   }
   .archive-handoff-page--contact .footer__inner { opacity: 1; }
 
@@ -197,6 +208,7 @@ html[data-archive-routing] main { visibility: hidden; }
     background: transparent;
     cursor: pointer;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
   }
   .archive-bridge[data-phase='visible'] .archive-bridge__room-hit,
@@ -234,7 +246,7 @@ html[data-archive-routing] main { visibility: hidden; }
       border-inline: clamp(18px, 2vw, 32px) solid transparent;
       background-clip: padding-box;
     }
-    .archive-sequence > .about { background-color: var(--room-paper, #000); }
+    .archive-sequence > .about { background-color: var(--archive-surface, var(--room-paper, #e9e0d0)); }
 
     #life,
     .archive-handoff-page--life {

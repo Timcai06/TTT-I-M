@@ -118,6 +118,8 @@ interface CanvasUiHtmlSurfaceProps<Options extends object> {
   effectId: string
   exclusiveGroup?: string
   enabled?: boolean
+  /** Recheck semantic eligibility at asynchronous resource/first-frame boundaries. */
+  isCaptureAllowed?: () => boolean
   options: Options
   loadFactory: () => Promise<CanvasUiHtmlFactory<Options>>
   onActiveChange?: (active: boolean) => void
@@ -141,6 +143,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
   effectId,
   exclusiveGroup,
   enabled = true,
+  isCaptureAllowed,
   options,
   loadFactory,
   onActiveChange,
@@ -209,7 +212,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     const source = sourceRef.current
     const content = contentRef.current
     const output = outputRef.current
-    if (!effectActive || !source || !content || !output) return
+    if (!effectActive || !source || !content || !output || isCaptureAllowed?.() === false) return
 
     let disposed = false
     let contextLease: ContextLease | null = null
@@ -223,7 +226,9 @@ export default function CanvasUiHtmlSurface<Options extends object>({
     let startupTimer = 0
     let firstFrameTimer = 0
     let firstFrameSeen = false
+    let captureSeen = false
     let failureReported = false
+    const canContinue = () => !disposed && !failureReported && isCaptureAllowed?.() !== false
     const failSurface = () => {
       if (disposed || failureReported) return
       failureReported = true
@@ -336,13 +341,13 @@ export default function CanvasUiHtmlSurface<Options extends object>({
 
     void Promise.all([loadFactory(), initialImagesReady])
       .then(([create]) => {
-        if (disposed) return
+        if (!canContinue()) return
         window.clearTimeout(startupTimer)
         startupTimer = 0
         stopWaitingForContext = acquireOptionalContextWhenAvailable(
           `canvas-ui:${effectId}`,
           (lease) => {
-            if (disposed) {
+            if (!canContinue()) {
               lease.release()
               return
             }
@@ -352,14 +357,17 @@ export default function CanvasUiHtmlSurface<Options extends object>({
                 source,
                 content: capture,
                 output,
-                hasVisibleCapture: () => (
-                  captureSupported && captureHasVisiblePixels(source)
-                ),
+                hasVisibleCapture: () => {
+                  const usable = canContinue() && captureSupported && captureHasVisiblePixels(source)
+                  captureSeen ||= usable
+                  return usable
+                },
                 onFirstFrame: () => {
+                  if (!canContinue() || !captureSeen) return
                   firstFrameSeen = true
                   window.clearTimeout(firstFrameTimer)
                   firstFrameTimer = 0
-                  if (!disposed && !failureReported) {
+                  if (instanceRef.current) {
                     setFailureCount(0)
                     setReady(true)
                   }
@@ -379,7 +387,21 @@ export default function CanvasUiHtmlSurface<Options extends object>({
               failSurface()
               return
             }
+            if (!canContinue()) {
+              try { instance.destroy() } finally {
+                instance = null
+                forceLoseCanvasWebGLContext(output)
+                contextLease?.release()
+                contextLease = null
+              }
+              return
+            }
             instanceRef.current = instance
+            // A factory may synchronously report its first frame before returning.
+            if (firstFrameSeen) {
+              setFailureCount(0)
+              setReady(true)
+            }
             if (!firstFrameSeen) {
               firstFrameTimer = window.setTimeout(failSurface, FIRST_FRAME_WAIT_MS)
             }
@@ -424,7 +446,7 @@ export default function CanvasUiHtmlSurface<Options extends object>({
         contextLease?.release()
       }
     }
-  }, [captureSupported, effectActive, effectId, hostRef, loadFactory, options])
+  }, [captureSupported, effectActive, effectId, hostRef, isCaptureAllowed, loadFactory, options])
 
   useEffect(() => {
     visibleRef.current = visible

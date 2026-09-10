@@ -6,6 +6,10 @@ import {
   acquireOptionalContextWhenAvailable,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
+import {
+  canRunLocalEffect,
+  observeLocalEffectEligibility,
+} from './effects/localEffectEligibility'
 
 export interface FooterLiquidController {
   setActive(active: boolean): void
@@ -28,11 +32,13 @@ export default function FooterLiquidCursor({
     let canvas: HTMLCanvasElement | null = null
     let field: LiquidFieldHandle | null = null
     let contextLease: ContextLease | null = null
-    let active = false
+    const owner = hostEl.closest<HTMLElement>('#contact')
+    if (!owner) return
+    let requested = false
+    let pointerInside = false
     let lastX = 0
     let lastY = 0
     let hasPointer = false
-    let pointerListening = false
     let releasing = false
     let waitingForContext = false
     let failedForActivation = false
@@ -62,17 +68,25 @@ export default function FooterLiquidCursor({
         contextLease?.release()
         contextLease = null
         hostEl.dataset.liquidState = 'idle'
+        hostEl.classList.remove('is-active')
         currentCanvas?.remove()
         releasing = false
       }
     }
     const ensure = () => {
-      if (field || waitingForContext || failedForActivation || !active || document.hidden) return field
+      if (
+        field
+        || waitingForContext
+        || failedForActivation
+        || !requested
+        || !pointerInside
+        || !canRunLocalEffect(owner, 'contact')
+      ) return field
       waitingForContext = true
       hostEl.dataset.liquidState = 'waiting'
       stopWaitingForContext = acquireOptionalContextWhenAvailable('footer-liquid', (lease) => {
         waitingForContext = false
-        if (!active || document.hidden) {
+        if (!requested || !pointerInside || !canRunLocalEffect(owner, 'contact')) {
           lease.release()
           hostEl.dataset.liquidState = 'idle'
           return
@@ -96,6 +110,7 @@ export default function FooterLiquidCursor({
         hostEl.dataset.liquidState = 'live'
         try {
           field.setActive(true)
+          hostEl.classList.add('is-active')
         } catch {
           failedForActivation = true
           release()
@@ -104,7 +119,7 @@ export default function FooterLiquidCursor({
       return field
     }
     const onPointerMove = (event: PointerEvent) => {
-      if (!active) return
+      if (!requested || !pointerInside || !canRunLocalEffect(owner, 'contact')) return
       const dx = hasPointer ? event.clientX - lastX : 0
       const dy = hasPointer ? event.clientY - lastY : 0
       lastX = event.clientX
@@ -119,64 +134,46 @@ export default function FooterLiquidCursor({
         release()
       }
     }
-    const setPointerTracking = (next: boolean) => {
-      if (next === pointerListening) return
-      pointerListening = next
-      if (next) window.addEventListener('pointermove', onPointerMove, { passive: true })
-      else window.removeEventListener('pointermove', onPointerMove)
-    }
-    const onVisibility = () => {
-      if (document.hidden) {
-        setPointerTracking(false)
+    const sync = () => {
+      const running = requested && pointerInside && canRunLocalEffect(owner, 'contact')
+      if (!running) {
+        hostEl.classList.remove('is-active')
+        hasPointer = false
         release()
-      } else if (active) {
-        setPointerTracking(true)
-        const current = ensure()
-        if (!current) return
-        try {
-          current.setActive(true)
-        } catch {
-          failedForActivation = true
-          release()
-        }
+        return
       }
+      ensure()
     }
-    document.addEventListener('visibilitychange', onVisibility)
+    const onPointerEnter = () => {
+      pointerInside = true
+      failedForActivation = false
+      sync()
+    }
+    const onPointerLeave = () => {
+      pointerInside = false
+      failedForActivation = false
+      sync()
+    }
+    owner.addEventListener('pointerenter', onPointerEnter, { passive: true })
+    owner.addEventListener('pointermove', onPointerMove, { passive: true })
+    owner.addEventListener('pointerleave', onPointerLeave, { passive: true })
+    const stopObservingEligibility = observeLocalEffectEligibility(owner, 'contact', sync)
 
     const controller: FooterLiquidController = {
       setActive(next) {
-        active = next
-        hostEl.classList.toggle('is-active', next)
-        setPointerTracking(next)
-        if (next) {
-          const current = ensure()
-          if (current) {
-            try {
-              current.setActive(true)
-            } catch {
-              failedForActivation = true
-              release()
-            }
-          }
-        }
-        else {
-          hasPointer = false
-          failedForActivation = false
-          release()
-        }
+        requested = next
+        if (!next) failedForActivation = false
+        sync()
       },
       clear() {
-        try {
-          field?.clear()
-        } catch {
-          failedForActivation = true
-          release()
-        }
+        hasPointer = false
+        failedForActivation = false
+        release()
       },
       destroy() {
-        active = false
+        requested = false
+        pointerInside = false
         failedForActivation = false
-        setPointerTracking(false)
         release()
       },
     }
@@ -184,8 +181,10 @@ export default function FooterLiquidCursor({
 
     return () => {
       controllerRef.current = null
-      setPointerTracking(false)
-      document.removeEventListener('visibilitychange', onVisibility)
+      stopObservingEligibility()
+      owner.removeEventListener('pointerenter', onPointerEnter)
+      owner.removeEventListener('pointermove', onPointerMove)
+      owner.removeEventListener('pointerleave', onPointerLeave)
       release()
     }
   }, [controllerRef, disabled])

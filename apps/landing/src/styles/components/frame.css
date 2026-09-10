@@ -81,11 +81,55 @@
 }
 
 .archive-frame-text {
+  position: relative;
   min-height: min(82vh, 820px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: clamp(120px, 16vh, 180px) clamp(20px, 8vw, 140px);
+  isolation: isolate;
+}
+
+.archive-frame-text > :not(.frame-title-particles) {
+  position: relative;
+  z-index: 2;
+}
+
+.frame-title-particles {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.frame-title-particles__source,
+.frame-title-particles__output {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.frame-title-particles__source {
+  z-index: 0;
+}
+
+.frame-title-particles__output {
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.frame-title-particles.is-enhanced .frame-title-particles__output {
+  opacity: 0.46;
+}
+
+@media (max-width: 768px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .frame-title-particles { display: none; }
 }
 
 .archive-frame-text--outro {

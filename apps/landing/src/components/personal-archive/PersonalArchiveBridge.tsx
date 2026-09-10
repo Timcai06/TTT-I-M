@@ -5,7 +5,6 @@ import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { requestScrollRefresh } from '../../lib/scroll/requestRefresh'
 import { scrollToChapter } from '../../lib/chapterScroll'
 import { createArchiveProgress } from './scrollPose'
-import { phase } from './chapterTracks'
 import AboutDossier from '../AboutDossier'
 import './personal-archive.css'
 
@@ -35,23 +34,13 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
 
   useGSAP(() => {
     if (!root.current || !backdrop.current) return
-    const room = backdrop.current
     const sync = (self: ScrollTrigger) => {
       progress.set(self.progress)
-      // Keep the prepared room continuous while the book takes over the view.
-      const roomOpacity = ready && !failed ? 1 : 0
-      room.style.opacity = String(roomOpacity)
-      root.current?.style.setProperty('--archive-room', String(roomOpacity))
-      root.current?.style.setProperty('--archive-progress', String(self.progress))
-      root.current!.dataset.phase = self.progress < .20 ? 'prepare' : self.progress < .90 ? 'visible' : 'transfer'
       const reading = self.progress >= 0.9999 || failed
       const bounds = root.current?.getBoundingClientRect()
       setActive(Boolean(bounds && bounds.top < innerHeight - 1 && bounds.bottom > 1 && !reading))
-      root.current?.parentElement?.style.setProperty('--archive-reading', reading || !ready ? 'visible' : 'hidden')
-      root.current?.style.setProperty('--archive-stage', self.progress >= 0.9999 ? 'hidden' : 'visible')
       onReadingChange?.(reading)
       setCompleted(reading)
-      root.current?.style.setProperty('--archive-copy', String(!ready || failed ? 1 : 1 - phase(self.progress, .035, .20)))
     }
     const trigger = ScrollTrigger.create({
       trigger: root.current, start: 'top bottom', end: 'bottom bottom',
@@ -59,8 +48,8 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
     })
     sync(trigger)
     requestScrollRefresh()
-    return () => { progress.set(0); root.current?.parentElement?.style.removeProperty('--archive-reading') }
-  }, { scope: root, dependencies: [failed, ready, onReadingChange], revertOnUpdate: true })
+    return () => { progress.set(0) }
+  }, { scope: root, dependencies: [failed, onReadingChange], revertOnUpdate: true })
 
   useEffect(() => () => requestScrollRefresh(), [])
 
@@ -74,11 +63,11 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
         </SurfaceBoundary>}
       </div>
       <div className="archive-bridge__veil" aria-hidden="true" />
-      <div ref={page} className="archive-bridge__page" aria-hidden="true" inert>
+      <div ref={page} className="archive-bridge__page" data-archive-reading-theme="about" aria-hidden="true" inert>
         <AboutDossier />
       </div>
-      <button className="archive-bridge__room-hit archive-bridge__room-hit--entry" type="button" aria-label="打开 About 书本"
-        onClick={() => scrollToChapter('about', { updateHash: true, immediate: true, restore: true })}><span>OPEN</span></button>
+      <button className="archive-bridge__room-hit archive-bridge__room-hit--entry" type="button" aria-disabled="true" tabIndex={-1} aria-label="打开 About 书本"
+        onClick={() => void scrollToChapter('about', { updateHash: true, immediate: true, restore: true })}><span>OPEN</span></button>
       <div className="archive-bridge__arrival">
         <p className="archive-bridge__index">PERSONAL ARCHIVE / 001</p>
         <h2>从一页笔记，<br /><em>开始认识我。</em></h2>
@@ -89,7 +78,7 @@ export default function PersonalArchiveBridge({ onReadingChange }: { onReadingCh
         {failed && <button type="button" onClick={() => window.location.reload()}>重新加载空间 ↻</button>}
         <a href="#about" onClick={(event) => {
           event.preventDefault()
-          scrollToChapter('about', { updateHash: true })
+          void scrollToChapter('about', { updateHash: true })
         }}>直接阅读 About ↘</a>
       </div>
     </div>

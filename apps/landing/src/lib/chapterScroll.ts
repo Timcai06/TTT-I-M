@@ -1,13 +1,22 @@
 import { getLenis } from './lenis'
 import { restoredChapterTop } from './archiveReadingMemory'
 
-interface ChapterScrollOptions {
+export interface ChapterScrollOptions {
   /** true 时不播放平滑滚动，转场落点和 reduced-motion 路径使用。 */
   immediate?: boolean
   /** true 时用 replaceState 更新 hash，不新增浏览器历史记录。 */
   updateHash?: boolean
   /** Restore the last in-session reading position when revisiting a chapter. */
   restore?: boolean
+  /** Optional exact landing offset for subtargets such as project cards. */
+  offset?: number
+}
+export type ArchiveSeekResult = 'committed' | 'readable-fallback' | 'cancelled'
+type ScrollInterceptor = (id: string, options: ChapterScrollOptions) => Promise<ArchiveSeekResult> | null
+let interceptor: ScrollInterceptor | null = null
+export function installChapterScrollInterceptor(handler: ScrollInterceptor) {
+  interceptor = handler
+  return () => { if (interceptor === handler) interceptor = null }
 }
 
 /**
@@ -39,6 +48,12 @@ export function getChapterScrollViewportTop(id: string): number {
  *   step3: Lenis 可用则调用 lenis.scrollTo，否则用原生 scrollTo
  */
 export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) {
+  const handled = interceptor?.(id, options)
+  if (handled) return handled
+  scrollToChapterRaw(id, options)
+  return Promise.resolve<ArchiveSeekResult>('readable-fallback')
+}
+export function scrollToChapterRaw(id: string, options: ChapterScrollOptions = {}) {
   const el = getChapterScrollTarget(id)
   if (!el) return
 
@@ -51,7 +66,7 @@ export function scrollToChapter(id: string, options: ChapterScrollOptions = {}) 
   // Spatial handoffs end at the exact reading viewport. A negative offset would
   // leave their final projected frame covering a deliberate chapter jump.
   const restoredTop = options.restore ? restoredChapterTop(id) : null
-  const offset = restoredTop === null ? -getChapterScrollViewportTop(id) : 0
+  const offset = restoredTop === null ? options.offset ?? -getChapterScrollViewportTop(id) : 0
   const destination: HTMLElement | number = restoredTop ?? target
 
   if (options.updateHash) {

@@ -3,8 +3,7 @@ import { useLenis } from './lib/lenis'
 import { getStage, subscribeStage } from './lib/stage'
 import { requestScrollRefresh } from './lib/scroll/requestRefresh'
 import { onChaptersReady } from './lib/chaptersReady'
-import { getChapterScrollTarget, getChapterScrollViewportTop, scrollToChapter } from './lib/chapterScroll'
-import { isKeyboardScrollIntent } from './lib/scroll/scrollIntent'
+import { scrollToChapter } from './lib/chapterScroll'
 import { SoundProvider } from './lib/sound/SoundProvider'
 import Loader from './components/Loader'
 import Cursor from './components/Cursor'
@@ -54,33 +53,7 @@ export default function App() {
     if (!hash) return
 
     let done = false
-    const timers: number[] = []
     let cancelStage: (() => void) | undefined
-    let correctionListenersActive = false
-    let correctionsCancelled = false
-
-    const detachCorrectionListeners = () => {
-      if (!correctionListenersActive) return
-      correctionListenersActive = false
-      window.removeEventListener('wheel', cancelCorrections)
-      window.removeEventListener('touchmove', cancelCorrections)
-      window.removeEventListener('keydown', cancelCorrectionsFromKeyboard)
-    }
-    const cancelCorrections = () => {
-      correctionsCancelled = true
-      timers.splice(0).forEach((timer) => window.clearTimeout(timer))
-      detachCorrectionListeners()
-    }
-    const cancelCorrectionsFromKeyboard = (event: KeyboardEvent) => {
-      if (isKeyboardScrollIntent(event)) cancelCorrections()
-    }
-    const attachCorrectionListeners = () => {
-      if (correctionListenersActive) return
-      correctionListenersActive = true
-      window.addEventListener('wheel', cancelCorrections, { passive: true })
-      window.addEventListener('touchmove', cancelCorrections, { passive: true })
-      window.addEventListener('keydown', cancelCorrectionsFromKeyboard)
-    }
 
     const jump = () => {
       if (done) return
@@ -89,25 +62,7 @@ export default function App() {
 
       done = true
       requestScrollRefresh(true)
-      scrollToChapter(hash, { immediate: true })
-      attachCorrectionListeners()
-
-      // Late image decode / pinned section measurement can still shift the page
-      // after the first anchor jump. Re-assert the direct-link landing a couple
-      // of times so /#contact and deep links don't strand the user at the hero.
-      for (const delay of [120, 520, 1100]) {
-        timers.push(window.setTimeout(() => {
-          if (correctionsCancelled) return
-          if (delay === 1100) detachCorrectionListeners()
-          const el = getChapterScrollTarget(hash)
-          if (!el) return
-          const top = Math.round(el.getBoundingClientRect().top)
-          if (Math.abs(top - getChapterScrollViewportTop(hash)) > 8) {
-            requestScrollRefresh(true)
-            scrollToChapter(hash, { immediate: true })
-          }
-        }, delay))
-      }
+      void scrollToChapter(hash, { immediate: true, restore: true })
     }
 
     const jumpWhenLive = () => {
@@ -130,7 +85,6 @@ export default function App() {
     return () => {
       cancel()
       cancelStage?.()
-      cancelCorrections()
     }
   }, [])
 

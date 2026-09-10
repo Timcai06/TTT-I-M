@@ -37,35 +37,31 @@
   z-index: 2;
 }
 
-.projects__intro[data-handoff='active'] .projects__intro-content {
-  will-change: clip-path;
-}
-
-.projects__intro[data-handoff='active'] .projects__bento {
-  pointer-events: none;
+.projects__local-title {
+  position: relative;
+  z-index: 4;
+  isolation: isolate;
 }
 
 .projects__laser {
-  position: fixed;
-  z-index: 9;
-  inset: 0;
-  width: 100vw;
-  height: 100svh;
+  position: absolute;
+  z-index: 1;
+  inset: -18px -24px;
   overflow: hidden;
-  visibility: hidden;
-  opacity: 0;
+  visibility: visible;
+  opacity: 1;
   pointer-events: none;
   mix-blend-mode: screen;
-  mask-image: linear-gradient(180deg, transparent 0, #000 34%, #000 100%);
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 34%, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 18%, #000 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 18%, #000 82%, transparent 100%);
 }
 
 .projects__laser::after {
   position: absolute;
   z-index: 4;
-  right: var(--projects-laser-right, 16vw);
-  bottom: var(--projects-laser-offset, 140px);
-  left: var(--projects-laser-left, 16vw);
+  top: 52%;
+  right: 16%;
+  left: 16%;
   height: 3px;
   content: '';
   pointer-events: none;
@@ -107,6 +103,11 @@
   transform: none;
   clip-path: none;
   opacity: 1;
+}
+
+[data-project-laser-target] {
+  position: relative;
+  z-index: 2;
 }
 
 @media (max-width: 768px), (prefers-reduced-motion: reduce) {

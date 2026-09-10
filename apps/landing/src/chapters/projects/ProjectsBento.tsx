@@ -1,18 +1,16 @@
 import { useState, type CSSProperties } from 'react'
 import { projects } from '../../content'
 import BorderGlow from '../../components/BorderGlow'
-import { getLenis } from '../../lib/lenis'
+import { scrollToChapter } from '../../lib/chapterScroll'
 import { mixHexColor } from '../../lib/hex'
 
 function scrollToProject(id: string, source: HTMLElement) {
   const card = source
     .closest<HTMLElement>('#projects')
-    ?.querySelector<HTMLElement>(`[data-project-id="${id}"]`)
+    ?.querySelector<HTMLElement>(`#project-${CSS.escape(id)}`)
   if (!card) return
 
-  const lenis = getLenis()
-  if (lenis) lenis.scrollTo(card, { offset: -72 })
-  else card.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  void scrollToChapter(card.id, { offset: -72 })
 }
 
 export default function ProjectsBento() {
@@ -28,6 +26,7 @@ export default function ProjectsBento() {
           const shot = project.media?.shots[0]
           return (
             <div
+              id={`project-${project.id}`}
               className="bento-glow"
               role="listitem"
               key={project.id}

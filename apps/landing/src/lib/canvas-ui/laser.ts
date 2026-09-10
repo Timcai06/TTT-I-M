@@ -6,28 +6,20 @@ import {
 import type { EffectLifecycle } from '../../shared/effects/contracts.ts'
 import { LASER_CONFIG } from './laserConfig.ts'
 import { forceLoseCanvasWebGLContext } from '../webgl/contextRegistry.ts'
+import {
+  normalizeLocalEffectState,
+  type LocalEffectState,
+} from './localEffectControl.ts'
+import { cloneProjectLaserCapture } from './laserCapture.ts'
 
 export { LASER_CONFIG } from './laserConfig.ts'
 
 export interface LaserHandle extends EffectLifecycle {
   readonly mode: 'html-canvas' | 'beam-fallback'
-  setScrollActivity(state: { progress: number; delta: number }): void
+  setScrollActivity(state: LocalEffectState): void
   invalidate(): void
   resize(): void
   destroy(): void
-}
-
-function cloneCapture(capture: HTMLElement): HTMLElement {
-  const clone = capture.cloneNode(true) as HTMLElement
-  clone.setAttribute('drawable', '')
-  clone.setAttribute('aria-hidden', 'true')
-  clone.setAttribute('inert', '')
-  clone.setAttribute('data-project-laser-capture', '')
-  clone.querySelectorAll<HTMLElement>('[id]').forEach((element) => element.removeAttribute('id'))
-  clone.querySelectorAll<HTMLElement>('a, button, input, select, textarea, video').forEach((element) => {
-    element.setAttribute('tabindex', '-1')
-  })
-  return clone
 }
 
 export function createLaser(
@@ -47,7 +39,7 @@ export function createLaser(
   // consume it. Stable browsers render the same red seam over the real title;
   // the title animation and every interaction remain owned by the real DOM.
   const content = htmlCanvasMode && capture
-    ? cloneCapture(capture)
+    ? cloneProjectLaserCapture(capture)
     : capture ?? document.createElement('div')
   if (!capture) content.setAttribute('drawable', '')
   if (htmlCanvasMode) {
@@ -83,8 +75,9 @@ export function createLaser(
   const mode = htmlCanvasMode ? 'html-canvas' : 'beam-fallback'
   return {
     mode,
-    setScrollActivity({ delta }) {
-      instance?.setScrollActivity(delta)
+    setScrollActivity(next) {
+      const { progress, delta } = normalizeLocalEffectState(next)
+      instance?.setScrollActivity(progress, delta)
       source.requestPaint?.()
     },
     invalidate() {

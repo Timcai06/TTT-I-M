@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { requestScrollRefresh } from '../scroll/requestRefresh'
 import { buildResourceManifest, type ResourceTask } from './manifest'
+import { isArchiveReadingFallbackReady } from './preloadReadiness'
 import { runTaskWithDeadline } from './taskDeadline'
 
 // A stuck resource (hung socket, dead CDN) must never strand the intro on a
@@ -46,9 +47,9 @@ interface PreloadDebugHandle {
 /**
  * 全站预加载状态。Loader 使用该状态驱动真实进度条，而不是播放假的 fixed-duration 进度。
  *
- * 闸门语义：`criticalReady` 只标记 SYSTEM 阶段结束；`renderReady` 才是 intro
- * 的退场闸门。后者表示 bounded landing manifest 已成功完成，
- * 包括当前设备实际选择的图片候选及其 decode。
+ * 闸门语义：`criticalReady` 只标记 SYSTEM 阶段结束；`renderReady` 表示
+ * bounded landing manifest 已全部成功。只有空间 renderer 单项失败且其余
+ * 正文与布局任务全部成功时，`readingFallbackReady` 才允许退到阅读模式。
  */
 export interface WholeSitePreloadState {
   preparationFinished: boolean
@@ -66,6 +67,8 @@ export interface WholeSitePreloadState {
   label: string
   /** 是否已完成 critical + visual 全部任务 —— intro 的 render-ready 退场闸门。 */
   renderReady: boolean
+  /** 空间不可用但完整正文与布局均可用，可明确退到阅读模式。 */
+  readingFallbackReady: boolean
   /** manifest 总任务数。 */
   total: number
 }
@@ -257,6 +260,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
     failed: [],
     label: 'Preparing',
     renderReady: false,
+    readingFallbackReady: false,
     total: tasks.length,
   }))
 
@@ -330,6 +334,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
 
     void run().then(() => {
       if (cancelled) return
+      const readingFallbackReady = isArchiveReadingFallbackReady({ completed, total: tasks.length, failed })
       setState({
         preparationFinished: true,
         completed,
@@ -339,6 +344,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
         failed: [...failed],
         label: failed.length > 0 ? 'Preparation incomplete' : 'Ready',
         renderReady: failed.length === 0,
+        readingFallbackReady,
         total: tasks.length,
       })
       debug?.report(failed.length > 0 ? `preparation failed for ${failed.length} tasks` : 'whole-site preload completed')

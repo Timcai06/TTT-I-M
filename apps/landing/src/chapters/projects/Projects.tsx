@@ -79,7 +79,7 @@ export default function Projects() {
     sync(); window.addEventListener('popstate', sync)
     return () => window.removeEventListener('popstate', sync)
   }, [])
-  const { laserActive, laserHandle, glassReady } = useProjectsNarrative(root, glassActive)
+  const { laserActive, laserHandle, laserState, glassReady } = useProjectsNarrative(root, glassActive)
   const changeGlassActive = useCallback((surfaceId: string, active: boolean) => {
     const surfaces = activeGlassSurfaces.current
     if (active) surfaces.add(surfaceId)
@@ -175,6 +175,7 @@ export default function Projects() {
       <ProjectsIntro
         laserActive={laserActive}
         laserHandle={laserHandle}
+        laserState={laserState}
         glassEnabled={glassReady && !glassSuppressed}
         onGlassActiveChange={changeGlassActive}
       />

@@ -8,11 +8,35 @@
     },
     "DecryptReveal/DecryptRevealVanilla.ts": {
       "revision": "a4b40d03ad92a6210af114df7a1900a2675fe288",
-      "sha256": "97b9d215d98bdc7cc49f953ab686c8f6c4097cbba173f1514113dabae54098be"
+      "sha256": "f59883071a44403f667f55eef8089628e9a7de28e79b9988de63561220944b1d",
+      "localPatches": [
+        {
+          "commit": "73d8ac7950c937ab6ba0fc203ea34cde1f3d72d2",
+          "change": "Require visible captured pixels before content becomes usable."
+        },
+        {
+          "commit": "586378ccef2f2f0a7ece6de7c80a75470785592f",
+          "change": "Upload before clearing staging and preserve the last valid capture."
+        }
+      ]
     },
     "Glass/GlassVanilla.ts": {
       "revision": "a4b40d03ad92a6210af114df7a1900a2675fe288",
-      "sha256": "02fb8b589fbc8d9132f223799c1593feb2251c49dd1717f64b4c056248c645af"
+      "sha256": "9cdfd471d2ae005bdcc7ee39c0c54e0001cbb2601ec1afcca4430096ebf05caa",
+      "localPatches": [
+        {
+          "commit": "e0970bba31624f769e8332d84fe67f7314f896a4",
+          "change": "Derive capture geometry from the in-document host."
+        },
+        {
+          "commit": "73d8ac7950c937ab6ba0fc203ea34cde1f3d72d2",
+          "change": "Require visible captured pixels before selecting the content texture branch."
+        },
+        {
+          "commit": "586378ccef2f2f0a7ece6de7c80a75470785592f",
+          "change": "Upload before clearing staging and preserve the last valid capture."
+        }
+      ]
     },
     "Glass/viewportGeometry.ts": {
       "revision": "local-adapter",
@@ -20,7 +44,13 @@
     },
     "Laser/LaserVanilla.ts": {
       "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
-      "sha256": "4bd9df118545c365eb5ae5c91144a82f9bfb0bfd506689d336b86c55cf9a6139"
+      "sha256": "3bbaee0cc736e1059f06386f08748dda0d052cb4713087fdcf0e3f42067de3e2",
+      "localPatches": [
+        {
+          "card": "VR-03",
+          "change": "Map absolute local Work progress to beam position while retaining delta reactivity."
+        }
+      ]
     },
     "Liquid/LiquidVanilla.ts": {
       "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
@@ -28,7 +58,17 @@
     },
     "ParticleScroll/ParticleScrollVanilla.ts": {
       "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
-      "sha256": "4a36a4a6d98aa38958f3b1a114c3fa52affca4becf8dfa5f24aef671fa5c322b"
+      "sha256": "892098e425fc3bf3edd7fd69898116a6ede82ec11e07e4f043f351062c6117ec",
+      "localPatches": [
+        {
+          "card": "VR-03",
+          "change": "Add deterministic controlled progress without replaying the upstream intro assembly."
+        },
+        {
+          "card": "VR-03-R1",
+          "change": "Require visible staging pixels before texture upload and capture readiness."
+        }
+      ]
     },
     "rect-cache.ts": {
       "revision": "local-adapter",

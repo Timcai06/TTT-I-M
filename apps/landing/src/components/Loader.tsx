@@ -27,8 +27,8 @@ function randomBaffleChar() {
 /**
  * @description Loader 全屏加载页 —— 站点入口动画的 start-to-end 编排。
  *   阶段 1 (intro): 标题 "Tim Cai." 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
- *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且 preload.renderReady（设备所需资源已下载并解码），
- *     标题向上浮出遮罩 → 计数器/进度条淡出 → 整个面板向上 wipe out，露出 Hero
+ *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且完整空间已就绪，或仅空间失败但
+ *     完整正文与布局已就绪，标题向上浮出遮罩 → 计数器/进度条淡出 → 面板原位淡出
  *   阶段 3 (complete): `done` 状态置 true，组件返回 null，彻底从 DOM 卸载
  *
  *   生命周期通过 `stage` 状态机协调：标题落地 → `setStage('intro')`；面板退出 → `dispatchIntroExit()` → `stage→live`
@@ -44,15 +44,15 @@ function randomBaffleChar() {
  *     视觉上刚好产生 "字符抖动" 效果，不需要 60fps 精度
  *   - 进度条使用 rAF 驱动的 displayedProgress 缓动 (damp 0.075→0.18)，
  *     避免 preload 进度跳变时进度条视觉抖动
- *   - 退出时 panel 的 yPercent: -100 动画使用 expo.inOut 缓动 (1.15s)，制造 "卷帘门" 升起感
+ *   - 退出面板只做短暂原位淡出，避免首屏在 Index 已经可用后再发生一次整屏位移
  *
  * @steps
  *   step1: Effect 1 — 字符初始化 (opacity=0, yPercent=120) + Baffle 乱码定时器
  *   step2: Effect 1 — 字符缓慢升起到基线 (1.25s, stagger 0.075s)
  *   step3: Effect 1 — timeline onComplete → setStage('intro') → 激活 pretext 交互
  *   step4: Effect 2 — 进度条 rAF loop: displayedProgress 缓动追踪 preload progress
- *   step5: Effect 3 — introReady && preload.renderReady → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 上滑
- *   step6: Effect 3 — panel yPercent: -100 → dispatchIntroExit → 若干 ms 后 setDone(true)
+ *   step5: Effect 3 — introReady && handoffReady → 退出 timeline: 标题上浮 + bar/counter 淡出 + panel 淡出
+ *   step6: Effect 3 — dispatchIntroExit → panel autoAlpha: 0 → setDone(true)
  */
 export default function Loader() {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -66,13 +66,14 @@ export default function Loader() {
   const [introReady, setIntroReady] = useState(false)
   const [spinnerFrame, setSpinnerFrame] = useState(0)
   const preload = useWholeSitePreload()
+  const handoffReady = preload.renderReady || preload.readingFallbackReady
   useIntroPretextInteraction(textRef, introReady && !done && !exiting)
   const renderPhase = preload.criticalReady ? '02 / ARCHIVE' : '01 / SYSTEM'
-  const stageText = preload.renderReady ? 'render ready' : preload.label
+  const stageText = preload.renderReady ? 'render ready' : preload.readingFallbackReady ? 'reading mode ready' : preload.label
   const reducedMotion = useReducedMotion()
   const spinnerGlyph = loaderSpinnerGlyph({
     frameIndex: spinnerFrame,
-    ready: preload.renderReady,
+    ready: handoffReady,
     reducedMotion,
   })
 
@@ -81,7 +82,7 @@ export default function Loader() {
   }, [preload])
 
   useEffect(() => {
-    if (preload.renderReady || reducedMotion) return
+    if (handoffReady || reducedMotion) return
     let interval = 0
 
     const sync = () => {
@@ -104,7 +105,7 @@ export default function Loader() {
       document.removeEventListener('visibilitychange', sync)
       window.clearInterval(interval)
     }
-  }, [preload.renderReady, reducedMotion])
+  }, [handoffReady, reducedMotion])
 
   useEffect(() => {
     if (!panelRef.current) return
@@ -197,16 +198,17 @@ export default function Loader() {
         current.total,
         current.failed.length,
       )
-      const target = current.renderReady ? 1 : actualProgress
+      const currentHandoffReady = current.renderReady || current.readingFallbackReady
+      const target = currentHandoffReady ? 1 : actualProgress
 
-      displayedProgress = stepDisplayedProgress(displayedProgress, target, current.renderReady)
+      displayedProgress = stepDisplayedProgress(displayedProgress, target, currentHandoffReady)
 
-      const displayValue = displayedProgressValue(displayedProgress, current.renderReady)
+      const displayValue = displayedProgressValue(displayedProgress, currentHandoffReady)
 
       if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
 
-      if (!current.renderReady || displayedProgress < 0.999) {
+      if (!currentHandoffReady || displayedProgress < 0.999) {
         schedule()
       }
     }
@@ -229,7 +231,7 @@ export default function Loader() {
   }, [])
 
   useEffect(() => {
-    if (!introReady || !preload.renderReady || exitStarted.current || !panelRef.current) return
+    if (!introReady || !handoffReady || exitStarted.current || !panelRef.current) return
     exitStarted.current = true
     setExiting(true)
 
@@ -283,18 +285,18 @@ export default function Loader() {
       /* ── hand off to hero just before the panel clears ── */
       tl.call(dispatchIntroExit, [], '>-0.15')
 
-      /* ── single panel wipes up, revealing the hero already composed beneath ── */
+      /* ── reveal the already-composed Index without translating the whole viewport ── */
       tl.to(panelRef.current, {
-        yPercent: -100,
-        duration: 1.15,
-        ease: 'expo.inOut',
+        autoAlpha: 0,
+        duration: 0.42,
+        ease: 'power2.out',
       }, '>-0.05')
 
       tl.call(() => setDone(true))
     }, panelRef)
 
     return () => ctx.revert()
-  }, [introReady, preload.renderReady])
+  }, [handoffReady, introReady])
 
   if (done) return null
 
@@ -349,7 +351,7 @@ export default function Loader() {
         <span className="intro__spinner" aria-hidden="true">{spinnerGlyph}</span>
         <span className="intro__stage">{stageText}</span>
       </div>
-      {preload.preparationFinished && preload.failed.length > 0 && <div className="intro__retry" role="alert">
+      {preload.preparationFinished && preload.failed.length > 0 && !preload.readingFallbackReady && <div className="intro__retry" role="alert">
         <p>还有部分内容未能准备好，请重试。</p>
         <button type="button" onClick={() => window.location.reload()}>重新加载</button>
       </div>}

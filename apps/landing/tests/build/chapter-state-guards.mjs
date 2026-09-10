@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 
 const appSource = readFileSync('src/App.tsx', 'utf8')
+const archiveRouteSource = readFileSync('src/lib/archiveRoute.ts', 'utf8')
 const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
 const providerSource = readFileSync('src/components/ChapterStateProvider.tsx', 'utf8')
 const navSource = readFileSync('src/components/Nav.tsx', 'utf8')
@@ -36,10 +37,29 @@ const effectManifestSource = readFileSync('src/shared/effects/manifest.ts', 'utf
 const registrySource = readFileSync('src/chapters/registry.ts', 'utf8')
 const chapterBoundarySource = readFileSync('src/components/ChapterBoundary.tsx', 'utf8')
 const scrollIntentSource = readFileSync('src/lib/scroll/scrollIntent.ts', 'utf8')
+const archiveReadingThemeSource = readFileSync('src/components/personal-archive/natural-room.css', 'utf8')
+const readingSnapshotSource = readFileSync('src/components/personal-archive/readingSnapshot.ts', 'utf8')
+const handoffPageSource = readFileSync('src/components/personal-archive/ArchiveHandoffPage.tsx', 'utf8')
+const archiveRuntimeSource = readFileSync('src/components/personal-archive/archiveRuntime.ts', 'utf8')
 
 const consumers = [
   ['src/components/Nav.tsx', navSource],
 ]
+
+for (const theme of ['about', 'life', 'frame', 'stack', 'work', 'contact']) {
+  if (!archiveReadingThemeSource.includes(`[data-archive-reading-theme='${theme}']`)) {
+    throw new Error(`Archive reading palette is missing the ${theme} physical-surface theme.`)
+  }
+}
+for (const token of ['--archive-surface', '--archive-ink', '--bg-soft', '--bg-elev', '--fg-soft', '--fg-mute', '--fg-dim', '--line', '--line-strong', '--accent', '--accent-warm']) {
+  if (!archiveReadingThemeSource.includes(token)) throw new Error(`Archive reading palettes are missing ${token}.`)
+}
+if (!readingSnapshotSource.includes('clone.dataset.archiveReadingTheme') || !handoffPageSource.includes('data-archive-reading-theme')) {
+  throw new Error('Archive reading themes must survive source snapshots and handoff page clones.')
+}
+if (!archiveRuntimeSource.includes('const routeExpand = route ? sampled.presentation.targetExpand : 0')) {
+  throw new Error('Archive open/return must share the sampled targetExpand coordinate in both directions.')
+}
 
 if (!appSource.includes('<ChapterStateProvider>')) {
   throw new Error('App must wrap navigation UI in ChapterStateProvider.')
@@ -178,11 +198,14 @@ if (
   throw new Error('ChapterTransition must stay off the critical entry chunk without dropping an early navigation intent.')
 }
 
-if (!appSource.includes("getStage() === 'live'") || !appSource.includes('scrollToChapter(hash, { immediate: true })') || !appSource.includes('for (const delay of [120, 520, 1100])')) {
-  throw new Error('Initial hash deep links must wait for the live stage and reassert the immediate chapter landing after late layout shifts.')
+for (const token of ["getStage() === 'live'", 'onChaptersReady(', "stage !== 'live'", 'scrollToChapter(hash, { immediate: true, restore: true })']) {
+  if (!appSource.includes(token)) throw new Error(`Initial hash restoration is missing ${token}`)
 }
-if (!appSource.includes('attachCorrectionListeners') || !appSource.includes('cancelCorrectionsFromKeyboard') || !appSource.includes('correctionsCancelled')) {
-  throw new Error('Late deep-link correction must yield immediately once the user takes control of scrolling.')
+for (const token of ['currentArchiveRequest', 'mine = ++requestId', 'mine !== requestId', 'requestPending']) {
+  if (!archiveRouteSource.includes(token)) throw new Error(`Initial hash restoration is missing request ownership: ${token}`)
+}
+for (const retired of ['for (const delay of [120, 520, 1100])', 'attachCorrectionListeners', 'cancelCorrectionsFromKeyboard', 'correctionsCancelled']) {
+  if (appSource.includes(retired)) throw new Error(`Retired delayed hash correction returned: ${retired}`)
 }
 
 if (!transitionSource.includes('onChapterTransitionRequest') || !transitionSource.includes('immediate: true')) {

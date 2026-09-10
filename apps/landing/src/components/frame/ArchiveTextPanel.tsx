@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { gsap } from '../../lib/gsap'
 import { revealWordsOnce } from '../../lib/wordReveal'
 import type { ArchiveTextPanel as ArchiveTextPanelData } from '../../content'
+import FrameTitleParticles from './FrameTitleParticles'
 
 export default function ArchiveTextPanel({
   panel,
@@ -13,6 +14,7 @@ export default function ArchiveTextPanel({
   preview?: boolean
 }) {
   const ref = useRef<HTMLElement>(null)
+  const titleRef = useRef<HTMLHeadingElement>(null)
 
   // Vertical panels use a one-shot per-word reveal on enter.
   useEffect(() => {
@@ -28,7 +30,8 @@ export default function ArchiveTextPanel({
   return (
     <article ref={ref} className={`archive-frame-text archive-frame-text--${layout}`}>
       <p className="frame-panel__eyebrow">{panel.eyebrow}</p>
-      <h2 className="archive-theme-marker__title">{panel.title}</h2>
+      <h2 ref={titleRef} className="archive-theme-marker__title">{panel.title}</h2>
+      {layout === 'intro' && !preview ? <FrameTitleParticles targetRef={titleRef} /> : null}
       <p className="frame-panel__body archive-theme-marker__body">{panel.body}</p>
     </article>
   )

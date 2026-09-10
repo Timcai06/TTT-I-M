@@ -5,8 +5,6 @@ import { facts } from '../content'
 import AboutDecryptReveal from './effects/AboutDecryptReveal'
 import CountUp from './CountUp'
 import AboutDossier from './AboutDossier'
-import { useMobileExperience } from '../lib/device'
-import { useReducedMotion } from '../lib/motion'
 
 /** Split a fact value like `'10+'` into its leading number and trailing suffix. */
 function parseFact(value: string): { to: number; suffix: string } {
@@ -39,8 +37,6 @@ function parseFact(value: string): { to: number; suffix: string } {
 export default function About({ decryptEnabled = true, preview = false }: { decryptEnabled?: boolean; preview?: boolean }) {
   const root = useRef<HTMLElement>(null)
   const techPathRef = useRef<SVGPathElement>(null)
-  const mobile = useMobileExperience()
-  const reducedMotion = useReducedMotion()
 
   useGSAP(() => {
     if (!root.current || preview) return
@@ -103,7 +99,7 @@ export default function About({ decryptEnabled = true, preview = false }: { decr
 
   return (
     <section className={`section about${preview ? ' about--archive-return' : ''}`} id={preview ? undefined : 'about'} ref={root}>
-      <AboutDecryptReveal enabled={decryptEnabled && (mobile || reducedMotion)}>
+      <AboutDecryptReveal enabled={decryptEnabled && !preview}>
         <AboutDossier />
       </AboutDecryptReveal>
 

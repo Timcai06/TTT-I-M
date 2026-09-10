@@ -2,10 +2,20 @@
 export function readingSnapshot(source: HTMLElement) {
   const clone = source.cloneNode(true) as HTMLElement
   clone.dataset.archiveClone = source.id
+  const theme = source.dataset.archiveReadingTheme || ({
+    about: 'about', life: 'life', frame: 'frame', skills: 'stack', projects: 'work', contact: 'contact',
+  } as const)[source.id as 'about' | 'life' | 'frame' | 'skills' | 'projects' | 'contact']
+  if (theme) clone.dataset.archiveReadingTheme = theme
   clone.removeAttribute('id')
   clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'))
   clone.inert = true
-  clone.querySelectorAll('img').forEach(image => { image.loading = 'eager' })
+  const images = source.querySelectorAll('img')
+  clone.querySelectorAll('img').forEach((image,index) => {
+    image.loading = 'eager'
+    image.removeAttribute('srcset'); image.removeAttribute('sizes')
+    image.src = images[index]?.currentSrc || images[index]?.src || image.src
+  })
+  clone.querySelectorAll('picture source').forEach(node => node.remove())
   const canvases = source.querySelectorAll('canvas')
   clone.querySelectorAll('canvas').forEach((canvas, i) => {
     const original = canvases[i]
@@ -26,6 +36,9 @@ export function readingSnapshot(source: HTMLElement) {
   clone.querySelectorAll('.archive-bridge').forEach(node => node.remove())
   const rect = source.getBoundingClientRect()
   Object.assign(clone.style, { position: 'absolute', top: `${rect.top}px`, left: `${rect.left}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', opacity: '1', transform: 'none', visibility: 'visible' })
-  clone.querySelectorAll<HTMLElement>('[data-archive-live-target]').forEach(node => node.style.opacity = '1')
+  for (const node of [clone, ...clone.querySelectorAll<HTMLElement>('[data-archive-live-target]')]) {
+    node.style.opacity = '1'; node.style.visibility = 'visible'
+    node.style.setProperty('--archive-live-target','1')
+  }
   return clone
 }

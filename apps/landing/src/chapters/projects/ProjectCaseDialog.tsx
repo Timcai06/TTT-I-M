@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, type CSSProperties, type ReactElement } from 'react'
 import { Dialog } from '@base-ui/react/dialog'
 import type { Project, ProjectShot } from '../../content'
-import { getLenis } from '../../lib/lenis'
+import { acquireLenisPause } from '../../lib/lenis'
 
 const ProjectCaseContent = lazy(() => import('./ProjectCaseContent'))
 
@@ -26,15 +26,14 @@ export default function ProjectCaseDialog({
 
   useEffect(() => {
     if (!open) return
-    const lenis = getLenis()
-    lenis?.stop()
+    const releasePause=acquireLenisPause(`project-dialog:${project.id}`)
     document.body.dataset.projectDialogOpen = 'true'
 
     return () => {
       delete document.body.dataset.projectDialogOpen
-      lenis?.start()
+      releasePause()
     }
-  }, [open])
+  }, [open, project.id])
 
   return (
     <Dialog.Root

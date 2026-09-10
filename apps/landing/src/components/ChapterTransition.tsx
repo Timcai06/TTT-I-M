@@ -147,7 +147,7 @@ export default function ChapterTransition() {
       }
 
       if (prefersReducedMotion()) {
-        scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
+        void scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
         return
       }
 
@@ -159,9 +159,8 @@ export default function ChapterTransition() {
         const generation = ++desktopGeneration
         const source = currentChapterElement()
         if (!source || source.id === request.id) {
-          scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash, restore: true })
-          await nextFrame(signal)
-          if (!signal.aborted && generation === desktopGeneration) dispatchChapterArrived(request.id)
+          const result = await scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash, restore: true })
+          if (result !== 'cancelled' && !signal.aborted && generation === desktopGeneration) dispatchChapterArrived(request.id)
           return
         }
         const arrived = await routeBetweenChapters(source, request.id, request.updateHash)
@@ -177,7 +176,7 @@ export default function ChapterTransition() {
 
       const root = rootRef.current
       if (!root) {
-        scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
+        void scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
         setActive(false)
         setPretextReady(false)
         setStage('live')
@@ -217,7 +216,7 @@ export default function ChapterTransition() {
           onLand: () => {
             if (signal.aborted) return
             setPretextReady(false)
-            scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
+            void scrollToChapter(request.id, { immediate: true, updateHash: request.updateHash })
             void nextFrame(signal).then((completed) => {
               if (!completed) return
               requestScrollRefresh(true)

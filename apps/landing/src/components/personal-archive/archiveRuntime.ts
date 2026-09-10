@@ -1,4 +1,4 @@
-import { HalfFloatType, Mesh, PerspectiveCamera, Scene, Texture, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, type Material, type BufferGeometry } from 'three'
+import { HalfFloatType, Mesh, PerspectiveCamera, Raycaster, Scene, Texture, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, type Material, type BufferGeometry } from 'three'
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
@@ -10,10 +10,10 @@ import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
 import { acquireRetainedContext, type ContextLease } from '../../lib/webgl/contextRegistry'
 import { getGLQualityProfile } from '../../lib/webgl/quality'
 import modelUrl from '../../assets/personal-archive/personal-space.glb?url'
-import { createArchiveDirector, type ArchiveView, type SpatialShot } from './archiveDirector'
+import type { ArchiveView, SpatialShot } from './archiveDirector'
 import { createArchiveAtmosphere } from './archiveAtmosphere'
 import { createArchiveLighting } from './archiveRuntimeLighting'
-import { createArchiveReadingSurface } from './archiveReadingSurface'
+import { clearSamplePresentation, presentSampleFrame, projectArchiveQuad, samplePageLayout } from './archiveReadingSurface'
 import { createArchiveSignal } from './archiveRuntimeSignal'
 import { prepareArchiveMaterials } from './archiveMaterials'
 import { createArchiveFinitePass } from './archiveRenderSafety'
@@ -23,7 +23,15 @@ import { prepareChapterPages } from '../../lib/resources/prepareChapterPages'
 import { addContactReadingPlane } from './readingFrame'
 import { calibrateRoomPaper } from './roomPalette'
 import { phase } from './chapterTracks'
-import { pageMatrix } from './pageProjection'
+import { createArchiveAnimationRig } from './archiveAnimationRig'
+import { createArchiveExecution } from './archiveExecution'
+import { solveArchiveCamera, applyArchiveCamera } from './archiveCameraRig'
+import { getSampleLayout, positionAtScroll, retainSamplePosition, getRetainedSamplePosition, invalidateSampleLayout, ARCHIVE_ROOM_PROGRESS } from './archiveSamplePosition'
+import { currentArchiveRequest, cancelArchiveRouting } from '../../lib/archiveRoute'
+import { sampleStory } from '../../core/narrative/sampleStory'
+import { PERSONAL_ARCHIVE_SAMPLE_STORY } from '../../core/narrative/specs'
+import type { ArchiveSeekResult } from '../../lib/chapterScroll'
+import type { StoryChapter, StoryPosition } from '../../core/narrative/types'
 
 interface SurfaceEvents { ready(): void; pending(): void; failed(): void }
 interface ActiveSurface {
@@ -34,14 +42,14 @@ interface ActiveSurface {
   shot: SpatialShot
   progress: ArchiveProgress
   events: SurfaceEvents
-  navigation?: { from: ArchiveView; to: ArchiveView }
-  previous?: ActiveSurface | null
 }
 export interface ArchiveRuntime {
+  readingTransition(requestId: number, chapter: StoryChapter, mode: 'return' | 'open', layer: HTMLElement, from?: number): Promise<ArchiveSeekResult>
+  commitPosition(requestId: number, targetId?: string): ArchiveSeekResult
+  setIndexInspection(amount: number): void
   mount(host: HTMLElement): () => void
   rest(view: ArchiveView): void
   activate(page: HTMLElement | null, sourcePage: HTMLElement | null, shot: SpatialShot, progress: ArchiveProgress, events: SurfaceEvents): () => void
-  navigate(from: ArchiveView, to: ArchiveView, progress: ArchiveProgress, events: SurfaceEvents): () => void
   dispose(): void
 }
 let current: ArchiveRuntime | null = null
@@ -64,7 +72,9 @@ function disposeModel(model: GLTF) {
 async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
   const response = await fetch(modelUrl, { signal })
   if (!response.ok) throw new Error(`Archive model HTTP ${response.status}`)
-  const model = await new GLTFLoader().parseAsync(await response.arrayBuffer(), '')
+  const bytes = await response.arrayBuffer()
+  const assetHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('')
+  const model = await new GLTFLoader().parseAsync(bytes, '')
   let lease: ContextLease | undefined, renderer: WebGLRenderer | undefined
   const cleanup: (() => void)[] = [() => disposeModel(model)]
   try {
@@ -81,17 +91,13 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     scene.add(model.scene)
     cleanup.push(addContactReadingPlane(model.scene))
     const lighting = createArchiveLighting(gl, scene); cleanup.push(() => lighting.dispose())
-    const director = createArchiveDirector(model, camera); cleanup.push(() => director.dispose())
+    const animationRig = createArchiveAnimationRig(model); cleanup.push(() => animationRig.dispose())
+    const execution = createArchiveExecution(model.scene, animationRig); cleanup.push(() => execution.dispose())
     const signalPicture = await createArchiveSignal(model.scene); cleanup.push(() => signalPicture.dispose())
     const atmosphere = createArchiveAtmosphere(model.scene); cleanup.push(() => atmosphere.dispose())
-    const sheet = createArchiveReadingSurface(model.scene); scene.add(sheet.mesh); cleanup.push(() => sheet.dispose())
     await prepareChapterPages(signal)
     await document.fonts.ready
-    for (const page of document.querySelectorAll<HTMLElement>('.archive-bridge__page')) {
-      const bridge = page.closest<HTMLElement>('.archive-bridge')
-      sheet.prepare((bridge?.dataset.archiveTrack ?? 'entry') as SpatialShot, page)
-    }
-    const textures = new Set<Texture>(sheet.textures.values())
+    const textures = new Set<Texture>()
     prepareArchiveMaterials(model.scene)
     model.scene.traverse(object => {
       if (!(object instanceof Mesh)) return
@@ -127,8 +133,71 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     let state: 'ready' | 'recovering' | 'failed' = 'ready', recovery = 0, recoveryTimer = 0
     let mountedHost: HTMLElement | null = null
     let indexPage: HTMLElement | null = null
-    let restView: ArchiveView = 'home'
     let active: ActiveSurface | null = null
+    let preparing = true, attemptId = 0, frameId = 0
+    let sampleUnavailable: string | null = null
+    let transientSampleFailure: Readonly<{ layoutVersion: number; requestId: number; resourceGeneration: number }> | null = null
+    let lastSampleCommitted = false
+    let indexInspection=0
+    let readingRoute: { requestId: number; layoutVersion: number; resourceGeneration: number; chapter: StoryChapter; mode: 'return' | 'open'; layer: HTMLElement; started: number; from?: number; resolve(result: ArchiveSeekResult): void } | null = null
+    let lastWorldKey = ''
+    function endReadingRoute(result: ArchiveSeekResult) {
+      const route = readingRoute
+      if (!route) return
+      readingRoute = null
+      route.layer.remove()
+      if (document.documentElement.dataset.archiveReadingRequest === String(route.requestId)) {
+        delete document.documentElement.dataset.archiveReadingRequest
+        delete document.documentElement.dataset.archiveRouting
+        delete document.documentElement.dataset.archiveReturnPhase
+      }
+      route.resolve(result)
+    }
+    type DrawResult = 'sample' | 'none'
+    function reveal(result: DrawResult) {
+      if (result === 'none' || disposed || preparing || state !== 'ready' || !mountedHost) return
+      canvas.style.visibility = 'visible'
+      document.documentElement.dataset.archiveVisible = 'true'
+    }
+    const records: unknown[] = []
+    let diagnosticEnabled = false
+    const diagnosticHost = window as unknown as Record<string, unknown>
+    let diagnostic: Readonly<{ getSnapshot(): readonly unknown[] }> | null = null
+    try {
+      diagnosticEnabled = diagnosticHost.__portfolioArchiveExecutionEnabled === true && !('__portfolioArchiveExecution' in diagnosticHost)
+      if (diagnosticEnabled) {
+        diagnostic = Object.freeze({ getSnapshot: () => Object.freeze([...records]) })
+        Object.defineProperty(diagnosticHost, '__portfolioArchiveExecution', { configurable: true, value: diagnostic })
+      }
+    } catch { diagnosticEnabled = false }
+    function record(build: () => unknown) {
+      if (!diagnosticEnabled) return
+      const value = build()
+      try {
+        const freeze = (item: unknown): unknown => {
+          if (item && typeof item === 'object') { for (const child of Object.values(item)) freeze(child); Object.freeze(item) }
+          return item
+        }
+        records.push(freeze(JSON.parse(JSON.stringify(value)) as unknown)); if (records.length > 32) records.shift()
+      } catch { /* diagnostics cannot affect execution */ }
+    }
+    function photoVisibility(points: number[][], owner: string) {
+      const ray = new Raycaster()
+      return points.map(point => {
+        const world = new Vector3().fromArray(point), direction = world.clone().sub(camera.position)
+        ray.set(camera.position,direction.clone().normalize()); ray.far = direction.length()-1e-5
+        const blocked = ray.intersectObject(model.scene,true).find(hit => {
+          if (hit.object.name === owner || !(hit.object instanceof Mesh)) return false
+          let visible = true
+          hit.object.traverseAncestors(parent => { if (!parent.visible) visible = false })
+          const mesh = hit.object as Mesh<BufferGeometry, Material | Material[]>
+          const material = Array.isArray(mesh.material) ? mesh.material[hit.face?.materialIndex ?? 0] : mesh.material
+          return visible && hit.object.visible && material?.visible && material.opacity > .99 && !('transmission' in material && Number(material.transmission) > 0)
+        })
+        return { ndc:world.project(camera).toArray(), blockedBy:blocked?.object.name ?? null, distance:blocked?.distance ?? null }
+      })
+    }
+    cleanup.push(() => { try { if (diagnosticHost.__portfolioArchiveExecution === diagnostic) delete diagnosticHost.__portfolioArchiveExecution; records.length = 0 } catch { /* diagnostic cleanup is isolated */ } })
     let pointerX = 0, pointerY = 0, targetX = 0, targetY = 0, ambientFrame = 0, lastAmbient = 0
     const pointerMove = (event: PointerEvent) => {
       targetX = event.clientX / Math.max(1, innerWidth) * 2 - 1
@@ -138,11 +207,10 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     const ambient = (now: number) => {
       if (disposed || document.hidden) { ambientFrame = 0; return }
       ambientFrame = requestAnimationFrame(ambient)
-      if (state !== 'ready' || !mountedHost || !active || now - lastAmbient < 16) return
+      if (state !== 'ready' || !mountedHost || (!active && !getRetainedSamplePosition()) || now - lastAmbient < 16) return
       const delta = Math.min(.05, (now - lastAmbient) / 1000); lastAmbient = now
       const blend = 1 - Math.exp(-delta * 5)
       pointerX += (targetX - pointerX) * blend; pointerY += (targetY - pointerY) * blend
-      director.pointer(pointerX, pointerY)
       atmosphere.update(now / 1000)
       schedule()
     }
@@ -157,6 +225,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     const setState = (next: typeof state) => { state = next; canvas.dataset.archiveState = next }
     setState('ready')
     function hide() {
+      lastSampleCommitted = false
       canvas.style.visibility = 'hidden'
       if (active?.page) active.page.style.opacity = '0'
       if (active?.sourcePage) active.sourcePage.style.opacity = '0'
@@ -165,117 +234,168 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     }
     function fail(error: unknown) {
       if (disposed) return
+      endReadingRoute('readable-fallback')
       setState('failed'); hide(); window.clearTimeout(recoveryTimer)
       console.error('[personal-archive] Rendering failed', error)
       active?.events.failed()
+      execution.invalidate(); clearSamplePresentation()
+      document.documentElement.dataset.archiveSampleFallback = 'true'
+      record(() => ({ kind: 'execution-error', attemptId, reason: error instanceof Error ? error.message : String(error) }))
     }
-    function draw(shot: SpatialShot, p: number, page: HTMLElement | null, sourcePage: HTMLElement | null = null) {
-      const pose = director.pose(shot, p, page)
-      sheet.update(shot, p, pose.surface, camera, page)
-      const hit = page?.closest('.archive-bridge')?.querySelector<HTMLElement>('.archive-bridge__room-hit')
-      if (hit && pose.surface !== 'ContactReading') {
-        const points = ['TL', 'TR', 'BR', 'BL'].map(suffix => model.scene.getObjectByName(`${pose.surface}_${suffix}`)?.getWorldPosition(new Vector3()))
-        if (points.every(point => point && point.clone().applyMatrix4(camera.matrixWorldInverse).z < -camera.near)) {
-          const screen = points.map(point => point!.project(camera))
-          const xs = screen.map(point => (point.x + 1) * width / 2), ys = screen.map(point => (1 - point.y) * height / 2)
-          const left = Math.min(...xs), top = Math.min(...ys)
-          Object.assign(hit.style, { left: `${left}px`, top: `${top}px`, width: `${Math.max(44, Math.max(...xs) - left)}px`, height: `${Math.max(44, Math.max(...ys) - top)}px` })
-        }
+    function sampleFallback(error: unknown, layoutVersion: number, requestId: number) {
+      endReadingRoute('readable-fallback')
+      const reason = error instanceof Error ? error.message : String(error)
+      const recoverable = !/Sample unavailable:|Missing archive node:/.test(reason)
+      if (recoverable) transientSampleFailure = Object.freeze({ layoutVersion, requestId, resourceGeneration: execution.resourceGeneration })
+      else sampleUnavailable = reason
+      clearSamplePresentation(); hide(); execution.invalidate()
+      document.documentElement.dataset.archiveSampleFallback = 'true'
+      if (recoverable) active?.events.pending()
+      else active?.events.failed()
+      record(() => ({ kind: 'execution-error', attemptId, reason, recoverable, layoutVersion, requestId, resourceGeneration: execution.resourceGeneration }))
+    }
+    function drawSample(requestId = currentArchiveRequest().requestId): boolean {
+      lastSampleCommitted = false
+      if (preparing || !mountedHost || state !== 'ready') return false
+      const layout = getSampleLayout()
+      if (!layout) {
+        if (!getRetainedSamplePosition()) return false
+        clearSamplePresentation(); hide(); return true
       }
-      if (indexPage && indexPage !== page) {
-        const indexOpacity = shot === 'entry' ? 1 - Math.min(1, Math.max(0, (p - .36) / .20)) : 0
-        if (shot === 'entry' && indexOpacity > 0) sheet.projectSource(indexPage, 'StackReading', camera, indexOpacity, 0)
-        else indexPage.style.opacity = '0'
-        indexPage.style.pointerEvents = shot === 'entry' && p < .015 ? 'auto' : 'none'
+      if (readingRoute && (readingRoute.requestId !== requestId || readingRoute.layoutVersion !== layout.version || readingRoute.resourceGeneration !== execution.resourceGeneration)) endReadingRoute('cancelled')
+      const route = readingRoute
+      const routeSegment = route ? ({ about:'entry', life:'about-life', frame:'life-frame', stack:'frame-stack', work:'stack-work', contact:'work-contact' } as const)[route.chapter] : null
+      // A RETURN retraces toward ARCHIVE_ROOM_PROGRESS instead of stopping where the authored
+      // path is already spent; an OPEN resumes from wherever the reader actually was, so
+      // docking to a surface has no start pop. Duration follows the distance actually covered,
+      // so a near carrier and a far one no longer share one wall-clock number.
+      const routeFrom = !route ? 0 : route.mode === 'return' ? 1 : Math.min(1, Math.max(0, route.from ?? ARCHIVE_ROOM_PROGRESS))
+      const routeTo = route?.mode === 'return' ? ARCHIVE_ROOM_PROGRESS : 1
+      const elapsed = route ? performance.now() - route.started : 0
+      const routeProgress = Math.min(1, elapsed / (560 + 620 * Math.abs(routeTo - routeFrom)))
+      const movement = phase(routeProgress,0,1)
+      const routePosition: StoryPosition | null = route && routeSegment
+        ? { segment:routeSegment, progress: routeFrom + (routeTo - routeFrom) * movement } : null
+      const position = routePosition ?? positionAtScroll(layout, scrollY)
+      if (!position) {
+        if (execution.owner === 'sample') clearSamplePresentation()
+        retainSamplePosition(null)
+        return false
       }
-      const sourceSurface = shot === 'about-life' ? 'AboutReading'
-        : shot === 'life-frame' ? 'LifeReading'
-          : shot === 'frame-stack' ? 'FrameReading'
-        : shot === 'stack-work' ? 'StackReading'
-          : shot === 'work-contact' ? 'WorkReading'
-            : null
-      if (sourcePage && sourceSurface) {
-        sheet.projectSource(sourcePage, sourceSurface, camera, 1 - phase(p, .20, .26), 1 - phase(p, 0, .08))
-      }
-      focusUniforms.focus!.value = pose.focus; focusUniforms.aperture!.value = .000025 * (1 - pose.flatten)
-      focus.enabled = pose.flatten < .8 && shot !== 'frame-stack' && !sheet.active
-      canvas.dataset.archiveShot = shot
-      canvas.dataset.archiveProgress = String(p)
-      canvas.dataset.archiveSheet = sheet.active ? JSON.stringify(sheet.mesh.userData.archiveSurface) : 'hidden'
-      composer.render()
-      if (shaderFailure) throw shaderFailure
-    }
-    const surfaceForView = (view: ArchiveView) => view === 'home' || view === 'stack' ? 'StackReading'
-      : view === 'about' ? 'AboutReading'
-        : view === 'life' ? 'LifeReading'
-          : view === 'frame' ? 'FrameReading'
-            : view === 'work' ? 'WorkReading'
-              : 'ContactReading'
-    function projectedMatrix(surface: string) {
-      const points = ['TL', 'TR', 'BR', 'BL'].map(suffix => model.scene.getObjectByName(`${surface}_${suffix}`)?.getWorldPosition(new Vector3()))
-      if (points.some(value => !value)) return 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)'
-      const projected = points.map(point => point!.project(camera))
-      const matrix = pageMatrix(projected.map(point => ({ x: (point.x + 1) * innerWidth / 2, y: (1 - point.y) * innerHeight / 2 })), innerWidth, innerHeight)
-      return matrix ? `matrix3d(${matrix.join(',')})` : 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)'
-    }
-    function drawNavigation(from: ArchiveView, to: ArchiveView, p: number) {
-      const pose = director.navigationPose(from, to, p)
-      focusUniforms.focus!.value = pose.focus
-      focusUniforms.aperture!.value = .000025
-      focus.enabled = p > .12 && p < .88
-      canvas.dataset.archiveShot = `navigate:${from}:${to}`
-      canvas.dataset.archiveProgress = String(p)
-      canvas.dataset.archiveSheet = 'hidden'
-      composer.render()
-      if (shaderFailure) throw shaderFailure
-    }
-    function drawRest() {
-      const pose = director.navigationPose(restView, restView, 1, true)
-      focusUniforms.focus!.value = pose.focus
-      focusUniforms.aperture!.value = .000025
-      focus.enabled = false
-      canvas.dataset.archiveShot = `rest:${restView}`
-      canvas.dataset.archiveProgress = '1'
-      canvas.dataset.archiveSheet = 'hidden'
-      composer.render()
-      if (shaderFailure) throw shaderFailure
-    }
-    function restoreRest() {
-      if (!mountedHost || state !== 'ready') return
-      try { drawRest(); canvas.style.visibility = 'visible' } catch (error) { fail(error) }
-    }
-    function previousAlive(surface: ActiveSurface) {
-      let previous = surface.previous ?? null
-      while (previous && !previous.alive) previous = previous.previous ?? null
-      return previous
-    }
-    function resumePrevious(surface: ActiveSurface) {
-      active = previousAlive(surface)
-      cancelAnimationFrame(frame); frame = 0
-      if (!active) { restoreRest(); return }
-      if (state !== 'ready') { active.events.pending(); return }
+      if (!route) retainSamplePosition(position)
+      if (sampleUnavailable) { clearSamplePresentation(); hide(); return true }
+      if (transientSampleFailure?.layoutVersion === layout.version && transientSampleFailure.requestId === requestId && transientSampleFailure.resourceGeneration === execution.resourceGeneration) return true
+      transientSampleFailure = null
+      attemptId++
+      lastSampleCommitted = false
+      let rendering = false
+      const trace: string[] = []
       try {
-        drawActive(); canvas.style.visibility = 'visible'
-        document.documentElement.dataset.archiveVisible = 'true'; active.events.ready()
-      } catch (error) { fail(error) }
+        if (currentArchiveRequest().requestId !== requestId) throw new Error('Stale sample request')
+        const permit = execution.begin('sample', 'foreground', requestId, layout.version)
+        trace.push('permit-check')
+        const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion, user:{indexInspection} })
+        for (const id of ['about', 'life', 'frame', 'skills', 'projects', 'contact']) if (!document.getElementById(id)) throw new Error(`Missing live chapter:${id}`)
+        const currentIndexPage = indexPage ?? document.querySelector<HTMLElement>('.hero__screen-page')
+        if (!indexPage && currentIndexPage) indexPage = currentIndexPage
+        const bridge = position.segment === 'entry' ? document.getElementById('archive-entry')
+          : position.segment === 'about-life' || position.segment === 'life-frame' || position.segment === 'frame-stack' || position.segment === 'stack-work' || position.segment === 'work-contact' ? document.querySelector<HTMLElement>(`[data-archive-track="${position.segment}"]`) : null
+        const page = position.segment === 'index' ? currentIndexPage : bridge?.querySelector<HTMLElement>(position.segment === 'entry' ? '.archive-bridge__page' : '.archive-chapter-bridge__page') ?? null
+        const sourcePage = position.segment === 'entry' ? currentIndexPage : bridge?.querySelector<HTMLElement>('.archive-bridge__page--source') ?? null
+        if (bridge && (!page || !sourcePage)) throw new Error('Missing sample preview DOM')
+        const world = execution.sample(permit, sampled)
+        trace.push('actions/world', 'matrix/anchors')
+        // Parallax was hard-cut to zero for the whole route and restored at full gain on the
+        // first scroll-driven frame, which snapped the camera the instant a return landed.
+        // It now ramps along the same curve that drives the move.
+        const pointerScale = route ? (route.mode === 'return' ? movement : 1 - movement) : 1
+        const finalCamera = solveArchiveCamera(sampled, world.anchors, layout.viewport, { x: pointerX * pointerScale, y: pointerY * pointerScale })
+        applyArchiveCamera(camera, finalCamera)
+        trace.push('camera')
+        const pageLayout = (element: HTMLElement, kind: 'source' | 'target') => {
+          const snapshot = layout.pages[`${position.segment}:${kind}`]
+          const currentLayout = samplePageLayout(element, layout.viewport.width, layout.viewport.height)
+          if (!snapshot || snapshot.pageWidth !== currentLayout.pageWidth || snapshot.pageHeight !== currentLayout.pageHeight) throw new Error('Page size changed without a valid layout refresh')
+          // Sticky containers move on scroll without changing layout. Sizes are
+          // versioned; their current viewport origin is captured once per draw.
+          return { ...snapshot, originX: currentLayout.originX, originY: currentLayout.originY }
+        }
+        const target = !route && page && sampled.presentation.targetReveal > 0 && (!sampled.presentation.readingOwner || sampled.presentation.readingOwner === 'index') ? projectArchiveQuad(world.anchors[sampled.presentation.targetSurface]!, finalCamera, pageLayout(page, 'target'), sampled.presentation.targetExpand, .0015) : null
+        const source = !route && sourcePage && sampled.presentation.sourceSurface && sampled.presentation.sourceReveal > 0 ? projectArchiveQuad(world.anchors[sampled.presentation.sourceSurface]!, finalCamera, pageLayout(sourcePage, 'source'), sampled.presentation.sourceExpand, .0018) : null
+        // Direct open/return reuses the sampled bridge coordinate. The route
+        // layer therefore retracts into the same real surface at the same T
+        // that expands it, rather than owning a second animation curve.
+        const routeExpand = route ? sampled.presentation.targetExpand : 0
+        const routeProjection = route ? projectArchiveQuad(world.anchors[`${route.chapter[0]!.toUpperCase()}${route.chapter.slice(1)}Reading`]!,finalCamera,{width,height,pageWidth:width,pageHeight:height,originX:0,originY:0},routeExpand,.0018) : null
+        let hit: ReturnType<typeof projectArchiveQuad> | null = null
+        if (!route && page && sampled.presentation.roomHitEnabled) {
+          try { hit = projectArchiveQuad(world.anchors[sampled.presentation.targetSurface]!, finalCamera, { ...pageLayout(page, 'target'), pageWidth: width, pageHeight: height }, 0, .0015) } catch { hit = null }
+        }
+        trace.push('projections')
+        execution.validate(permit)
+        if (getSampleLayout() !== layout || currentArchiveRequest().requestId !== requestId) throw new Error('Stale sample layout/request')
+        presentSampleFrame(route ? {...sampled,presentation:{...sampled.presentation,readingOwner:null,roomHitEnabled:false,sourceReveal:0,targetReveal:0}} : sampled, page, sourcePage, target, source, hit)
+        if (route && routeProjection) {
+          document.documentElement.dataset.archiveRouting = 'true'
+          document.documentElement.dataset.archiveReturnPhase = route.mode === 'open' ? 'expand' : routeProgress < .3 ? 'retract' : 'move'
+          route.layer.style.transform = `matrix3d(${routeProjection.matrix.join(',')})`
+          route.layer.style.opacity = String(route.mode === 'return' ? 1-phase(routeProgress,.45,.95) : 1)
+        }
+        focusUniforms.focus!.value = finalCamera.focus
+        focusUniforms.aperture!.value = sampled.presentation.aperture
+        // Aperture already fades with targetExpand, so a route can carry depth of field
+        // through instead of popping it back on at the handoff frame.
+        focus.enabled = sampled.presentation.focusEnabled && !target && !source
+        trace.push('DOM/passes')
+        canvas.dataset.archiveShot = position.segment
+        canvas.dataset.archiveProgress = String(position.segment === 'index' ? indexInspection : position.progress)
+        canvas.dataset.archiveSheet = target ? JSON.stringify(target) : 'hidden'
+        const beforeRender = diagnosticEnabled ? { animation: animationRig.readback(), nodes: execution.readNodes() } : null
+        // The room is static between story states, so its two shadow maps only need
+        // redrawing when a controlled object actually moved.
+        const worldKey = JSON.stringify(sampled.world)
+        if (worldKey !== lastWorldKey) { gl.shadowMap.needsUpdate = true; lastWorldKey = worldKey }
+        rendering = true
+        composer.render()
+        if (shaderFailure) throw shaderFailure
+        rendering = false
+        trace.push('render')
+        const committed = ++frameId
+        trace.push('publish')
+        let visibility = null
+        if (diagnosticEnabled && position.segment === 'life-frame' && position.progress >= .24 && position.progress <= .561) {
+          try { visibility = photoVisibility(world.photo.actual,world.photo.owner === 'source' ? 'LifeMemoryPhoto' : world.photo.owner === 'wall' ? 'ArchivePhoto_04' : 'ArchiveFootballTransfer') } catch { /* read-only evidence must not change a committed frame */ }
+        }
+        record(() => ({ kind: 'sample-committed', attemptId, frameId: committed, permit, rigGeneration: world.animation.generation, assetHash, bindingVersion: 'nr01b-v1', story: sampled, position, layout, world, beforeRender, camera: { position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov, aspect: camera.aspect, near: camera.near, far: camera.far, view: [...camera.matrixWorldInverse.elements], projection: [...camera.projectionMatrix.elements] }, target, source, hit, photoVisibility:visibility, signal:signalPicture.content, readingRoute:route ? { requestId:route.requestId, mode:route.mode, storyPosition:positionAtScroll(layout,scrollY), phase:document.documentElement.dataset.archiveReturnPhase, progress:routeProgress, projection:routeProjection, snapshotInert:route.layer.inert } : null, passes: { focus: focus.enabled, aperture: focusUniforms.aperture!.value }, trace }))
+        lastSampleCommitted = true
+        transientSampleFailure = null
+        delete document.documentElement.dataset.archiveSampleFallback
+        canvas.style.visibility = 'visible'; document.documentElement.dataset.archiveVisible = 'true'
+        if (!route && active?.alive && active.shot === position.segment) active.events.ready()
+        if (route && routeProgress === 1) endReadingRoute('committed')
+        return true
+      } catch (error) {
+        if (error instanceof Error && /Stale/.test(error.message)) { record(() => ({ kind: 'cancelled-attempt', attemptId, reason: error.message })); return true }
+        if (rendering) fail(error)
+        else sampleFallback(error, layout.version, requestId)
+        return true
+      }
     }
-    function drawActive() {
-      if (!active) return
-      if (active.navigation) drawNavigation(active.navigation.from, active.navigation.to, active.progress.get())
-      else draw(active.shot, active.progress.get(), active.page, active.sourcePage)
+    function drawActive(): DrawResult {
+      return drawSample() && lastSampleCommitted ? 'sample' : 'none'
     }
     function schedule() {
-      if (frame || disposed || state !== 'ready' || !active || document.hidden) return
+      if (frame || disposed || state !== 'ready' || (!active && !getRetainedSamplePosition() && !readingRoute) || document.hidden) return
       frame = requestAnimationFrame(() => {
-        frame = 0; if (!active || disposed || state !== 'ready') return
-        try { drawActive() } catch (error) { fail(error) }
+        frame = 0; if (disposed || state !== 'ready') return
+        try { reveal(drawActive()) } catch (error) { fail(error) }
+        if (readingRoute) schedule()
       })
     }
     function resize() {
+      if (readingRoute) endReadingRoute('cancelled')
+      if (width !== innerWidth || height !== innerHeight) invalidateSampleLayout()
       width = innerWidth; height = innerHeight
-      for (const page of document.querySelectorAll<HTMLElement>('.archive-bridge__page')) {
-        sheet.prepare((page.closest<HTMLElement>('.archive-bridge')?.dataset.archiveTrack ?? 'entry') as SpatialShot, page)
-      }
       gl.setPixelRatio(Math.min(devicePixelRatio || 1, quality.tier === 'high' ? 2 : quality.dprMax))
       gl.setSize(width, height, false); composer.setPixelRatio(gl.getPixelRatio()); composer.setSize(width, height)
       if (fxaa) {
@@ -283,26 +403,42 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         resolution?.set(1 / Math.max(1, width * gl.getPixelRatio()), 1 / Math.max(1, height * gl.getPixelRatio()))
       }
       camera.aspect = width / height; camera.updateProjectionMatrix()
-      if (active) schedule()
-      else restoreRest()
+      schedule()
     }
     resize()
-    // Prewarm actual state variants on the same retained context, behind the intro.
-    for (const [shot, p] of [
-      ['index', 0], ['entry', 0], ['entry', .62], ['about-life', .48], ['life-frame', .48],
-      ['frame-stack', .44], ['frame-stack', .82], ['stack-work', .68], ['work-contact', .82],
-    ] as const) {
-      signal.throwIfAborted(); director.pose(shot, p, null)
-      await gl.compileAsync(scene, camera); draw(shot, p, null)
+    async function preparePosition(position: StoryPosition) {
+      signal.throwIfAborted()
+      const requestId = currentArchiveRequest().requestId
+      const permit = execution.begin('sample', 'prepare', requestId, getSampleLayout()?.version ?? 0)
+      const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion, user:{ indexInspection:0 } })
+      const world = execution.sample(permit, sampled)
+      applyArchiveCamera(camera, solveArchiveCamera(sampled, world.anchors, { width, height }))
+      await gl.compileAsync(scene, camera)
+      signal.throwIfAborted(); execution.validate(permit)
+      record(() => ({ kind: 'preparation', position, permit, trace: ['sample-world', 'sample-camera', 'compile'] }))
+      return permit
     }
-    director.pose('entry', .94, null)
+    // Prewarm real semantic variants on the retained context, behind the intro.
+    for (const [segment, progress] of [
+      ['index', 0], ['entry', .62], ['about-life', .48], ['life-frame', .48],
+      ['frame-stack', .44], ['stack-work', .68], ['work-contact', .82], ['contact-reading', 1],
+    ] as const) {
+      await preparePosition({ segment, progress })
+    }
+    const calibration = await preparePosition({ segment:'entry', progress:.94 })
     focus.enabled = false
     calibrateRoomPaper(gl, composer, model.scene, camera)
-    draw('index', 0, null); signal.throwIfAborted()
+    execution.validate(calibration)
+    record(() => ({ kind: 'preparation', position:{ segment:'entry', progress:.94 }, permit:calibration, trace: ['sample-world', 'sample-camera', 'paper-calibration'] }))
+    await preparePosition({ segment:'index', progress:0 })
+    preparing = false
+    gl.shadowMap.autoUpdate = false; gl.shadowMap.needsUpdate = true; lastWorldKey = ''
     if (gl.getContext().isContextLost() || gl.info.render.calls === 0) throw new Error('Archive GPU preparation failed')
     const lost = (event: Event) => {
       event.preventDefault(); if (disposed) return
+      endReadingRoute('cancelled')
       recovery++; setState('recovering'); hide(); active?.events.pending()
+      execution.invalidate(true); cancelArchiveRouting(); clearSamplePresentation()
       window.clearTimeout(recoveryTimer)
       recoveryTimer = window.setTimeout(() => fail(new Error('Archive GPU recovery timed out')), 15000)
     }
@@ -310,24 +446,27 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       if (disposed || state !== 'recovering') return
       const generation = recovery
       void (async () => {
+        preparing = true
         shaderFailure = null
         // Render-target contents are lost too: rebuild the environment reflection.
         lighting.restore(); resize()
         for (const texture of [...textures, ...signalPicture.textures]) { texture.needsUpdate = true; gl.initTexture(texture) }
-        for (const [shot, p] of [
+        for (const [segment, progress] of [
           ['index', 0], ['entry', .62], ['about-life', .48], ['life-frame', .48],
-          ['frame-stack', .44], ['stack-work', .68], ['work-contact', .82],
+          ['frame-stack', .44], ['stack-work', .68], ['work-contact', .82], ['contact-reading', 1],
         ] as const) {
-          director.pose(shot, p, null)
-          await gl.compileAsync(scene, camera)
+          const prepared = await preparePosition({ segment, progress })
           if (disposed || recovery !== generation || state !== 'recovering') return
-          draw(shot, p, null)
+          execution.validate(prepared)
         }
         if (gl.getContext().isContextLost()) return
-        if (active) drawActive()
-        else drawRest()
-        window.clearTimeout(recoveryTimer); setState('ready'); canvas.style.visibility = 'visible'
-        if (active) { document.documentElement.dataset.archiveVisible = 'true'; active.events.ready() }
+        preparing = false
+        gl.shadowMap.autoUpdate = false; gl.shadowMap.needsUpdate = true; lastWorldKey = ''
+        sampleUnavailable = null
+        setState('ready')
+        const result = drawActive()
+        window.clearTimeout(recoveryTimer)
+        reveal(result)
       })().catch(error => { if (recovery === generation) fail(error) })
     }
     const hidden = () => { if (document.hidden) { cancelAnimationFrame(frame); frame = 0; cancelAnimationFrame(ambientFrame); ambientFrame = 0 } else { if (!ambientFrame) ambientFrame = requestAnimationFrame(ambient); schedule() } }
@@ -339,74 +478,61 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       document.removeEventListener('visibilitychange', hidden); cancelAnimationFrame(frame); canvas.remove()
     })
     return {
+      readingTransition(requestId, chapter, mode, layer, from) {
+        const layout = getSampleLayout()
+        if (!layout || disposed || preparing || state !== 'ready' || sampleUnavailable || currentArchiveRequest().requestId !== requestId) { layer.remove(); return Promise.resolve('readable-fallback') }
+        endReadingRoute('cancelled')
+        return new Promise(resolve => {
+          readingRoute = { requestId, chapter, mode, layer, from, layoutVersion:layout.version, resourceGeneration:execution.resourceGeneration, started:performance.now(), resolve }
+          document.documentElement.dataset.archiveReadingRequest = String(requestId)
+          schedule()
+        })
+      },
+      commitPosition(requestId) {
+        if (disposed || state !== 'ready' || preparing || !mountedHost || currentArchiveRequest().requestId !== requestId) return 'readable-fallback'
+        if (drawSample(requestId)) return lastSampleCommitted && getSampleLayout() ? 'committed' : 'readable-fallback'
+        return 'readable-fallback'
+      },
+      setIndexInspection(amount) {
+        if(!Number.isFinite(amount))return
+        indexInspection=Math.max(0,Math.min(1,amount))
+        schedule()
+      },
       mount(host) {
         mountedHost = host
         if (canvas.parentElement !== host) host.appendChild(canvas)
-        canvas.style.visibility = state === 'failed' ? 'hidden' : 'visible'
+        canvas.style.visibility = 'hidden'
         return () => {
           if (mountedHost !== host) return
           mountedHost = null
+          hide(); execution.invalidate(); clearSamplePresentation()
           canvas.remove()
         }
       },
       rest(view) {
-        restView = view
-        if (disposed || state !== 'ready' || active || !mountedHost || document.hidden) return
-        try {
-          drawRest(); canvas.style.visibility = 'visible'
-          document.documentElement.dataset.archiveVisible = 'true'
-        } catch (error) { fail(error) }
+        void view
+        if (disposed || state !== 'ready' || !mountedHost || document.hidden) return
+        try { reveal(drawActive()) } catch (error) { fail(error) }
       },
       activate(page, sourcePage, shot, progress, events) {
         if (disposed || state === 'failed') { if (page) page.style.opacity = '0'; events.failed(); return () => {} }
         if (shot === 'index') indexPage = page
-        if (active?.page && active.page !== page && active.shot !== 'index') active.page.style.opacity = '0'
         const token = Symbol(shot)
-        const surface: ActiveSurface = { token, alive: true, previous: active, page, sourcePage, shot, progress, events }
+        const surface: ActiveSurface = { token, alive: true, page, sourcePage, shot, progress, events }
         active = surface
         if (mountedHost && canvas.parentElement !== mountedHost) mountedHost.appendChild(canvas)
         if (state === 'recovering' || gl.getContext().isContextLost()) { hide(); events.pending() }
         else try {
-          draw(shot, progress.get(), page, sourcePage); canvas.style.visibility = 'visible'
-          document.documentElement.dataset.archiveVisible = 'true'; events.ready()
+          reveal(drawActive())
         } catch (error) { fail(error) }
         const unsubscribe = progress.subscribe(schedule)
         return () => {
           unsubscribe()
           surface.alive = false
-          if (page && shot !== 'index') page.style.opacity = '0'
-          if (sourcePage) sourcePage.style.opacity = '0'
           if (active?.token === token) {
-            resumePrevious(surface)
+            active = null
+            schedule()
           }
-        }
-      },
-      navigate(from, to, progress, events) {
-        if (disposed || state === 'failed') { events.failed(); return () => {} }
-        if (active?.page) active.page.style.opacity = '0'
-        if (active?.sourcePage) active.sourcePage.style.opacity = '0'
-        const token = Symbol(`navigate:${from}:${to}`)
-        director.navigationPose(from, to, 0)
-        document.documentElement.style.setProperty('--archive-route-source-matrix', projectedMatrix(surfaceForView(from)))
-        director.navigationPose(from, to, 1)
-        document.documentElement.style.setProperty('--archive-route-target-matrix', projectedMatrix(surfaceForView(to)))
-        const surface: ActiveSurface = { token, alive: true, previous: active, page: null, sourcePage: null, shot: 'index', progress, events, navigation: { from, to } }
-        active = surface
-        const unsubscribe = progress.subscribe(schedule)
-        try {
-          drawNavigation(from, to, progress.get())
-          canvas.style.visibility = 'visible'
-          document.documentElement.dataset.archiveVisible = 'true'
-          events.ready()
-        } catch (error) { fail(error) }
-        return () => {
-          unsubscribe()
-          surface.alive = false
-          if (active?.token === token) {
-            resumePrevious(surface)
-          }
-          document.documentElement.style.removeProperty('--archive-route-source-matrix')
-          document.documentElement.style.removeProperty('--archive-route-target-matrix')
         }
       },
       dispose() {
@@ -414,7 +540,9 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         if (active?.page) active.page.style.opacity = '0'
         if (active?.sourcePage) active.sourcePage.style.opacity = '0'
         if (indexPage) indexPage.style.opacity = '0'
+        endReadingRoute('cancelled')
         disposed = true; active = null; indexPage = null; mountedHost = null
+        execution.invalidate(); clearSamplePresentation()
         delete document.documentElement.dataset.archiveVisible
         for (const stop of cleanup.reverse()) stop()
         gl.dispose(); gl.forceContextLoss(); lease?.release()

@@ -4,6 +4,7 @@ import { useSkillsFlowLine } from './skills/useSkillsFlowLine'
 import SkillRowItem from './skills/SkillRowItem'
 import LogoLoop from './LogoLoop'
 import type { LogoItem } from './LogoLoop'
+import { resolveFinalHorizonImage } from '../content/narrativeObjects'
 
 const workingSet = [
   ['01', 'React', 'Interface'],
@@ -72,9 +73,10 @@ export function SkillsHeading() {
  * chapter use the same asset, crop and viewport geometry at the handoff.
  */
 export function StackContinuityFrame() {
+  const image = resolveFinalHorizonImage()
   return (
     <div className="skills-continuity" aria-hidden="true">
-      <img src="/frame/scenery/scenery-11.webp" alt="" decoding="async" />
+      <img src={image.src} srcSet={image.srcSet} sizes={image.sizes} width={image.width} height={image.height} alt="" decoding="async" />
       <div className="skills-continuity__shade" />
       <div className="skills-continuity__trace">
         <span>FRAME / FINAL HORIZON</span>

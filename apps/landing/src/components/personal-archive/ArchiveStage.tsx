@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { getPreparedArchiveRuntime, prepareArchiveRuntime } from './archiveRuntime'
 import { useChapterState } from '../../lib/chapterState'
 import type { ArchiveView } from './archiveDirector'
+import { ScrollTrigger } from '../../lib/gsap'
+import { getLenis } from '../../lib/lenis'
+import { installChapterScrollInterceptor } from '../../lib/chapterScroll'
+import { seekArchiveChapter, usesSampleRoute, currentArchiveRequest, registerArchiveScroll } from '../../lib/archiveRoute'
+import { getRetainedSamplePosition, invalidateSampleLayout, publishSampleLayout, scrollAtPosition, type SampleRanges } from './archiveSamplePosition'
+import { samplePageLayout, type ProjectionLayout } from './archiveReadingSurface'
 
 const viewByChapter: Record<string, ArchiveView> = {
   hero: 'home', about: 'about', life: 'life', frame: 'frame', skills: 'stack', projects: 'work', contact: 'contact',
@@ -17,6 +23,52 @@ export default function ArchiveStage() {
   const { activeId } = useChapterState()
   const activeView = viewByChapter[activeId] ?? 'home'
   const activeViewRef = useRef<ArchiveView>(activeView)
+
+  useEffect(() => {
+    const uninstall = installChapterScrollInterceptor((id, options) => usesSampleRoute(id) ? seekArchiveChapter(id, options) : null)
+    const invalidate = () => invalidateSampleLayout()
+    const refresh = () => {
+      const ranges: { -readonly [K in keyof SampleRanges]?: SampleRanges[K] } = {}
+      for (const trigger of ScrollTrigger.getAll()) {
+        const element = trigger.trigger
+        if (!(element instanceof HTMLElement)) continue
+        const key = element.id === 'hero' ? 'index' : element.id === 'archive-entry' ? 'entry' : element.dataset.archiveTrack
+        if (key === 'index' || key === 'entry' || key === 'about-life' || key === 'life-frame' || key === 'frame-stack' || key === 'stack-work' || key === 'work-contact') ranges[key] = { start: trigger.start, end: trigger.end }
+      }
+      try {
+        if (Object.keys(ranges).length !== 7) throw new Error('Sample triggers not ready')
+        // The legacy Hero and entry triggers intentionally overlap from scroll
+        // zero. A single story clock cannot let both own that interval, so the
+        // semantic entry begins exactly where the Hero/Index interval ends.
+        ranges.entry = { start: ranges.index!.end, end: ranges.entry!.end }
+        const pages: Record<string, ProjectionLayout> = {}
+        for (const track of ['about-life', 'life-frame', 'frame-stack', 'stack-work', 'work-contact']) for (const kind of ['target', 'source']) {
+          const page = document.querySelector<HTMLElement>(`[data-archive-track="${track}"] ${kind === 'target' ? '.archive-chapter-bridge__page' : '.archive-bridge__page--source'}`)
+          if (!page) throw new Error(`Sample page not ready:${track}:${kind}`)
+          pages[`${track}:${kind}`] = samplePageLayout(page, innerWidth, innerHeight)
+        }
+        const indexPage=document.querySelector<HTMLElement>('.hero__screen-page')
+        const entryPage=document.querySelector<HTMLElement>('#archive-entry .archive-bridge__page')
+        if(!indexPage||!entryPage)throw new Error('Index/entry pages not ready')
+        pages['index:target']=samplePageLayout(indexPage,innerWidth,innerHeight)
+        pages['entry:source']=samplePageLayout(indexPage,innerWidth,innerHeight)
+        pages['entry:target']=samplePageLayout(entryPage,innerWidth,innerHeight)
+        const next = publishSampleLayout(ranges as SampleRanges, { width: innerWidth, height: innerHeight, dpr: devicePixelRatio }, pages, ScrollTrigger.maxScroll(window)+1)
+        const retained = getRetainedSamplePosition()
+        if (retained && !currentArchiveRequest().pending) {
+          const top = scrollAtPosition(next, retained)
+          const lenis = getLenis()
+          if (lenis) lenis.scrollTo(top, { immediate: true, force: true })
+          else window.scrollTo({ top, behavior: 'auto' })
+        }
+      } catch { invalidate(); return }
+      getPreparedArchiveRuntime()?.commitPosition(currentArchiveRequest().requestId)
+    }
+    ScrollTrigger.addEventListener('refreshInit', invalidate)
+    ScrollTrigger.addEventListener('refresh', refresh)
+    refresh()
+    return () => { uninstall(); invalidate(); ScrollTrigger.removeEventListener('refreshInit', invalidate); ScrollTrigger.removeEventListener('refresh', refresh) }
+  }, [])
 
   useEffect(() => {
     const lifecycle = new AbortController()
@@ -48,6 +100,9 @@ export default function ArchiveStage() {
     let frame = 0
     const syncViewportView = () => {
       frame = 0
+      registerArchiveScroll()
+      const result = getPreparedArchiveRuntime()?.commitPosition(currentArchiveRequest().requestId)
+      if (result === 'committed') return
       const center = innerHeight / 2
       const life = document.getElementById('life')?.getBoundingClientRect()
       const view = life && life.top <= center && life.bottom >= center ? 'life' : activeView

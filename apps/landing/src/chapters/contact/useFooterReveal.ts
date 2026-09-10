@@ -20,7 +20,7 @@ function setFooterCursorState(active: boolean): void {
   document.querySelector('.cursor')?.classList.toggle('is-over-footer', active)
 }
 
-/** Owns Contact's scroll reveal, full-viewport liquid gate, and local clock. */
+/** Owns Contact's scroll reveal, section-local liquid gate, and local clock. */
 export function useFooterReveal(): FooterRevealResult {
   const root = useRef<HTMLElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -41,6 +41,7 @@ export function useFooterReveal(): FooterRevealResult {
     // transition and can cover the room before the handoff is ready.
     const spatialHandoff = Boolean(rootEl.closest('[data-archive-destination="contact"]'))
     const animated = !reducedMotion && !mobileExperience && !spatialHandoff
+    const liquidEnabled = !reducedMotion && !mobileExperience
     const aura = svgEl.querySelector<SVGCircleElement>('[data-iris-aura]')
     const core = svgEl.querySelector<SVGCircleElement>('[data-iris-core]')
     const rim = svgEl.querySelector<SVGCircleElement>('[data-iris-rim]')
@@ -103,13 +104,13 @@ export function useFooterReveal(): FooterRevealResult {
         renderIris()
       }
       gsap.set(wrapEl, { autoAlpha: animated && isNearContact && progress > 0.001 ? 1 : 0 })
-      const liquidActive = animated && isNearContact && progress > 0.88
+      // Liquid is a Contact-local enhancement, independent of the retired
+      // full-screen iris. Its controller still rechecks semantic reading state.
+      const liquidActive = liquidEnabled && isNearContact && progress > 0.08
       liquidRef.current?.setActive(liquidActive)
       setFooterCursorState(liquidActive)
     }
 
-    let directContactFrame = 0
-    let directContactTimer = 0
     const context = gsap.context(() => {
       gsap.set('.footer__kicker', { opacity: 0, y: 15 })
       gsap.set('.footer__title .split-line__inner', { yPercent: 110, skewY: 6 })
@@ -139,19 +140,6 @@ export function useFooterReveal(): FooterRevealResult {
       timeline.to('.contact__btn', { opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power3.out' }, 0.32)
       timeline.to('.footer__meta', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0.45)
 
-      const settleDirectContact = () => {
-        if (window.location.hash !== '#contact') return
-        const rect = rootEl.getBoundingClientRect()
-        if (rect.top > window.innerHeight || rect.bottom < 0) return
-        timeline.progress(1)
-        if (animated) {
-          iris.progress = 1
-          renderIris()
-        }
-        updateVisibility(1)
-      }
-      directContactFrame = window.requestAnimationFrame(settleDirectContact)
-      directContactTimer = window.setTimeout(settleDirectContact, 700)
     }, root)
 
     const onResize = () => {
@@ -175,8 +163,6 @@ export function useFooterReveal(): FooterRevealResult {
 
     return () => {
       window.removeEventListener('resize', onResize)
-      window.cancelAnimationFrame(directContactFrame)
-      window.clearTimeout(directContactTimer)
       window.clearInterval(clockId)
       rootEl.classList.remove('is-iris-reveal')
       setFooterCursorState(false)

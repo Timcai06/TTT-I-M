@@ -77,7 +77,9 @@ const PER_CHUNK_BUDGET_KB = {
   'index': 42, // Persistent Index-on-monitor adapter adds 0.5 KiB over the accepted Hero slice.
   'ChapterTransition': 5,
   'layout': 24,
-  'workHandoff': 5,
+  // WorkHandoff is tree-shaken into the mobile/reduced WorkTransition owner
+  // after the local Laser stopped consuming the retired portal event.
+  'work-transition': 5,
   'projects': 19, // Case deep links, history restoration and deferred-chunk recovery.
   'ProjectCaseDialog': 20,
   'photoswipe.esm': 30,
@@ -121,7 +123,15 @@ const archiveChunk = jsFiles.find(file => readFileSync(resolve(distDir, file), '
 if (!archiveChunk) missingChunks.push('About spatial slice missing')
 else if (gzipKb(archiveChunk) > 6) sizeWarnings.push('About spatial slice is over the 6 KB gzip reference')
 for (const [prefix, budget] of Object.entries(PER_CHUNK_BUDGET_KB)) {
-  const file = jsFiles.find((name) => new RegExp(`^${prefix}-[A-Za-z0-9_-]+\\.js$`).test(name))
+  // Rolldown may co-locate the retained runtime with its circular route owner.
+  // Identify that boundary by production-only runtime signatures instead of a
+  // non-semantic output filename; the module remains outside the eager entry.
+  const file = prefix === 'archiveRuntime'
+    ? jsFiles.find((name) => {
+      const source = readFileSync(resolve(distDir, name), 'utf8')
+      return source.includes('Archive GPU preparation failed') && source.includes('paper-calibration')
+    })
+    : jsFiles.find((name) => new RegExp(`^${prefix}-[A-Za-z0-9_-]+\\.js$`).test(name))
   if (!file) {
     missingChunks.push(`missing chunk for "${prefix}"`)
     continue

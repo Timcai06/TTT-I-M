@@ -1,9 +1,10 @@
-import { AnimationMixer, LoopOnce, PerspectiveCamera, Vector3, type AnimationAction } from 'three'
+import { PerspectiveCamera, Vector3 } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { views } from '../../assets/personal-archive/scene-contract.json'
 import { readingFrame } from './readingFrame'
 import { archiveScrollPose } from './scrollPose'
 import { chapterPose, chapterTracks, phase, type ArchiveTrack } from './chapterTracks'
+import type { LegacyWorldPlan } from './archiveExecution.ts'
 
 export type SpatialShot = ArchiveTrack | 'entry' | 'index'
 export type ArchiveView = keyof typeof views
@@ -17,28 +18,22 @@ const arcs: Record<SpatialShot, [number, number, number]> = {
 }
 
 /** A single seekable rig; no React remount, accumulated playback or chapter reset. */
-export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
-  const mixer = new AnimationMixer(model.scene), actions = new Map<string, AnimationAction>()
-  for (const clip of model.animations) {
-    if (!/^(NotebookOpen|LifeEnvelopeOpen|LifePhotoExtract|WorkDrawerOpen|WorkFolderLift|FramePrintSettle|CinemaRailTravel)/.test(clip.name)) continue
-    const action = mixer.clipAction(clip); action.setLoop(LoopOnce, 1)
-    action.clampWhenFinished = true; action.play(); action.paused = true; actions.set(clip.name, action)
-  }
-  // A session keeps already-open archive objects physically present when the
-  // user jumps back to Index or revisits an earlier chapter. The current route
-  // still owns reversible motion; this memory only supplies the resting floor.
-  const session = new Map<string, number>([...actions.keys()].map(name => [name, 0]))
+export function createArchiveDirector(
+  model: GLTF,
+  camera: PerspectiveCamera,
+  actionNames: readonly string[],
+) {
   const a = new Vector3(), b = new Vector3(), target = new Vector3()
   const indexBlend = .08
   const indexView = {
-    position: views.home.position.map((value, index) => value + (views.stack.position[index]! - value) * indexBlend) as [number, number, number],
-    target: views.home.target.map((value, index) => value + (views.stack.target[index]! - value) * indexBlend) as [number, number, number],
+    position: views.home.position.map((value, index) => value + ((views.stack.position[index] ?? value) - value) * indexBlend) as [number, number, number],
+    target: views.home.target.map((value, index) => value + ((views.stack.target[index] ?? value) - value) * indexBlend) as [number, number, number],
     fov: views.home.fov + (views.stack.fov - views.home.fov) * indexBlend,
   }
   const closeBlend = .72
   const indexCloseView = {
-    position: indexView.position.map((value, index) => value + (views.stack.position[index]! - value) * closeBlend) as [number, number, number],
-    target: indexView.target.map((value, index) => value + (views.stack.target[index]! - value) * closeBlend) as [number, number, number],
+    position: indexView.position.map((value, index) => value + ((views.stack.position[index] ?? value) - value) * closeBlend) as [number, number, number],
+    target: indexView.target.map((value, index) => value + ((views.stack.target[index] ?? value) - value) * closeBlend) as [number, number, number],
     fov: indexView.fov + (views.stack.fov - indexView.fov) * closeBlend,
   }
   // The exported Contact camera sits directly behind the chair back. Reuse the
@@ -46,12 +41,6 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
   // and lamp stay in one composition while the virtual desk plane opens.
   const contactView = indexView
   const viewConfig = (view: ArchiveView) => view === 'contact' ? contactView : views[view]
-  function seek(name: string, amount: number) {
-    const action = actions.get(name); if (!action) return
-    const clip = action.getClip()
-    const interval = /^(WorkDrawerOpen|CinemaRailTravel)/.test(name) ? [1, 2.4] : name === 'WorkFolderLift' ? [74 / 30, 110 / 30] : [0, clip.duration]
-    action.time = interval[0]! + amount * (interval[1]! - interval[0]!)
-  }
   const viewOrder: ArchiveView[] = ['home', 'about', 'life', 'frame', 'stack', 'work', 'contact']
   function viewAction(view: ArchiveView, name: string) {
     const index = viewOrder.indexOf(view)
@@ -61,15 +50,6 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
     if (/^(WorkDrawerOpen|CinemaRailTravel)/.test(name)) return view === 'work' ? 1 : view === 'contact' ? .35 : 0
     if (name === 'WorkFolderLift') return view === 'work' ? 1 : 0
     return 0
-  }
-  function withSession(name: string, amount: number) {
-    if (name === 'WorkFolderLift') return amount
-    return Math.max(amount, session.get(name) ?? 0)
-  }
-  function remember(name: string, amount: number) {
-    if (name === 'WorkFolderLift') return
-    const resting = /^(WorkDrawerOpen|CinemaRailTravel)/.test(name) && amount > 0 ? Math.min(.35, amount) : amount
-    session.set(name, Math.max(session.get(name) ?? 0, resting))
   }
   let pointerX = 0, pointerY = 0
   function follow(amount: number) {
@@ -82,22 +62,14 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
   function navigationPose(fromView: ArchiveView, toView: ArchiveView, progress: number, readingRest = false) {
     const from = viewConfig(fromView), to = viewConfig(toView)
     const travel = phase(progress, .24, .60)
-    for (const name of actions.keys()) {
-      const fromAmount = withSession(name, viewAction(fromView, name))
-      const toAmount = withSession(name, viewAction(toView, name))
-      const amount = fromAmount + (toAmount - fromAmount) * travel
-      seek(name, amount)
-      if (progress >= .9999) remember(name, toAmount)
-    }
-    mixer.update(0); model.scene.updateMatrixWorld(true)
     camera.position.fromArray(from.position).lerp(a.fromArray(to.position), travel)
     const bend = Math.sin(Math.PI * travel)
     camera.position.y += bend * .13
-    camera.position.x += bend * (to.position[0]! >= from.position[0]! ? .06 : -.06)
+    camera.position.x += bend * ((to.position[0] ?? 0) >= (from.position[0] ?? 0) ? .06 : -.06)
     target.fromArray(from.target).lerp(b.fromArray(to.target), travel)
     camera.lookAt(target)
     camera.fov = from.fov + (to.fov - from.fov) * travel
-    const surface = toView === 'home' ? null : `${toView === 'stack' ? 'Stack' : toView[0]!.toUpperCase() + toView.slice(1)}Reading`
+    const surface = toView === 'home' ? null : `${toView === 'stack' ? 'Stack' : toView.charAt(0).toUpperCase() + toView.slice(1)}Reading`
     if (surface && (fromView !== toView || readingRest)) {
       const destination = readingFrame(model.scene, surface, camera)
       if (destination) {
@@ -110,7 +82,7 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
       }
     }
     if (fromView !== 'home' && progress < .24) {
-      const sourceSurface = `${fromView === 'stack' ? 'Stack' : fromView[0]!.toUpperCase() + fromView.slice(1)}Reading`
+      const sourceSurface = `${fromView === 'stack' ? 'Stack' : fromView.charAt(0).toUpperCase() + fromView.slice(1)}Reading`
       const source = readingFrame(model.scene, sourceSurface, camera)
       if (source) {
         const leave = 1 - phase(progress, 0, .24)
@@ -120,12 +92,29 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
       }
     }
     camera.updateProjectionMatrix(); camera.updateMatrixWorld()
-    const project = model.scene.getObjectByName('MonitorState_project'), photo = model.scene.getObjectByName('MonitorState_photo')
-    if (project) project.visible = false
-    if (photo) photo.visible = viewOrder.indexOf(fromView) >= 4 || viewOrder.indexOf(toView) >= 4
     return { focus: camera.position.distanceTo(target) }
   }
-  function pose(shot: SpatialShot, progress: number, page: HTMLElement | null) {
+  function authored(shot: SpatialShot, progress: number, name: string) {
+    const entry = archiveScrollPose(progress)
+    const chapter = chapterPose(shot === 'entry' || shot === 'index' ? 'about-life' : shot, progress)
+    return name === 'NotebookOpen' ? shot === 'index' ? 0 : shot === 'entry' ? entry.cover : 1
+      : /^(WorkDrawerOpen|CinemaRailTravel)/.test(name) ? shot === 'index' || shot === 'entry' ? 0 : chapter.drawer
+        : name === 'WorkFolderLift' ? shot === 'index' || shot === 'entry' ? 0 : chapter.folder
+          : name.startsWith('Life') ? shot === 'index' || shot === 'entry' ? 0 : shot === 'about-life' ? phase(progress, .23, .62) : 1
+            : name.startsWith('FramePrint') ? shot === 'life-frame' ? chapter.travel : shot === 'frame-stack' || shot === 'stack-work' || shot === 'work-contact' ? 1 : 0 : 0
+  }
+  function plan(shot: SpatialShot, progress: number): LegacyWorldPlan {
+    return Object.freeze({ amounts: Object.freeze(Object.fromEntries(actionNames.map(name => [name, authored(shot, progress, name)]))), monitorPhoto: ['frame-stack', 'stack-work', 'work-contact'].includes(shot), wallPhoto: shot === 'frame-stack' ? true : undefined })
+  }
+  function navigationPlan(from: ArchiveView, to: ArchiveView, progress: number): LegacyWorldPlan {
+    const travel = phase(progress, .24, .60)
+    return Object.freeze({ amounts: Object.freeze(Object.fromEntries(actionNames.map(name => {
+      const start = viewAction(from, name), end = viewAction(to, name)
+      return [name, start + (end - start) * travel]
+    }))), monitorPhoto: viewOrder.indexOf(from) >= 4 || viewOrder.indexOf(to) >= 4 })
+  }
+  function commit(plan: LegacyWorldPlan) { void plan }
+  function pose(shot: SpatialShot, progress: number) {
     const entry = archiveScrollPose(progress)
     const routeShot = shot === 'entry' || shot === 'index' ? 'about-life' : shot
     const chapter = chapterPose(routeShot, progress)
@@ -135,18 +124,6 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
     const travel = shot === 'index' ? indexApproach : shot === 'entry' ? entry.camera : chapter.travel
     const approach = shot === 'index' ? 0 : shot === 'entry' ? entry.approach : chapter.approach
     const flatten = shot === 'index' ? 0 : shot === 'entry' ? entry.flatten : chapter.flatten
-    for (const name of actions.keys()) {
-      const authored = name === 'NotebookOpen' ? shot === 'index' ? 0 : shot === 'entry' ? entry.cover : 1
-        : /^(WorkDrawerOpen|CinemaRailTravel)/.test(name) ? shot === 'index' || shot === 'entry' ? 0 : chapter.drawer
-          : name === 'WorkFolderLift' ? shot === 'index' || shot === 'entry' ? 0 : chapter.folder
-            : name.startsWith('Life') ? shot === 'index' || shot === 'entry' ? 0 : shot === 'about-life' ? phase(progress, .23, .62) : 1
-              : name.startsWith('FramePrint') ? shot === 'life-frame' ? travel : shot === 'frame-stack' || shot === 'stack-work' || shot === 'work-contact' ? 1 : 0
-                : 0
-      const amount = withSession(name, authored)
-      seek(name, amount)
-      remember(name, authored)
-    }
-    mixer.update(0); model.scene.updateMatrixWorld(true)
     camera.position.fromArray(from.position).lerp(a.fromArray(to.position), travel)
     const arc = arcs[shot], bend = Math.sin(Math.PI * travel) * (1 - approach)
     camera.position.addScaledVector(a.set(...arc), bend)
@@ -166,7 +143,7 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
         target.lerp(destination.center, approach)
       }
       if (shot !== 'entry' && progress < .24) {
-        const source = readingFrame(model.scene, `${routes[shot][0] === 'stack' ? 'Stack' : routes[shot][0][0]!.toUpperCase() + routes[shot][0].slice(1)}Reading`, camera)
+        const source = readingFrame(model.scene, `${routes[shot][0] === 'stack' ? 'Stack' : routes[shot][0].charAt(0).toUpperCase() + routes[shot][0].slice(1)}Reading`, camera)
         if (source) {
           const leave = 1 - phase(progress, .08, .24)
           camera.position.lerp(a.copy(source.center).addScaledVector(source.normal, source.distance), leave)
@@ -176,18 +153,13 @@ export function createArchiveDirector(model: GLTF, camera: PerspectiveCamera) {
       }
     }
     camera.updateProjectionMatrix(); camera.updateMatrixWorld()
-    const project = model.scene.getObjectByName('MonitorState_project'), photo = model.scene.getObjectByName('MonitorState_photo')
     // During Frame → Stack the accepted DOM image itself lands on the monitor;
     // showing the GLB photo plane at the same time creates a visible duplicate.
     // The physical screen memory takes over only after that handoff completes.
-    const monitorPhoto = shot === 'frame-stack' || shot === 'stack-work' || shot === 'work-contact'
     // Index is a real DOM surface and Final Horizon becomes the later screen
     // memory. The legacy PulseGraph plane stays available in the GLB but must
     // not flash between these two authored states.
-    if (project) project.visible = false
-    if (photo) photo.visible = monitorPhoto
-    if (page) { page.style.transform = 'none'; page.style.opacity = '0' }
     return { surface, focus: camera.position.distanceTo(target), flatten, approach }
   }
-  return { pose, navigationPose, pointer(x: number, y: number) { pointerX = x; pointerY = y }, dispose() { mixer.stopAllAction(); mixer.uncacheRoot(model.scene) } }
+  return { plan, navigationPlan, commit, pose, navigationPose, pointer(x: number, y: number) { pointerX = x; pointerY = y }, dispose() {} }
 }

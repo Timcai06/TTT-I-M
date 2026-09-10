@@ -27,12 +27,16 @@ export function createFrameParticles({
   output,
   onReady,
   onFailure,
+  hasVisibleCapture,
+  controlled = false,
 }: {
   source: HTMLCanvasElement
   content: HTMLElement
   output: HTMLCanvasElement
   onReady: () => void
   onFailure: () => void
+  hasVisibleCapture?: () => boolean
+  controlled?: boolean
 }): FrameParticleHandle | null {
   if (!supportsHtmlInCanvas()) return null
 
@@ -48,9 +52,11 @@ export function createFrameParticles({
       source,
       content,
       output,
+      hasVisibleCapture,
       onCaptureReady: onReady,
     }, {
       ...FRAME_PARTICLE_CONFIG,
+      controlled,
       dprMax: getGLQualityProfile().dprMax,
     })
   } catch {

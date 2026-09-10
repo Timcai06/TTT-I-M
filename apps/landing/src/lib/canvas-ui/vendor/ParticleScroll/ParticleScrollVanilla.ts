@@ -4,10 +4,13 @@ import {
   linkWebGLProgram,
   requireWebGLResource,
 } from "../../../webgl/programValidation";
+import { captureHasUsablePixels } from "../../captureReadiness.ts";
 
 export interface ParticleScrollOptions {
   /** Keep the upstream document-scroll assembly, or dissolve one fixed exposure from top to bottom. */
   mode?: "scroll" | "dissolve";
+  /** Apply supplied progress immediately and skip the upstream one-second intro assembly. */
+  controlled?: boolean;
   /** Local integration cap for device pixel ratio. Upstream defaults to 2. */
   dprMax?: number;
   /** Viewport fraction of the formation line. Content assembles as it scrolls up past this line and dissolves back below it. */
@@ -49,6 +52,8 @@ export interface ParticleScrollElements {
   output: HTMLCanvasElement;
   /** Local integration hook fired after the first successful HTML capture. */
   onCaptureReady?: () => void;
+  /** Validate staging pixels before upload and readiness notification. */
+  hasVisibleCapture?: () => boolean;
 }
 
 export interface ParticleScrollInstance {
@@ -64,6 +69,7 @@ export interface ParticleScrollInstance {
 
 const DEFAULTS: Required<ParticleScrollOptions> = {
   mode: "scroll",
+  controlled: false,
   dprMax: 2,
   point: 0.68,
   band: 420,
@@ -259,7 +265,7 @@ export function createParticleScroll(
   options: ParticleScrollOptions = {},
 ): ParticleScrollInstance | null {
   const config = { ...DEFAULTS, ...options };
-  const { source, content, output, onCaptureReady } = elements;
+  const { source, content, output, onCaptureReady, hasVisibleCapture } = elements;
 
   const gl = output.getContext("webgl2", {
     alpha: true,
@@ -413,7 +419,7 @@ export function createParticleScroll(
   let reducedMotion = motionQuery.matches;
 
   let time = 0;
-  let introDone = false;
+  let introDone = config.controlled;
   let introWait = 0;
   let introReady = false;
   let scrollSmooth = content.scrollTop;
@@ -425,6 +431,7 @@ export function createParticleScroll(
   function uploadContent() {
     if (!htmlInCanvas || !contentDirty) return;
     contentDirty = false;
+    if (!captureHasUsablePixels(hasVisibleCapture)) return;
     introReady = true;
     syncBgColor();
     gl!.bindTexture(gl!.TEXTURE_2D, contentTexture);
@@ -491,7 +498,7 @@ export function createParticleScroll(
       let p = rowProgress[i];
       const inWin = i >= winStart - 4 && i < winStart + winLen + 4;
       if (p !== target) {
-        if (reducedMotion || !inWin) {
+        if (config.controlled || reducedMotion || !inWin) {
           p = target;
         } else {
           if (p < target) p = Math.min(p + dt / settle, target);

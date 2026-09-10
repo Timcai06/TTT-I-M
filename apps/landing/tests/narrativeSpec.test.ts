@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { WORK_TRANSITION_NARRATIVE } from '../src/core/narrative/specs.ts'
+import { PERSONAL_ARCHIVE_SAMPLE_STORY, narrativeSpecs } from '../src/core/narrative/index.ts'
 import { defineNarrativeSpec } from '../src/core/narrative/types.ts'
 
 void test('Work transition owns one decision-complete narrative geometry contract', () => {
@@ -36,4 +37,23 @@ void test('narrative specs reject invalid progress before reaching a controller'
     }),
     /must be between 0 and 1/,
   )
+})
+
+void test('sample story data stays separate from the existing navigation spec list', () => {
+  assert.deepEqual(narrativeSpecs, [WORK_TRANSITION_NARRATIVE])
+  assert.deepEqual(PERSONAL_ARCHIVE_SAMPLE_STORY.segments, [
+    'index',
+    'entry',
+    'about-reading',
+    'about-life',
+    'life-reading',
+    'life-frame',
+    'frame-reading',
+    'frame-stack',
+    'stack-reading',
+    'stack-work',
+    'work-reading',
+    'work-contact',
+    'contact-reading',
+  ])
 })

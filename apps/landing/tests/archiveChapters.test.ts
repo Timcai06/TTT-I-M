@@ -45,11 +45,18 @@ void test('Contact owns a desk reading plane instead of reusing the Work archive
 
 void test('reading begins only after travel and alignment have finished', () => {
   for (const track of Object.keys(chapterTracks) as ArchiveTrack[]) {
-    assert.equal(chapterPose(track, .94).travel, 1)
-    assert.equal(chapterPose(track, .94).approach, 1)
-    assert.equal(chapterPose(track, .94).flatten, 0)
+    assert.equal(chapterPose(track, .8).travel, 1)
+    assert.equal(chapterPose(track, .8).approach, 1)
+    assert.equal(chapterPose(track, .8).flatten, 0)
+    assert.ok(chapterPose(track, .9).flatten > 0 && chapterPose(track, .9).flatten < 1)
     assert.equal(chapterHandoffPose(track, 0).roomOpacity, 1)
     assert.equal(chapterHandoffPose(track, 1).roomOpacity, 1)
+  }
+})
+
+void test('every pinned bridge retains at least two viewports of physical scroll travel', () => {
+  for (const [track, config] of Object.entries(chapterTracks)) {
+    assert.ok(Number.parseFloat(config.height) - 100 >= 200, `${track} is too short after its sticky viewport is removed`)
   }
 })
 

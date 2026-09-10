@@ -85,6 +85,20 @@ test('a 404 frame image does not strand the loader (A1)', async ({ page }) => {
   await expect(page.locator('#hero')).toBeVisible()
 })
 
+test('a non-archive bounded visual failure still blocks the readiness hand-off', async ({ page }) => {
+  let aborted = 0
+  await page.route('**/frame/buildings/03-720.webp', (route) => {
+    aborted += 1
+    return route.abort()
+  })
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('.intro__stage')).toHaveText('Preparation incomplete', { timeout: 20_000 })
+  await expect(page.locator('.intro__retry')).toBeVisible()
+  await expect(page.locator('.intro')).toHaveCount(1)
+  expect(aborted).toBeGreaterThan(0)
+})
+
 test('a missing Liquid Metal source cannot trap the Work gate', async ({ page }) => {
   let abortedSources = 0
   // Vite fingerprints ?url assets in production (liquid-metal-button-HASH.html),

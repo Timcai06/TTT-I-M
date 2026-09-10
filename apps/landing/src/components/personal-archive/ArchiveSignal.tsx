@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Mesh, ShaderMaterial, SRGBColorSpace, TextureLoader, Vector2, Vector3, type Texture, type MeshStandardMaterial } from 'three'
 import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
-import { archiveThemes } from '../../content'
+import { resolveFinalHorizonImage } from '../../content/narrativeObjects'
 import { phase } from './chapterTracks'
 import type { ArchiveProgress } from './scrollPose'
 
@@ -15,8 +15,7 @@ export default function ArchiveSignal({ model, progress }: { model: GLTF; progre
     tl: { value: new Vector2() }, tr: { value: new Vector2() }, br: { value: new Vector2() }, bl: { value: new Vector2() },
   }), [])
   useEffect(() => {
-    const theme = archiveThemes.at(-1), image = theme?.clusters.at(-1)?.slots[0]?.image
-    if (!image) return
+    const image = resolveFinalHorizonImage()
     let disposed = false
     let texture: Texture | undefined
     let screenTexture: Texture | undefined

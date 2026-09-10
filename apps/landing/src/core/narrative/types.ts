@@ -24,6 +24,101 @@ export interface NarrativeSpec {
   gate?: NarrativeGate
 }
 
+export type SampleSegment =
+  | 'index'
+  | 'entry'
+  | 'about-reading'
+  | 'about-life'
+  | 'life-reading'
+  | 'life-frame'
+  | 'frame-reading'
+  | 'frame-stack'
+  | 'stack-reading'
+  | 'stack-work'
+  | 'work-reading'
+  | 'work-contact'
+  | 'contact-reading'
+
+export type StoryChapter = 'about' | 'life' | 'frame' | 'stack' | 'work' | 'contact'
+export type StoryView = 'home' | 'about' | 'life' | 'frame' | 'stack' | 'work' | 'contact'
+export type StoryReadingOwner = 'index' | 'about' | 'life' | 'frame' | 'skills' | 'projects' | 'contact'
+export type ReadingSurface = 'StackReading' | 'AboutReading' | 'LifeReading' | 'FrameReading' | 'WorkReading' | 'ContactReading'
+
+export interface StoryPosition {
+  readonly segment: SampleSegment
+  readonly progress: number
+}
+
+export interface SampleInput {
+  readonly position: StoryPosition
+  readonly storyVersion: string
+  readonly contentVersion: string
+  readonly user?: Readonly<{ indexInspection: number }>
+}
+
+export type PhotoPlacement =
+  | Readonly<{ kind: 'life' }>
+  | Readonly<{ kind: 'life-to-frame'; progress: number }>
+  | Readonly<{ kind: 'frame-wall' }>
+
+export interface SemanticWorld {
+  readonly notebook: Readonly<{ openness: number }>
+  readonly envelope: Readonly<{ openness: number }>
+  readonly photo: Readonly<{
+    contentId: 'life-football-action'
+    extraction: number
+    placement: PhotoPlacement
+  }>
+  readonly wallPrints: Readonly<{ settling: number }>
+  readonly cabinet: Readonly<{ drawerOpenness: number; folderLift: number }>
+  readonly screen: Readonly<{ mode: 'inactive' | 'photo'; contentId?: 'frame-final-horizon' }>
+}
+
+export type CameraIntent =
+  | Readonly<{
+      mode: 'index'
+      inspection: number
+    }>
+  | Readonly<{
+      mode: 'surface-fit'
+      targetView: StoryView
+      targetSurface: ReadingSurface
+    }>
+  | Readonly<{
+      mode: 'handoff'
+      sourceView: StoryView
+      targetView: StoryView
+      sourceSurface: ReadingSurface
+      targetSurface: ReadingSurface
+      travel: number
+      leave: number
+      align: number
+      dolly: number
+      arc: number
+    }>
+
+export interface PresentationIntent {
+  readonly sourceSurface: ReadingSurface | null
+  readonly targetSurface: ReadingSurface
+  readonly sourceReveal: number
+  readonly sourceExpand: number
+  readonly targetReveal: number
+  readonly targetExpand: number
+  readonly readingOwner: StoryReadingOwner | null
+  readonly roomHitEnabled: boolean
+  readonly focusEnabled: boolean
+  readonly aperture: number
+}
+
+export interface StoryFrame {
+  readonly position: StoryPosition
+  readonly storyVersion: string
+  readonly contentVersion: string
+  readonly world: SemanticWorld
+  readonly camera: CameraIntent
+  readonly presentation: PresentationIntent
+}
+
 function assertProgress(value: number, label: string) {
   if (!Number.isFinite(value) || value < 0 || value > 1) {
     throw new RangeError(`${label} must be between 0 and 1.`)

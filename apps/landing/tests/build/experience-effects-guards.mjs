@@ -8,6 +8,8 @@ const required = [
   'src/components/DriftWall.tsx',
   'src/components/WorkTransition.tsx',
   'src/components/frame/FrameParticleHandoff.tsx',
+  'src/components/frame/FrameTitleParticles.tsx',
+  'src/components/frame/frameTitleCapture.ts',
   'src/components/ParticlePortal.tsx',
   'src/components/MaskedHeading.tsx',
   'src/components/ScrollExpand.tsx',
@@ -16,6 +18,8 @@ const required = [
   'src/lib/sound/SoundContext.ts',
   'src/lib/canvas-ui/particleScroll.ts',
   'src/lib/canvas-ui/particleScrollConfig.ts',
+  'src/lib/canvas-ui/captureReadiness.ts',
+  'src/lib/canvas-ui/laserCapture.ts',
   'src/lib/canvas-ui/particlePortal.ts',
   'src/lib/canvas-ui/particlePortalMath.ts',
   'src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts',
@@ -23,9 +27,11 @@ const required = [
   'src/lib/canvas-ui/vendor/Glass/GlassVanilla.ts',
   'src/components/effects/CanvasUiHtmlSurface.tsx',
   'src/components/effects/AboutDecryptReveal.tsx',
+  'src/components/effects/localEffectEligibility.ts',
   'src/components/effects/ProjectGlassSurface.tsx',
   'src/lib/canvas-ui/canvasSurfaceSlots.ts',
   'src/lib/canvas-ui/workGlassCoordinator.ts',
+  'src/lib/canvas-ui/localEffectControl.ts',
   'src/lib/canvas-ui/vendor/Glass/viewportGeometry.ts',
   'src/lib/pointerCoordinator.ts',
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
@@ -52,11 +58,15 @@ const driftWall = read('src/components/DriftWall.tsx')
 const frame = read('src/components/Frame.tsx')
 const archiveThemeScroll = read('src/components/frame/useArchiveThemeScroll.ts')
 const frameParticles = read('src/components/frame/FrameParticleHandoff.tsx')
+const frameTextPanel = read('src/components/frame/ArchiveTextPanel.tsx')
+const frameTitleParticles = read('src/components/frame/FrameTitleParticles.tsx')
+const frameTitleCapture = read('src/components/frame/frameTitleCapture.ts')
 const frameParticleRuntime = [
   'src/lib/canvas-ui/particleScroll.ts',
   'src/lib/canvas-ui/particleScrollConfig.ts',
 ].map(read).join('\n')
 const frameParticleVendor = read('src/lib/canvas-ui/vendor/ParticleScroll/ParticleScrollVanilla.ts')
+const captureReadiness = read('src/lib/canvas-ui/captureReadiness.ts')
 const particlePortal = read('src/components/ParticlePortal.tsx')
 const particlePortalRuntime = read('src/lib/canvas-ui/particlePortal.ts')
 const frameStyle = read('src/styles/components/frame.css')
@@ -67,6 +77,7 @@ const projects = [
   'src/chapters/projects/useProjectsNarrative.ts',
 ].map(read).join('\n')
 const projectsIntroStyle = read('src/chapters/projects/styles/intro-bento.css')
+const projectsNarrative = read('src/chapters/projects/useProjectsNarrative.ts')
 // The inert capture clone cannot receive :hover or :focus-visible itself.
 // Preview activation must survive cloneNode and the class mutation refresh.
 for (const token of ['is-preview-active', 'onPointerEnter', 'onPointerLeave', 'onPointerCancel', 'onFocus', 'onBlur']) {
@@ -80,6 +91,7 @@ for (const child of ['img', 'scrim', 'name', 'tag', 'line']) {
 const projectsCardStyle = read('src/chapters/projects/styles/card-media.css')
 const projectLaser = read('src/components/ProjectLaser.tsx')
 const laserRuntime = read('src/lib/canvas-ui/laser.ts')
+const laserCapture = read('src/lib/canvas-ui/laserCapture.ts')
 const laserConfig = read('src/lib/canvas-ui/laserConfig.ts')
 const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
 const about = read('src/components/About.tsx') + read('src/components/AboutDossier.tsx')
@@ -95,6 +107,8 @@ const glassConfig = read('src/lib/canvas-ui/glassConfig.ts')
 const glassVendor = read('src/lib/canvas-ui/vendor/Glass/GlassVanilla.ts')
 const workGlassCoordinator = read('src/lib/canvas-ui/workGlassCoordinator.ts')
 const canvasSurfaceSlots = read('src/lib/canvas-ui/canvasSurfaceSlots.ts')
+const localEffectEligibility = read('src/components/effects/localEffectEligibility.ts')
+const localEffectControl = read('src/lib/canvas-ui/localEffectControl.ts')
 const maskedHeading = read('src/components/MaskedHeading.tsx')
 const scrollExpand = read('src/components/ScrollExpand.tsx')
 const scrollExpandStyle = read('src/styles/components/scroll-expand.css')
@@ -302,11 +316,13 @@ for (const token of ['surfaceId="project-overview"', 'variant="overview"', 'data
 }
 const overviewSurfaceStart = projects.indexOf('surfaceId="project-overview"')
 const overviewSurfaceEnd = projects.indexOf('</ProjectGlassSurface>', overviewSurfaceStart)
-for (const token of ['<ProjectsHeader />', '<ProjectsBento />']) {
-  const position = projects.indexOf(token, overviewSurfaceStart)
-  if (position < overviewSurfaceStart || position > overviewSurfaceEnd) {
-    throw new Error(`Project Glass overview must capture the complete Work opening: ${token}.`)
-  }
+const bentoPosition = projects.indexOf('<ProjectsBento />', overviewSurfaceStart)
+if (bentoPosition < overviewSurfaceStart || bentoPosition > overviewSurfaceEnd) {
+  throw new Error('Project Glass overview must retain the Work Bento surface.')
+}
+const titlePosition = projects.indexOf('<ProjectsHeader />')
+if (titlePosition < 0 || titlePosition > overviewSurfaceStart) {
+  throw new Error('Work title must remain outside Glass as the local Laser surface.')
 }
 for (const token of ['projects__header', 'projects__heading-wrap', 'projects__header-side']) {
   if (!projects.includes(token)) throw new Error(`Shared ProjectsHeader is missing ${token}.`)
@@ -364,27 +380,39 @@ for (const token of ['candidates', 'useSyncExternalStore', 'useCanvasSurfaceSlot
 if (!glassSurface.includes("import('../../lib/canvas-ui/vendor/Glass/GlassVanilla')")) {
   throw new Error('Project Glass shader must remain deferred behind a dynamic import.')
 }
-for (const token of ['projects__intro', 'ProjectLaser', 'setScrollActivity', 'WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'laserActive']) {
-  if (!projects.includes(token)) throw new Error(`Projects laser intro is missing ${token}.`)
+for (const token of ['projects__local-title', 'ProjectLaser', 'setScrollActivity', 'observeLocalEffectEligibility', 'laserState', "start: 'top bottom'", "end: 'bottom top'"]) {
+  if (!projects.includes(token)) throw new Error(`Projects local title Laser is missing ${token}.`)
 }
 for (const token of ["acquireOptionalContextWhenAvailable('project-laser'", 'activeContextOwners', 'contextLease?.release()', 'ResizeObserver', 'retryCountRef', 'setRetryKey', 'key={retryKey}', 'getWebGLRecoveryDelay', "host.dataset.lifecycle = 'waiting-context'", "host.dataset.lifecycle = 'live'", 'window.clearTimeout(retryTimer)']) {
   if (!projectLaser.includes(token)) throw new Error(`Project Laser lifecycle must retain ${token}.`)
 }
-if (projects.includes('--laser-progress')) {
-  throw new Error('Project Laser must respond to the CTA handoff rather than becoming a persistent scroll overlay.')
+for (const forbidden of ['WORK_HANDOFF_EVENT', 'consumePendingWorkHandoff', 'syncPortal', 'finishPortal', 'clipPath']) {
+  if (projectsNarrative.includes(forbidden)) {
+    throw new Error(`Project Laser must not restore the retired Work portal: ${forbidden}`)
+  }
 }
 for (const token of ['speed: 0.3', 'offset: 140', 'thickness: 6', 'width: 0.68', 'reveal: 400', 'shimmer: 12', 'reactivity: 1', 'html-canvas', 'beam-fallback']) {
   if (!laserRuntime.includes(token) && !laserConfig.includes(token) && !projectLaser.includes(token)) {
     throw new Error(`Project Laser must retain ${token}.`)
   }
 }
-for (const token of ['projects__intro-content', 'captureRef', 'lastPreview', 'endTrigger: lastPreview', 'bottom bottom-=', 'syncPortal', 'clipPath', 'progress >= 0.995', 'onLeave: finishPortal', 'onLeaveBack: finishPortal']) {
-  if (!projects.includes(token) && !projectLaser.includes(token)) {
-    throw new Error(`Project Laser redline handoff must retain ${token}.`)
+for (const token of ['captureRef={laserTarget}', 'stateRef={laserState}', '<ProjectsHeader />', '<ProjectsBento />']) {
+  if (!projects.includes(token)) throw new Error(`Project Laser local capture must retain ${token}.`)
+}
+for (const token of ['drawElementImage', 'uRevealH', 'uShimmer', 'uSparkle', 'setScrollActivity(progress, delta)', 'controlledProgress']) {
+  if (!laserVendor.includes(token)) throw new Error(`Vendored Canvas UI Laser must retain ${token}.`)
+}
+for (const token of ['cloneProjectLaserCapture', 'rewriteLocalSvgReference', 'project-laser-capture-', "'.masked-heading__stage'", "'.masked-heading__media'", "setProperty('clip-path', 'inset(0% 0% 0% 0%)')", 'stableMaskedHeadingMediaTransform']) {
+  if (!laserCapture.includes(token) && !laserRuntime.includes(token)) {
+    throw new Error(`Project Laser static capture must retain ${token}.`)
   }
 }
-for (const token of ['drawElementImage', 'uRevealH', 'uShimmer', 'uSparkle', 'setScrollActivity']) {
-  if (!laserVendor.includes(token)) throw new Error(`Vendored Canvas UI Laser must retain ${token}.`)
+if (laserRuntime.includes("removeAttribute('id')") || laserRuntime.includes('cloneNode(true)')) {
+  throw new Error('Project Laser must use the namespaced static capture helper rather than an unowned clone.')
+}
+if (!/\.projects__laser\s*\{[^}]*position:\s*absolute/s.test(projectsIntroStyle)
+  || /\.projects__laser\s*\{[^}]*position:\s*fixed/s.test(projectsIntroStyle)) {
+  throw new Error('Project Laser must stay bounded to the local Work title.')
 }
 for (const forbidden of ['WheelEvent', 'lenis.stop()', 'overflow: scroll']) {
   if (projectLaser.includes(forbidden) || laserRuntime.includes(forbidden)) {
@@ -395,13 +423,39 @@ for (const forbidden of ['WheelEvent', 'lenis.stop()', 'overflow: scroll']) {
 for (const token of ['FrameParticleHandoff', 'lazy(loadFrameParticleHandoff)', 'frame-particle-handoff--loading']) {
   if (!frame.includes(token)) throw new Error(`Frame → Stack particle handoff is missing ${token}.`)
 }
+for (const token of ['FrameTitleParticles', 'targetRef={titleRef}']) {
+  if (!frameTextPanel.includes(token)) throw new Error(`Frame title particle mount is missing ${token}.`)
+}
+for (const token of ["acquireOptionalContextWhenAvailable('frame-title-particles'", 'controlled: true', 'cloneStaticFrameTitleCapture', 'hasVisibleCapture', 'canRunLocalEffect', 'controller.accept', 'controller.deactivate']) {
+  if (!frameTitleParticles.includes(token)) throw new Error(`Frame title particles must retain ${token}.`)
+}
+for (const token of ["querySelectorAll<HTMLElement>('.word')", "['opacity', 'transform', 'filter']", 'pixelBufferHasVisibleAlpha', "getImageData(0, 0, probe.width, probe.height)"]) {
+  if (!frameTitleCapture.includes(token)) throw new Error(`Frame title static capture must retain ${token}.`)
+}
+for (const token of ['hasVisibleCapture?: () => boolean', 'captureHasUsablePixels', 'if (!captureHasUsablePixels(hasVisibleCapture)) return', 'onCaptureReady?.()']) {
+  if (!frameParticleVendor.includes(token)) throw new Error(`Frame particle readiness must retain ${token}.`)
+}
+for (const token of ['if (!hasVisibleCapture) return true', 'return hasVisibleCapture()', 'catch', 'return false']) {
+  if (!captureReadiness.includes(token)) throw new Error(`Capture readiness qualification must retain ${token}.`)
+}
+if (frameParticleVendor.indexOf('if (!captureHasUsablePixels(hasVisibleCapture)) return') > frameParticleVendor.indexOf('onCaptureReady?.()')) {
+  throw new Error('Frame particle capture must validate staging pixels before reporting readiness.')
+}
+if (/\bimg\b|resolveFinalHorizonImage|archiveThemes/.test(frameTitleParticles)) {
+  throw new Error('Frame title particles must not duplicate or dissolve a photograph.')
+}
+const frameTitleSourceStyle = frameStyle.match(/\.frame-title-particles__source\s*\{([^}]+)\}/)?.[1] ?? ''
+if (/opacity:\s*0/.test(frameTitleSourceStyle)
+  || !frameStyle.includes('.frame-title-particles.is-enhanced .frame-title-particles__output')) {
+  throw new Error('Frame title capture must remain paintable while only its output waits for readiness.')
+}
 for (const token of ['setScrollState', 'data-frame-particles', 'data-frame-particle-capture', 'markDrawableSubtree', "acquireOptionalContextWhenAvailable('frame-particle-handoff'", 'contextLease?.release()', 'readiness.every(Boolean)', "start: 'top top'", "end: 'bottom bottom'"]) {
   if (!frameParticles.includes(token)) throw new Error(`Frame Particle Scroll lifecycle must retain ${token}.`)
 }
 for (const token of ["mode: 'dissolve'", 'point: 0.61', 'band: 320', 'density: 2', 'size: 1.1', 'spread: 260', 'gravity: 0.08', 'drift: 0.4', 'swirl: 80', 'settle: 0.82', 'smoothing: 0.26', 'frontStart: 0.18', 'frontEnd: 1.28', 'canRenderFrameParticles', 'forceLoseCanvasWebGLContext']) {
   if (!frameParticleRuntime.includes(token)) throw new Error(`Frame Particle Scroll adapter must retain ${token}.`)
 }
-for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'config.mode === "dissolve"', 'signalProgress', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
+for (const token of ['POINT_VERT', 'BASE_FRAG', 'setScrollState', 'config.mode === "dissolve"', 'config.controlled', 'signalProgress', 'content.scrollTop =', 'drawElementImage', 'deleteVertexArray']) {
   if (!frameParticleVendor.includes(token)) throw new Error(`Vendored Canvas UI Particle Scroll must retain ${token}.`)
 }
 for (const token of ['height: 190svh', 'position: sticky', '.frame-particle-document__contact', '.frame-particle-handoff__scanline', '.frame-particle-handoff__caption', '.frame-particle-handoff__status', 'clip-path: inset(calc(var(--dissolve-progress)', 'scrollbar-width: none', '(prefers-reduced-motion: reduce)']) {
@@ -421,22 +475,38 @@ for (const forbidden of ['WheelEvent', 'KeyboardEvent', 'lenis.stop()', 'overflo
   }
 }
 
-for (const token of ['FooterLiquidCursor', 'progress > 0.88', 'is-over-footer']) {
+for (const token of ['FooterLiquidCursor', 'liquidEnabled', 'progress > 0.08', 'is-over-footer']) {
   if (!footer.includes(token)) throw new Error(`Footer liquid cursor is missing ${token}.`)
 }
-for (const token of ['position: fixed', 'height: 100svh', 'pointer-events: none', 'mix-blend-mode: multiply']) {
-  if (!read('src/styles/components/footer.css').includes(token)) {
-    throw new Error(`Footer liquid layer must keep ${token}.`)
-  }
+const footerStyle = read('src/styles/components/footer.css')
+for (const token of ['position: absolute', 'height: 100%', 'pointer-events: none', 'mix-blend-mode: multiply']) {
+  if (!footerStyle.includes(token)) throw new Error(`Footer local liquid layer must keep ${token}.`)
+}
+if (/\.footer-liquid\s*\{[^}]*position:\s*fixed/s.test(footerStyle)
+  || footerLiquid.includes("window.addEventListener('pointermove'")) {
+  throw new Error('Footer Liquid must remain bounded to the real Contact surface.')
+}
+if (!/\.footer-liquid\s*\{[^}]*z-index:\s*0/s.test(footerStyle)
+  || !/\.footer__content\s*\{[^}]*z-index:\s*2/s.test(footerStyle)) {
+  throw new Error('Footer Liquid must stay below the real Contact content.')
 }
 for (const token of ['force: 0.62', 'pressureIterations: 3', 'simResolution: 96', 'dyeResolution: 256', 'rainbow: false']) {
   if (!liquidRuntime.includes(token)) throw new Error(`Footer liquid field must retain ${token}.`)
 }
+if (!liquidRuntime.includes('captureContent: false')) {
+  throw new Error('Footer Liquid must remain a dye-only effect without HTML capture.')
+}
 for (const token of ['FRAG_DIVERGENCE', 'FRAG_CURL', 'FRAG_VORTICITY', 'FRAG_PRESSURE', 'FRAG_GRADIENT', 'captureContent']) {
   if (!liquidVendor.includes(token)) throw new Error(`Vendored Canvas UI Liquid must retain ${token}.`)
 }
-for (const token of ["acquireOptionalContextWhenAvailable('footer-liquid'", 'stopWaitingForContext()', 'contextLease?.release()', 'visibilitychange']) {
+for (const token of ["acquireOptionalContextWhenAvailable('footer-liquid'", 'stopWaitingForContext()', 'contextLease?.release()', "owner.addEventListener('pointerenter'", "owner.addEventListener('pointerleave'", 'observeLocalEffectEligibility']) {
   if (!footerLiquid.includes(token)) throw new Error(`Footer liquid lifecycle must retain ${token}.`)
+}
+for (const token of ['data-archive-routing', 'data-archive-live-target', 'MutationObserver', 'visibilitychange', 'try', 'notify(current)', 'catch']) {
+  if (!localEffectEligibility.includes(token)) throw new Error(`Local effect eligibility must retain ${token}.`)
+}
+for (const token of ['normalizeLocalEffectState', 'generation', 'accept(token', 'deactivate()', 'options.destroy']) {
+  if (!localEffectControl.includes(token)) throw new Error(`Local effect generation guard must retain ${token}.`)
 }
 for (const token of ['<ScrollExpand', 'useWindowScroll={!mobile}', 'enabled={!mobile && !reducedMotion}', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
   if (!sciScopeFilm.includes(token)) throw new Error(`SciScopeFilm entrance is missing ${token}.`)

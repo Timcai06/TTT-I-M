@@ -20,6 +20,7 @@ void test('GPU effects cost one context and DOM evidence tools cost none', () =>
   for (const id of [
     'horizontal-bend',
     'project-laser',
+    'frame-title-particles',
     'particle-portal',
     'footer-liquid-cursor',
     'about-decrypt-reveal',
