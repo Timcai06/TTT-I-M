@@ -37,6 +37,19 @@ const lookMatrix = new Matrix4()
 const lookUp = new Vector3()
 const lookDir = new Vector3()
 const lookDestUp = new Vector3()
+const scratchStandoff = new Vector3()
+
+/** How far back a handoff pulls before closing on the destination surface. */
+const STANDOFF_RATIO = 1.85
+/** Vertical lift per metre of horizontal crossing. */
+const LIFT_PER_METRE = .45
+/** The room shell (ArchiveArchitecture) tops out at y=2.80; keep .25 clear of it. */
+const CEILING_CLEARANCE_Y = 2.55
+
+const ease = (v: number, start: number, end: number) => {
+  const t = Math.max(0, Math.min(1, (v - start) / (end - start)))
+  return t * t * (3 - 2 * t)
+}
 function fit(points: AnchorPoints | undefined, fov: number, aspect: number) {
   if (!points || points.length !== 4 || !points.flat().every(Number.isFinite)) throw new Error('Missing/invalid reading anchors')
   const [tlSrc, trSrc, brSrc, blSrc] = points
@@ -95,6 +108,9 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     let sourcePosition: Vector3
     let sourceTarget: Vector3
     let sourceRotation: Quaternion
+    // How far the pose actually has to rotate, measured from the two surfaces
+    // rather than assumed. 0 when they are parallel, 1 when perpendicular.
+    let sourceNormal: Vector3 | null = null
     if (frame.position.segment === 'entry') {
       applyIndexPointer()
       camera.position.copy(indexPosition); camera.fov = indexFov; camera.lookAt(indexTarget)
@@ -108,22 +124,41 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
       // source is a fresh, single-owner object (nothing else reads it after
       // this point), so handing off its fields directly is not an alias risk.
       const source = surfacePose(intent.sourceSurface, sourceFov)
+      sourceNormal = source.normal
       sourcePosition = source.position
       sourceTarget = source.center
       sourceRotation = source.rotation
     }
     // destination.position is likewise never read again after this handoff.
     const destinationPosition = destination.position
-    const standoffDistance = Math.max(.72, destination.distance * 1.85)
-    const standoffPosition = destination.center.clone().addScaledVector(destination.normal, standoffDistance)
+    // The old floor of .72 only ever bound LifeReading, whose fit distance is .265,
+    // so that one leg pulled back 2.72x while the other five pulled back 1.85x.
+    // The floor is now only a degenerate-input guard; the ratio is the contract.
+    const standoffDistance = Math.max(.35, destination.distance * STANDOFF_RATIO)
+    const standoffPosition = scratchStandoff.copy(destination.center).addScaledVector(destination.normal, standoffDistance)
     camera.position.copy(sourcePosition).lerp(standoffPosition, intent.travel)
-    const arc = frame.position.segment === 'entry' ? [-.14,.045,-.08]
-      : frame.position.segment === 'about-life' ? [-.12,.09,.04]
-        : frame.position.segment === 'life-frame' ? [0,.14,.18]
-          : frame.position.segment === 'frame-stack' ? [.09,.04,.12]
-            : frame.position.segment === 'stack-work' ? [.08,-.035,.06] : [-.10,.09,.08]
-    camera.position.addScaledVector(scratchVec.fromArray(arc), intent.arc)
     camera.position.lerp(destinationPosition, intent.dolly)
+    // Vertical arc, derived rather than authored. The five hand-typed arc triples
+    // were uncorrelated with the move they described: life-frame crosses 2.35m and
+    // received the flattest lift of all five (9.7% of its horizontal run) while
+    // about-life crosses .65m and received the steepest (24.1%). Lift now scales
+    // with the horizontal run and is capped by real headroom under the room shell.
+    // life-frame is the exception: there the camera is rigidly bound to the moving
+    // photograph below, and the block near the end of this function overwrites
+    // camera.position outright. Adding lift before that produced a 0.46m jump the
+    // instant the carrier engaged, and lifting after it would push the photograph
+    // out of frame. That leg gets its vertical character from the carrier's own
+    // trajectory arc in archivePhotoTransfer, which is where it belongs.
+    const carrierOwnsPath = frame.position.segment === 'life-frame' && Boolean(anchors.FootballTransfer)
+    const horizontalRun = Math.hypot(destinationPosition.x - sourcePosition.x, destinationPosition.z - sourcePosition.z)
+    const headroom = CEILING_CLEARANCE_Y - Math.max(sourcePosition.y, destinationPosition.y)
+    const lift = carrierOwnsPath ? 0 : Math.max(0, Math.min(horizontalRun * LIFT_PER_METRE, headroom))
+    // Rise, carry, set down. The previous envelope was sin(pi*travel)*(1-align):
+    // a spike peaking near progress .41 and spent by .8, so the middle of a long
+    // crossing had no lift left. A plateau keeps the camera up while it travels.
+    // Both ends are exactly 0, so the endpoint poses stay the authored surface fits.
+    const carry = frame.position.progress
+    camera.position.y += lift * ease(carry, .06, .30) * (1 - ease(carry, .62, .92))
     target.copy(sourceTarget).lerp(destination.center, intent.travel)
     if (frame.position.segment === 'life-frame' && anchors.FootballTransfer) {
       scratchCenter.set(0, 0, 0)
@@ -176,7 +211,15 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
       ? fit(anchors.FootballTransfer, camera.fov, camera.aspect).rotation
       : scratchQuat.copy(camera.quaternion)
     camera.quaternion.copy(sourceRotation).slerp(pathRotation, Math.max(intent.travel, 1 - intent.leave))
-    camera.quaternion.slerp(destination.rotation, intent.align)
+    // A 90-degree desk-to-wall flip and a flat desk-to-desk slide were sharing one
+    // .5-.8 align window, so the wall legs had to complete the entire turn inside
+    // 30% of the scroll while the flat legs barely used the window at all. Spread
+    // the turn by how far it actually is. The reshaping is monotonic and fixes both
+    // endpoints, so 0 and 1 still land exactly on the authored source and
+    // destination poses; only the middle starts earlier and eases longer.
+    const flip = sourceNormal ? 1 - Math.min(1, Math.abs(sourceNormal.dot(destination.normal))) : 0
+    const alignApplied = flip > 0 ? Math.pow(intent.align, 1 / (1 + .8 * flip)) : intent.align
+    camera.quaternion.slerp(destination.rotation, alignApplied)
     if (frame.position.segment === 'life-frame' && anchors.FootballTransfer && intent.travel > 0 && intent.align < 1) {
       // Follow the real moving carrier itself instead of trying to repair a
       // room-path camera after the photograph has turned between surfaces.

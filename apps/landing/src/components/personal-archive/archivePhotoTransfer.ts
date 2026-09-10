@@ -108,7 +108,19 @@ export function createArchivePhotoTransfer(root: Object3D) {
   }
   let fromFrame=surfaceFrame(source),toFrame=surfaceFrame(wall)
   const orientation=new Quaternion(),center=new Vector3()
-  function deform(geometry: BufferGeometry, start: Float32Array, finish: Float32Array, from: Mesh, to: Mesh, p: number) {
+  /**
+ * Peak height the photograph gains mid-flight, in metres.
+ *
+ * This is the vertical character of the whole Life -> Frame leg: the camera is
+ * bound to the carrier there, so the shot rises exactly as much as the print
+ * does. It was .26 across a 2.35m crossing — 11% — which read as sliding the
+ * photograph along the desk rather than carrying it across the room.
+ * `arc` is sin(pi * p), so both endpoints stay exactly on the authored surfaces
+ * however this is tuned.
+ */
+const CARRY_LIFT = .55
+
+function deform(geometry: BufferGeometry, start: Float32Array, finish: Float32Array, from: Mesh, to: Mesh, p: number) {
     const out=geometry.getAttribute('position')
     for(let i=0;i<out.count;i++) {
       point.fromArray(start,i*3).applyMatrix4(from.matrixWorld).sub(fromFrame.origin).applyQuaternion(fromFrame.rotation.clone().invert())
@@ -117,7 +129,7 @@ export function createArchivePhotoTransfer(root: Object3D) {
       // ratios from shearing their planes through one another during rotation.
       point.lerp(end,p).applyQuaternion(orientation).add(center)
       const arc=Math.sin(Math.PI*p)
-      point.y+=.26*arc; point.z+=.28*arc+4.2*p*(1-p)**3
+      point.y+=CARRY_LIFT*arc; point.z+=.28*arc+4.2*p*(1-p)**3
       point.applyMatrix4(rootInverse)
       out.setXYZ(i,point.x,point.y,point.z)
     }

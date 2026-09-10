@@ -175,7 +175,18 @@ function samplePresentation(segment: SampleSegment, progress: number): Presentat
     sourceSurface: surfaceForChapter(handoff.sourceOwner),
     targetSurface: surfaceForChapter(handoff.targetOwner),
     sourceReveal,
-    sourceExpand: segment === 'entry' ? 0 : 1 - phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.sourceRetract),
+    // Hold, do not retract. At handoff progress 0 the camera sits on the source
+    // surface fit, and fit() is defined so that surface exactly fills the viewport
+    // — which is also what expand 1 projects the page onto. The two are registered
+    // pixel for pixel, so the page does not need to move at all: it dissolves and
+    // the physical sheet it was printed on is already underneath, in place.
+    // Retracting it geometrically made an already-dismissed page fly back on
+    // screen and shrink away, which had no narrative reason to happen.
+    // Entry keeps 0: there the source really is the Index living on the monitor.
+    // 1 while the sheet is still on screen, so it holds its full-viewport
+    // registration and only dissolves; 0 once it has fully faded, which keeps the
+    // authored boundary equivalence with the reading segment that follows.
+    sourceExpand: segment === 'entry' ? 0 : sourceReveal > 0 ? 1 : 0,
     targetReveal: phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.targetReveal),
     targetExpand,
     readingOwner: progress === 1 ? handoff.targetOwner : null,
