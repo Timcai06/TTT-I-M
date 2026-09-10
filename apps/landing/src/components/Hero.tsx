@@ -6,6 +6,7 @@ import { usePretextTextInteraction } from '../lib/pretextIntroText'
 import { onChapterArrived } from '../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
 import SignatureMark from './SignatureMark'
+import { setIndexZoom, toggleIndexZoom } from '../lib/indexZoom'
 const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSurface'))
 
 /**
@@ -303,6 +304,16 @@ export default function Hero() {
         role="group"
         tabIndex={0}
         aria-label="Interactive Index on the archive monitor. Press Enter to move closer and Escape to return."
+        onClick={(event) => {
+          // Anything inside the Index keeps its own behaviour; only the surround
+          // toggles the enlargement, so no link or control is hijacked by it.
+          if ((event.target as HTMLElement).closest("a,button,input,select,textarea,[role=button],[role=link]")) return
+          toggleIndexZoom()
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && event.target === event.currentTarget) { event.preventDefault(); setIndexZoom(1) }
+          else if (event.key === "Escape") { event.preventDefault(); setIndexZoom(0) }
+        }}
       >
       {/* Canvas 层：幽灵照片 → 粒子肖像 (条件渲染) → 扫描线光泽，三层堆叠 */}
       <div className="hero__canvas">

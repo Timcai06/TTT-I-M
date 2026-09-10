@@ -24,6 +24,15 @@ vendored source in `apps/landing/src/lib/canvas-ui/vendor/LICENSE.md`.
 
 Source: https://github.com/DavidHDev/canvas-ui
 
+## LogoLoop — Working set marquee
+
+`apps/landing/src/components/LogoLoop.tsx` and
+`apps/landing/src/styles/components/logo-loop.css` are derived from the LogoLoop
+component published by ReactBits (David Haz), used under its open-source licence.
+The Skills chapter renders it as the `Working set` strip.
+
+Source: https://github.com/DavidHDev/react-bits
+
 ## Project evidence UI dependencies
 
 The Landing project uses the following packages under their MIT licenses. They

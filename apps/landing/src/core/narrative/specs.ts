@@ -45,7 +45,14 @@ export const PERSONAL_ARCHIVE_SAMPLE_STORY = Object.freeze({
     sourceRetract: progressRange(0, 0.18),
     sourceLeave: progressRange(0.08, 0.32),
     sourceFade: progressRange(0.18, 0.36),
-    extraction: progressRange(0.2, 0.6),
+    // Staged, not overlapped. Extraction used to run .2-.6 while the shared camera
+    // travel ran .18-.64, so the print left the envelope during the exact stretch
+    // the camera was leaving - the one thing worth watching happened while the shot
+    // was moving. It now begins after the About sheet has finished dissolving
+    // (sourceFade ends at .36) and completes before the about-life camera starts.
+    extraction: progressRange(0.38, 0.60),
+    /** about-life holds until the print has cleared the envelope, then travels. */
+    aboutLifeCamera: progressRange(0.60, 0.90),
     travel: progressRange(0.18, 0.64),
     align: progressRange(0.5, 0.8),
     targetReveal: progressRange(0.58, 0.82),

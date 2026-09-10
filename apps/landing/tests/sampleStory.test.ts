@@ -23,12 +23,20 @@ void test('samples the fixed semantic world at reading and extraction boundaries
     screen: { mode: 'inactive', contentId: 'frame-final-horizon' },
   })
   assert.deepEqual(frameAt('about-life', 0).world, frameAt('about-reading', 1).world)
-  assert.equal(frameAt('about-life', 0.2).world.envelope.openness, 0)
-  assert.equal(frameAt('about-life', 0.2).world.photo.extraction, 0)
-  assert.equal(frameAt('about-life', 0.6).world.envelope.openness, 1)
-  assert.equal(frameAt('about-life', 0.6).world.photo.extraction, 1)
-  assert.ok(frameAt('about-life', 0.200001).world.envelope.openness > 0)
-  assert.ok(frameAt('about-life', 0.599999).world.envelope.openness < 1)
+  // Read the window from the spec rather than pinning literals, so restaging the
+  // beat cannot silently drift the contract these assertions exist to protect:
+  // the envelope is shut before extraction opens, open after, and strictly
+  // monotonic in between.
+  const extraction = PERSONAL_ARCHIVE_SAMPLE_STORY.timing.extraction
+  assert.equal(frameAt('about-life', extraction.start).world.envelope.openness, 0)
+  assert.equal(frameAt('about-life', extraction.start).world.photo.extraction, 0)
+  assert.equal(frameAt('about-life', extraction.end).world.envelope.openness, 1)
+  assert.equal(frameAt('about-life', extraction.end).world.photo.extraction, 1)
+  assert.ok(frameAt('about-life', extraction.start + 1e-6).world.envelope.openness > 0)
+  assert.ok(frameAt('about-life', extraction.end - 1e-6).world.envelope.openness < 1)
+  // The beat must finish before the camera leaves, which is the whole point of it.
+  assert.ok(extraction.end <= PERSONAL_ARCHIVE_SAMPLE_STORY.timing.aboutLifeCamera.start,
+    'the print must clear the envelope before about-life starts travelling')
 
   const extractedWorld = {
     notebook: { openness: 1 },

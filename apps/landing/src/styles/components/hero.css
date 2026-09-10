@@ -36,6 +36,24 @@
     transform-origin: 0 0;
     background: #070708;
     will-change: transform, opacity;
+    cursor: zoom-in;
+    /* The enlarged Index frame. --index-zoom is published by lib/indexZoom and is
+       the same value the story carries as user.indexInspection, so the frame and
+       the projection open together. At 0 this is inset(0 0 round 0) — literally no
+       clipping — which leaves the projected-on-the-monitor state exactly as it was.
+       Set --index-zoom-radius to 50% for a fully circular crop; 44px is a rounded
+       frame that does not cut the Index UI. */
+    --index-zoom-radius: 44px;
+    clip-path: inset(
+      calc(var(--index-zoom, 0) * 4.5vh)
+      calc(var(--index-zoom, 0) * 5vw)
+      round calc(var(--index-zoom, 0) * var(--index-zoom-radius))
+    );
+  }
+
+  html[data-index-zoomed] .hero--archive-index .hero__screen-page {
+    cursor: zoom-out;
+    box-shadow: inset 0 0 0 1px rgb(238 233 223 / calc(var(--index-zoom, 0) * .28));
   }
   .hero--archive-index .hero__screen-page:focus-visible {
     outline: 2px solid var(--accent-pop, #ff4a33);

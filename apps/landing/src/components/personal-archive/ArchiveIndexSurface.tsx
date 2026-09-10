@@ -7,6 +7,7 @@ import { useReducedMotion } from '../../lib/motion'
 import { createArchiveProgress } from './scrollPose'
 import PersonalArchiveSurface from './PersonalArchiveSurface'
 import { getPreparedArchiveRuntime } from './archiveRuntime'
+import { resetIndexZoom } from '../../lib/indexZoom'
 
 const ready = () => undefined
 const released = () => undefined
@@ -34,7 +35,12 @@ export default function ArchiveIndexSurface({ root, page }: {
       start: 'top top',
       end: 'bottom top',
       onUpdate: (self) => {
-        setAtIndex(self.progress <= .002)
+        const at = self.progress <= .002
+        // Scrolling away from the Index must not strand an enlarged panel across
+        // the room; the story moves on to the entry segment and would keep
+        // drawing it at full viewport.
+        if (!at) resetIndexZoom()
+        setAtIndex(at)
         progress.set(self.progress)
       },
       onRefresh: (self) => {

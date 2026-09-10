@@ -47,7 +47,14 @@ export function SkillsWorkingSet() {
         gap={64}
         hoverSpeed={8}
         fadeOut
-        fadeOutColor="#000000"
+        // Follow whatever surface the strip is actually sitting on. This was a
+        // hardcoded #000000, which is close enough inside #skills — the one
+        // deliberately dark chapter — but SkillsWorkingSet is also rendered by
+        // StackContinuityFrame inside the paper-themed archive bridge, where two
+        // black gradients were being drawn across paper. logo-loop.css lives in
+        // layer(primitives) and outranks the room theme in layer(chapters), so
+        // this prop is the only lever that can reach the fade.
+        fadeOutColor="var(--archive-surface, #000000)"
         ariaLabel="Tools used across shipped systems"
       />
     </div>

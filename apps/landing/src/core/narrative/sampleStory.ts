@@ -130,7 +130,9 @@ function sampleCamera(segment: SampleSegment, progress: number, inspection: numb
   }
 
   const handoff = handoffForSegment(segment)!
-  const travel = phase(progress, segment === 'entry' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryCamera : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.travel)
+  const travel = phase(progress, segment === 'entry' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryCamera
+    : segment === 'about-life' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.aboutLifeCamera
+      : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.travel)
   const align = phase(progress, segment === 'entry' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryAlign : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.align)
   const arc = travel === 0 || travel === 1 ? 0 : Math.sin(Math.PI * travel) * (1 - align)
   return Object.freeze({
@@ -147,10 +149,13 @@ function sampleCamera(segment: SampleSegment, progress: number, inspection: numb
   })
 }
 
-function samplePresentation(segment: SampleSegment, progress: number): PresentationIntent {
+function samplePresentation(segment: SampleSegment, progress: number, inspection: number): PresentationIntent {
   if (segment === 'index') return Object.freeze({
-    sourceSurface:null,targetSurface:'StackReading',sourceReveal:0,sourceExpand:0,targetReveal:1,targetExpand:0,
-    readingOwner:'index',roomHitEnabled:false,focusEnabled:true,aperture:baseAperture,
+    // targetExpand carries the click-to-enlarge. At 0 the Index sits projected on
+    // the physical monitor; at 1 the same projection has opened to an unwarped
+    // full-viewport rectangle. Nothing about the room camera changes.
+    sourceSurface:null,targetSurface:'StackReading',sourceReveal:0,sourceExpand:0,targetReveal:1,targetExpand:inspection,
+    readingOwner:'index',roomHitEnabled:false,focusEnabled:inspection < .5,aperture:baseAperture * (1 - inspection),
   })
   const readingChapter = chapterForReading(segment)
   if (readingChapter) {
@@ -211,6 +216,6 @@ export function sampleStory(input: SampleInput): Readonly<StoryFrame> {
     contentVersion: input.contentVersion,
     world: sampleWorld(position.segment, position.progress),
     camera: sampleCamera(position.segment, position.progress, input.user?.indexInspection ?? 0),
-    presentation: samplePresentation(position.segment, position.progress),
+    presentation: samplePresentation(position.segment, position.progress, input.user?.indexInspection ?? 0),
   })
 }
