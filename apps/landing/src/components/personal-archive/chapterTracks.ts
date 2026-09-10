@@ -13,11 +13,11 @@ export const phase = (p: number, start: number, end: number) => {
  * Raise these further to slow the camera; nothing else needs to change.
  */
 export const chapterTracks = {
-  'about-life': { target: 'life', surface: 'LifeReading', title: '系统之外，生活仍在发生。', index: '01 / LIFE', height: '540svh' },
-  'life-frame': { target: 'frame', surface: 'FrameReading', title: '生活的切片，成为摄影档案。', index: '02 / FRAME', height: '510svh' },
-  'frame-stack': { target: 'skills', surface: 'StackReading', title: '从观看，到构建。', index: '03 / STACK', height: '540svh' },
-  'stack-work': { target: 'projects', surface: 'WorkReading', title: '让想法成为可以打开的作品。', index: '04 / WORK', height: '510svh' },
-  'work-contact': { target: 'contact', surface: 'ContactReading', title: '下一份记录，一起完成。', index: '05 / CONTACT', height: '480svh' },
+  'about-life': { target: 'life', surface: 'LifeReading', title: '系统之外，生活仍在发生。', index: '01 / LIFE', height: '640svh' },
+  'life-frame': { target: 'frame', surface: 'FrameReading', title: '生活的切片，成为摄影档案。', index: '02 / FRAME', height: '610svh' },
+  'frame-stack': { target: 'skills', surface: 'StackReading', title: '从观看，到构建。', index: '03 / STACK', height: '640svh' },
+  'stack-work': { target: 'projects', surface: 'WorkReading', title: '让想法成为可以打开的作品。', index: '04 / WORK', height: '610svh' },
+  'work-contact': { target: 'contact', surface: 'ContactReading', title: '下一份记录，一起完成。', index: '05 / CONTACT', height: '580svh' },
 } as const
 
 /** Shared handoff timing mirrors the semantic runtime's longer physical travel. */

@@ -75,6 +75,11 @@
   #skills .skills-continuity, .archive-handoff-page--stack .skills-continuity {
     width: 100vw; margin-left: -50vw;
   }
+  /* A chapter bridge's stage is sticky and only covers the viewport once pinned.
+     The screen before that is bare bridge, and .archive-bridge is explicitly
+     transparent, so the chapter used to scroll away onto the root's black.
+     Paint the bridge as paper: the page ends on page, then the room takes over. */
+  .archive-chapter-bridge { background: var(--archive-surface); }
   .skills-continuity { background: var(--archive-surface); }
   .skills__flow-svg, .projects__laser-wrap { mix-blend-mode: normal; }
   .skills-working-set__header { border-color: var(--line); }

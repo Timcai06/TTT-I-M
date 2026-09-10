@@ -33,7 +33,17 @@ export default function ArchiveStage() {
         const element = trigger.trigger
         if (!(element instanceof HTMLElement)) continue
         const key = element.id === 'hero' ? 'index' : element.id === 'archive-entry' ? 'entry' : element.dataset.archiveTrack
-        if (key === 'index' || key === 'entry' || key === 'about-life' || key === 'life-frame' || key === 'frame-stack' || key === 'stack-work' || key === 'work-contact') ranges[key] = { start: trigger.start, end: trigger.end }
+        const chapterTrack = key === 'about-life' || key === 'life-frame' || key === 'frame-stack' || key === 'stack-work' || key === 'work-contact'
+        // A chapter bridge's trigger opens at `top bottom`, but the stage inside
+        // it is sticky top:0 with overflow:clip, so it does not actually cover
+        // the viewport until one screen later. Starting the story at the trigger
+        // ran the entire source retraction (progress 0 - .18) inside a panel that
+        // was still sliding up and clipped to its own partial rect, while the
+        // live chapter had already been forced to opacity 0 — a page vanishing
+        // and a half-cut sheet rising from the bottom. The story now begins where
+        // the stage is pinned, so the reader simply finishes the chapter and
+        // scrolls it away before the room takes the frame.
+        if (key === 'index' || key === 'entry' || chapterTrack) ranges[key] = { start: chapterTrack ? trigger.start + innerHeight : trigger.start, end: trigger.end }
       }
       try {
         if (Object.keys(ranges).length !== 7) throw new Error('Sample triggers not ready')
