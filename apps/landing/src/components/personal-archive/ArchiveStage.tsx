@@ -63,6 +63,7 @@ export default function ArchiveStage() {
         pages['index:target']=samplePageLayout(indexPage,innerWidth,innerHeight)
         pages['entry:source']=samplePageLayout(indexPage,innerWidth,innerHeight)
         pages['entry:target']=samplePageLayout(entryPage,innerWidth,innerHeight)
+        delete document.documentElement.dataset.archiveLayoutError
         const next = publishSampleLayout(ranges as SampleRanges, { width: innerWidth, height: innerHeight, dpr: devicePixelRatio }, pages, ScrollTrigger.maxScroll(window)+1)
         const retained = getRetainedSamplePosition()
         if (retained && !currentArchiveRequest().pending) {
@@ -71,7 +72,13 @@ export default function ArchiveStage() {
           if (lenis) lenis.scrollTo(top, { immediate: true, force: true })
           else window.scrollTo({ top, behavior: 'auto' })
         }
-      } catch { invalidate(); return }
+      } catch (error) {
+        // This used to swallow every layout failure silently, which disabled the
+        // whole room with no trace anywhere. Record the reason so a dead room is
+        // diagnosable from the page itself.
+        document.documentElement.dataset.archiveLayoutError = error instanceof Error ? error.message : String(error)
+        invalidate(); return
+      }
       getPreparedArchiveRuntime()?.commitPosition(currentArchiveRequest().requestId)
     }
     ScrollTrigger.addEventListener('refreshInit', invalidate)

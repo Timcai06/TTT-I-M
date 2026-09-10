@@ -1,6 +1,7 @@
 import { Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { StoryFrame } from '../../core/narrative/types.ts'
 import sceneContract from '../../assets/personal-archive/scene-contract.json' with { type: 'json' }
+import { PERSONAL_ARCHIVE_SAMPLE_STORY } from '../../core/narrative/specs.ts'
 
 const { views } = sceneContract
 
@@ -43,6 +44,13 @@ const scratchStandoff = new Vector3()
 const STANDOFF_RATIO = 1.85
 /** Vertical lift per metre of horizontal crossing. */
 const LIFT_PER_METRE = .45
+/**
+ * How far the Life -> Frame camera pulls back while the print is in flight,
+ * as a multiple of the print's own fit distance. 0 reproduces the old behaviour
+ * of riding the photograph full-frame the whole way across.
+ */
+const CARRIER_STANDOFF = 2.2
+
 /** The room shell (ArchiveArchitecture) tops out at y=2.80; keep .25 clear of it. */
 const CEILING_CLEARANCE_Y = 2.55
 
@@ -218,14 +226,46 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     // endpoints, so 0 and 1 still land exactly on the authored source and
     // destination poses; only the middle starts earlier and eases longer.
     const flip = sourceNormal ? 1 - Math.min(1, Math.abs(sourceNormal.dot(destination.normal))) : 0
-    const alignApplied = flip > 0 ? Math.pow(intent.align, 1 / (1 + .8 * flip)) : intent.align
+    // Widen the authored window rather than raising align to a power. pow() looked
+    // tidier but its derivative is unbounded at align = 0, so the turn snapped on
+    // at the exact progress where alignment begins — the continuity guard measured
+    // .17m of camera jump there. A smoothstep over a wider window eases in and out
+    // with zero derivative at both ends and still lands exactly on 0 and 1.
+    const alignWindow = frame.position.segment === 'entry'
+      ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryAlign
+      : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.align
+    const alignApplied = flip > 0
+      ? ease(frame.position.progress, alignWindow.start - .25 * flip, alignWindow.end + .10 * flip)
+      : intent.align
     camera.quaternion.slerp(destination.rotation, alignApplied)
     if (frame.position.segment === 'life-frame' && anchors.FootballTransfer && intent.travel > 0 && intent.align < 1) {
       // Follow the real moving carrier itself instead of trying to repair a
       // room-path camera after the photograph has turned between surfaces.
       // Alignment blends the carrier fit into the exact Frame reading pose.
       const photo = fit(anchors.FootballTransfer, camera.fov, camera.aspect)
-      const margin = 1 - .2 * Math.sin(Math.PI * intent.travel) * (1 - intent.align)
+      // Watch the print cross the room, then move in. The camera is bound to the
+      // carrier here, and it used to sit at the carrier's own fit distance for the
+      // whole flight — so the photograph filled the frame from start to finish and
+      // there was nothing else on screen to move against. Standing off during the
+      // crossing puts the desk it left and the clip it is heading for in frame at
+      // the same time, which is what makes the travel legible as travel. The
+      // stand-off is zero at both ends, so the departure and the Frame arrival are
+      // still the exact authored fits, and the corner backoff below only ever
+      // pushes further out, so it cannot fight this.
+      // Spread the stand-off over the whole segment, not over the .18-.64 travel
+      // window. Riding `travel` packed the entire pull-out-and-back into 46% of
+      // the scroll, and the continuity guard measures world movement per 1% of
+      // progress — so any useful stand-off broke its .17m speed limit. Over the
+      // full range the same amplitude moves at roughly half the peak rate.
+      // The carrier block engages the instant travel leaves 0 (progress .18), and
+      // it overwrites camera.position outright — so any stand-off that is already
+      // non-zero there appears as a step. Ride an envelope that starts at exactly
+      // that point, rises over a quarter of the segment, holds while the print
+      // crosses the room, and is spent before the Frame arrival. Zero at .18 keeps
+      // the handover continuous; zero at the end keeps the arrival on the fit.
+      const watchEnvelope = ease(frame.position.progress, .18, .45) * (1 - ease(frame.position.progress, .62, .92))
+      const watch = 1 + CARRIER_STANDOFF * watchEnvelope
+      const margin = (1 - .2 * Math.sin(Math.PI * intent.travel) * (1 - intent.align)) / watch
       // photo.center is read again below, so this offset point must stay a clone.
       const photoPosition = photo.center.clone().addScaledVector(photo.normal, photo.distance / margin)
       const settle = intent.align * intent.align

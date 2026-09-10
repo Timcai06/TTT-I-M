@@ -239,6 +239,15 @@ html[data-archive-sample-fallback] :is([data-archive-track='about-life'], [data-
     [data-archive-live-target] {
       opacity: var(--archive-live-target, 0);
     }
+    /* Fail readable, not black. The rule above hides every chapter unless the room
+       has committed a frame and named one of them the reading owner. When the room
+       is not presenting at all there is no owner, so all six went to opacity 0 and
+       the page between chapters was whatever sat behind them — paper while
+       .archive-stage was painted, the root's black once it was not. The archive
+       only owns chapter visibility while it is actually on screen. */
+    html:not([data-archive-sample-owner]) [data-archive-live-target] {
+      opacity: 1;
+    }
     .archive-sequence .about__dossier {
       padding-top: clamp(76px, 9vh, 96px);
     }
