@@ -29,7 +29,15 @@
   outline: none;
   transform-style: preserve-3d;
   transform-origin: center;
-  background: #0a0b0c;
+  /* The plate behind each photograph. It was a hardcoded near-black, and this
+     file lives in layer(primitives) which outranks layer(chapters), so the
+     natural-room paper theme could never reach it however specific it got —
+     that is why Frame read as locked black inside an otherwise paper room.
+     Prefer the room surface, and keep the original dark plate as the fallback
+     for mobile and reduced-motion, where natural-room.css does not apply.
+     Only the plate follows the room: --ag-text and --ag-overlay stay light-on-
+     scrim because that label sits on the photograph, which keeps its own colour. */
+  background: var(--archive-surface, #0a0b0c);
   box-shadow: 0 10px 30px -18px rgb(0 0 0 / 80%);
   will-change: flex-grow, transform;
   transition: opacity 240ms ease;

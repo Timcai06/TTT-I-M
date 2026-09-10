@@ -91,6 +91,20 @@ export function presentSampleFrame(frame: StoryFrame, targetPage: HTMLElement | 
       if (id === 'about') live.parentElement?.style.setProperty('--archive-reading', readable ? 'visible' : 'hidden')
     }
   }
+  // The Hero Index panel is position:fixed, inset:0 and painted #070708. Its
+  // projected opacity and matrix3d are INLINE styles, which outrank the
+  // stylesheet's `opacity: 0`, and nothing reset them when the story left the
+  // index segment. The panel therefore stayed on screen for the rest of the
+  // page: visible as a stray Index in later chapters, and reading as a black
+  // lock wherever it covered a chapter. Release it whenever it is not the
+  // surface being presented.
+  const indexPanel = document.querySelector<HTMLElement>('.hero__screen-page')
+  if (indexPanel && indexPanel !== targetPage && indexPanel !== sourcePage) {
+    indexPanel.style.opacity = '0'
+    indexPanel.style.pointerEvents = 'none'
+    indexPanel.style.removeProperty('transform')
+    indexPanel.inert = true
+  }
   const bridge = targetPage?.closest<HTMLElement>('.archive-bridge')
   const visible = !intent.readingOwner || intent.readingOwner === 'index'
   if (bridge) {
