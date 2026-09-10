@@ -50,7 +50,12 @@ export default function ArchiveStage() {
         // The legacy Hero and entry triggers intentionally overlap from scroll
         // zero. A single story clock cannot let both own that interval, so the
         // semantic entry begins exactly where the Hero/Index interval ends.
-        ranges.entry = { start: ranges.index!.end, end: ranges.entry!.end }
+        // Give the Index a dwell before the About flight begins. The hero trigger is
+        // exactly one screen, so entry used to start the moment the reader scrolled at
+        // all — the Index was something you fell through rather than something you
+        // could stop and use. The entry bridge carries a matching +100svh so its own
+        // flight keeps the pace tuned for it.
+        ranges.entry = { start: ranges.index!.end + innerHeight, end: ranges.entry!.end }
         const pages: Record<string, ProjectionLayout> = {}
         for (const track of ['about-life', 'life-frame', 'frame-stack', 'stack-work', 'work-contact']) for (const kind of ['target', 'source']) {
           const page = document.querySelector<HTMLElement>(`[data-archive-track="${track}"] ${kind === 'target' ? '.archive-chapter-bridge__page' : '.archive-bridge__page--source'}`)

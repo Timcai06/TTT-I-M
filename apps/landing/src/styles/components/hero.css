@@ -51,6 +51,37 @@
     );
   }
 
+  /* Tell the reader this is a thing they can open. A cursor change alone is not an
+     affordance — nothing on screen said the monitor was interactive. The hint rides
+     --index-zoom so it retires exactly as the panel opens. */
+  .hero--archive-index .hero__screen-page::after {
+    position: absolute;
+    right: clamp(16px, 2vw, 28px);
+    bottom: clamp(16px, 2vw, 28px);
+    z-index: 4;
+    padding: 7px 13px;
+    border: 1px solid rgb(238 233 223 / 22%);
+    border-radius: 999px;
+    color: rgb(238 233 223 / 72%);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: calc(1 - var(--index-zoom, 0));
+    content: 'Click to open';
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero--archive-index .hero__screen-page::after {
+      animation: index-open-hint 2.8s ease-in-out infinite;
+    }
+    @keyframes index-open-hint {
+      0%, 100% { border-color: rgb(238 233 223 / 22%); }
+      50% { border-color: rgb(238 233 223 / 52%); }
+    }
+  }
+
   html[data-index-zoomed] .hero--archive-index .hero__screen-page {
     cursor: zoom-out;
     box-shadow: inset 0 0 0 1px rgb(238 233 223 / calc(var(--index-zoom, 0) * .28));

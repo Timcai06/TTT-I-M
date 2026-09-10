@@ -130,9 +130,7 @@ function sampleCamera(segment: SampleSegment, progress: number, inspection: numb
   }
 
   const handoff = handoffForSegment(segment)!
-  const travel = phase(progress, segment === 'entry' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryCamera
-    : segment === 'about-life' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.aboutLifeCamera
-      : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.travel)
+  const travel = phase(progress, segment === 'entry' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryCamera : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.travel)
   const align = phase(progress, segment === 'entry' ? PERSONAL_ARCHIVE_SAMPLE_STORY.timing.entryAlign : PERSONAL_ARCHIVE_SAMPLE_STORY.timing.align)
   const arc = travel === 0 || travel === 1 ? 0 : Math.sin(Math.PI * travel) * (1 - align)
   return Object.freeze({
@@ -144,6 +142,11 @@ function sampleCamera(segment: SampleSegment, progress: number, inspection: numb
     travel,
     leave: 1 - phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.sourceLeave),
     align,
+    // dolly is the push along the view axis onto the surface fit. about-life keeps
+    // the shared window on purpose: the Life envelope sits in a corridor between the
+    // desk below and the shelf above, and every attempt to give that leg its own
+    // approach put the camera into one or the other. Extraction was moved into this
+    // push instead, so the print emerges while the camera is closing on it.
     dolly: phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.dolly),
     arc,
   })

@@ -27,11 +27,16 @@
   :is(#life, [data-archive-reading-theme='life'], [data-archive-clone='life']) {
     --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #6b745f; --accent-warm: #875b40;
   }
+  /* Frame and Stack are the two dark rooms. Their surface is not the calibrated
+     paper: photography and the monitor both read against black, not against a lit
+     page. The ink and accent invert with them — a dark green accent authored for
+     paper is invisible on black, and the derived --fg-mute / --fg-dim blend toward
+     the surface, so leaving the paper ink here would have produced dark on dark. */
   :is(#frame, [data-archive-reading-theme='frame'], [data-archive-clone='frame']) {
-    --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #315f49; --accent-warm: #875b40;
+    --archive-surface: #000000; --archive-ink: #eee9df; --accent: #5f9c7c; --accent-warm: #d8bd86;
   }
   :is(#skills, [data-archive-reading-theme='stack'], [data-archive-clone='skills']) {
-    --archive-surface: #17191a; --archive-ink: #eee9df; --accent: #ff3333; --accent-warm: #d8bd86;
+    --archive-surface: #000000; --archive-ink: #eee9df; --accent: #ff3333; --accent-warm: #d8bd86;
   }
   :is(#projects, [data-archive-reading-theme='work'], [data-archive-clone='projects']) {
     --archive-surface: var(--room-paper); --archive-ink: #292720; --accent: #3d435e; --accent-warm: #875b40;

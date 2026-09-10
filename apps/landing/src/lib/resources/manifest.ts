@@ -160,8 +160,16 @@ export function buildResourceManifest(): ResourceTask[] {
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareSiteMedia } = await import('./mediaCache'); await prepareSiteMedia(signal) },
     }, {
-      id: 'chunks:interactions', optional: true, weight: 3, label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
+      id: 'chunks:interactions', optional: true, weight: 5, label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
+      // The Stack -> Work handoff used to fetch and parse the laser and its Canvas UI
+      // engines at the exact frame it mounted them, on top of acquiring a WebGL lease
+      // and taking the first HTML capture. That is the stutter entering Work: the
+      // effect is not expensive to run, it was expensive to *create* at that instant.
+      // Parsing the modules during the intro leaves only the lease and first frame
+      // at the handoff, and costs the effect nothing.
       load: async () => { await Promise.all([
+        import('../../components/ProjectLaser'), import('../canvas-ui/laser'),
+        import('../canvas-ui/localEffectControl'), import('../canvas-ui/runtime'),
         import('../../chapters/projects/ProjectCaseDialog'), import('../../chapters/projects/ProjectCaseContent'),
         import('../../chapters/projects/ProjectMetrics'), import('../../shared/media/openImageLightbox'),
         import('photoswipe/lightbox'), import('photoswipe'),

@@ -2,7 +2,7 @@ import { Mesh, MeshPhysicalMaterial, MeshStandardMaterial, type Object3D, type M
 import { stabilizeArchiveMaterial } from './archiveRenderSafety'
 
 /** glTF transports baked RGB irradiance through an explicitly tagged slot. */
-export function prepareArchiveMaterials(root: Object3D) {
+export function prepareArchiveMaterials(root: Object3D, maxAnisotropy = 8) {
   root.traverse(object => {
     if (!(object instanceof Mesh)) return
     // Printed ink and screen UI are flush with another physical surface. Casting
@@ -15,11 +15,24 @@ export function prepareArchiveMaterials(root: Object3D) {
     }
     object.receiveShadow = !screen
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+      // Grazing-angle sharpness. The desk, floor and shelf faces are all seen at a
+      // steep slant from every reading pose, and without anisotropic filtering their
+      // wood and weave smear into mush at exactly the distance the camera settles at.
+      // Cheap, and one of the few realism gains available without rebaking.
+      for (const slot of ['map', 'normalMap', 'roughnessMap', 'aoMap', 'lightMap'] as const) {
+        const texture: unknown = (material as unknown as Record<string, unknown>)[slot]
+        if (texture && typeof texture === 'object' && 'anisotropy' in texture) {
+          const value = texture as { anisotropy: number; needsUpdate: boolean }
+          if (value.anisotropy < maxAnisotropy) { value.anisotropy = maxAnisotropy; value.needsUpdate = true }
+        }
+      }
       if (material instanceof MeshPhysicalMaterial) stabilizeArchiveMaterial(material)
       if (material instanceof MeshStandardMaterial && material.userData.archive_lightmap && material.aoMap) {
         material.lightMap = material.aoMap
         material.aoMap = null
-        material.lightMapIntensity = .8
+        // The bake is the only true indirect light in the room; .8 held it back
+        // against the raised environment term.
+        material.lightMapIntensity = .95
         material.needsUpdate = true
       }
     }

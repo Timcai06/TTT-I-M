@@ -142,6 +142,13 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     // The old floor of .72 only ever bound LifeReading, whose fit distance is .265,
     // so that one leg pulled back 2.72x while the other five pulled back 1.85x.
     // The floor is now only a degenerate-input guard; the ratio is the contract.
+    // Stand-off is the ratio; the floor is only a degenerate-input guard.
+    // I briefly restored the old .72 floor here after reading a .0106m clearance
+    // failure as proof that the Life shelf needed it. That was a misdiagnosis: the
+    // clearance came from an experimental early dolly on that leg, and with the
+    // shared approach window .72 puts the camera high enough that the shelf above
+    // the Life envelope blocks the view instead. The guards disagree with the floor
+    // in both directions, which is what says the ratio is the right contract.
     const standoffDistance = Math.max(.35, destination.distance * STANDOFF_RATIO)
     const standoffPosition = scratchStandoff.copy(destination.center).addScaledVector(destination.normal, standoffDistance)
     camera.position.copy(sourcePosition).lerp(standoffPosition, intent.travel)
@@ -165,8 +172,13 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     // a spike peaking near progress .41 and spent by .8, so the middle of a long
     // crossing had no lift left. A plateau keeps the camera up while it travels.
     // Both ends are exactly 0, so the endpoint poses stay the authored surface fits.
-    const carry = frame.position.progress
-    camera.position.y += lift * ease(carry, .06, .30) * (1 - ease(carry, .62, .92))
+    // Rise with the departure, hold across the crossing, and come down exactly as
+    // the dolly closes on the destination. Retiring it on a fixed progress window
+    // instead left the camera still lifted while about-life was already pushing onto
+    // the Life envelope, which put it up inside the shelf above — the line-of-sight
+    // guard in archivePhotoTransfer caught the blocked view. Tying it to dolly makes
+    // the descent match whatever arrival window each segment actually declares.
+    camera.position.y += lift * ease(frame.position.progress, .06, .30) * (1 - intent.dolly)
     target.copy(sourceTarget).lerp(destination.center, intent.travel)
     if (frame.position.segment === 'life-frame' && anchors.FootballTransfer) {
       scratchCenter.set(0, 0, 0)

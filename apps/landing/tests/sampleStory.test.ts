@@ -34,9 +34,13 @@ void test('samples the fixed semantic world at reading and extraction boundaries
   assert.equal(frameAt('about-life', extraction.end).world.photo.extraction, 1)
   assert.ok(frameAt('about-life', extraction.start + 1e-6).world.envelope.openness > 0)
   assert.ok(frameAt('about-life', extraction.end - 1e-6).world.envelope.openness < 1)
-  // The beat must finish before the camera leaves, which is the whole point of it.
-  assert.ok(extraction.end <= PERSONAL_ARCHIVE_SAMPLE_STORY.timing.aboutLifeCamera.start,
-    'the print must clear the envelope before about-life starts travelling')
+  // The Life reading surface is anchored to the print itself, so its corners are
+  // occluded by construction until the print is out. Extraction must therefore
+  // finish before the target page starts revealing, or the page appears before the
+  // object it is printed on does — which the line-of-sight guard in
+  // archivePhotoTransfer catches as walnut blocking LifeReading.
+  assert.ok(extraction.end <= PERSONAL_ARCHIVE_SAMPLE_STORY.timing.targetReveal.start,
+    'the print must clear the envelope before the Life page starts revealing')
 
   const extractedWorld = {
     notebook: { openness: 1 },

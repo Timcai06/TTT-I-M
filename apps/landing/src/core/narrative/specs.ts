@@ -50,9 +50,14 @@ export const PERSONAL_ARCHIVE_SAMPLE_STORY = Object.freeze({
     // the camera was leaving - the one thing worth watching happened while the shot
     // was moving. It now begins after the About sheet has finished dissolving
     // (sourceFade ends at .36) and completes before the about-life camera starts.
-    extraction: progressRange(0.38, 0.60),
-    /** about-life holds until the print has cleared the envelope, then travels. */
-    aboutLifeCamera: progressRange(0.60, 0.90),
+    // The print leaves the envelope, and the envelope is at LifeReading — 0.645m
+    // from the About notebook the camera starts on, which frames a 0.25x0.314m
+    // surface edge to edge. Staging extraction BEFORE the camera moved therefore
+    // played the whole beat off screen. The order has to be: cross, push in along
+    // the view axis, then watch it come out at reading distance.
+    extraction: progressRange(0.34, 0.58),
+    /** about-life crosses to the envelope once the About sheet has dissolved (.36). */
+    /** The Z push onto the envelope, so the extraction happens at reading distance. */
     travel: progressRange(0.18, 0.64),
     align: progressRange(0.5, 0.8),
     targetReveal: progressRange(0.58, 0.82),

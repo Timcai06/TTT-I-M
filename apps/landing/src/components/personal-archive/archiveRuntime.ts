@@ -124,7 +124,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     await prepareChapterPages(signal)
     await document.fonts.ready
     const textures = new Set<Texture>()
-    prepareArchiveMaterials(model.scene)
+    prepareArchiveMaterials(model.scene, gl.capabilities.getMaxAnisotropy())
     model.scene.traverse(object => {
       if (!(object instanceof Mesh)) return
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {

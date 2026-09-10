@@ -2,19 +2,30 @@ import { AgXToneMapping, Color, DirectionalLight, HemisphereLight, Object3D, PCF
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
 export function createArchiveLighting(renderer: WebGLRenderer, scene: Scene) {
-  renderer.toneMapping = AgXToneMapping; renderer.toneMappingExposure = 1.08
+  // Sunrise. The key was a high-ish 23-degree warm white; dawn light arrives almost
+  // flat and much more saturated, which is what produces long raking shadows and a
+  // warm/cool split across the room. AgX stays - it is the tone curve that keeps a
+  // low, strong, orange key from clipping to white.
+  renderer.toneMapping = AgXToneMapping; renderer.toneMappingExposure = 1.02
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFSoftShadowMap
-  scene.background = new Color('#b9aea0')
+  scene.background = new Color('#c6a583')
   const makeEnvironment = () => {
     const generator = new PMREMGenerator(renderer), room = new RoomEnvironment()
     try { return generator.fromScene(room, .05) }
     finally { room.dispose(); generator.dispose() }
   }
   let environment = makeEnvironment()
-  scene.environment = environment.texture; scene.environmentIntensity = .38
-  const fill = new HemisphereLight('#c7d4df', '#735539', .52)
-  const window = new DirectionalLight('#ffe1b2', 2.2)
-  window.position.set(3.5, 3.2, -5); window.target.position.set(0, .85, -.8)
+  // .38 left the shadow side almost unlit, which reads as a flat model more than as
+  // dark. Raising the ambient bounce is the cheapest real gain in solidity short of
+  // baking, because it is what fills the surfaces the key never reaches.
+  scene.environment = environment.texture; scene.environmentIntensity = .52
+  // Dawn sky is colder and the ground bounce warmer than midday; the split is what
+  // makes the hour readable.
+  const fill = new HemisphereLight('#9fb8d2', '#8a5f34', .58)
+  const window = new DirectionalLight('#ffb570', 2.75)
+  // ~11 degrees of elevation instead of ~23. The long shadows come from the angle,
+  // not from the shadow settings.
+  window.position.set(4.1, 1.95, -5.4); window.target.position.set(0, .85, -.8)
   window.castShadow = true; window.shadow.mapSize.set(4096, 4096)
   Object.assign(window.shadow.camera, { left: -2.8, right: 2.8, top: 2.8, bottom: -2.8, near: .1, far: 12 })
   window.shadow.normalBias = .004; window.shadow.bias = -.00008

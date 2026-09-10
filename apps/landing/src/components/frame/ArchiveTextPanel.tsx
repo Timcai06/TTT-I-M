@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from '../../lib/gsap'
-import { revealWordsOnce } from '../../lib/wordReveal'
+import { revealWordsOnce, splitWords } from '../../lib/wordReveal'
 import type { ArchiveTextPanel as ArchiveTextPanelData } from '../../content'
 import FrameTitleParticles from './FrameTitleParticles'
 
@@ -19,7 +19,16 @@ export default function ArchiveTextPanel({
   // Vertical panels use a one-shot per-word reveal on enter.
   useEffect(() => {
     const el = ref.current
-    if (!el || preview) return
+    if (!el) return
+    // Tokenise in BOTH versions. splitWords wraps every token in a <span class="word">,
+    // which changes line breaking and tracking, so the projected preview — rendering
+    // the identical string as plain text — laid out differently from the live chapter.
+    // That mismatch is what made the copy fail to register across the handoff. The
+    // preview stops here: same DOM, no timeline, no particles.
+    for (const selector of ['.archive-theme-marker__title', '.frame-panel__body']) {
+      el.querySelectorAll<HTMLElement>(selector).forEach(splitWords)
+    }
+    if (preview) return
     const ctx = gsap.context(() => {
       revealWordsOnce(el, '.archive-theme-marker__title', { start: 'top 82%' })
       revealWordsOnce(el, '.frame-panel__body', { start: 'top 78%' })

@@ -443,3 +443,16 @@
     display: none;
   }
 }
+
+/* The particle overlay exists only in the live chapter, so at the spatial handoff
+   it used to appear in one frame on top of copy that had just been projected
+   without it. Fade it in instead, so the two renderings of the same title agree at
+   the moment of the swap and the effect arrives after. */
+.frame-title-particles__output {
+  animation: frame-title-particles-in 520ms ease-out both;
+}
+
+@keyframes frame-title-particles-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
