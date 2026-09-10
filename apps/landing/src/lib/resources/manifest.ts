@@ -15,13 +15,19 @@ import {
 // added here — they load lazily / via SSR. (See plan/00-principles.md.)
 
 /**
- * Deadline for the heavy optional prewarms (room, chapter pages, film/sound).
- * It was 120s, which on a slow path meant the intro sat for two full minutes
- * before it could drop to reading mode — indistinguishable from a hung page.
- * These are enhancements with authored fallbacks, so bound the wait instead:
- * a healthy connection finishes well inside this, a poor one lets the reader in.
+ * Ceiling for the heavy prewarms (room, chapter pages, film/sound).
+ *
+ * This is a hang-breaker, not a quality gate. A shorter value turns "slow" into
+ * "failed" and silently costs the visitor the room: personal-space.glb is 22.9 MB,
+ * which is 96s on a 237 KB/s path, so any deadline near that drops the 3D archive
+ * on exactly the connections that were going to get there eventually. Waiting is
+ * the intended trade — the room is the product, not an optional flourish.
+ *
+ * It stays finite only so a genuinely stalled socket cannot strand the intro the
+ * way it used to. A real network error still rejects immediately and is handled
+ * by the reading-fallback classification, without waiting for this at all.
  */
-const PREWARM_DEADLINE_MS = 45_000
+const PREWARM_DEADLINE_MS = 600_000
 
 /** 资源加载阶段：critical 准备运行时，visual 准备当前设备会展示的视觉资源。 */
 export type ResourceTier = 'critical' | 'visual'
