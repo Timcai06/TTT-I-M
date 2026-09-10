@@ -72,6 +72,14 @@ export default defineConfig(({ mode }) => {
       // (plus a total-JS ceiling), while this limit keeps Vite from reporting the
       // already-audited raw-size warning after Fiber has been split away.
       chunkSizeWarningLimit: 720,
+      // Never base64-inline font files. Vite's 4096-byte default inlined 21 of
+      // the @fontsource subsets as `data:font/...` URIs, and the production CSP
+      // in vercel.json sets `font-src 'self'` with no `data:`. Every inlined face
+      // was blocked, went to status 'error', and made the critical `fonts:document`
+      // preload task throw — which is what put the "还有部分内容未能准备好" retry
+      // panel on the intro on every production load. Keeping fonts as real files
+      // also matches what index.html already claims: they are self-hosted.
+      assetsInlineLimit: (filePath: string) => (/\.(?:woff2?|ttf|otf|eot)$/i.test(filePath) ? false : undefined),
       rollupOptions: {
         output: {
           // Split stable framework libs out of the app chunk so a content edit
