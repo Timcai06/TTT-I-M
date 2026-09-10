@@ -75,11 +75,14 @@
   #skills .skills-continuity, .archive-handoff-page--stack .skills-continuity {
     width: 100vw; margin-left: -50vw;
   }
-  /* A chapter bridge's stage is sticky and only covers the viewport once pinned.
-     The screen before that is bare bridge, and .archive-bridge is explicitly
-     transparent, so the chapter used to scroll away onto the root's black.
-     Paint the bridge as paper: the page ends on page, then the room takes over. */
-  .archive-chapter-bridge { background: var(--archive-surface); }
+  /* Deliberately NOT painting .archive-chapter-bridge here. It was given the paper
+     surface to stop a chapter scrolling away onto the root's black during the one
+     screen before the stage pins. But the bridge is ~640svh tall while its stage is
+     a 100svh sticky strip, and the room canvas lives inside that stage behind
+     `opacity: var(--archive-room, 0)`. Whenever the room is not being presented the
+     paper covered the whole bridge instead, so the space between chapters read as a
+     solid white wall with no way back into the room. Black for one screen is the
+     far smaller problem; fix the pre-pin screen without hiding the stage. */
   .skills-continuity { background: var(--archive-surface); }
   .skills__flow-svg, .projects__laser-wrap { mix-blend-mode: normal; }
   .skills-working-set__header { border-color: var(--line); }
