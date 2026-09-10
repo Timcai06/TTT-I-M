@@ -41,7 +41,13 @@ export function projectArchiveQuad(points: AnchorPoints, camera: FinalArchiveCam
 export function samplePageLayout(page: HTMLElement, width: number, height: number): ProjectionLayout {
   const parent = page.offsetParent instanceof HTMLElement ? page.offsetParent : page.parentElement
   const origin = parent?.getBoundingClientRect()
-  return Object.freeze({ width, height, pageWidth: page.clientWidth, pageHeight: page.clientHeight, originX: (origin?.left ?? 0) + page.offsetLeft, originY: (origin?.top ?? 0) + page.offsetTop })
+  // offset*, not client*: pageMatrix maps (0,0)-(pageWidth,pageHeight) onto the
+  // projected corners, but a CSS transform scales the BORDER box. The entry page
+  // and the live About both carry `border-inline: clamp(18px,2vw,32px) solid
+  // transparent` for the paper margin, so measuring the content box made the
+  // matrix scale everything by borderBox/contentBox — about 4% at a 1440px
+  // viewport — and the 3D→2D handoff snapped that 4% away in one frame.
+  return Object.freeze({ width, height, pageWidth: page.offsetWidth, pageHeight: page.offsetHeight, originX: (origin?.left ?? 0) + page.offsetLeft, originY: (origin?.top ?? 0) + page.offsetTop })
 }
 
 function chapterSurfaces(id: string): HTMLElement[] {

@@ -33,6 +33,10 @@ const fitTL = new Vector3(); const fitTR = new Vector3(); const fitBR = new Vect
 const fitRight = new Vector3()
 const fitUp = new Vector3()
 const fitMatrix = new Matrix4()
+const lookMatrix = new Matrix4()
+const lookUp = new Vector3()
+const lookDir = new Vector3()
+const lookDestUp = new Vector3()
 function fit(points: AnchorPoints | undefined, fov: number, aspect: number) {
   if (!points || points.length !== 4 || !points.flat().every(Number.isFinite)) throw new Error('Missing/invalid reading anchors')
   const [tlSrc, trSrc, brSrc, blSrc] = points
@@ -135,7 +139,35 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     // Look through the physical travel target (including the moving photo and
     // pointer parallax), then settle into the authored surface roll. Endpoints
     // remain the exact source/destination fits in both directions.
-    camera.lookAt(target)
+    // Object3D.lookAt always builds its basis against world up (0,1,0).
+    // AboutReading and LifeReading lie flat on the desk — their measured
+    // normals are exactly (0,1,0) — so descending onto them drives the view
+    // direction onto that same axis, where the basis is degenerate and its roll
+    // swings on arbitrarily small target changes. That unstable roll is what
+    // made the descent onto the notebook read as a twist, and it forced the
+    // final slerp into `destination.rotation` to cover a large angle, which is
+    // the pop at the 3D→2D handoff. Blend the reference up toward the target
+    // surface's own up only as the view actually turns vertical: the other four
+    // surfaces sit at 89°–90° to world up, so this term stays 0 and their poses
+    // are byte-for-byte unchanged.
+    lookDir.subVectors(target, camera.position)
+    if (lookDir.lengthSq() > 1e-12) {
+      lookDir.normalize()
+      const vertical = Math.abs(lookDir.y)
+      const raw = Math.max(0, Math.min(1, (vertical - .7) / .25))
+      const blend = raw * raw * (3 - 2 * raw)
+      lookUp.set(0, 1, 0)
+      if (blend > 0) {
+        lookDestUp.set(0, 1, 0).applyQuaternion(destination.rotation)
+        lookUp.lerp(lookDestUp, blend)
+        if (lookUp.lengthSq() < 1e-8) lookUp.copy(lookDestUp)
+      }
+      lookUp.normalize()
+      lookMatrix.lookAt(camera.position, target, lookUp)
+      camera.quaternion.setFromRotationMatrix(lookMatrix)
+    } else {
+      camera.lookAt(target)
+    }
     // The two branches never both need scratchQuat in the same call: the fit
     // branch only runs when life-frame+FootballTransfer holds, which is the
     // same precondition guarding the carrier-follow block's own scratchQuat
