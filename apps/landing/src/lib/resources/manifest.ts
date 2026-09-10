@@ -14,6 +14,15 @@ import {
 // set. The future blog / work / UGC zones grow without bound and must NOT be
 // added here — they load lazily / via SSR. (See plan/00-principles.md.)
 
+/**
+ * Deadline for the heavy optional prewarms (room, chapter pages, film/sound).
+ * It was 120s, which on a slow path meant the intro sat for two full minutes
+ * before it could drop to reading mode — indistinguishable from a hung page.
+ * These are enhancements with authored fallbacks, so bound the wait instead:
+ * a healthy connection finishes well inside this, a poor one lets the reader in.
+ */
+const PREWARM_DEADLINE_MS = 45_000
+
 /** 资源加载阶段：critical 准备运行时，visual 准备当前设备会展示的视觉资源。 */
 export type ResourceTier = 'critical' | 'visual'
 /** 资源成本分类，用于调试 preload 进度和定位卡顿来源。 */
@@ -24,6 +33,12 @@ export type ResourceType = 'image' | 'font' | 'texture' | 'chunk' | 'particles'
  */
 export interface ResourceTask {
   timeoutMs?: number
+  /**
+   * An enhancement rather than something the reader needs. The six semantic
+   * chapters are complete DOM without any of these, so their failure must drop
+   * to reading mode instead of stranding the intro behind a retry panel.
+   */
+  optional?: boolean
   /** 稳定唯一 id，用于进度统计、错误定位和 build guard 检查 */
   id: string
   /** 面向 loading UI / 调试日志的资源名称 */
@@ -87,8 +102,12 @@ export function buildResourceManifest(): ResourceTask[] {
     { id: 'chunks:chapters', label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
   ]
 
+  // Prewarm, not the only load path: every one of these is an <img> the browser
+  // will fetch on its own when the chapter renders. Losing the prewarm costs
+  // pop-in on a fast scroll; it must never hold the door shut.
   const staticImages: ResourceTask[] = collectImageUrls().map((src) => ({
     id: `image:${src}`,
+    optional: true,
     label: src,
     tier: 'visual',
     type: 'image',
@@ -97,26 +116,26 @@ export function buildResourceManifest(): ResourceTask[] {
 
   const interactiveVisuals: ResourceTask[] = [
     ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? [{
-      id: 'renderer:personal-archive', label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
-      timeoutMs: 120_000,
+      id: 'renderer:personal-archive', optional: true, label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
+      timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => {
         const { prepareArchiveRuntime } = await import('../../components/personal-archive/archiveRuntime')
         await prepareArchiveRuntime(signal)
         await import('../../components/personal-archive/PersonalArchiveSurface')
       },
     }, {
-      id: 'layout:chapter-pages', label: 'Preparing chapters', tier: 'visual' as const, type: 'chunk' as const,
+      id: 'layout:chapter-pages', optional: true, label: 'Preparing chapters', tier: 'visual' as const, type: 'chunk' as const,
       // The room runtime and this task both wait for the five real chapter
       // previews. On a cold cache their image decode can legitimately outlive
       // the generic 12 s network deadline while the 19 MB room is compiling.
-      timeoutMs: 120_000,
+      timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareChapterPages } = await import('./prepareChapterPages'); await prepareChapterPages(signal) },
     }, {
-      id: 'media:site', label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,
-      timeoutMs: 120_000,
+      id: 'media:site', optional: true, label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,
+      timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareSiteMedia } = await import('./mediaCache'); await prepareSiteMedia(signal) },
     }, {
-      id: 'chunks:interactions', label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
+      id: 'chunks:interactions', optional: true, label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
       load: async () => { await Promise.all([
         import('../../chapters/projects/ProjectCaseDialog'), import('../../chapters/projects/ProjectCaseContent'),
         import('../../chapters/projects/ProjectMetrics'), import('../../shared/media/openImageLightbox'),
@@ -125,6 +144,7 @@ export function buildResourceManifest(): ResourceTask[] {
     }] : []),
     {
       id: 'shader:liquid-metal',
+      optional: true,
       label: 'Liquid Metal control',
       tier: 'visual',
       type: 'chunk',
@@ -132,6 +152,7 @@ export function buildResourceManifest(): ResourceTask[] {
     },
     {
       id: 'renderer:spark-badge',
+      optional: true,
       label: 'Stack to Work renderer',
       tier: 'visual',
       type: 'particles',
@@ -141,6 +162,7 @@ export function buildResourceManifest(): ResourceTask[] {
 
   const responsiveImages: ResourceTask[] = archiveImages.map((image) => ({
     id: `responsive-image:${image.src}`,
+    optional: true,
     label: image.src,
     tier: 'visual',
     type: 'image',

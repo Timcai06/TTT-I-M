@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { requestScrollRefresh } from '../scroll/requestRefresh'
 import { buildResourceManifest, type ResourceTask } from './manifest'
-import { isArchiveReadingFallbackReady } from './preloadReadiness'
+import { isReadingFallbackReady } from './preloadReadiness'
 import { runTaskWithDeadline } from './taskDeadline'
 
 // A stuck resource (hung socket, dead CDN) must never strand the intro on a
@@ -315,6 +315,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
       await Promise.all(workers)
     }
 
+    const optionalTaskIds = new Set(tasks.filter((task) => task.optional).map((task) => task.id))
     const criticalIndexes = tasks
       .map((task, index) => (task.tier === 'critical' ? index : -1))
       .filter((index) => index >= 0)
@@ -334,7 +335,7 @@ export function useWholeSitePreload(): WholeSitePreloadState {
 
     void run().then(() => {
       if (cancelled) return
-      const readingFallbackReady = isArchiveReadingFallbackReady({ completed, total: tasks.length, failed })
+      const readingFallbackReady = isReadingFallbackReady({ completed, total: tasks.length, failed, optional: optionalTaskIds })
       setState({
         preparationFinished: true,
         completed,

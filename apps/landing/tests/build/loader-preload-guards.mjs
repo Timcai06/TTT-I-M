@@ -172,7 +172,12 @@ for (const token of ['preload.preparationFinished', 'preload.failed.length', 'ro
 for (const token of ['renderer:personal-archive', 'media:site', 'layout:chapter-pages', 'chunks:interactions']) {
   if (!manifestSource.includes(token)) throw new Error(`Desktop preparation is missing ${token}`)
 }
-if (!manifestSource.includes("id: 'layout:chapter-pages'") || !manifestSource.includes('timeoutMs: 120_000')) {
+// The intent is a cold-cache deadline well above the 12 s network default, not
+// one literal. It was 120_000, which meant a slow path stared at the intro for
+// two minutes before reading mode could engage; the named constant now bounds it.
+const prewarmDeadline = manifestSource.match(/const PREWARM_DEADLINE_MS = ([\d_]+)/)
+const prewarmMs = prewarmDeadline ? Number(prewarmDeadline[1].replace(/_/g, '')) : 0
+if (!manifestSource.includes("id: 'layout:chapter-pages'") || !manifestSource.includes('timeoutMs: PREWARM_DEADLINE_MS') || prewarmMs <= 12000) {
   throw new Error('Chapter-page preparation must use the cold-cache visual deadline instead of the 12 s network default.')
 }
 const runtimeSource = readFileSync('src/components/personal-archive/archiveRuntime.ts', 'utf8')
@@ -247,7 +252,11 @@ if (!controllerSource.includes('criticalReady') || !controllerSource.includes('c
 if (!controllerSource.includes('renderReady') || !controllerSource.includes('renderReady: failed.length === 0')) {
   throw new Error('Preload controller must expose a full-manifest renderReady gate.')
 }
-for (const token of ['readingFallbackReady', 'isArchiveReadingFallbackReady', 'completed === total', 'failed.length === 1', "failed[0] === ARCHIVE_RENDERER_TASK_ID"]) {
+// Reading fallback is classification-based: every task the reader needs must
+// have succeeded, and only manifest-flagged enhancements may be in `failed`.
+// A count-based rule (exactly one failure) stranded the intro whenever the room,
+// the chapter prewarm and the media preparation timed out in one window.
+for (const token of ['readingFallbackReady', 'isReadingFallbackReady', 'completed === total', 'failed.length > 0', 'failed.every((id) => optional.has(id))']) {
   if (!controllerSource.includes(token) && !readinessSource.includes(token)) {
     throw new Error(`Archive reading fallback readiness is missing ${token}`)
   }
