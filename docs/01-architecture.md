@@ -7,7 +7,7 @@ This portfolio does not use a traditional router (like `react-router`). Instead,
 - `src/lib/chaptersReady.ts` coordinates when a chapter is fully mounted and ready for GSAP ScrollTrigger calculation.
 
 ## Module Responsibilities
-- **Loader**: The entry point of the site. `criticalReady` advances the stage label, while only `renderReady` releases the intro after the complete bounded Landing manifest has loaded or been explicitly skipped.
+- **Loader**: The entry point of the site. `criticalReady` advances the stage label. The intro releases on `renderReady || readingFallbackReady`: the first when every manifest task succeeded, the second when everything the reader actually needs succeeded and only manifest-flagged prewarm failed. Required is the critical tier alone — fonts, Pretext, the hero texture, the lazy chapter chunks — because everything else has a second load path. Progress is weighted by manifest cost, not task count, and the room model reports its bytes as they stream.
 - **Hero & About**: Hero owns the eager portrait scene; About lazily mounts a source-pinned Canvas UI Decrypt Reveal over its identity dossier, then returns to semantic DOM evidence content.
 - **Frame**: Maps vertical scroll to a horizontal photography rail; supported Chromium can add the chapter-local horizontal Bend while stable browsers retain the real DOM and edge-blur fallback.
 - **Work**: Spatial 3D project archive or engineering-style grid.

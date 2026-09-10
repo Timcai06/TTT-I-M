@@ -25,8 +25,14 @@ export default function ArchiveIndexSurface({ root, page }: {
   const [atIndex, setAtIndex] = useState(true)
   const onFailure = useCallback(() => {
     getPreparedArchiveRuntime()?.rest('home')
+    // hero.css carries a fallback that forces the Index panel visible when the
+    // room cannot draw it. Nothing had ever set this attribute, so that rule was
+    // dead and the panel — which is opacity 0 by default in archive mode, waiting
+    // to be projected — stayed invisible on exactly the failure it was written for.
+    if (root.current) root.current.dataset.archiveFailed = 'true'
+    resetIndexZoom()
     setFailed(true)
-  }, [])
+  }, [root])
 
   useGSAP(() => {
     if (!root.current) return

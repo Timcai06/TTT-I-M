@@ -94,6 +94,13 @@ export type CameraIntent =
       leave: number
       align: number
       dolly: number
+      /**
+       * Vestigial. The rig derived its lateral bow from this and from five
+       * hand-typed per-segment constants; both were replaced by a lift derived
+       * from the measured horizontal run, so archiveCameraRig no longer reads it.
+       * Still sampled and recorded in diagnostics. Do not tune it expecting the
+       * camera to respond.
+       */
       arc: number
     }>
 
