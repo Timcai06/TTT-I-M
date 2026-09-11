@@ -1,5 +1,16 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+
+/**
+ * Blank comments to whitespace, preserving line numbers.
+ *
+ * Several guards below match on source patterns, and the comments that explain
+ * those guards quote the very pattern they forbid. Without this, a guard reports
+ * its own explanation — which both of them did on their first run.
+ */
+const withoutComments = source => source
+  .replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\n]/g, ' '))
+  .replace(/(^|[^:])\/\/[^\n]*/g, (line, lead) => lead + ' '.repeat(line.length - lead.length))
 import { createHash } from 'node:crypto'
 
 const read = (path) => readFileSync(path, 'utf8')
@@ -662,9 +673,7 @@ if (!archiveRuntimeSource.includes('if (texture.anisotropy < maxAnisotropy)')) {
       // so reported line numbers still point at real code. This guard's own
       // explanation quotes the offending line verbatim, and without this it
       // reported itself.
-      const source = readFileSync(path, 'utf8')
-        .replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\n]/g, ' '))
-        .replace(/(^|[^:])\/\/[^\n]*/g, (line, lead) => lead + ' '.repeat(line.length - lead.length))
+      const source = withoutComments(readFileSync(path, 'utf8'))
       // `<any> && use…(`  /  `|| use…(`  /  `? use…(`  /  `: use…(`
       for (const match of source.matchAll(/(&&|\|\||\?|:)\s*!?\s*(use[A-Z][A-Za-z0-9_]*)\s*\(/g)) {
         const line = source.slice(0, match.index).split('\n').length
@@ -676,6 +685,46 @@ if (!archiveRuntimeSource.includes('if (texture.anisotropy < maxAnisotropy)')) {
   if (offenders.length) {
     throw new Error(`Hooks must not sit behind a short-circuit or ternary — they are then called conditionally:\n  ${offenders.join('\n  ')}`)
   }
+}
+
+// The KTX2 transcoder runs under its own Content-Security-Policy, and that only
+// works while three parts agree. three builds its worker with createObjectURL, and
+// a blob: worker inherits the document's policy — under which the Emscripten
+// transcoder throws an EvalError inside a promise nothing awaits, so
+// renderer:personal-archive never settles and the intro sits at 99 until its 600s
+// deadline lets the reader into a room that never loaded. A worker fetched from an
+// http(s) URL takes its policy from its own response headers instead, which is the
+// whole mechanism. If the loader goes back to a blob, or the path stops matching
+// the header rule, or someone "fixes" it by loosening the document, this fails.
+{
+  const modelLoaderSource = read('src/components/personal-archive/archiveModelLoader.ts')
+  const modelLoader = withoutComments(modelLoaderSource)
+  const WORKER_PATH = '/archive-basis/ktx2-worker.js'
+  if (!modelLoaderSource.includes(WORKER_PATH)) {
+    throw new Error(`The KTX2 worker must load from the literal ${WORKER_PATH}; a hashed asset would fall outside its header rule.`)
+  }
+  if (/createObjectURL|new Blob\(/.test(modelLoader)) {
+    throw new Error('The KTX2 worker must not be a blob: a blob worker inherits the document CSP and cannot transcode under it.')
+  }
+  if (!existsSync('public/archive-basis/ktx2-worker.js')) {
+    throw new Error('public/archive-basis/ktx2-worker.js is missing — scripts/emit-ktx2-worker.mjs must run before the build.')
+  }
+  const vercel = JSON.parse(read('../../vercel.json'))
+  const rules = vercel.headers ?? []
+  const documentRule = rules.find(rule => rule.source === '/(.*)')
+  const documentCsp = documentRule?.headers?.find(header => /content-security-policy/i.test(header.key))?.value ?? ''
+  if (documentCsp.includes("'unsafe-eval'")) {
+    throw new Error("The document CSP must not allow 'unsafe-eval'. The transcoder has its own policy at /archive-basis/ precisely so the page does not need one.")
+  }
+  const workerRule = rules.find(rule => rule.source.startsWith('/archive-basis'))
+  const workerCsp = workerRule?.headers?.find(header => /content-security-policy/i.test(header.key))?.value ?? ''
+  if (!workerCsp.includes("'unsafe-eval'")) {
+    throw new Error('/archive-basis/ must carry its own CSP allowing unsafe-eval, or the transcoder cannot start.')
+  }
+  if (rules.indexOf(workerRule) < rules.indexOf(documentRule)) {
+    throw new Error('The /archive-basis/ header rule must come after the catch-all so its policy replaces the document policy.')
+  }
+  console.log('[ktx2-worker] transcoder runs from its own origin path under its own policy; the document CSP stays strict.')
 }
 
 const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')

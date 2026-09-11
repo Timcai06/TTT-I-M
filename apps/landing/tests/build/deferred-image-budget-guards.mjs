@@ -95,9 +95,19 @@ const audioBytes = (() => {
   return total
 })()
 const mediaBytes = statSync(join('dist/projects/sciscope', 'sciscope-concept-film.mp4')).size + audioBytes
-const decoderFiles = readdirSync('dist/assets').filter(name => /^basis_transcoder-.*\.(js|wasm)$/.test(name))
-if (decoderFiles.length !== 2) throw new Error('Archive KTX2 requires exactly one JS and one WASM transcoder asset')
+// The transcoder ships in two pieces now. The wasm is still a hashed asset, but
+// the JS lives inside dist/archive-basis/ktx2-worker.js, because a worker served
+// from a real path carries its own Content-Security-Policy and a blob: worker
+// inherits the document's — under which the transcoder cannot start at all. Both
+// halves are downloaded by anyone who loads the room, so both are counted.
+const decoderFiles = readdirSync('dist/assets').filter(name => /^basis_transcoder-.*\.wasm$/.test(name))
+if (decoderFiles.length !== 1) throw new Error('Archive KTX2 requires exactly one WASM transcoder asset')
+const workerPath = 'dist/archive-basis/ktx2-worker.js'
+if (!existsSync(workerPath)) {
+  throw new Error('dist/archive-basis/ktx2-worker.js is missing — the KTX2 worker must ship at a literal path so its CSP rule can match it.')
+}
 const decoderBytes = decoderFiles.reduce((sum, name) => sum + statSync(join('dist/assets', name)).size, 0)
+  + statSync(workerPath).size
 const desktopBytes = totalBytes - frameBytes + desktopFrameBytes + modelBytes + mediaBytes + decoderBytes
 // 2026-09-11: tim explicitly relaxed the former 50 MiB cap in favor of material
 // and bake fidelity. Keep a 60 MiB regression guard around this larger delivery.

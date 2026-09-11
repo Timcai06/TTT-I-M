@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "setup": "node scripts/setup-assets.mjs",
-    "predev": "node scripts/setup-assets.mjs",
+    "predev": "node scripts/setup-assets.mjs && node scripts/emit-ktx2-worker.mjs",
     "predev:canvas": "node scripts/setup-assets.mjs",
-    "prebuild": "node scripts/setup-assets.mjs",
+    "prebuild": "node scripts/setup-assets.mjs && node scripts/emit-ktx2-worker.mjs",
     "dev": "vite --port 5173 --strictPort",
     "dev:canvas": "node scripts/dev-canvas.mjs",
     "build": "tsc -b && vite build",

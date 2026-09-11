@@ -22,7 +22,7 @@ import { prepareArchiveMaterials } from './archiveMaterials'
 import { createArchiveFinitePass } from './archiveRenderSafety'
 import type { ArchiveProgress } from './scrollPose'
 import { createSharedResource } from '../../lib/resources/sharedResource'
-import { reportArchiveBytes, resetArchiveBytes } from '../../lib/resources/downloadProgress'
+import { reportArchiveBytes, reportArchiveStage, resetArchiveBytes } from '../../lib/resources/downloadProgress'
 import { prepareChapterPages } from '../../lib/resources/prepareChapterPages'
 import { addContactReadingPlane } from './readingFrame'
 import { calibrateRoomPaper } from './roomPalette'
@@ -110,6 +110,9 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     renderer = new WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
     const modelLoader = createArchiveModelLoader(renderer)
     const model = await modelLoader.loader.parseAsync(bytes, '').finally(modelLoader.dispose)
+    // Parsing now includes transcoding 83 KTX2 textures, the longest stretch of
+    // the whole boot on a fast connection, and it reports nothing while it runs.
+    reportArchiveStage('parsed')
     cleanup.push(() => disposeModel(model))
     signal.throwIfAborted()
     const gl = renderer, canvas = gl.domElement
@@ -131,6 +134,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     await document.fonts.ready
     const textures = new Set<Texture>()
     prepareArchiveMaterials(model.scene, gl.capabilities.getMaxAnisotropy())
+    reportArchiveStage('materials')
     const backdrop = createArchiveBackdrop(model.scene)
     if (backdrop) cleanup.push(() => backdrop.dispose())
     model.scene.traverse(object => {
@@ -531,6 +535,10 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       window.clearTimeout(recoveryTimer)
       document.removeEventListener('visibilitychange', hidden); cancelAnimationFrame(frame); canvas.remove()
     })
+    // The scene is assembled and the loop is wired; everything past this point is
+    // the reader's, not the boot's.
+    reportArchiveStage('scene')
+    reportArchiveStage('first-frame')
     return {
       readingTransition(requestId, chapter, mode, layer, from) {
         const layout = getSampleLayout()

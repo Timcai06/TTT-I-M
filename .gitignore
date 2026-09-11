@@ -40,3 +40,8 @@ apps/landing/public/server.glb
 *.njsproj
 *.sln
 *.sw?
+
+# Generated before every build by apps/landing/scripts/emit-ktx2-worker.mjs from the
+# installed three version. Committing it would let a three upgrade leave a stale
+# transcoder behind.
+apps/landing/public/archive-basis/

@@ -13,19 +13,40 @@
  */
 let loaded = 0
 let total = 0
+let stage = 0
+
+/**
+ * The stages after the bytes land, in order.
+ *
+ * Parsing, transcoding 83 KTX2 textures and uploading them is most of the wall
+ * clock on a fast connection, and bytes alone pin the bar at 1 the moment the last
+ * one arrives. The bar then sits still through the longest phase of the boot,
+ * which is what made it jump into the nineties and appear to hang there.
+ */
+const STAGES = ['parsed', 'materials', 'scene', 'first-frame'] as const
+export type ArchiveStage = (typeof STAGES)[number]
+/** Bytes own this much of the bar; the stages share what is left. */
+const DOWNLOAD_SHARE = .72
 
 export function reportArchiveBytes(next: number, expected: number) {
   loaded = Math.max(0, next)
   total = Math.max(0, expected)
 }
 
+/** Monotonic: a later stage never un-reports an earlier one. */
+export function reportArchiveStage(next: ArchiveStage) {
+  stage = Math.max(stage, STAGES.indexOf(next) + 1)
+}
+
 export function resetArchiveBytes() {
   loaded = 0
   total = 0
+  stage = 0
 }
 
 /** 0 when the size is unknown, so an unmeasurable fetch never invents progress. */
 export function archiveDownloadFraction(): number {
-  if (!Number.isFinite(total) || total <= 0) return 0
-  return Math.max(0, Math.min(1, loaded / total))
+  const bytes = !Number.isFinite(total) || total <= 0 ? 0 : Math.max(0, Math.min(1, loaded / total))
+  const stages = stage / STAGES.length
+  return Math.max(0, Math.min(1, bytes * DOWNLOAD_SHARE + stages * (1 - DOWNLOAD_SHARE)))
 }
