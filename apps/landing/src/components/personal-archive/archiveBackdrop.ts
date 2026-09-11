@@ -38,10 +38,18 @@ const MAGNIFICATION = 3.4
  * Paired with a slow swell in the emissive term, which is the dawn light changing
  * rather than the mountains moving.
  */
-const DRIFT_METRES = .3
-const DRIFT_SECONDS = 46
 const GLOW_SWING = .09
 const GLOW_SECONDS = 31
+
+/**
+ * A framed team photograph, 20cm wide, hangs at y 2.44-2.59 and z -1.39 — inside
+ * the window's x span and 12cm in front of the glass, which puts it square across
+ * the top of the opening. It reads as a picture taped to the window. Nothing in
+ * the narrative binds it (it is absent from PERSONAL_ARCHIVE_REQUIRED_OBJECTS), so
+ * it is hidden here rather than relocated: where it actually belongs on that wall
+ * is a modelling decision, not one to guess at from a transform.
+ */
+const OBSTRUCTS_WINDOW = 'Warm_TeamMemory' 
 
 const ray = new Vector3()
 const bounds = new Box3()
@@ -54,15 +62,68 @@ function authoredCentre(object: Object3D) {
   return bounds.setFromObject(object).getCenter(new Vector3())
 }
 
+/**
+ * Makes the view outside the window behave like air rather than a print.
+ *
+ * Sliding the whole panel was the first attempt and it looked wrong for a concrete
+ * reason: a landform that translates is not a landform. What actually moves out
+ * there is the sky, so the motion belongs in UV space, weighted by height, with the
+ * ridge line pinned. The panorama's own UVs put v=0 at the top of the plane
+ * (y=4.67) and v=1 at the bottom, so sky is low v.
+ *
+ * The drift oscillates rather than accumulates, which keeps it clear of the texture
+ * edge without needing repeat wrapping. Birds are drawn procedurally in the same
+ * pass — a handful of darkening blobs on shallow arcs, confined to the sky band.
+ * Doing them here rather than as scene objects avoids a second surface, a lifecycle
+ * and a share of the optional WebGL context budget for six moving dots.
+ */
+function animateSky(material: MeshStandardMaterial) {
+  const uniform = { value: 0 }
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uSkyTime = uniform
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uSkyTime;')
+      .replace('#include <emissivemap_fragment>', [
+        '#ifdef USE_EMISSIVEMAP',
+        '{',
+        '  vec2 uv = vEmissiveMapUv;',
+        '  float sky = 1.0 - smoothstep(0.16, 0.58, uv.y);',
+        '  uv.x += (sin(uSkyTime * 0.031) * 0.0075 + sin(uSkyTime * 0.017) * 0.0045) * sky;',
+        '  uv.y += sin(uSkyTime * 0.023) * 0.0016 * sky;',
+        '  vec4 emissiveColor = texture2D( emissiveMap, uv );',
+        '  float birds = 0.0;',
+        '  for (int i = 0; i < 6; i++) {',
+        '    float f = float(i);',
+        '    float phase = fract(uSkyTime * (0.011 + f * 0.0026) + f * 0.37);',
+        '    vec2 p = vec2(phase * 1.28 - 0.14, 0.12 + f * 0.045 + sin(phase * 6.2831 + f) * 0.02);',
+        '    p.y += sin(uSkyTime * (5.2 + f * 0.6)) * 0.0016;',
+        '    vec2 d = (uv - p) * vec2(1.0, 2.6);',
+        '    birds += 1.0 - smoothstep(0.0, 0.0042, length(d));',
+        '  }',
+        '  emissiveColor.rgb *= 1.0 - clamp(birds, 0.0, 1.0) * 0.55 * sky;',
+        '  totalEmissiveRadiance *= emissiveColor.rgb;',
+        '}',
+        '#endif',
+      ].join('\n'))
+  }
+  material.needsUpdate = true
+  return uniform
+}
+
 export function createArchiveBackdrop(model: Object3D) {
   const rear = model.getObjectByName('WindowPanorama_Rear')
   if (!rear) return null
+
+  const blocker = model.getObjectByName(OBSTRUCTS_WINDOW)
+  const blockerVisible = blocker?.visible ?? null
+  if (blocker) blocker.visible = false
 
   const rearHome = rear.position.clone()
   const rearCentre = authoredCentre(rear)
   const material = rear instanceof Mesh ? rear.material : null
   const glow = material instanceof MeshStandardMaterial ? material : null
   const glowBase = glow?.emissiveIntensity ?? 1
+  const live = glow ? animateSky(glow) : null
 
   // The side panel is left exactly as authored. Rescaling it to match the rear
   // panel's world size per pixel shrank it from z[-7,6] to z[-5.5,4.5], and 33 of
@@ -76,12 +137,12 @@ export function createArchiveBackdrop(model: Object3D) {
     update(cameraPosition: Vector3, seconds = 0) {
       ray.copy(WINDOW_CENTRE).sub(cameraPosition)
       if (!(ray.lengthSq() > 1e-8)) return
-      const drift = Math.sin(seconds * Math.PI * 2 / DRIFT_SECONDS) * DRIFT_METRES
+      if (live) live.value = seconds
       if (glow) glow.emissiveIntensity = glowBase * (1 + Math.sin(seconds * Math.PI * 2 / GLOW_SECONDS) * GLOW_SWING)
       // Where the panel centre needs to be, then expressed as a delta from where the
       // geometry already is.
       rear.position.set(
-        rearHome.x + (cameraPosition.x + ray.x * MAGNIFICATION) - rearCentre.x + drift,
+        rearHome.x + (cameraPosition.x + ray.x * MAGNIFICATION) - rearCentre.x,
         rearHome.y + (cameraPosition.y + ray.y * MAGNIFICATION) - rearCentre.y,
         rearHome.z + (cameraPosition.z + ray.z * MAGNIFICATION) - rearCentre.z,
       )
@@ -89,6 +150,7 @@ export function createArchiveBackdrop(model: Object3D) {
     dispose() {
       rear.position.copy(rearHome)
       if (glow) glow.emissiveIntensity = glowBase
+      if (blocker && blockerVisible !== null) blocker.visible = blockerVisible
     },
   }
 }

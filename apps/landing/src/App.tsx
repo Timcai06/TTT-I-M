@@ -16,6 +16,7 @@ import ChapterThemeDriver from './components/ChapterThemeDriver'
 import { chapters } from './chapters/registry'
 import './styles/app.css'
 import ChapterSoundCues from './components/ChapterSoundCues'
+import RoomAmbience from './components/RoomAmbience'
 
 const ParticlePortal = lazy(() => import('./components/ParticlePortal'))
 const ProductionTelemetry = lazy(() => import('./components/ProductionTelemetry'))
@@ -97,6 +98,7 @@ export default function App() {
             experience starts, the way the reference does, instead of burying it in
             the nav where nobody finds it. */}
         <Loader />
+        <RoomAmbience />
         <ChapterStateProvider>
           {/* Inside the provider: useChapterState throws without one, and mounting
               this outside it crashed the whole tree to a black screen. */}
