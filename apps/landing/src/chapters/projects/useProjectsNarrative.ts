@@ -9,7 +9,7 @@ import {
 } from '../../lib/canvas-ui/localEffectControl'
 import { useReducedMotion } from '../../lib/motion'
 import {
-  canRunLocalEffect,
+  canPrepareLocalEffect,
   observeLocalEffectEligibility,
 } from '../../components/effects/localEffectEligibility'
 
@@ -36,7 +36,7 @@ export function useProjectsNarrative(
     let inRange = false
     let lastScrollY = window.scrollY
     const syncLaserEligibility = () => {
-      setLaserActive(!reducedMotion && inRange && canRunLocalEffect(section, 'projects'))
+      setLaserActive(!reducedMotion && inRange && canPrepareLocalEffect(section, 'projects'))
     }
     const updateLaser = (progress: number) => {
       const scrollY = window.scrollY

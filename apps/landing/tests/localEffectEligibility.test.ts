@@ -1,108 +1,95 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  canPrepareLocalEffect,
   canRunLocalEffect,
   observeLocalEffectEligibility,
 } from '../src/components/effects/localEffectEligibility.ts'
 
-function fixture(ownerId: 'frame' | 'projects' | 'contact' = 'projects') {
-  const listeners = new Map<string, () => void>()
-  const observed: Array<{ node: unknown; options: MutationObserverInit }> = []
+// A small semantic DOM harness, matching the one aboutCaptureEligibility uses.
+function fixture() {
   let notifyMutation = () => {}
-  let disconnected = false
   class Observer {
     constructor(callback: () => void) { notifyMutation = callback }
-    observe(node: unknown, options: MutationObserverInit) { observed.push({ node, options }) }
-    disconnect() { disconnected = true }
+    observe() {}
+    disconnect() {}
   }
   const document = {
     hidden: false,
     defaultView: { MutationObserver: Observer, getComputedStyle: (node: ElementNode) => node.style },
-    getElementById: (id: string) => id === ownerId ? owner : null,
-    addEventListener: (name: string, callback: () => void) => { listeners.set(name, callback) },
-    removeEventListener: (name: string) => { listeners.delete(name) },
+    getElementById: () => section,
+    addEventListener: () => {},
+    removeEventListener: () => {},
     get documentElement() { return html },
   }
   class ElementNode {
     isConnected = true
     inert = false
     hidden = false
-    excluded = false
     attributes = new Map<string, string>()
     style = { display: 'block', visibility: 'visible', opacity: '1' }
     ownerDocument = document
     parentElement: ElementNode | null
-    constructor(parentElement: ElementNode | null) { this.parentElement = parentElement }
+    constructor(parent: ElementNode | null) { this.parentElement = parent }
     hasAttribute(name: string) { return this.attributes.has(name) }
     getAttribute(name: string) { return this.attributes.get(name) ?? null }
-    closest(selector: string): ElementNode | null {
-      if (selector === `#${ownerId}`) return owner
-      if (selector.includes('[data-archive-clone]')) return this.excluded ? this : null
-      return null
-    }
+    closest(selector: string): ElementNode | null { return selector === '#projects' ? section : null }
   }
   const html = new ElementNode(null)
-  const main = new ElementNode(html)
-  const owner = new ElementNode(main)
-  const node = new ElementNode(owner)
-  return {
-    document, html, main, owner, node, observed, listeners,
-    host: node as unknown as HTMLElement,
-    mutate: () => { if (!disconnected) notifyMutation() },
-    disconnected: () => disconnected,
-  }
+  const section = new ElementNode(html)
+  const host = new ElementNode(section)
+  const as = (node: ElementNode) => node as unknown as HTMLElement
+  return { document, html, section, host, as, fire: () => notifyMutation() }
 }
 
-void test('only the connected real chapter surface is eligible and the read is non-mutating', () => {
-  const f = fixture('frame')
-  const before = [...f.owner.attributes]
-  assert.equal(canRunLocalEffect(f.host, 'frame'), true)
-  assert.deepEqual([...f.owner.attributes], before)
-  f.node.excluded = true
-  assert.equal(canRunLocalEffect(f.host, 'frame'), false)
-  f.node.excluded = false
-  f.node.isConnected = false
-  assert.equal(canRunLocalEffect(f.host, 'frame'), false)
-  assert.equal(canRunLocalEffect(null, 'frame'), false)
+// The archive holds a chapter at opacity 0 while its page is still projected, and
+// reveals it on the frame the page finishes expanding. Building a WebGL effect on
+// that frame cost a measured 33-52ms against an 8.3ms median -- one visible hitch,
+// at the exact instant the reader is watching the page open. Preparation must
+// therefore be allowed while the chapter is invisible but laid out.
+void test('a chapter held invisible behind the projection may prepare but not run', () => {
+  const { section, host, as } = fixture()
+  assert.equal(canPrepareLocalEffect(as(host), 'projects'), true)
+  assert.equal(canRunLocalEffect(as(host), 'projects'), true)
+  section.style.opacity = '0'
+  assert.equal(canPrepareLocalEffect(as(host), 'projects'), true, 'must still be able to build')
+  assert.equal(canRunLocalEffect(as(host), 'projects'), false, 'must not claim to be visible')
+  section.style.opacity = '1'
+  section.style.visibility = 'hidden'
+  assert.equal(canPrepareLocalEffect(as(host), 'projects'), true)
+  assert.equal(canRunLocalEffect(as(host), 'projects'), false)
 })
 
-void test('inert, routing, hidden document and invisible ancestors fail closed', () => {
-  const f = fixture('contact')
-  f.owner.inert = true
-  assert.equal(canRunLocalEffect(f.host, 'contact'), false)
-  f.owner.inert = false
-  f.html.attributes.set('data-archive-routing', 'true')
-  assert.equal(canRunLocalEffect(f.host, 'contact'), false)
-  f.html.attributes.clear()
-  f.main.style.visibility = 'hidden'
-  assert.equal(canRunLocalEffect(f.host, 'contact'), false)
-  f.main.style.visibility = 'visible'
-  f.document.hidden = true
-  assert.equal(canRunLocalEffect(f.host, 'contact'), false)
+// Everything that makes initialisation wrong rather than merely unseen still
+// refuses both: there is no layout to measure, or the content is deliberately out
+// of the experience, or the whole tab is in the background.
+void test('structural refusals stop preparation as well as rendering', () => {
+  for (const [name, apply] of [
+    ['display:none', (f: ReturnType<typeof fixture>) => { f.section.style.display = 'none' }],
+    ['inert', (f: ReturnType<typeof fixture>) => { f.section.inert = true }],
+    ['aria-hidden', (f: ReturnType<typeof fixture>) => { f.section.attributes.set('aria-hidden', 'true') }],
+    ['hidden document', (f: ReturnType<typeof fixture>) => { f.document.hidden = true }],
+    ['archive routing', (f: ReturnType<typeof fixture>) => { f.html.attributes.set('data-archive-routing', 'true') }],
+    ['detached host', (f: ReturnType<typeof fixture>) => { f.host.isConnected = false }],
+  ] as const) {
+    const f = fixture()
+    apply(f)
+    assert.equal(canPrepareLocalEffect(f.as(f.host), 'projects'), false, `${name} must refuse preparation`)
+    assert.equal(canRunLocalEffect(f.as(f.host), 'projects'), false, `${name} must refuse rendering`)
+  }
 })
 
-void test('bounded observer coalesces transitions, isolates consumers and fully detaches', () => {
+// The two predicates move one commit apart. An observer watching only one of them
+// drops the other transition, which would leave an effect built and never shown.
+void test('the observer reports the reveal even when preparability did not change', () => {
   const f = fixture()
-  const values: boolean[] = []
-  let throws = true
-  const stop = observeLocalEffectEligibility(f.host, 'projects', (eligible) => {
-    values.push(eligible)
-    if (throws) throw new Error('consumer failed')
-  })
-  assert.equal(f.observed.length, 4)
-  assert.ok(f.observed.every(({ options }) => options.attributes && !options.subtree && !options.childList))
-  f.mutate()
-  f.owner.inert = true
-  assert.doesNotThrow(f.mutate)
-  f.mutate()
-  throws = false
-  f.owner.inert = false
-  f.mutate()
-  assert.deepEqual(values, [false, true])
-  stop()
-  assert.equal(f.disconnected(), true)
-  assert.equal(f.listeners.size, 0)
-  f.owner.inert = true
-  f.mutate()
-  assert.deepEqual(values, [false, true])
+  f.section.style.opacity = '0'
+  const seen: boolean[] = []
+  observeLocalEffectEligibility(f.as(f.host), 'projects', (eligible) => { seen.push(eligible) })
+  f.section.style.opacity = '1'
+  f.fire()
+  assert.deepEqual(seen, [true], 'revealing a preparable chapter must notify')
+  f.section.style.opacity = '0'
+  f.fire()
+  assert.deepEqual(seen, [true, false], 'hiding it again must notify')
 })

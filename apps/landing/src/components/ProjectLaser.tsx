@@ -12,7 +12,7 @@ import {
   getWebGLRecoveryDelay,
   type ContextLease,
 } from '../lib/webgl/contextRegistry'
-import { canRunLocalEffect } from './effects/localEffectEligibility'
+import { canPrepareLocalEffect } from './effects/localEffectEligibility'
 
 export default function ProjectLaser({
   active,
@@ -35,7 +35,14 @@ export default function ProjectLaser({
   useEffect(() => {
     const host = ref.current
     const capture = captureRef.current
-    if (!host || !capture || !active || disabled || !canRunLocalEffect(capture, 'projects')) {
+    // canPrepare, not canRun: the Work chapter is held at opacity 0 behind the
+    // archive's projection until the page has finished expanding, so gating
+    // construction on visibility put the WebGL2 context and shader compile on
+    // exactly that frame -- a measured 33-52ms against an 8.3ms median, at the
+    // instant the reader is watching the page open. Build it during the bridge
+    // instead; it draws into something invisible for the last stretch and is
+    // simply there when the chapter arrives.
+    if (!host || !capture || !active || disabled || !canPrepareLocalEffect(capture, 'projects')) {
       if (!active) retryCountRef.current = 0
       return
     }
@@ -115,7 +122,7 @@ export default function ProjectLaser({
     host.dataset.contextOwners = activeContextOwners().join(',') || 'none'
     canvas.addEventListener('webglcontextlost', onContextLost)
     stopWaiting = acquireOptionalContextWhenAvailable('project-laser', (lease) => {
-      if (released || !canRunLocalEffect(capture, 'projects')) {
+      if (released || !canPrepareLocalEffect(capture, 'projects')) {
         lease.release()
         return
       }

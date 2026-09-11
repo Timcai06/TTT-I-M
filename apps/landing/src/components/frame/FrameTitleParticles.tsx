@@ -22,6 +22,7 @@ import {
 } from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import {
+  canPrepareLocalEffect,
   canRunLocalEffect,
   observeLocalEffectEligibility,
 } from '../effects/localEffectEligibility'
@@ -66,7 +67,7 @@ export default function FrameTitleParticles({
     observeLocalEffectEligibility(eligibilityTarget, 'frame', () => notify())
   ), [eligibilityTarget])
   const getSnapshot = useCallback(
-    () => canRunLocalEffect(eligibilityTarget, 'frame'),
+    () => canPrepareLocalEffect(eligibilityTarget, 'frame'),
     [eligibilityTarget],
   )
   const eligible = useSyncExternalStore(subscribe, getSnapshot, () => false)
@@ -150,7 +151,7 @@ export default function FrameTitleParticles({
     syncGeometry()
     window.addEventListener('resize', syncGeometry, { passive: true })
     stopWaiting = acquireOptionalContextWhenAvailable('frame-title-particles', (lease) => {
-      if (released || !canRunLocalEffect(target, 'frame')) {
+      if (released || !canPrepareLocalEffect(target, 'frame')) {
         lease.release()
         return
       }
@@ -175,7 +176,7 @@ export default function FrameTitleParticles({
         hasVisibleCapture: () => frameTitleCaptureHasVisiblePixels(source),
         onReady: () => {
           ready = true
-          if (released || !canRunLocalEffect(target, 'frame')) {
+          if (released || !canPrepareLocalEffect(target, 'frame')) {
             cleanup()
             return
           }

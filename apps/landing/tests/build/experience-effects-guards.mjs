@@ -44,7 +44,6 @@ const required = [
   'public/projects/sciscope/sciscope-concept-film.mp4',
   'public/projects/sciscope/sciscope-film-poster.jpg',
   'public/projects/sciscope/sciscope-soundtrack.mp3',
-  'public/projects/room/room-interior.mp3',
   'public/projects/room/room-window.mp3',
   'public/projects/room/cue-entry.mp3',
   'public/projects/room/cue-query.mp3',
@@ -551,12 +550,11 @@ const filmBytes = statSync('public/projects/sciscope/sciscope-concept-film.mp4')
 const soundtrackBytes = statSync('public/projects/sciscope/sciscope-soundtrack.mp3').size
 if (filmBytes > 5_500_000) throw new Error(`SciScope film exceeds 5.5 MB: ${filmBytes}`)
 if (soundtrackBytes > 700_000) throw new Error(`SciScope soundtrack exceeds 700 KB: ${soundtrackBytes}`)
-// The beds loop for the whole visit and the cues fire on every chapter change, so
-// they are fetched by anyone who enables sound. The two beds are 30 s and 24 s of
-// mono at 56-64 kbps; a cue is one event. Anything past these ceilings means a file
-// was replaced with something that is not the same kind of asset.
+// The bed loops for the whole visit and the cues fire on every chapter change, so
+// they are fetched by anyone who enables sound. The bed is 24 s of mono at 64 kbps;
+// a cue is one event. Anything past these ceilings means a file was replaced with
+// something that is not the same kind of asset.
 const roomAudioCeilings = {
-  'room-interior.mp3': 320_000,
   'room-window.mp3': 320_000,
   'cue-entry.mp3': 90_000,
   'cue-query.mp3': 90_000,
@@ -571,8 +569,10 @@ for (const [name, ceiling] of Object.entries(roomAudioCeilings)) {
 }
 if (roomAudioBytes > 700_000) throw new Error(`Room audio totals more than one soundtrack: ${roomAudioBytes}`)
 // The wind was synthesised in an AudioContext of its own, which the site mute could
-// not reach and which made weather inside a room. Both beds are files now, and both
-// hang off the shared master gain.
+// not reach and which made weather inside a room. The bed is a file now and hangs
+// off the shared master gain. An interior layer is deliberately absent: the only
+// public-domain room tone available carried voices, and a room with one opening is
+// honestly represented by what comes through that opening.
 const roomAmbience = read('src/components/RoomAmbience.tsx')
 if (/new\s+AudioContextClass|createOscillator|Math\.random/.test(roomAmbience)) {
   throw new Error('RoomAmbience must not own an AudioContext or synthesise its bed; route through SoundProvider.')
@@ -580,7 +580,7 @@ if (/new\s+AudioContextClass|createOscillator|Math\.random/.test(roomAmbience)) 
 if (!roomAmbience.includes('setAmbienceLevel') || !roomAmbience.includes('getWindowProximity')) {
   throw new Error('RoomAmbience must drive the window bed from the published camera proximity.')
 }
-if (!soundProvider.includes('ambienceBusRef') || !soundProvider.includes('INTERIOR_LEVEL')) {
+if (!soundProvider.includes('ambienceBusRef') || !soundProvider.includes('AMBIENCE_FLOOR')) {
   throw new Error('SoundProvider must own the ambience bus so one mute governs beds and cues.')
 }
 const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')
