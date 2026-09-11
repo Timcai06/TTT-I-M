@@ -41,7 +41,10 @@ export default function ArchiveIndexSurface({ root, page }: {
       start: 'top top',
       end: 'bottom top',
       onUpdate: (self) => {
-        const at = self.progress <= .002
+        // .002 meant the Index surface detached after two thousandths of a scroll —
+        // a wheel notch was enough to release the panel the reader is meant to be
+        // able to sit on and click. The Index owns the whole hero span.
+        const at = self.progress < 1
         // Scrolling away from the Index must not strand an enlarged panel across
         // the room; the story moves on to the entry segment and would keep
         // drawing it at full viewport.
@@ -50,7 +53,7 @@ export default function ArchiveIndexSurface({ root, page }: {
         progress.set(self.progress)
       },
       onRefresh: (self) => {
-        setAtIndex(self.progress <= .002)
+        setAtIndex(self.progress < 1)
         progress.set(self.progress)
       },
     })

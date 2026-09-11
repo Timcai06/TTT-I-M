@@ -17,6 +17,9 @@ const viewByChapter: Record<string, ArchiveView> = {
  * The room has exactly one DOM home for the whole visit. Chapter adapters only
  * change the seekable shot; they never move or unmount the renderer canvas.
  */
+/** Screens of stillness on the Index before the About flight begins. */
+const INDEX_DWELL = 2.5
+
 export default function ArchiveStage() {
   const host = useRef<HTMLDivElement>(null)
   const [failed, setFailed] = useState(false)
@@ -55,7 +58,16 @@ export default function ArchiveStage() {
         // all — the Index was something you fell through rather than something you
         // could stop and use. The entry bridge carries a matching +100svh so its own
         // flight keeps the pace tuned for it.
-        ranges.entry = { start: ranges.index!.end + innerHeight, end: ranges.entry!.end }
+        // The Index is a place to stop, not something to fall through. One screen
+        // of dwell was not enough to read as a rest: the reader scrolled once and
+        // the camera was already leaving for About. Entry now waits INDEX_DWELL
+        // screens, and clicking the Index (seekArchiveChapter) remains the fast path
+        // that skips the wait entirely.
+        //
+        // Deliberately NOT gating entry on the click alone: a reader who only
+        // scrolls would then pass the whole dwell and arrive in About's body with
+        // the entry flight never played.
+        ranges.entry = { start: ranges.index!.end + innerHeight * INDEX_DWELL, end: ranges.entry!.end }
         const pages: Record<string, ProjectionLayout> = {}
         for (const track of ['about-life', 'life-frame', 'frame-stack', 'stack-work', 'work-contact']) for (const kind of ['target', 'source']) {
           const page = document.querySelector<HTMLElement>(`[data-archive-track="${track}"] ${kind === 'target' ? '.archive-chapter-bridge__page' : '.archive-bridge__page--source'}`)
