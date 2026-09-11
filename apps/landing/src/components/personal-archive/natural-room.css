@@ -116,9 +116,22 @@
   .footer__meta a:hover { color: var(--fg); }
   .contact__btn:focus-visible { outline-color: var(--accent-warm); }
   .contact__iris-goo { fill: var(--archive-surface); }
-  /* Media can be dark; that local art direction never becomes the reading paper. */
-  :is(#projects, [data-archive-clone='projects']) :is(.bento-tile, .project-glass) {
+  /* Media can be dark; that local art direction never becomes the reading paper.
+     These tokens belong to the surfaces that actually paint dark, not to the
+     wrapper around them. `.project-glass` was in this list and paints nothing at
+     all — it is a transparent Canvas UI effect host — so every project card inside
+     it inherited light-on-dark type and sat on the paper at a measured contrast
+     ratio of 1.0. The card copy was not merely hard to read, it was the same
+     lightness as its background. */
+  :is(#projects, [data-archive-clone='projects'])
+    :is(.bento-tile, .media-frame, .media-thumb, .project-carousel, .project-dialog) {
     --fg: #eee9df; --fg-soft: #bcb7ae; --fg-mute: #99968f; --bg-elev: #171b1d;
+  }
+  /* …and back again for the one frame that depicts a light application window.
+     `.media-frame--data` paints #f4f5f7, so inheriting the dark-media tokens put
+     its label at contrast 1.11 — the same failure, one level deeper. */
+  :is(#projects, [data-archive-clone='projects']) .media-frame--data {
+    --fg: #1a1b1e; --fg-soft: #43464c; --fg-mute: #5b5f66; --bg-elev: #e9ebef;
   }
   .archive-return { padding: 10px 14px; color: #eee9df; background: rgb(42 33 23 / 72%); border: 1px solid #fff2; border-radius: 2px; }
   .archive-bridge__footer { color: #f3ebdf; text-shadow: 0 1px 8px #21170f; }
