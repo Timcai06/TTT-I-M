@@ -203,13 +203,13 @@ export default function AccordionGallery({
             // against a freshly measured spacer, then re-assert once after the
             // refresh frame so Lenis cannot restore its pre-click scroll value.
             requestScrollRefresh(true)
-            scrollToChapter(chapterId, { immediate: true, updateHash: true })
+            void scrollToChapter(chapterId, { immediate: true, updateHash: true })
             window.cancelAnimationFrame(navigationFrameRef.current)
             navigationFrameRef.current = window.requestAnimationFrame(() => {
               navigationFrameRef.current = 0
               if (!mountedRef.current) return
               requestScrollRefresh(true)
-              scrollToChapter(chapterId, { immediate: true })
+              void scrollToChapter(chapterId, { immediate: true })
               if (keyboardActivation) {
                 document.getElementById(chapterId)?.focus({ preventScroll: true })
               }
@@ -227,7 +227,7 @@ export default function AccordionGallery({
           commit()
           return
         }
-        scrollToChapter(chapterId, { updateHash: true })
+        void scrollToChapter(chapterId, { updateHash: true })
       }
     }
   }

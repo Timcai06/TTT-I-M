@@ -120,8 +120,10 @@ export function createArchiveBackdrop(model: Object3D) {
 
   const rearHome = rear.position.clone()
   const rearCentre = authoredCentre(rear)
-  const material = rear instanceof Mesh ? rear.material : null
-  const glow = material instanceof MeshStandardMaterial ? material : null
+  // Narrowed in one step: `instanceof Mesh` on a generic class widens to
+  // Mesh<any, any, any>, so binding `rear.material` to a variable first brought an
+  // `any` along with it. Testing the material directly narrows without one.
+  const glow = rear instanceof Mesh && rear.material instanceof MeshStandardMaterial ? rear.material : null
   const glowBase = glow?.emissiveIntensity ?? 1
   const live = glow ? animateSky(glow) : null
 

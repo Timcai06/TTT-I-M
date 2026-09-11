@@ -336,7 +336,9 @@ export function useWholeSitePreload(): WholeSitePreloadState {
             if (lifecycle.signal.aborted) break
           }
         }
-        if (lastError) throw lastError
+        // Rethrown as an Error: `lastError` is unknown, and a task that rejected
+        // with something else used to leave the catch below with nothing to report.
+        if (lastError) throw lastError instanceof Error ? lastError : new Error(typeof lastError === 'string' ? lastError : JSON.stringify(lastError))
         debug?.finish(index)
       } catch (error) {
         if (lifecycle.signal.aborted) { running.delete(task); return }
