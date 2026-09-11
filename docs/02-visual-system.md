@@ -23,3 +23,38 @@
 ## Layout Rules
 - **Frame (Photography)**: Editorial-level whitespace. Do not cram images. Let them breathe like in a high-end magazine or gallery.
 - **Hero/About**: 3D and particle systems should frame and enhance the typography, not overpower it. Typography is the core architecture.
+
+## Corner Radius (design language)
+
+Every radius used to be a one-off. The only accidental clusters were 18px and
+12px, and the enlarged Index frame's 44px was unique — which is a problem, because
+that enlarged frame is the shape the work is meant to be recognised by. Four steps
+in `packages/tokens/src/tokens.css` absorb all of it, mirrored as `radii` in
+`packages/tokens/src/index.ts`:
+
+| token | value | used for |
+| --- | --- | --- |
+| `--radius-sm` | 12px | dialogs, carousels, small media frames |
+| `--radius-md` | 18px | panels, buttons, bento cards, footer |
+| `--radius-lg` | 24px | scroll-expand frame, border-glow cards |
+| `--radius-signature` | 44px | the enlarged Index frame, and only it |
+
+Pick a step. Do not introduce a fifth value, and do not reach for
+`--radius-signature` for anything that is not the Index: it is a signature because
+it appears once.
+
+**Never on a projected surface.** `.archive-bridge__page`,
+`.archive-chapter-bridge__page`, `.archive-bridge__page--source` and
+`.archive-handoff-page` carry an inline `matrix3d` homography. Their corners are
+the seam the projection hides; a radius there cuts into the quad and shows the room
+behind it. `tests/build/chapter-state-guards.mjs` fails the build if one appears.
+The Index frame is the exception that proves it — its `clip-path` stays at
+`inset(0 0 round 0)` until the panel has un-projected to a flat rect.
+
+## Sound
+
+The room is scored with its own materials, not with music: an interior bed, a
+window bed that opens as the camera approaches the opening, and four cues that are
+recordings of paper, a drawer and a book. Provenance and processing are recorded in
+`THIRD_PARTY_NOTICES.md`. Sound is opt-in and off by default; nothing in the visual
+narrative may depend on it.

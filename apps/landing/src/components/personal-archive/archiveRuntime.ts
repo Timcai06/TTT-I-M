@@ -13,6 +13,7 @@ import modelUrl from '../../assets/personal-archive/personal-space.glb?url'
 import type { ArchiveView, SpatialShot } from './archiveDirector'
 import { createArchiveAtmosphere } from './archiveAtmosphere'
 import { createArchiveBackdrop } from './archiveBackdrop'
+import { publishListenerPosition, resetListenerPosition } from '../../lib/sound/roomListener'
 import { createArchiveLighting } from './archiveRuntimeLighting'
 import { clearSamplePresentation, presentSampleFrame, projectArchiveQuad, samplePageLayout } from './archiveReadingSurface'
 import { createArchiveSignal } from './archiveRuntimeSignal'
@@ -103,7 +104,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
   const assetHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('')
   const model = await new GLTFLoader().parseAsync(bytes, '')
   let lease: ContextLease | undefined, renderer: WebGLRenderer | undefined
-  const cleanup: (() => void)[] = [() => disposeModel(model)]
+  const cleanup: (() => void)[] = [() => disposeModel(model), resetListenerPosition]
   try {
     signal.throwIfAborted(); lease = acquireRetainedContext('personal-archive-shared')
     renderer = new WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
@@ -343,6 +344,9 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         // Slide the outside view before anything reads the scene, so the window can
         // never frame past the edge of it from any authored position.
         backdrop?.update(camera.position, performance.now() / 1000)
+        // Same position, same frame: the window ambience has to track the view it
+        // belongs to, not a value sampled somewhere else a frame later.
+        publishListenerPosition(camera.position)
         trace.push('camera')
         const pageLayout = (element: HTMLElement, kind: 'source' | 'target') => {
           const snapshot = layout.pages[`${position.segment}:${kind}`]

@@ -26,7 +26,7 @@ import { Box3, Mesh, MeshStandardMaterial, Vector3, type Object3D } from 'three'
  * Setting it directly stacks the two and throws the panel out of view — which is
  * what turned the window beige, showing the bare scene background.
  */
-const WINDOW_CENTRE = new Vector3(.2, 1.67, -1.515)
+export const WINDOW_CENTRE = new Vector3(.2, 1.67, -1.515)
 /** Window half-width is 1.21m against a 5m panel half-width, so 4.13 is the hard
  *  ceiling; 3.4 leaves margin for the corner rays and for pointer parallax. */
 const MAGNIFICATION = 3.4

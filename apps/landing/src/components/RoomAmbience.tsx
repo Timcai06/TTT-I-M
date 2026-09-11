@@ -1,92 +1,45 @@
 import { useEffect } from 'react'
 import { useSound } from '../lib/sound/SoundContext'
+import { getWindowProximity } from '../lib/sound/roomListener'
 
 /**
- * The air outside the window, synthesised rather than sampled.
+ * Opens and closes the window on the ear as the camera moves.
  *
- * Wind is broadband noise shaped by a slowly moving filter, so generating it costs
- * a two-second buffer and two oscillators instead of a looping file — and a loop of
- * that length always announces its seam. It also means the room has ambience
- * without waiting on an asset that does not exist yet.
+ * This used to synthesise wind — brown noise through a swept lowpass, in an
+ * AudioContext of its own. Two things were wrong with that. The listener is sitting
+ * *inside* a room, where wind is not a sound that exists; and a second AudioContext
+ * meant the site's mute did not reach it. Both beds are now real recordings owned by
+ * SoundProvider, under the one master gain, so muting mutes everything and film mode
+ * ducks the room with a single ramp.
  *
- * Its own AudioContext, deliberately: SoundProvider owns a complete cue engine and
- * does not expose its context, and a bed that runs for the whole visit should not
- * be able to disturb the cross-fades of something that plays for eight seconds.
- * Created on the toggle, which is a real gesture, so autoplay policy is satisfied.
+ * The component itself no longer makes any sound. It does one job: read the
+ * proximity the archive's frame commit publishes and hand it to the audio graph.
+ * `setAmbienceLevel` glides, so this can write every frame without stepping.
  */
-const BUFFER_SECONDS = 2
-const BED_GAIN = .055
+/** The outside is never quite shut out — a room with an opening in it still has an
+ *  outside, even from the far wall. */
+const WINDOW_FLOOR = 0.12
+const WINDOW_CEILING = 1
 
 export default function RoomAmbience() {
-  const { enabled } = useSound()
+  const { enabled, setAmbienceLevel } = useSound()
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return
-    const AudioContextClass = window.AudioContext
-    if (!AudioContextClass) return
-
-    let context: AudioContext | null = null
-    try { context = new AudioContextClass() } catch { return }
-    const ctx = context
-
-    const frames = Math.floor(ctx.sampleRate * BUFFER_SECONDS)
-    const buffer = ctx.createBuffer(1, frames, ctx.sampleRate)
-    const channel = buffer.getChannelData(0)
-    // Brown-ish noise: integrating white noise tilts the spectrum downward, which
-    // is what separates wind from hiss.
-    let last = 0
-    for (let i = 0; i < frames; i++) {
-      const white = Math.random() * 2 - 1
-      last = (last + white * .02) / 1.02
-      channel[i] = last * 3.2
+    let frame = 0
+    let last = -1
+    const tick = () => {
+      frame = requestAnimationFrame(tick)
+      const level = WINDOW_FLOOR + (WINDOW_CEILING - WINDOW_FLOOR) * getWindowProximity()
+      // A GainNode automation event per frame for a value that has not moved is
+      // pure cost; the ear cannot resolve a hundredth of a gain step anyway.
+      if (Math.abs(level - last) < 0.01) return
+      last = level
+      setAmbienceLevel('window', level)
     }
-
-    const source = ctx.createBufferSource()
-    source.buffer = buffer
-    source.loop = true
-
-    const band = ctx.createBiquadFilter()
-    band.type = 'lowpass'
-    band.frequency.value = 480
-    band.Q.value = .7
-
-    const bed = ctx.createGain()
-    bed.gain.value = 0
-
-    // Gusts: one slow sweep of the filter, one slower swell of level, at different
-    // periods so they never line up into an audible cycle.
-    const sweep = ctx.createOscillator()
-    sweep.frequency.value = .041
-    const sweepDepth = ctx.createGain()
-    sweepDepth.gain.value = 240
-    sweep.connect(sweepDepth).connect(band.frequency)
-
-    const swell = ctx.createOscillator()
-    swell.frequency.value = .027
-    const swellDepth = ctx.createGain()
-    swellDepth.gain.value = BED_GAIN * .45
-    swell.connect(swellDepth).connect(bed.gain)
-
-    source.connect(band).connect(bed).connect(ctx.destination)
-
-    const now = ctx.currentTime
-    bed.gain.setValueAtTime(0, now)
-    bed.gain.linearRampToValueAtTime(BED_GAIN, now + 3.5)
-
-    try { source.start(); sweep.start(); swell.start() } catch { /* already started */ }
-    void ctx.resume().catch(() => undefined)
-
-    return () => {
-      const end = ctx.currentTime
-      bed.gain.cancelScheduledValues(end)
-      bed.gain.setValueAtTime(bed.gain.value, end)
-      bed.gain.linearRampToValueAtTime(0, end + .4)
-      window.setTimeout(() => {
-        try { source.stop(); sweep.stop(); swell.stop() } catch { /* already stopped */ }
-        void ctx.close().catch(() => undefined)
-      }, 500)
-    }
-  }, [enabled])
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [enabled, setAmbienceLevel])
 
   return null
 }

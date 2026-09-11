@@ -8,25 +8,40 @@ import {
 } from 'react'
 import {
   SoundContext,
+  type AmbienceLayer,
   type SoundContextValue,
   type SoundCue,
 } from './SoundContext'
-import { getPreparedSoundtrack } from '../resources/mediaCache'
+import { ROOM_AUDIO, getPreparedRoomAudio, type RoomAudioName } from '../resources/mediaCache'
 
-type Segment = { offset: number; duration: number }
-
-const SEGMENTS: Record<SoundCue, Segment> = {
-  entry: { offset: 0, duration: 4.5 },
-  query: { offset: 5, duration: 7 },
-  evidence: { offset: 12, duration: 5 },
-  synthesis: { offset: 22, duration: 8 },
+/**
+ * One cue is one recording now, not a window into a longer one.
+ *
+ * `SEGMENTS` used to map these four names to byte offsets into
+ * sciscope-soundtrack.mp3, so every chapter arrival dropped the reader into the
+ * middle of a product film's score. The arc the names describe is unchanged —
+ * arrival, looking, evidence, the closing statement — but it is told in the room's
+ * own materials: a page turned, pages flicked through, a drawer pulled open, the
+ * book shut. See `../resources/mediaCache` for where the files come from.
+ */
+const CUE_AUDIO: Record<SoundCue, RoomAudioName> = {
+  entry: 'entry',
+  query: 'query',
+  evidence: 'evidence',
+  synthesis: 'synthesis',
 }
 
 const STORAGE_KEY = 'tim-portfolio-sound'
-const SOUNDTRACK_URL = '/projects/sciscope/sciscope-soundtrack.mp3'
 const FADE_SECONDS = 0.18
 const MASTER_GAIN = 0.28
 const SOUNDTRACK_TIMEOUT_MS = 12_000
+/** The interior bed is constant and the window rides on top of it. Both sit under
+ *  one bus so film mode can duck the whole room with a single ramp. */
+const INTERIOR_LEVEL = 0.9
+const AMBIENCE_FADE_SECONDS = 3.5
+/** Long enough that a scroll never steps the window level audibly, short enough
+ *  that arriving at the window still feels like arriving. */
+const AMBIENCE_TRACK_SECONDS = 0.45
 
 function readStoredPreference() {
   if (typeof window === 'undefined') return false
@@ -43,14 +58,19 @@ type ActiveSource = {
   gain: GainNode
 }
 
+type Bed = { source: AudioBufferSourceNode; gain: GainNode }
+
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabledState] = useState(readStoredPreference)
   const enabledRef = useRef(enabled)
   const contextRef = useRef<AudioContext | null>(null)
   const masterRef = useRef<GainNode | null>(null)
-  const bufferRef = useRef<AudioBuffer | null>(null)
-  const bufferPromiseRef = useRef<Promise<AudioBuffer> | null>(null)
-  const bufferAbortRef = useRef<AbortController | null>(null)
+  const ambienceBusRef = useRef<GainNode | null>(null)
+  const bedsRef = useRef(new Map<AmbienceLayer, Bed>())
+  const ambienceStartedRef = useRef(false)
+  const buffersRef = useRef(new Map<RoomAudioName, AudioBuffer>())
+  const bufferPromisesRef = useRef(new Map<RoomAudioName, Promise<AudioBuffer>>())
+  const bufferAbortRef = useRef(new Map<RoomAudioName, AbortController>())
   const bufferGenerationRef = useRef(0)
   const activeRef = useRef<ActiveSource | null>(null)
   const requestedCueRef = useRef<SoundCue | null>(null)
@@ -67,8 +87,15 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       const master = context.createGain()
       master.gain.value = MASTER_GAIN
       master.connect(context.destination)
+      // The beds hang off the master rather than off a second AudioContext of their
+      // own — which is what the synthesised wind used to do, and why muting the site
+      // left it running. One toggle now governs everything the page can make.
+      const ambience = context.createGain()
+      ambience.gain.value = 1
+      ambience.connect(master)
       contextRef.current = context
       masterRef.current = master
+      ambienceBusRef.current = ambience
       return context
     } catch {
       return null
@@ -88,58 +115,120 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     return context
   }, [ensureContext])
 
-  const ensureBuffer = useCallback(async () => {
-    if (bufferRef.current) return bufferRef.current
-    const prepared = getPreparedSoundtrack()
-    if (prepared) { bufferRef.current = prepared; return prepared }
-    if (bufferPromiseRef.current) return bufferPromiseRef.current
+  const ensureBuffer = useCallback(async (name: RoomAudioName) => {
+    const cached = buffersRef.current.get(name)
+    if (cached) return cached
+    const prepared = getPreparedRoomAudio(name)
+    if (prepared) { buffersRef.current.set(name, prepared); return prepared }
+    const pending = bufferPromisesRef.current.get(name)
+    if (pending) return pending
     const context = ensureContext()
     if (!context) throw new Error('Web Audio is unavailable')
     const controller = new AbortController()
     const generation = ++bufferGenerationRef.current
     const timeout = window.setTimeout(() => {
-      controller.abort(new Error(`Soundtrack request timed out after ${SOUNDTRACK_TIMEOUT_MS}ms`))
+      controller.abort(new Error(`Room audio request timed out after ${SOUNDTRACK_TIMEOUT_MS}ms`))
     }, SOUNDTRACK_TIMEOUT_MS)
-    bufferAbortRef.current = controller
-    const request = fetch(SOUNDTRACK_URL, { signal: controller.signal })
+    bufferAbortRef.current.set(name, controller)
+    const request = fetch(ROOM_AUDIO[name], { signal: controller.signal })
       .then((response) => {
-        if (!response.ok) throw new Error(`Soundtrack request failed: ${response.status}`)
+        if (!response.ok) throw new Error(`Room audio request failed: ${response.status}`)
         return response.arrayBuffer()
       })
       .finally(() => {
         window.clearTimeout(timeout)
-        if (bufferAbortRef.current === controller) bufferAbortRef.current = null
+        if (bufferAbortRef.current.get(name) === controller) bufferAbortRef.current.delete(name)
       })
       .then((data) => {
         if (controller.signal.aborted || generation !== bufferGenerationRef.current) {
           throw controller.signal.reason instanceof Error
             ? controller.signal.reason
-            : new Error('Soundtrack request was superseded')
+            : new Error('Room audio request was superseded')
         }
         return context.decodeAudioData(data)
       })
       .then((buffer) => {
-        if (controller.signal.aborted || generation !== bufferGenerationRef.current) {
+        if (controller.signal.aborted) {
           throw controller.signal.reason instanceof Error
             ? controller.signal.reason
-            : new Error('Soundtrack decode completed after cancellation')
+            : new Error('Room audio decode completed after cancellation')
         }
-        bufferRef.current = buffer
+        buffersRef.current.set(name, buffer)
         return buffer
       })
       .catch((error) => {
-        if (bufferPromiseRef.current === request) bufferPromiseRef.current = null
+        if (bufferPromisesRef.current.get(name) === request) bufferPromisesRef.current.delete(name)
         throw error
       })
-    bufferPromiseRef.current = request
+    bufferPromisesRef.current.set(name, request)
     return request
   }, [ensureContext])
 
   const cancelBufferRequest = useCallback((reason: string) => {
     bufferGenerationRef.current += 1
-    bufferAbortRef.current?.abort(new Error(reason))
-    bufferAbortRef.current = null
-    bufferPromiseRef.current = null
+    for (const controller of bufferAbortRef.current.values()) controller.abort(new Error(reason))
+    bufferAbortRef.current.clear()
+    bufferPromisesRef.current.clear()
+  }, [])
+
+  const stopBeds = useCallback((fade: number) => {
+    ambienceStartedRef.current = false
+    const context = contextRef.current
+    const beds = bedsRef.current
+    bedsRef.current = new Map()
+    if (!context) return
+    const end = context.currentTime
+    for (const bed of beds.values()) {
+      bed.gain.gain.cancelScheduledValues(end)
+      bed.gain.gain.setValueAtTime(bed.gain.gain.value, end)
+      bed.gain.gain.linearRampToValueAtTime(0, end + fade)
+      window.setTimeout(() => {
+        try { bed.source.stop() } catch { /* the bed may already have been stopped */ }
+        try { bed.source.disconnect(); bed.gain.disconnect() } catch { /* already detached */ }
+      }, fade * 1000 + 80)
+    }
+  }, [])
+
+  /**
+   * Both beds loop for the whole visit. They are seamless by construction — each
+   * file's tail is equal-power crossfaded into its own head — so `loop` needs no
+   * loopStart/loopEnd window, and the MP3s decode to an exact sample count.
+   */
+  const startBeds = useCallback(async () => {
+    if (ambienceStartedRef.current) return
+    ambienceStartedRef.current = true
+    const context = await activateContext()
+    const bus = ambienceBusRef.current
+    if (!context || !bus || !enabledRef.current) { ambienceStartedRef.current = false; return }
+    const layers: AmbienceLayer[] = ['interior', 'window']
+    await Promise.allSettled(layers.map(async (layer) => {
+      const buffer = await ensureBuffer(layer)
+      if (!enabledRef.current || !ambienceStartedRef.current || bedsRef.current.has(layer)) return
+      const source = context.createBufferSource()
+      const gain = context.createGain()
+      source.buffer = buffer
+      source.loop = true
+      gain.gain.setValueAtTime(0, context.currentTime)
+      // The window layer opens from silence and is driven by the camera; the
+      // interior one simply arrives.
+      if (layer === 'interior') gain.gain.linearRampToValueAtTime(INTERIOR_LEVEL, context.currentTime + AMBIENCE_FADE_SECONDS)
+      source.connect(gain)
+      gain.connect(bus)
+      try { source.start() } catch { /* a re-entrant start is not fatal */ }
+      bedsRef.current.set(layer, { source, gain })
+    }))
+  }, [activateContext, ensureBuffer])
+
+  /**
+   * Called from the archive's frame loop via RoomAmbience. Uses setTargetAtTime so
+   * a value that moves every frame produces one smooth glide rather than a stair.
+   */
+  const setAmbienceLevel = useCallback((layer: AmbienceLayer, level: number) => {
+    const context = contextRef.current
+    const bed = bedsRef.current.get(layer)
+    if (!context || !bed) return
+    const clamped = level < 0 ? 0 : level > 1 ? 1 : level
+    bed.gain.gain.setTargetAtTime(clamped, context.currentTime, AMBIENCE_TRACK_SECONDS)
   }, [])
 
   const fadeActive = useCallback(() => {
@@ -189,11 +278,10 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     requestedCueRef.current = cue
     fadeActive()
 
-    void Promise.all([activateContext(), ensureBuffer()])
+    void Promise.all([activateContext(), ensureBuffer(CUE_AUDIO[cue])])
       .then(([context, buffer]) => {
         if (!context || context.state !== 'running') return
         if (!enabledRef.current || filmModeRef.current || requestedCueRef.current !== cue) return
-        const segment = SEGMENTS[cue]
         let source: AudioBufferSourceNode | null = null
         let gain: GainNode | null = null
         try {
@@ -215,7 +303,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
               // Immediate visibility/unmount cleanup may have detached them first.
             }
           }, { once: true })
-          source.start(0, segment.offset, segment.duration)
+          // The whole file: a cue is one recorded event, so there is no window to
+          // pick out of it any more.
+          source.start()
           activeRef.current = { cue, source, gain }
         } catch (error) {
           try {
@@ -244,19 +334,28 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       // Storage can be disabled by privacy policy; sound still works for this visit.
     }
     if (!next) {
-      cancelBufferRequest('Sound disabled before soundtrack loading completed')
+      cancelBufferRequest('Sound disabled before room audio loading completed')
       filmRef.current?.pause()
       stopActive()
+      stopBeds(0.4)
       return
     }
     void activateContext()
-    void ensureBuffer().catch(() => undefined)
-  }, [activateContext, cancelBufferRequest, ensureBuffer, stopActive])
+    void startBeds()
+  }, [activateContext, cancelBufferRequest, startBeds, stopActive, stopBeds])
 
   const enterFilmMode = useCallback(async (video: HTMLVideoElement) => {
     filmModeRef.current = true
     filmRef.current = video
     stopActive()
+    // Duck the room rather than tear it down: the film is a panel inside the room,
+    // and the beds have to be there again the moment it closes.
+    const context = contextRef.current
+    const bus = ambienceBusRef.current
+    if (context && bus) {
+      bus.gain.cancelScheduledValues(context.currentTime)
+      bus.gain.setTargetAtTime(0, context.currentTime, 0.25)
+    }
     video.muted = !enabledRef.current
     video.volume = 0.8
     try {
@@ -272,12 +371,19 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     filmRef.current = null
     filmModeRef.current = false
     requestedCueRef.current = null
+    const context = contextRef.current
+    const bus = ambienceBusRef.current
+    if (context && bus) {
+      bus.gain.cancelScheduledValues(context.currentTime)
+      bus.gain.setTargetAtTime(1, context.currentTime, 0.6)
+    }
   }, [])
 
   useEffect(() => {
     if (!enabled) return
+    void startBeds()
     const unlock = () => {
-      void activateContext()
+      void activateContext().then(() => startBeds())
       window.removeEventListener('pointerdown', unlock, true)
       window.removeEventListener('keydown', unlock, true)
     }
@@ -287,7 +393,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('pointerdown', unlock, true)
       window.removeEventListener('keydown', unlock, true)
     }
-  }, [activateContext, enabled])
+  }, [activateContext, enabled, startBeds])
 
   useEffect(() => {
     const onVisibility = () => {
@@ -295,7 +401,12 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         filmRef.current?.pause()
         requestedCueRef.current = null
         disposeActive()
+        // The beds are left connected: suspending the context stops them without
+        // losing their loop position, and resuming is what the reader expects when
+        // they come back to the tab.
         void contextRef.current?.suspend().catch(() => undefined)
+      } else if (enabledRef.current && !filmModeRef.current) {
+        void contextRef.current?.resume().catch(() => undefined)
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -306,28 +417,33 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     cancelBufferRequest('Sound provider unmounted')
     filmRef.current?.pause()
     disposeActive()
+    stopBeds(0)
     const master = masterRef.current
+    const ambience = ambienceBusRef.current
     masterRef.current = null
+    ambienceBusRef.current = null
     try {
+      ambience?.disconnect()
       master?.disconnect()
     } catch {
       // The AudioContext may already have detached its destination graph.
     }
-    bufferRef.current = null
-    bufferPromiseRef.current = null
+    buffersRef.current.clear()
+    bufferPromisesRef.current.clear()
     const context = contextRef.current
     contextRef.current = null
     if (context) void context.close().catch(() => undefined)
-  }, [cancelBufferRequest, disposeActive])
+  }, [cancelBufferRequest, disposeActive, stopBeds])
 
   const value = useMemo<SoundContextValue>(() => ({
     enabled,
     setEnabled,
     playSegment,
     stopActive,
+    setAmbienceLevel,
     enterFilmMode,
     exitFilmMode,
-  }), [enabled, enterFilmMode, exitFilmMode, playSegment, setEnabled, stopActive])
+  }), [enabled, enterFilmMode, exitFilmMode, playSegment, setAmbienceLevel, setEnabled, stopActive])
 
   return <SoundContext.Provider value={value}>{children}</SoundContext.Provider>
 }

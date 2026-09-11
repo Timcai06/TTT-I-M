@@ -44,6 +44,12 @@ const required = [
   'public/projects/sciscope/sciscope-concept-film.mp4',
   'public/projects/sciscope/sciscope-film-poster.jpg',
   'public/projects/sciscope/sciscope-soundtrack.mp3',
+  'public/projects/room/room-interior.mp3',
+  'public/projects/room/room-window.mp3',
+  'public/projects/room/cue-entry.mp3',
+  'public/projects/room/cue-query.mp3',
+  'public/projects/room/cue-evidence.mp3',
+  'public/projects/room/cue-synthesis.mp3',
 ]
 
 for (const path of required) {
@@ -535,14 +541,48 @@ if (!app.includes('SoundProvider') || !nav.includes('aria-pressed={soundEnabled}
 for (const requiredSoundToken of ['MASTER_GAIN = 0.28', 'FADE_SECONDS = 0.18', 'SOUNDTRACK_TIMEOUT_MS', 'bufferGenerationRef', 'controller.signal.aborted', 'visibilitychange', 'AudioBufferSourceNode']) {
   if (!soundProvider.includes(requiredSoundToken)) throw new Error(`SoundProvider is missing ${requiredSoundToken}.`)
 }
-if (/sciscope-concept-film|sciscope-soundtrack/.test(loader)) {
-  throw new Error('SciScope film/audio must not enter the critical Loader manifest.')
+// Nothing audible may sit on the critical path. The intro has to be able to finish
+// for a reader who never turns sound on, and the room audio is six more requests.
+if (/sciscope-concept-film|sciscope-soundtrack|projects\/room\//.test(loader)) {
+  throw new Error('Film and room audio must not enter the critical Loader manifest.')
 }
 
 const filmBytes = statSync('public/projects/sciscope/sciscope-concept-film.mp4').size
 const soundtrackBytes = statSync('public/projects/sciscope/sciscope-soundtrack.mp3').size
 if (filmBytes > 5_500_000) throw new Error(`SciScope film exceeds 5.5 MB: ${filmBytes}`)
 if (soundtrackBytes > 700_000) throw new Error(`SciScope soundtrack exceeds 700 KB: ${soundtrackBytes}`)
+// The beds loop for the whole visit and the cues fire on every chapter change, so
+// they are fetched by anyone who enables sound. The two beds are 30 s and 24 s of
+// mono at 56-64 kbps; a cue is one event. Anything past these ceilings means a file
+// was replaced with something that is not the same kind of asset.
+const roomAudioCeilings = {
+  'room-interior.mp3': 320_000,
+  'room-window.mp3': 320_000,
+  'cue-entry.mp3': 90_000,
+  'cue-query.mp3': 90_000,
+  'cue-evidence.mp3': 90_000,
+  'cue-synthesis.mp3': 90_000,
+}
+let roomAudioBytes = 0
+for (const [name, ceiling] of Object.entries(roomAudioCeilings)) {
+  const bytes = statSync(`public/projects/room/${name}`).size
+  roomAudioBytes += bytes
+  if (bytes > ceiling) throw new Error(`Room audio ${name} exceeds ${ceiling} bytes: ${bytes}`)
+}
+if (roomAudioBytes > 700_000) throw new Error(`Room audio totals more than one soundtrack: ${roomAudioBytes}`)
+// The wind was synthesised in an AudioContext of its own, which the site mute could
+// not reach and which made weather inside a room. Both beds are files now, and both
+// hang off the shared master gain.
+const roomAmbience = read('src/components/RoomAmbience.tsx')
+if (/new\s+AudioContextClass|createOscillator|Math\.random/.test(roomAmbience)) {
+  throw new Error('RoomAmbience must not own an AudioContext or synthesise its bed; route through SoundProvider.')
+}
+if (!roomAmbience.includes('setAmbienceLevel') || !roomAmbience.includes('getWindowProximity')) {
+  throw new Error('RoomAmbience must drive the window bed from the published camera proximity.')
+}
+if (!soundProvider.includes('ambienceBusRef') || !soundProvider.includes('INTERIOR_LEVEL')) {
+  throw new Error('SoundProvider must own the ambience bus so one mute governs beds and cues.')
+}
 const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')
 if (!sparkPortfolio.includes("set('particleAmount', 0.08, 1.4)")) {
   throw new Error('The portfolio Spark adapter must retain its controllable chapter-density range.')

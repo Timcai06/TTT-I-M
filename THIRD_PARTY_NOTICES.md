@@ -50,3 +50,32 @@ experience:
 
 Each package's complete license text remains available in its installed package
 and upstream repository. The software is provided without warranty.
+
+## Room audio
+
+The six audio files under `apps/landing/public/projects/room/` are derived from
+public-domain recordings published on pdsounds.org and mirrored on Wikimedia
+Commons. pdsounds required every contributor to release their recordings into the
+public domain, so no attribution is owed; the credits below are recorded because
+knowing what a file is made of matters more than the licence does.
+
+- `room-interior.mp3` — from "Ambient Classroom-Mono" by rcrossley. A 30 s
+  seamless loop cut from 18–48 s of the source, high-passed at 40 Hz to remove the
+  microphone's DC offset and low-passed at 2.4 kHz, which also puts any residual
+  speech below intelligibility. The room keeps only the ventilation body.
+- `room-window.mp3` — from "Gentle breeze with a Blackcap and a Chaffinch
+  singing" by ezwa. A 24 s seamless loop, high-passed hard at 280 Hz: the source's
+  low end is wind blowing on the microphone, and a listener sitting inside a room
+  should not hear weather. What survives is the birds.
+- `cue-entry.mp3` — from "turning a page" by planish.
+- `cue-query.mp3`, `cue-synthesis.mp3` — from "Leafing through pages, flicking
+  pages, shutting book" by cori; the flicking passage and the closing book.
+- `cue-evidence.mp3` — from "Wooden desk drawer" by an uncredited pdsounds
+  contributor; the drawer being pulled open.
+
+Both loops are seamless by construction: each file's tail is equal-power
+crossfaded into its own head, so `AudioBufferSourceNode.loop` needs no
+loopStart/loopEnd window. All six are mono, 44.1 kHz, and encoded with LAME such
+that they decode to an exact sample count.
+
+Source: https://commons.wikimedia.org/wiki/Category:PDsounds.org

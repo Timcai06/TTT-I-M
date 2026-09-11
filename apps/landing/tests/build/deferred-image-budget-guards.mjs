@@ -78,7 +78,23 @@ const desktopFrameBytes = Object.values(frameSources).reduce((sum, candidates) =
 const modelFiles = readdirSync('dist/assets').filter(name => /^personal-space-.*\.glb$/.test(name))
 if (modelFiles.length !== 1) throw new Error('Desktop boot requires exactly one archive asset')
 const modelBytes = statSync(join('dist/assets', modelFiles[0])).size
-const mediaBytes = ['sciscope-concept-film.mp4', 'sciscope-soundtrack.mp3'].reduce((sum, name) => sum + statSync(join('dist/projects/sciscope', name)).size, 0)
+// Audio was counted by naming two files under dist/projects/sciscope, so the six
+// room-audio files added later were silently free against the 50 MiB ceiling. Scan
+// the prepared roots for audio instead of listing names, and the next file to be
+// added is counted whether or not anyone remembers to come back here.
+const audioBytes = (() => {
+  let total = 0
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else if (/\.(mp3|m4a|aac|ogg|opus|wav|flac)$/i.test(entry.name)) total += statSync(path).size
+    }
+  }
+  walk('dist/projects')
+  return total
+})()
+const mediaBytes = statSync(join('dist/projects/sciscope', 'sciscope-concept-film.mp4')).size + audioBytes
 const desktopBytes = totalBytes - frameBytes + desktopFrameBytes + modelBytes + mediaBytes
 if (desktopBytes > 50 * 1024 * 1024) throw new Error(`Desktop prepared assets exceed 50 MiB: ${mib(desktopBytes)}`)
-console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / 50 MiB for images, room and finite media; JS/fonts budget separately.`)
+console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / 50 MiB for images, room and finite media (${mib(audioBytes)} audio); JS/fonts budget separately.`)
