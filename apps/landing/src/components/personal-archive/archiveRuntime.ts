@@ -135,8 +135,16 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         Object.values(material as Material).forEach(value => { if (value instanceof Texture) textures.add(value) })
       }
     })
+    // Raise only. This loop used to assign min(8, max) unconditionally, eleven
+    // lines after prepareArchiveMaterials had already set the device maximum on
+    // every colour, normal, roughness, AO and light map — so it silently undid
+    // that work and every surface in the room was filtered at 8 instead of the 16
+    // the hardware offers. The desk, floor and rug are seen at a steep slant from
+    // every reading pose, which is exactly where the difference shows.
+    const maxAnisotropy = gl.capabilities.getMaxAnisotropy()
     for (const texture of [...textures, ...signalPicture.textures]) {
-      texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy()); texture.needsUpdate = true; gl.initTexture(texture)
+      if (texture.anisotropy < maxAnisotropy) texture.anisotropy = maxAnisotropy
+      texture.needsUpdate = true; gl.initTexture(texture)
     }
     const context = gl.getContext()
     const webgl2 = context as WebGL2RenderingContext

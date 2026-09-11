@@ -583,6 +583,32 @@ if (!roomAmbience.includes('setAmbienceLevel') || !roomAmbience.includes('getWin
 if (!soundProvider.includes('ambienceBusRef') || !soundProvider.includes('AMBIENCE_FLOOR')) {
   throw new Error('SoundProvider must own the ambience bus so one mute governs beds and cues.')
 }
+// Printed ink, monitor UI and the lamp bulb are flat in reality too, and the
+// clear window, standby display and photographic panorama must never be broken up
+// either. The procedural roughness variation exists to stop the props reading as
+// injection-moulded; applied to any of these it would be visible as noise on a
+// surface that is meant to be perfectly even.
+const archiveMaterials = read('src/components/personal-archive/archiveMaterials.ts')
+for (const token of ['ink', 'monitor', 'screen', 'legend', 'folio', 'bulb', 'clear window', 'standby', 'panorama']) {
+  if (!archiveMaterials.includes(token)) {
+    throw new Error(`Roughness break-up must keep excluding deliberately flat surfaces: ${token}`)
+  }
+}
+for (const token of ['!material.roughnessMap', '!material.normalMap', 'archive_glass', 'vArchiveObjectPos = position']) {
+  if (!archiveMaterials.includes(token)) {
+    throw new Error(`Roughness break-up must stay scoped to unauthored, object-space surfaces: ${token}`)
+  }
+}
+// prepareArchiveMaterials sets the device maximum; a later pass used to reset every
+// texture to min(8, max) and silently undo it. Anisotropy may only be raised.
+const archiveRuntimeSource = read('src/components/personal-archive/archiveRuntime.ts')
+if (/anisotropy\s*=\s*Math\.min\(/.test(archiveRuntimeSource)) {
+  throw new Error('Archive texture anisotropy must never be capped below the device maximum.')
+}
+if (!archiveRuntimeSource.includes('if (texture.anisotropy < maxAnisotropy)')) {
+  throw new Error('Archive texture anisotropy must be raise-only.')
+}
+
 const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')
 if (!sparkPortfolio.includes("set('particleAmount', 0.08, 1.4)")) {
   throw new Error('The portfolio Spark adapter must retain its controllable chapter-density range.')
