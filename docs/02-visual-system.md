@@ -53,8 +53,10 @@ The Index frame is the exception that proves it — its `clip-path` stays at
 
 ## Sound
 
-The room is scored with its own materials, not with music: an interior bed, a
-window bed that opens as the camera approaches the opening, and four cues that are
-recordings of paper, a drawer and a book. Provenance and processing are recorded in
-`THIRD_PARTY_NOTICES.md`. Sound is opt-in and off by default; nothing in the visual
-narrative may depend on it.
+The room is scored with its own materials, not with music: one bed, which is the
+outside arriving through the window and rises as the camera approaches it, and four
+cues that are recordings of paper, a drawer and a book. There is deliberately no
+second interior layer — the available public-domain room tone carried voices, and a
+room with a single opening is honestly represented by what comes through it.
+Provenance and processing are recorded in `THIRD_PARTY_NOTICES.md`. Sound is opt-in
+and off by default; nothing in the visual narrative may depend on it.

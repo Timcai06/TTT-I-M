@@ -1,9 +1,9 @@
 import { createContext, useContext } from 'react'
 
 export type SoundCue = 'entry' | 'query' | 'evidence' | 'synthesis'
-/** The two continuous beds. `window` is driven by the camera's distance to the
- *  opening; `interior` simply runs. */
-export type AmbienceLayer = 'interior' | 'window'
+/** The room's continuous bed. Driven by the camera's distance to the opening --
+ *  the window is the only hole in the room, so it is the only thing to hear. */
+export type AmbienceLayer = 'window'
 
 export interface SoundContextValue {
   enabled: boolean

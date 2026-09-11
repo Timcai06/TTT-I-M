@@ -35,9 +35,11 @@ const STORAGE_KEY = 'tim-portfolio-sound'
 const FADE_SECONDS = 0.18
 const MASTER_GAIN = 0.28
 const SOUNDTRACK_TIMEOUT_MS = 12_000
-/** The interior bed is constant and the window rides on top of it. Both sit under
- *  one bus so film mode can duck the whole room with a single ramp. */
-const INTERIOR_LEVEL = 0.9
+/** Where the bed sits when the camera is nowhere near the window. The outside is
+ *  never shut out -- a room with an opening still has an outside from its far
+ *  wall -- so the bed rides between this and 1 rather than between 0 and 1. It is
+ *  on its own bus so film mode can duck the room with a single ramp. */
+const AMBIENCE_FLOOR = 0.34
 const AMBIENCE_FADE_SECONDS = 3.5
 /** Long enough that a scroll never steps the window level audibly, short enough
  *  that arriving at the window still feels like arriving. */
@@ -200,23 +202,25 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     const context = await activateContext()
     const bus = ambienceBusRef.current
     if (!context || !bus || !enabledRef.current) { ambienceStartedRef.current = false; return }
-    const layers: AmbienceLayer[] = ['interior', 'window']
-    await Promise.allSettled(layers.map(async (layer) => {
+    const layer: AmbienceLayer = 'window'
+    try {
       const buffer = await ensureBuffer(layer)
       if (!enabledRef.current || !ambienceStartedRef.current || bedsRef.current.has(layer)) return
       const source = context.createBufferSource()
       const gain = context.createGain()
       source.buffer = buffer
       source.loop = true
+      // Arrive at the floor, then let the camera take it from there. Opening from
+      // silence made turning sound on feel like nothing had happened.
       gain.gain.setValueAtTime(0, context.currentTime)
-      // The window layer opens from silence and is driven by the camera; the
-      // interior one simply arrives.
-      if (layer === 'interior') gain.gain.linearRampToValueAtTime(INTERIOR_LEVEL, context.currentTime + AMBIENCE_FADE_SECONDS)
+      gain.gain.linearRampToValueAtTime(AMBIENCE_FLOOR, context.currentTime + AMBIENCE_FADE_SECONDS)
       source.connect(gain)
       gain.connect(bus)
       try { source.start() } catch { /* a re-entrant start is not fatal */ }
       bedsRef.current.set(layer, { source, gain })
-    }))
+    } catch {
+      // No bed is a quieter room, not a broken one.
+    }
   }, [activateContext, ensureBuffer])
 
   /**
@@ -227,7 +231,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     const context = contextRef.current
     const bed = bedsRef.current.get(layer)
     if (!context || !bed) return
-    const clamped = level < 0 ? 0 : level > 1 ? 1 : level
+    const clamped = level < AMBIENCE_FLOOR ? AMBIENCE_FLOOR : level > 1 ? 1 : level
     bed.gain.gain.setTargetAtTime(clamped, context.currentTime, AMBIENCE_TRACK_SECONDS)
   }, [])
 
