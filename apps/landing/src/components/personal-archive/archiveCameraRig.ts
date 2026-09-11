@@ -39,6 +39,7 @@ const lookUp = new Vector3()
 const lookDir = new Vector3()
 const lookDestUp = new Vector3()
 const scratchStandoff = new Vector3()
+const scratchRetreat = new Vector3()
 
 /** How far back a handoff pulls before closing on the destination surface. */
 const STANDOFF_RATIO = 1.85
@@ -49,6 +50,21 @@ const INSPECT_FRACTION = .35
 const READING_PARALLAX_FLOOR = .22
 /** Vertical lift per metre of horizontal crossing. */
 const LIFT_PER_METRE = .45
+/**
+ * How far a crossing backs off along its own view axis mid-flight, as a multiple
+ * of the destination's fit distance.
+ *
+ * Lift alone gave every handoff height but no depth, so a short crossing between
+ * two surfaces at similar distance read as a slide across one plane. About -> Life
+ * is the worst case: .65m of horizontal run onto an envelope whose fit distance is
+ * .265m, so the camera never got far enough away for the print to be an object in
+ * a room before it was already reading it. Backing off first makes the print small
+ * and on the desk, and the push that follows is what reads as it coming out.
+ */
+const RETREAT_RATIO = 1.6
+/** Whatever the fit distance, never back off further than this: the room is small
+ *  and the wall behind the desk is closer than the arithmetic knows. */
+const MAX_RETREAT = .7
 /**
  * How far the Life -> Frame camera pulls back while the print is in flight,
  * as a multiple of the print's own fit distance. 0 reproduces the old behaviour
@@ -189,6 +205,22 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     // the descent match whatever arrival window each segment actually declares.
     camera.position.y += lift * ease(frame.position.progress, .06, .30) * (1 - intent.dolly)
     target.copy(sourceTarget).lerp(destination.center, intent.travel)
+    // The depth half of the same arc. Both ends are exactly 0 for the same reasons
+    // lift's are — it rises out of the departure and is retired by the dolly — so
+    // the endpoint poses remain the authored surface fits byte for byte. It is
+    // applied along the live view axis rather than either surface normal, because
+    // that is the axis the reader perceives as near and far, and it stays correct
+    // however the two surfaces happen to be oriented.
+    if (!carrierOwnsPath) {
+      scratchRetreat.subVectors(camera.position, target)
+      if (scratchRetreat.lengthSq() > 1e-8) {
+        const retreat = Math.min(destination.distance * RETREAT_RATIO, MAX_RETREAT)
+        camera.position.addScaledVector(
+          scratchRetreat.normalize(),
+          retreat * ease(frame.position.progress, .06, .34) * (1 - intent.dolly),
+        )
+      }
+    }
     if (frame.position.segment === 'life-frame' && anchors.FootballTransfer) {
       scratchCenter.set(0, 0, 0)
       for (const p of anchors.FootballTransfer) scratchCenter.add(scratchVec.fromArray(p))
