@@ -116,6 +116,7 @@ void test('keeps camera and presentation intent equivalent at story boundaries',
     leave: 1,
     align: 0,
     dolly: 0,
+    inspect: 0,
     arc: 0,
   })
   assert.deepEqual(lifeEnd.presentation, {

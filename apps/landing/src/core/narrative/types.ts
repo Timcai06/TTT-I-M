@@ -95,6 +95,15 @@ export type CameraIntent =
       align: number
       dolly: number
       /**
+       * A bounded push toward the destination that runs *during* a segment's own
+       * beat, separate from `dolly`, which only closes the arrival. about-life needs
+       * the camera to move in while the print is leaving the envelope, and the
+       * shared dolly cannot be brought forward for it: the Life envelope sits in a
+       * corridor between the desk and the shelf above, and every attempt put the
+       * camera into one or the other.
+       */
+      inspect: number
+      /**
        * Vestigial. The rig derived its lateral bow from this and from five
        * hand-typed per-segment constants; both were replaced by a lift derived
        * from the measured horizontal run, so archiveCameraRig no longer reads it.

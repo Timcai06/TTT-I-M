@@ -13,6 +13,7 @@ import {
 } from '../lib/loaderTiming'
 import { DOTS12, advanceLoaderSpinnerFrame, loaderSpinnerGlyph } from '../lib/spinner'
 import { useReducedMotion } from '../lib/motion'
+import { useSound } from '../lib/sound/SoundContext'
 
 // Lazy so the intro Dither shader (+ three) stays out of the eager index chunk;
 // the static `.intro` gradient is the fallback until it streams in.
@@ -57,7 +58,8 @@ function randomBaffleChar() {
 export default function Loader() {
   const panelRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
-  const countRef = useRef<HTMLSpanElement>(null)
+    const { enabled: soundEnabled, setEnabled: setSoundEnabled } = useSound()
+const countRef = useRef<HTMLSpanElement>(null)
   const barRef = useRef<HTMLSpanElement>(null)
   const exitStarted = useRef(false)
   const preloadRef = useRef<ReturnType<typeof useWholeSitePreload> | null>(null)
@@ -359,6 +361,12 @@ export default function Loader() {
         <p>还有部分内容未能准备好，请重试。</p>
         <button type="button" onClick={() => window.location.reload()}>重新加载</button>
       </div>}
+
+      <div className="intro__sound">
+        <button type="button" onClick={() => setSoundEnabled(!soundEnabled)} aria-pressed={soundEnabled}>
+          {soundEnabled ? 'Sound on' : 'Enter with sound'}
+        </button>
+      </div>
 
       <div className="intro__bar-track">
         <span className="intro__bar" ref={barRef} />

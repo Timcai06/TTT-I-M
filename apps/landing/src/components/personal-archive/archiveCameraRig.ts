@@ -42,6 +42,8 @@ const scratchStandoff = new Vector3()
 
 /** How far back a handoff pulls before closing on the destination surface. */
 const STANDOFF_RATIO = 1.85
+/** How far a mid-segment inspect push may travel toward the surface fit. */
+const INSPECT_FRACTION = .35
 /** Vertical lift per metre of horizontal crossing. */
 const LIFT_PER_METRE = .45
 /**
@@ -152,6 +154,10 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     const standoffDistance = Math.max(.35, destination.distance * STANDOFF_RATIO)
     const standoffPosition = scratchStandoff.copy(destination.center).addScaledVector(destination.normal, standoffDistance)
     camera.position.copy(sourcePosition).lerp(standoffPosition, intent.travel)
+    // Move in on the beat before the arrival does. Bounded to INSPECT_FRACTION of
+    // the way from the stand-off to the surface fit so it cannot enter the Life
+    // corridor, and monotonic with dolly so the endpoint is still the exact fit.
+    if (intent.inspect > 0) camera.position.lerp(destinationPosition, intent.inspect * INSPECT_FRACTION)
     camera.position.lerp(destinationPosition, intent.dolly)
     // Vertical arc, derived rather than authored. The five hand-typed arc triples
     // were uncorrelated with the move they described: life-frame crosses 2.35m and

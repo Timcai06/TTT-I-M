@@ -15,6 +15,7 @@ import ChapterStateProvider from './components/ChapterStateProvider'
 import ChapterThemeDriver from './components/ChapterThemeDriver'
 import { chapters } from './chapters/registry'
 import './styles/app.css'
+import ChapterSoundCues from './components/ChapterSoundCues'
 
 const ParticlePortal = lazy(() => import('./components/ParticlePortal'))
 const ProductionTelemetry = lazy(() => import('./components/ProductionTelemetry'))
@@ -90,9 +91,13 @@ export default function App() {
 
   return (
     <>
-      <Loader />
       <Cursor />
       <SoundProvider>
+        {/* Inside the provider so the intro can offer the sound choice before the
+            experience starts, the way the reference does, instead of burying it in
+            the nav where nobody finds it. */}
+        <Loader />
+        <ChapterSoundCues />
         <ChapterStateProvider>
           <Suspense fallback={null}><ArchiveStage /></Suspense>
           <ScrollIndicator />

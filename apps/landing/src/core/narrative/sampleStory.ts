@@ -148,6 +148,8 @@ function sampleCamera(segment: SampleSegment, progress: number, inspection: numb
     // approach put the camera into one or the other. Extraction was moved into this
     // push instead, so the print emerges while the camera is closing on it.
     dolly: phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.dolly),
+    // Only about-life declares a beat that wants the camera closing on it.
+    inspect: segment === 'about-life' ? phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.extraction) : 0,
     arc,
   })
 }

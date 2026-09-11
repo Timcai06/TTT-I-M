@@ -38,6 +38,39 @@ const PREWARM_DEADLINE_MS = 600_000
  */
 const IMAGE_DEADLINE_MS = 90_000
 
+/**
+ * Run the laser once, offscreen, during the intro.
+ *
+ * Parsing its modules early removed the fetch, but the stutter entering Work is
+ * mostly what happens after that: acquiring a WebGL lease, compiling and linking
+ * the shader programs, and taking the first HTML capture — all in the frame the
+ * effect mounts. Creating and destroying one instance here leaves the compiled
+ * programs in the driver's cache, so the real mount only has to draw.
+ *
+ * Detached from layout and torn down immediately, so it cannot hold the optional
+ * context budget or leave a surface behind. Any failure is swallowed: this is a
+ * warm-up, and the real mount has its own authored fallback.
+ */
+async function warmLaser(create: typeof import('../canvas-ui/laser').createLaser, signal: AbortSignal) {
+  if (signal.aborted || typeof document === 'undefined') return
+  const host = document.createElement('div')
+  host.setAttribute('aria-hidden', 'true')
+  Object.assign(host.style, { position: 'fixed', left: '-9999px', top: '0', width: '64px', height: '64px', pointerEvents: 'none' })
+  const canvas = document.createElement('canvas')
+  canvas.width = 64; canvas.height = 64
+  host.appendChild(canvas)
+  document.body.appendChild(host)
+  let handle: { destroy(): void } | null = null
+  try {
+    handle = create(canvas)
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  } catch { /* warm-up only; the mount keeps its own fallback */ }
+  finally {
+    try { handle?.destroy() } catch { /* already torn down */ }
+    host.remove()
+  }
+}
+
 /** 资源加载阶段：critical 准备运行时，visual 准备当前设备会展示的视觉资源。 */
 export type ResourceTier = 'critical' | 'visual'
 /** 资源成本分类，用于调试 preload 进度和定位卡顿来源。 */
@@ -167,8 +200,9 @@ export function buildResourceManifest(): ResourceTask[] {
       // effect is not expensive to run, it was expensive to *create* at that instant.
       // Parsing the modules during the intro leaves only the lease and first frame
       // at the handoff, and costs the effect nothing.
-      load: async () => { await Promise.all([
-        import('../../components/ProjectLaser'), import('../canvas-ui/laser'),
+      load: async (signal: AbortSignal) => { await Promise.all([
+        import('../../components/ProjectLaser'),
+        import('../canvas-ui/laser').then(({ createLaser }) => warmLaser(createLaser, signal)),
         import('../canvas-ui/localEffectControl'), import('../canvas-ui/runtime'),
         import('../../chapters/projects/ProjectCaseDialog'), import('../../chapters/projects/ProjectCaseContent'),
         import('../../chapters/projects/ProjectMetrics'), import('../../shared/media/openImageLightbox'),

@@ -278,3 +278,33 @@
   from { transform: translateX(-100%); }
   to { transform: translateX(100%); }
 }
+
+/* Sound is offered at the door, not buried in the nav. SoundProvider was a
+   complete engine whose only consumers were that toggle and the film player, so a
+   visitor who never opened the nav never had any way to reach it. */
+.intro__sound {
+  position: absolute;
+  bottom: clamp(18px, 3vh, 34px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+}
+
+.intro__sound button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: color-mix(in srgb, currentcolor 62%, transparent);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  cursor: pointer;
+}
+
+.intro__sound button:hover,
+.intro__sound button:focus-visible {
+  color: currentcolor;
+}

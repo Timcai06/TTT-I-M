@@ -54,17 +54,21 @@ void test('places the panorama centre on the camera-to-window ray, not at its ow
   }
 })
 
-void test('matches the side panel to the rear world size per pixel without moving it off axis', () => {
+void test('leaves the side panel at authored size, because shrinking it opened a hole', () => {
   const root = scene()
   const before = centreOf(root, 'WindowPanorama_Side')
-  createArchiveBackdrop(root)
-  const after = centreOf(root, 'WindowPanorama_Side')
-  // Scaling happens about a node origin far from this geometry, so without the
-  // correction the panel slides sideways as it shrinks.
-  assert.ok(after.distanceTo(before) < 1e-3, `side panel moved ${after.distanceTo(before).toFixed(3)}m while rescaling`)
-
   const side = root.getObjectByName('WindowPanorama_Side')!
-  const box = new Box3().setFromObject(side)
-  const height = box.max.y - box.min.y
-  assert.ok(Math.abs(height - 6.667) < .05, `side height ${height.toFixed(2)} should match the rear panel's 6.67m`)
+  const beforeBox = new Box3().setFromObject(side)
+
+  createArchiveBackdrop(root)
+
+  const after = centreOf(root, 'WindowPanorama_Side')
+  const afterBox = new Box3().setFromObject(side)
+  // Rescaling this panel to match the rear's world size per pixel shrank it from
+  // z[-7,6] to z[-5.5,4.5] and 33 rays that used to land on it escaped instead,
+  // which is the patch of bare background that appeared on the left. Coverage is
+  // not tradeable for apparent scale; the rear panel's follow absorbs the rays.
+  assert.ok(after.distanceTo(before) < 1e-6, 'the side panel must not move')
+  assert.ok(Math.abs((afterBox.max.z - afterBox.min.z) - (beforeBox.max.z - beforeBox.min.z)) < 1e-6,
+    'the side panel must keep its authored extent')
 })

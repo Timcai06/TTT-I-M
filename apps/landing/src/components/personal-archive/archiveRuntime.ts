@@ -342,7 +342,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         applyArchiveCamera(camera, finalCamera)
         // Slide the outside view before anything reads the scene, so the window can
         // never frame past the edge of it from any authored position.
-        backdrop?.update(camera.position)
+        backdrop?.update(camera.position, performance.now() / 1000)
         trace.push('camera')
         const pageLayout = (element: HTMLElement, kind: 'source' | 'target') => {
           const snapshot = layout.pages[`${position.segment}:${kind}`]

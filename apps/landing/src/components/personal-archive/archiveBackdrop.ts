@@ -1,4 +1,4 @@
-import { Box3, Vector3, type Object3D } from 'three'
+import { Box3, Mesh, MeshStandardMaterial, Vector3, type Object3D } from 'three'
 
 /**
  * Keeps the view outside the window covered, and consistent between the two panels.
@@ -30,6 +30,18 @@ const WINDOW_CENTRE = new Vector3(.2, 1.67, -1.515)
 /** Window half-width is 1.21m against a 5m panel half-width, so 4.13 is the hard
  *  ceiling; 3.4 leaves margin for the corner rays and for pointer parallax. */
 const MAGNIFICATION = 3.4
+/**
+ * A still photograph behind the glass reads as a photograph. Coverage leaves 8.2%
+ * of the panel's half-width unused at the worst camera, so the view can drift
+ * inside that margin: real movement of the landscape against the window frame,
+ * with no seam, because the panel simply slides and its edges stay unreachable.
+ * Paired with a slow swell in the emissive term, which is the dawn light changing
+ * rather than the mountains moving.
+ */
+const DRIFT_METRES = .3
+const DRIFT_SECONDS = 46
+const GLOW_SWING = .09
+const GLOW_SECONDS = 31
 
 const ray = new Vector3()
 const bounds = new Box3()
@@ -44,43 +56,39 @@ function authoredCentre(object: Object3D) {
 
 export function createArchiveBackdrop(model: Object3D) {
   const rear = model.getObjectByName('WindowPanorama_Rear')
-  const side = model.getObjectByName('WindowPanorama_Side')
   if (!rear) return null
 
   const rearHome = rear.position.clone()
   const rearCentre = authoredCentre(rear)
+  const material = rear instanceof Mesh ? rear.material : null
+  const glow = material instanceof MeshStandardMaterial ? material : null
+  const glowBase = glow?.emissiveIntensity ?? 1
 
-  const sideHome = side?.position.clone() ?? null
-  const sideScale = side?.scale.clone() ?? null
-  if (side && sideHome) {
-    // Match world size per pixel with the rear panel: 13m across for the same
-    // texture reads 30% larger. Scaling happens about the node origin, which for
-    // these nodes is far from the geometry, so the centre has to be put back.
-    const centre = authoredCentre(side)
-    const factor = 10 / 13
-    side.scale.multiplyScalar(factor)
-    side.position.set(
-      sideHome.x + centre.x * (1 - factor),
-      sideHome.y + centre.y * (1 - factor),
-      sideHome.z + centre.z * (1 - factor),
-    )
-  }
+  // The side panel is left exactly as authored. Rescaling it to match the rear
+  // panel's world size per pixel shrank it from z[-7,6] to z[-5.5,4.5], and 33 of
+  // the rays that used to land on it escaped instead — that is the patch of bare
+  // background that appeared on the left. Matching texel density by shrinking
+  // geometry trades coverage for scale, which is the wrong trade: with the rear
+  // panel now following the camera it absorbs every ray through the glass, so the
+  // side panel only has to stay a full-size backstop.
 
   return {
-    update(cameraPosition: Vector3) {
+    update(cameraPosition: Vector3, seconds = 0) {
       ray.copy(WINDOW_CENTRE).sub(cameraPosition)
       if (!(ray.lengthSq() > 1e-8)) return
+      const drift = Math.sin(seconds * Math.PI * 2 / DRIFT_SECONDS) * DRIFT_METRES
+      if (glow) glow.emissiveIntensity = glowBase * (1 + Math.sin(seconds * Math.PI * 2 / GLOW_SECONDS) * GLOW_SWING)
       // Where the panel centre needs to be, then expressed as a delta from where the
       // geometry already is.
       rear.position.set(
-        rearHome.x + (cameraPosition.x + ray.x * MAGNIFICATION) - rearCentre.x,
+        rearHome.x + (cameraPosition.x + ray.x * MAGNIFICATION) - rearCentre.x + drift,
         rearHome.y + (cameraPosition.y + ray.y * MAGNIFICATION) - rearCentre.y,
         rearHome.z + (cameraPosition.z + ray.z * MAGNIFICATION) - rearCentre.z,
       )
     },
     dispose() {
       rear.position.copy(rearHome)
-      if (side && sideHome && sideScale) { side.position.copy(sideHome); side.scale.copy(sideScale) }
+      if (glow) glow.emissiveIntensity = glowBase
     },
   }
 }

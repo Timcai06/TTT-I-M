@@ -7,6 +7,8 @@ import { onChapterArrived } from '../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
 import SignatureMark from './SignatureMark'
 import { setIndexZoom, toggleIndexZoom } from '../lib/indexZoom'
+import { useMobileExperience } from '../lib/device'
+import { useReducedMotion } from '../lib/motion'
 const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSurface'))
 
 /**
@@ -42,6 +44,9 @@ const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSu
  *   step5: 滚动事件 rAF 回调中判断 scrollY>6 决定 pretext 开关
  */
 export default function Hero() {
+  // Same gate ArchiveAbout uses to decide the room exists at all.
+  const archiveIndexMode = !useMobileExperience() && !useReducedMotion()
+
   const root = useRef<HTMLElement>(null)
   const screenPage = useRef<HTMLDivElement>(null)
   const nameRef = useRef<HTMLHeadingElement>(null)
@@ -137,60 +142,70 @@ export default function Hero() {
           .to('.hero__signature-hotspot', { scale: 1.22, duration: 0.28, yoyo: true, repeat: 1, ease: 'sine.inOut' }, '-=0.72')
       }
 
-      // ── step4: 滚动 scrubbing —— 粒子画布向上位移 18% 营造前景/背景景深 ──
-      gsap.to('.hero__canvas', {
-        yPercent: 18,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: root.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      })
+      // The Index lives projected on the room's monitor, so the hero must not also
+      // parallax itself out of the way. These five scrub tweens are the pre-archive
+      // design: canvas, ghost, scan line, content and title all slide and fade over
+      // the first screen, and the content tween is commented in as many words as
+      // clearing the viewport for About. That is the scroll-down effect the room
+      // narrative does not want — you should be able to sit on the Index and open it.
+      // Mobile and reduced-motion still run the original hero, which has no room.
+      if (!archiveIndexMode) {
+        // ── step4: 滚动 scrubbing —— 粒子画布向上位移 18% 营造前景/背景景深 ──
+        gsap.to('.hero__canvas', {
+          yPercent: 18,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: root.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
 
-      // ── 幽灵照片：缩小透明度 + 轻微放大 scale，制造 "消散" 质感 ──
-      // 仅操作 transform/opacity (GPU 合成)，不动 filter/blur
-      gsap.to('.hero__ghost', {
-        opacity: 0.05,
-        scale: 1.08,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: root.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      })
+        // ── 幽灵照片：缩小透明度 + 轻微放大 scale，制造 "消散" 质感 ──
+        // 仅操作 transform/opacity (GPU 合成)，不动 filter/blur
+        gsap.to('.hero__ghost', {
+          opacity: 0.05,
+          scale: 1.08,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: root.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
 
-      // ── 扫描线光泽：透明度降至接近不可见
-      gsap.to('.hero__scan', {
-        opacity: 0.05,
-        yPercent: 12,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: root.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      })
+        // ── 扫描线光泽：透明度降至接近不可见
+        gsap.to('.hero__scan', {
+          opacity: 0.05,
+          yPercent: 12,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: root.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
 
-      // ── 内容层：上移 + 淡出，为下方的 About 章节让出视口
-      gsap.to('.hero__content', {
-        yPercent: -8,
-        opacity: 0.0,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: root.current,
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      })
+        // ── 内容层：上移 + 淡出，为下方的 About 章节让出视口
+        gsap.to('.hero__content', {
+          yPercent: -8,
+          opacity: 0.0,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: root.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
 
-      // ── 标题裂分 parallax (由 heroParallax timeline 独立管理) ──
-      if (root.current) createHeroParallax(root.current)
+        // ── 标题裂分 parallax (由 heroParallax timeline 独立管理) ──
+        if (root.current) createHeroParallax(root.current)
+      }
+
 
     }, root)
 
@@ -226,7 +241,7 @@ export default function Hero() {
       window.clearTimeout(pretextEnableTimer.current)
       ctx.revert()
     }
-  }, [])
+  }, [archiveIndexMode])
 
   /**
    * Effect 2: pretext 交互的生命周期管理。
