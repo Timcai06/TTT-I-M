@@ -43,7 +43,7 @@
        clipping — which leaves the projected-on-the-monitor state exactly as it was.
        Set --index-zoom-radius to 50% for a fully circular crop; 44px is a rounded
        frame that does not cut the Index UI. */
-    --index-zoom-radius: 44px;
+    --index-zoom-radius: var(--radius-signature);
     clip-path: inset(
       calc(var(--index-zoom, 0) * 4.5vh)
       calc(var(--index-zoom, 0) * 5vw)

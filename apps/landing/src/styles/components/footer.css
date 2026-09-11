@@ -191,7 +191,7 @@
   width: min(320px, 100%);
   min-height: 64px;
   padding: 0 32px;
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(111, 52, 44, 0.18);
   font-family: var(--font-mono);
   font-size: clamp(11px, 0.82vw, 13px);
@@ -369,7 +369,7 @@
     position: absolute;
     inset: 16px;
     border: 1px solid rgba(10, 10, 10, 0.08);
-    border-radius: 18px;
+    border-radius: var(--radius-md);
     pointer-events: none;
   }
 
@@ -421,7 +421,7 @@
     justify-content: space-between;
     min-height: 56px;
     padding: 0 24px;
-    border-radius: 18px;
+    border-radius: var(--radius-md);
     font-size: 12px;
     background: transparent;
     box-shadow: none;

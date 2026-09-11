@@ -3,7 +3,7 @@
   --cursor-angle: 45deg;
   --edge-sensitivity: 30;
   --color-sensitivity: calc(var(--edge-sensitivity) + 20);
-  --border-radius: 24px;
+  --border-radius: var(--radius-lg);
   --glow-padding: 40px;
   --cone-spread: 25;
   position: relative;

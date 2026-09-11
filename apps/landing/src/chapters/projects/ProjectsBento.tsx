@@ -58,7 +58,7 @@ export default function ProjectsBento() {
                 glowRadius={48}
                 coneSpread={32}
                 fillOpacity={0.46}
-                borderRadius={18}
+                borderRadius="var(--radius-md)"
                 colors={[mixHexColor(project.accent, '#777b79', 0.72), '#d8bd86', '#a6aaa7']}
               >
                 {shot ? (

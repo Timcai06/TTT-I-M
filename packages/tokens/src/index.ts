@@ -16,6 +16,13 @@ export const fonts = {
   mono: "'JetBrains Mono', 'SFMono-Regular', monospace",
 } as const
 
+export const radii = {
+  sm: '12px',
+  md: '18px',
+  lg: '24px',
+  signature: '44px',
+} as const
+
 export const motion = {
   easeOut: 'cubic-bezier(0.87, 0, 0.13, 1)',
   easeInOut: 'cubic-bezier(0.87, 0, 0.13, 1)',

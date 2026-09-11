@@ -349,3 +349,34 @@ console.log('[chapter-state-guards] navigation uses one shared chapter state pro
   }
   console.log('[chapter-state-guards] chapter-state consumers are mounted inside their provider.')
 }
+
+// A corner radius on a surface that carries a matrix3d homography cuts into the 3D
+// quad it is projected onto and exposes the room behind the seam the projection
+// exists to hide. The Index frame is the one rounded projected surface and it works
+// only because its clip-path stays at inset(0 0 round 0) until the panel has
+// un-projected to a flat rect. Nothing else in the suite would catch a radius here.
+{
+  const projected = [
+    '.archive-bridge__page',
+    '.archive-chapter-bridge__page',
+    '.archive-bridge__page--source',
+    '.archive-handoff-page',
+  ]
+  const sheets = [
+    'src/components/personal-archive/personal-archive.css',
+    'src/components/personal-archive/natural-room.css',
+  ]
+  for (const sheet of sheets) {
+    const css = readFileSync(new URL(`../../${sheet}`, import.meta.url), 'utf8')
+    for (const match of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const [, selector, body] = match
+      if (!/border-radius\s*:/.test(body)) continue
+      if (/border-radius\s*:\s*0(\D|$)/.test(body)) continue
+      const hit = projected.find((name) => selector.includes(name))
+      if (hit) {
+        throw new Error(`${hit} is projected with matrix3d and must not declare a border-radius (${sheet}).`)
+      }
+    }
+  }
+  console.log('[chapter-state-guards] projected reading surfaces declare no corner radius.')
+}

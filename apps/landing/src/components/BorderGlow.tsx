@@ -15,7 +15,7 @@ type SharedProps = {
   edgeSensitivity?: number
   glowColor?: string
   backgroundColor?: string
-  borderRadius?: number
+  borderRadius?: number | string
   glowRadius?: number
   glowIntensity?: number
   coneSpread?: number
@@ -174,7 +174,7 @@ export default function BorderGlow({
   const style = {
     '--card-bg': backgroundColor,
     '--edge-sensitivity': edgeSensitivity,
-    '--border-radius': `${borderRadius}px`,
+    '--border-radius': typeof borderRadius === 'number' ? `${borderRadius}px` : borderRadius,
     '--glow-padding': `${glowRadius}px`,
     '--cone-spread': coneSpread,
     '--fill-opacity': fillOpacity,

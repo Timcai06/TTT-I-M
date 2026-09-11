@@ -31,7 +31,7 @@
 .scroll-expand__frame {
   --se-inset-x: 29%;
   --se-inset-y: 21%;
-  --se-radius: 24px;
+  --se-radius: var(--radius-lg);
   position: absolute;
   inset: 0;
   overflow: hidden;

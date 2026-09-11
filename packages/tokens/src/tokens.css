@@ -17,4 +17,15 @@
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
   --ease-out: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-inout: cubic-bezier(0.87, 0, 0.13, 1);
+  /* Corner radius. Every radius in the app used to be a one-off; the only two
+     accidental clusters were 18px and 12px, and the enlarged Index frame's 44px
+     was unique. These four steps absorb all three so the shape reads as one
+     system. Decorative pills (999px), circles (50%), the arch portrait frame and
+     the archive's explicit 0 resets stay outside it on purpose.
+     Never applies to a surface carrying a matrix3d projection: those corners are
+     the seam the projection hides. */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-signature: 44px;
 }

@@ -234,7 +234,7 @@
 .media-frame {
   position: relative;
   width: 100%;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--line);
   background: #0c0c0e;

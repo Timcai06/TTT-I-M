@@ -165,7 +165,7 @@
   max-height: calc(100dvh - 32px);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   background: #050505;
   box-shadow: 0 48px 140px rgba(0, 0, 0, 0.88);
 }

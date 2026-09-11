@@ -62,7 +62,7 @@
   min-height: 220px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: #0c0c0e;
 }
 
@@ -193,7 +193,7 @@
   color: #efece5;
   background: #0b0b0d;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 44px 160px rgba(0, 0, 0, 0.68);
   transition: opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -366,7 +366,7 @@
   overflow: hidden;
   color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: #050506;
 }
 

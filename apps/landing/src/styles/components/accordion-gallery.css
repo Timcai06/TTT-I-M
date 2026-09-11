@@ -3,7 +3,7 @@
   --ag-overlay: #08090a;
   --ag-text: #f5f2ea;
   --ag-gap: 10px;
-  --ag-radius: 18px;
+  --ag-radius: var(--radius-md);
   --ag-media-size: 320px;
   display: flex;
   flex-direction: row;
