@@ -14,7 +14,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit --pretty false",
     "lint": "eslint .",
     "test:build": "npm run build && npm run test:guards",
-    "test:guards": "npm run test:build:chunks && npm run test:build:architecture && npm run test:build:frame && npm run test:build:loader && npm run test:build:content && npm run test:build:bytes && npm run test:build:effects && npm run test:build:vendor",
+    "test:guards": "npm run test:build:chunks && npm run test:build:architecture && npm run test:build:frame && npm run test:build:loader && npm run test:build:content && npm run test:build:bytes && npm run test:build:render && npm run test:build:react && npm run test:build:effects && npm run test:build:vendor",
     "test:build:bytes": "node tests/build/deferred-image-budget-guards.mjs",
     "test:build:architecture": "node tests/build/chapter-state-guards.mjs",
     "test:build:chunks": "node tests/build/chunk-guards.mjs",
@@ -28,7 +28,9 @@
     "test:e2e:gates": "playwright test --project=chromium-desktop tests/e2e/degradation.spec.ts tests/e2e/chrome-ui.spec.ts tests/e2e/hero-pretext.spec.ts tests/e2e/effects-context.spec.ts tests/e2e/accessibility.spec.ts tests/e2e/canvas-ui-effects.spec.ts",
     "test:e2e:canvas-experimental": "HTML_CANVAS_EXPERIMENTAL=1 playwright test --project=chromium-desktop tests/e2e/canvas-ui-experimental.spec.ts",
     "test:e2e:frame": "playwright test tests/e2e/frame.spec.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:build:render": "node tests/build/archive-render-guards.mjs",
+    "test:build:react": "node tests/build/react-safety-guards.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

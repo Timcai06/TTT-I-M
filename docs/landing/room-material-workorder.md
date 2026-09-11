@@ -94,3 +94,42 @@ is one channel being paid for three times.
 The build guard in `tests/build/deferred-image-budget-guards.mjs` holds the
 desktop prepared-asset total under 50 MiB and currently reports 48.3. There is not
 much room, so this section is not optional if the bake adds textures.
+
+## 5. The bake holds shadows of things that move (added 2026-09-11)
+
+Reported: the shadow under the book page and the postcard "is just a black line",
+and a card's shadow stays behind after the card moves.
+
+Both are the same cause, and it is in the bake rather than the renderer.
+
+Measured from the GLB: there are 11 animation clips over 11 nodes, and three of
+those animated meshes carry `archive_lightmap_version: 2` —
+`LifeMemoryPhoto` (the print that flies from Life to Frame),
+`Cinema_RailMiddle_Left` and `Cinema_RailMiddle_Right`. More importantly the
+*static* surfaces they rest on were baked with those props in place, so each
+surface's lightmap contains a contact shadow at the prop's rest pose. A bake
+cannot move, so the shadow stays when the prop leaves; and a thin card baked
+against a surface at lightmap resolution resolves as a hard dark edge, which is
+the black line.
+
+The render layer's half of this is already fixed: `ArchivePhoto_*` was excluded
+from casting realtime shadows alongside the genuinely flush overlays (monitor UI,
+printed folio numbers), so the postcards had no realtime shadow at all and the
+baked one was all there was. They cast again.
+
+What the bake has to change:
+
+- Exclude every animated node from the bake **as a caster**, so no static surface
+  carries a shadow of something that moves. The eleven are the two cinema rails,
+  `LifeMemoryPhoto`, and whatever the remaining eight clips drive — read them from
+  the GLB's `animations[].channels[].target.node` rather than from memory.
+- Do not give an animated mesh its own `archive_lightmap_version: 2` slot either.
+  Baked irradiance is a function of where the object was when it was baked, and
+  these are not there any more. They should take their light from the realtime rig.
+- Everything those props rest on keeps its bake, minus their shadows. The realtime
+  key light supplies the contact shadow instead, which is what lets it move.
+
+After the re-bake, check the count that motivated this file: baked coverage should
+stay near 93.9% of triangles, because the animated meshes are a small share.
+`tests/build/experience-effects-guards.mjs` holds the ambient terms against that
+coverage and will say so if it drops.
