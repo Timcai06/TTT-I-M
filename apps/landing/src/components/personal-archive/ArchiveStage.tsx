@@ -17,8 +17,16 @@ const viewByChapter: Record<string, ArchiveView> = {
  * The room has exactly one DOM home for the whole visit. Chapter adapters only
  * change the seekable shot; they never move or unmount the renderer canvas.
  */
-/** Screens of stillness on the Index before the About flight begins. */
-const INDEX_DWELL = 2.5
+/** Screens of stillness on the Index before the About flight begins.
+ *
+ * This was 2.5 for one round, which was a mistake: it was compensating for the
+ * Index panel sliding off the monitor, on the theory that the reader was being
+ * hurried past it. The sliding turned out to be a coordinate-space bug in
+ * samplePageLayout, and with that fixed the compensation is just empty scrolling —
+ * two and a half screens where nothing moves at all. One screen is what the hero
+ * trigger is worth, and with a panel that genuinely holds still it is enough to
+ * stop on and click. */
+const INDEX_DWELL = 1
 
 export default function ArchiveStage() {
   const host = useRef<HTMLDivElement>(null)
@@ -58,15 +66,12 @@ export default function ArchiveStage() {
         // all — the Index was something you fell through rather than something you
         // could stop and use. The entry bridge carries a matching +100svh so its own
         // flight keeps the pace tuned for it.
-        // The Index is a place to stop, not something to fall through. One screen
-        // of dwell was not enough to read as a rest: the reader scrolled once and
-        // the camera was already leaving for About. Entry now waits INDEX_DWELL
-        // screens, and clicking the Index (seekArchiveChapter) remains the fast path
-        // that skips the wait entirely.
+        // Entry begins INDEX_DWELL screens after the hero interval ends. Clicking
+        // the Index (seekArchiveChapter) remains the fast path that skips the wait.
         //
-        // Deliberately NOT gating entry on the click alone: a reader who only
-        // scrolls would then pass the whole dwell and arrive in About's body with
-        // the entry flight never played.
+        // Deliberately NOT gated on the click alone: a reader who only scrolls
+        // would then pass the whole dwell and arrive in About's body with the
+        // entry flight never played.
         ranges.entry = { start: ranges.index!.end + innerHeight * INDEX_DWELL, end: ranges.entry!.end }
         const pages: Record<string, ProjectionLayout> = {}
         for (const track of ['about-life', 'life-frame', 'frame-stack', 'stack-work', 'work-contact']) for (const kind of ['target', 'source']) {
