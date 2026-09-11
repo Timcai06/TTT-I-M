@@ -44,6 +44,9 @@ const scratchStandoff = new Vector3()
 const STANDOFF_RATIO = 1.85
 /** How far a mid-segment inspect push may travel toward the surface fit. */
 const INSPECT_FRACTION = .35
+/** How much pointer parallax survives once the camera has docked onto a reading
+ *  surface. Small enough that the projected page does not swim under the text. */
+const READING_PARALLAX_FLOOR = .22
 /** Vertical lift per metre of horizontal crossing. */
 const LIFT_PER_METRE = .45
 /**
@@ -193,9 +196,17 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
       target.lerp(scratchCenter, 1 - intent.align)
     }
     const t = Math.max(0, Math.min(1, (frame.position.progress - .24) / .08))
-    const gain = t * t * (3 - 2 * t) * (1 - intent.align) * (1 - frame.presentation.targetExpand)
-    camera.position.x += pointer.x * .032 * gain; camera.position.y += pointer.y * .020 * gain
-    target.x += pointer.x * .008 * gain; target.y += pointer.y * .006 * gain
+    // Parallax at 3.2cm of full-deflection travel in a room-scale scene was below
+    // the threshold at which a viewer attributes motion to their own hand — the
+    // effect was implemented, correct, and invisible. Tripled, and given a floor so
+    // that settling onto a reading surface no longer kills it outright: `1 - align`
+    // alone collapsed to exactly zero at the one moment the reader is holding still
+    // and looking, which is when a room most needs to feel like it has depth.
+    // `1 - targetExpand` stays a hard multiplier: past full expansion the page is a
+    // flat rect and there is nothing left for the camera to be parallax against.
+    const gain = t * t * (3 - 2 * t) * (READING_PARALLAX_FLOOR + (1 - READING_PARALLAX_FLOOR) * (1 - intent.align)) * (1 - frame.presentation.targetExpand)
+    camera.position.x += pointer.x * .096 * gain; camera.position.y += pointer.y * .060 * gain
+    target.x += pointer.x * .024 * gain; target.y += pointer.y * .018 * gain
     target.lerp(destination.center, intent.dolly)
     // Look through the physical travel target (including the moving photo and
     // pointer parallax), then settle into the authored surface roll. Endpoints
