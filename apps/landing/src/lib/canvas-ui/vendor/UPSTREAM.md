@@ -15,8 +15,30 @@ Vendored files preserve the upstream rendering pipelines. Local integration
 changes are deliberately limited to:
 
 - `LaserVanilla.ts`: an externally-driven scroll-activity method used by the
-  existing GSAP ScrollTrigger stage, plus pause/resume lifecycle hooks that do
-  not alter the upstream renderer while active.
+  existing GSAP ScrollTrigger stage, plus pause/resume lifecycle hooks.
+
+  This entry used to end "that do not alter the upstream renderer while active",
+  which is not true, and the inaccuracy matters because the local beam visibly
+  differs from the published component. Diffed against the pinned tree on
+  2026-09-11: 64 added and 29 removed lines, of which two change what is drawn.
+
+  1. **The beam travels.** Upstream sets `uBeamY` to
+     `min(max(config.offset, 0) / clientH, 0.95)` — a position fixed by config,
+     with `activity` supplying the motion. The local file caps that inset at 0.22
+     and then sweeps the beam across the remaining band with the externally fed
+     progress: `localInset + controlledProgress * (1 - localInset * 2)`. So the
+     published laser sits where it is configured and reacts; this one sweeps from
+     roughly 0.22 to 0.78 of the surface height as the reader scrolls.
+  2. **The beam is anchored to a chosen element.** Upstream derives `beamCX` and
+     `beamSpan` from `content.clientWidth / output.clientWidth`, then refines them
+     from the first element child's rect and horizontal padding. The local file
+     takes an added `beamTarget` and measures it against the output rect instead,
+     so the beam centres and spans under real project DOM rather than under the
+     capture's own first child.
+
+  Everything else in the diff is the documented surface: the `@ts-nocheck` header,
+  the WebGL validation boundary, `setScrollActivity`, and `pause`/`resume`. The
+  shaders, heat model, wave and render passes are untouched.
 - `LiquidVanilla.ts`: a `captureContent` switch so the Footer can render the
   complete fluid solver as a dye-only layer without distorting real Footer DOM,
   plus the same pause/resume lifecycle hooks.
