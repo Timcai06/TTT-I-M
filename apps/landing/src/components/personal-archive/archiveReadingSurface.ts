@@ -39,7 +39,21 @@ export function projectArchiveQuad(points: AnchorPoints, camera: FinalArchiveCam
 }
 
 export function samplePageLayout(page: HTMLElement, width: number, height: number): ProjectionLayout {
-  const parent = page.offsetParent instanceof HTMLElement ? page.offsetParent : page.parentElement
+  const offsetParent = page.offsetParent instanceof HTMLElement ? page.offsetParent : null
+  // A `position: fixed` page has no offsetParent by spec, and its offsetLeft /
+  // offsetTop are already measured from the initial containing block — the
+  // viewport, which is exactly the space projectArchiveQuad computes corners in.
+  //
+  // Falling through to parentElement here, as this used to, added a *scrolling*
+  // ancestor's viewport rect to a page that does not scroll. The Index panel is
+  // `position: fixed` inside `.hero`, so `.hero`'s rect.top is precisely
+  // -scrollY, originY came out as -scrollY, and `y - originY` pushed every
+  // corner down one pixel for every pixel scrolled. That was the Index sliding
+  // off the monitor as the reader scrolled: never an animation, a coordinate
+  // space mixed into a viewport-space calculation.
+  const fixed = !offsetParent
+    && page.ownerDocument.defaultView?.getComputedStyle(page).position === 'fixed'
+  const parent = offsetParent ?? (fixed ? null : page.parentElement)
   const origin = parent?.getBoundingClientRect()
   // offset*, not client*: pageMatrix maps (0,0)-(pageWidth,pageHeight) onto the
   // projected corners, but a CSS transform scales the BORDER box. The entry page

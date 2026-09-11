@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { PerspectiveCamera } from 'three'
-import { projectArchiveQuad } from '../src/components/personal-archive/archiveReadingSurface.ts'
+import { projectArchiveQuad, samplePageLayout } from '../src/components/personal-archive/archiveReadingSurface.ts'
 import { solveArchiveCamera, type FinalArchiveCamera } from '../src/components/personal-archive/archiveCameraRig.ts'
 import { sampleStory } from '../src/core/narrative/sampleStory.ts'
 import { PERSONAL_ARCHIVE_SAMPLE_STORY as story } from '../src/core/narrative/specs.ts'
@@ -95,5 +95,58 @@ void test('long-form handoffs remain continuous and keep every visible page outs
       }
       previous = current
     }
+  }
+})
+
+// A projected page is measured in viewport space. The Index panel is
+// `position: fixed` inside `.hero`, which scrolls, and a fixed element has no
+// offsetParent — so the old `?? page.parentElement` fallback added `.hero`'s
+// rect.top (exactly -scrollY) to an origin that must not move. The corner
+// formula subtracts originY, so the panel slid down one pixel per pixel
+// scrolled. This pins the invariant rather than the symptom: a fixed page's
+// origin does not depend on where its ancestors have scrolled to.
+class FakeElement {}
+const previousHTMLElement = globalThis.HTMLElement
+const scrollingAncestor = (top: number) => Object.assign(new FakeElement(), {
+  getBoundingClientRect: () => ({ top, left: 0 }),
+}) as unknown as HTMLElement
+const fixedPage = (ancestorTop: number) => ({
+  offsetParent: null,
+  parentElement: scrollingAncestor(ancestorTop),
+  offsetWidth: 640, offsetHeight: 300, offsetLeft: 0, offsetTop: 0,
+  ownerDocument: { defaultView: { getComputedStyle: () => ({ position: 'fixed' }) } },
+}) as unknown as HTMLElement
+
+void test('a fixed projected page keeps one origin however far its ancestors scroll', () => {
+  globalThis.HTMLElement = FakeElement as unknown as typeof HTMLElement
+  try {
+    const atTop = samplePageLayout(fixedPage(0), 1000, 500)
+    for (const scrolled of [-200, -600, -800, -4000]) {
+      const layout = samplePageLayout(fixedPage(scrolled), 1000, 500)
+      assert.equal(layout.originY, atTop.originY, `origin moved with a ${-scrolled}px scroll`)
+      assert.equal(layout.originX, atTop.originX)
+    }
+    assert.equal(atTop.originY, 0)
+    // The old code produced exactly the scroll offset, which is the bug's signature.
+    assert.notEqual(samplePageLayout(fixedPage(-800), 1000, 500).originY, -800)
+  } finally {
+    globalThis.HTMLElement = previousHTMLElement
+  }
+})
+
+void test('an in-flow projected page still measures against its offset parent', () => {
+  globalThis.HTMLElement = FakeElement as unknown as typeof FakeElement & typeof HTMLElement
+  try {
+    const page = {
+      offsetParent: scrollingAncestor(40),
+      parentElement: scrollingAncestor(-999),
+      offsetWidth: 640, offsetHeight: 300, offsetLeft: 12, offsetTop: 7,
+      ownerDocument: { defaultView: { getComputedStyle: () => ({ position: 'static' }) } },
+    } as unknown as HTMLElement
+    const layout = samplePageLayout(page, 1000, 500)
+    assert.equal(layout.originY, 47)
+    assert.equal(layout.originX, 12)
+  } finally {
+    globalThis.HTMLElement = previousHTMLElement
   }
 })
