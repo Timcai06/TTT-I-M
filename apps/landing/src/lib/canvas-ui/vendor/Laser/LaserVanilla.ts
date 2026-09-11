@@ -505,9 +505,15 @@ export function createLaser(
     gl!.uniform1f(uniforms.uTime, time);
     const dpr = output.width / Math.max(output.clientWidth, 1);
     const clientH = Math.max(output.clientHeight, 1);
+    // Widened from .22 to .06 on 2026-09-11. The sweep is a deliberate local
+    // change (upstream parks the beam at a configured offset), but clamping the
+    // inset at .22 confined it to the middle 56% of the surface, which is what made
+    // it read as a different effect from the published component. Upstream allows
+    // the beam anywhere up to .95 of the height; .06 gives the sweep almost that
+    // full range while keeping the ends off the very edge.
     const localInset = Math.min(
       Math.max(config.offset, 0) / clientH,
-      0.22,
+      0.06,
     );
     gl!.uniform1f(
       uniforms.uBeamY,

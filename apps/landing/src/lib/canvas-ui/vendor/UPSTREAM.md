@@ -27,8 +27,11 @@ changes are deliberately limited to:
      with `activity` supplying the motion. The local file caps that inset at 0.22
      and then sweeps the beam across the remaining band with the externally fed
      progress: `localInset + controlledProgress * (1 - localInset * 2)`. So the
-     published laser sits where it is configured and reacts; this one sweeps from
-     roughly 0.22 to 0.78 of the surface height as the reader scrolls.
+     published laser sits where it is configured and reacts; this one sweeps as the
+     reader scrolls. The cap was 0.22 until 2026-09-11, confining the sweep to the
+     middle 56% of the surface, which is most of why it read as a different effect.
+     It is now 0.06, so the sweep covers roughly 6% to 94% — close to the 0.95 that
+     upstream permits — while keeping the ends off the very edge.
   2. **The beam is anchored to a chosen element.** Upstream derives `beamCX` and
      `beamSpan` from `content.clientWidth / output.clientWidth`, then refines them
      from the first element child's rect and horizontal padding. The local file

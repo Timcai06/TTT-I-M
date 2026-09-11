@@ -44,7 +44,7 @@
     },
     "Laser/LaserVanilla.ts": {
       "revision": "cd17ebd6c4b68e38c5daaa37e037de1055c1d70f",
-      "sha256": "3bbaee0cc736e1059f06386f08748dda0d052cb4713087fdcf0e3f42067de3e2",
+      "sha256": "787d2f642ccd2dd12e6060c6a8f6270df01407fde4ae8b3e00cc456c9e379f99",
       "localPatches": [
         {
           "card": "VR-03",
