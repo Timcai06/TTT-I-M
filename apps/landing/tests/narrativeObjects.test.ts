@@ -128,8 +128,14 @@ void test('matches both GLB football carriers to the public WebP through EXT_tex
     }
   })
 
-  assert.equal(sources[0].textureIndex, 33)
-  assert.equal(sources[1].textureIndex, 33)
+  // Both carriers must resolve to one texture, not to index 33. The absolute index
+  // was pinned here and broke the moment the room was re-exported with ORM and KTX2
+  // bakes — 46 images became 104 and everything after them shifted. What matters is
+  // unchanged and still checked below: one shared source, reached through
+  // EXT_texture_webp rather than KTX2, whose bytes are the public file exactly. The
+  // football photo has to stay uncompressed WebP because the 3D->2D handoff shows
+  // the same bytes as a DOM image, and a transcoded copy would not match.
+  assert.equal(sources[0].textureIndex, sources[1].textureIndex)
   assert.equal(sources[0].source, sources[1].source)
   for (const source of sources) assert.deepEqual(source.bytes, publicWebp)
   assert.equal(

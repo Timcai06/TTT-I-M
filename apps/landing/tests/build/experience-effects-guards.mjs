@@ -583,21 +583,11 @@ if (!roomAmbience.includes('setAmbienceLevel') || !roomAmbience.includes('getWin
 if (!soundProvider.includes('ambienceBusRef') || !soundProvider.includes('AMBIENCE_FLOOR')) {
   throw new Error('SoundProvider must own the ambience bus so one mute governs beds and cues.')
 }
-// Printed ink, monitor UI and the lamp bulb are flat in reality too, and the
-// clear window, standby display and photographic panorama must never be broken up
-// either. The procedural roughness variation exists to stop the props reading as
-// injection-moulded; applied to any of these it would be visible as noise on a
-// surface that is meant to be perfectly even.
+// Surface variation is now authored in the GLB. Runtime noise would also alter
+// intentionally flat text, displays and glass; asset checks cover their maps.
 const archiveMaterials = read('src/components/personal-archive/archiveMaterials.ts')
-for (const token of ['ink', 'monitor', 'screen', 'legend', 'folio', 'bulb', 'clear window', 'standby', 'panorama']) {
-  if (!archiveMaterials.includes(token)) {
-    throw new Error(`Roughness break-up must keep excluding deliberately flat surfaces: ${token}`)
-  }
-}
-for (const token of ['!material.roughnessMap', '!material.normalMap', 'archive_glass', 'vArchiveObjectPos = position']) {
-  if (!archiveMaterials.includes(token)) {
-    throw new Error(`Roughness break-up must stay scoped to unauthored, object-space surfaces: ${token}`)
-  }
+if (/ROUGHNESS_BREAKUP|vArchiveObjectPos/.test(archiveMaterials)) {
+  throw new Error('Authored surfaces must not receive the retired procedural roughness overlay.')
 }
 // prepareArchiveMaterials sets the device maximum; a later pass used to reset every
 // texture to min(8, max) and silently undo it. Anisotropy may only be raised.
@@ -607,6 +597,49 @@ if (/anisotropy\s*=\s*Math\.min\(/.test(archiveRuntimeSource)) {
 }
 if (!archiveRuntimeSource.includes('if (texture.anisotropy < maxAnisotropy)')) {
   throw new Error('Archive texture anisotropy must be raise-only.')
+}
+
+// Ambient fill and the bake are two ways of paying for the same light, and the rig
+// must not pay twice. environmentIntensity and the hemisphere fill were raised to
+// .52 and .58 while the room had one baked indirect map and everything else was
+// lit in realtime; that was a compensation, and compensations outlive their cause
+// unless something says so out loud. This reads the shipped model and holds the
+// two in agreement in both directions.
+{
+  const glb = readFileSync('src/assets/personal-archive/personal-space.glb')
+  const model = JSON.parse(glb.subarray(20, 20 + glb.readUInt32LE(12)).toString('utf8'))
+  const accessor = index => model.accessors[index]
+  const trianglesByMaterial = new Map()
+  for (const mesh of model.meshes) {
+    for (const primitive of mesh.primitives) {
+      const source = primitive.indices != null ? accessor(primitive.indices) : accessor(primitive.attributes.POSITION)
+      trianglesByMaterial.set(primitive.material, (trianglesByMaterial.get(primitive.material) ?? 0) + source.count / 3)
+    }
+  }
+  let baked = 0, total = 0
+  for (const [index, material] of model.materials.entries()) {
+    const triangles = trianglesByMaterial.get(index) ?? 0
+    total += triangles
+    if (material.extras?.archive_lightmap_version === 2) baked += triangles
+  }
+  const coverage = baked / total
+  const lighting = read('src/components/personal-archive/archiveRuntimeLighting.ts')
+  const value = name => {
+    const match = lighting.match(new RegExp(`${name}\\s*=\\s*(\\.?\\d+(?:\\.\\d+)?)`))
+    if (!match) throw new Error(`archiveRuntimeLighting must declare ${name} as a named constant.`)
+    return Number(match[1])
+  }
+  const environment = value('ENVIRONMENT_INTENSITY')
+  const hemisphere = value('HEMISPHERE_INTENSITY')
+  if (coverage > .8) {
+    // The bake carries indirect diffuse with real visibility for most of the room.
+    // The environment keeps only its specular job; the hemisphere has none.
+    if (environment > .34) throw new Error(`Bake covers ${(coverage * 100).toFixed(1)}% of the room, so ENVIRONMENT_INTENSITY must stay at or below .34, not ${environment}.`)
+    if (hemisphere > .22) throw new Error(`Bake covers ${(coverage * 100).toFixed(1)}% of the room, so HEMISPHERE_INTENSITY must stay at or below .22, not ${hemisphere}.`)
+  } else if (environment < .45 || hemisphere < .5) {
+    throw new Error(`Only ${(coverage * 100).toFixed(1)}% of the room is baked; the ambient terms carry the shadow side and must go back up.`)
+  }
+  console.log(`[archive-lighting] bake covers ${(coverage * 100).toFixed(1)}% of the room; ambient env ${environment} / hemisphere ${hemisphere}.`)
 }
 
 const sparkPortfolio = read('src/shaders/spark-badge/spark-badge-portfolio.html')

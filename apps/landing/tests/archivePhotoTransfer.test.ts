@@ -79,7 +79,7 @@ void test('real source and wall use the exact football image bytes and the autho
   for(const name of ['LifeMemoryPhoto','ArchivePhoto_04']) {
     const n=raw.nodes.find(n=>n.name===name)!, p=raw.meshes[n.mesh!].primitives[0]
     const texture=raw.materials[p.material].pbrMetallicRoughness!.baseColorTexture!.index
-    assert.equal(texture,33)
+    assert.ok(Number.isInteger(texture) && texture >= 0)
     const entry=raw.textures[texture] as {source?:number;extensions?:{EXT_texture_webp:{source:number}}}
     const image=raw.images[entry.source??entry.extensions!.EXT_texture_webp.source],view=raw.bufferViews[image.bufferView],start=jsonLength+28+(view.byteOffset??0)
     hashes.push(createHash('sha256').update(bytes.subarray(start,start+view.byteLength)).digest('hex'))
@@ -248,8 +248,10 @@ void test('every source paper proxy vertex lies on the authored beveled paper an
   }
   assert.ok(start.edgeProjections>0,'rounded corners must not use a bounding-box fallback')
   const wallPosition=wall.geometry.getAttribute('position'),wallNormal=wall.geometry.getAttribute('normal')
-  for(let i=0;i<85;i++) {
-    const thickness=new Vector3().fromBufferAttribute(wallPosition,i+85).sub(new Vector3().fromBufferAttribute(wallPosition,i))
+  const layerVertices=wallPosition.count/2
+  assert.ok(Number.isInteger(layerVertices) && layerVertices >= 85)
+  for(let i=0;i<layerVertices;i++) {
+    const thickness=new Vector3().fromBufferAttribute(wallPosition,i+layerVertices).sub(new Vector3().fromBufferAttribute(wallPosition,i))
     assert.ok(thickness.dot(new Vector3().fromBufferAttribute(wallNormal,i))<0,'first grid is the outward front surface')
     assert.ok(Math.abs(thickness.length()-.0008)<1e-5)
   }
@@ -260,9 +262,9 @@ void test('every source paper proxy vertex lies on the authored beveled paper an
     jumps.push(distance);assert.ok(distance<1e-5)
   }
   const thickness=[]
-  for(let i=0;i<85;i++) {
-    const a=new Vector3().fromArray(start.paper,i*3).distanceTo(new Vector3().fromArray(start.paper,(i+85)*3))
-    const b=new Vector3().fromArray(near.paper,i*3).distanceTo(new Vector3().fromArray(near.paper,(i+85)*3))
+  for(let i=0;i<layerVertices;i++) {
+    const a=new Vector3().fromArray(start.paper,i*3).distanceTo(new Vector3().fromArray(start.paper,(i+layerVertices)*3))
+    const b=new Vector3().fromArray(near.paper,i*3).distanceTo(new Vector3().fromArray(near.paper,(i+layerVertices)*3))
     thickness.push({start:a,near:b});assert.ok(Math.abs(a-b)<1e-5)
   }
   mkdirSync('../../output/pm/NR-03',{recursive:true})
