@@ -92,3 +92,23 @@ import { read, withoutComments } from './lib/source.mjs'
   }
   console.log('[ktx2-worker] transcoder runs from its own origin path under its own policy; the document CSP stays strict.')
 }
+
+// Fail readable, not black.
+//
+// data-archive-failed is only set when prepareArchiveRuntime rejects, and a hang
+// is not a rejection — the KTX2 transcoder stall never settled its promise, so the
+// Index sat at opacity 0 over an empty room for the full ten-minute deadline. The
+// chapters already key their fallback on the absence of data-archive-sample-owner,
+// which covers failure, hang and a device that never had a room; the hero has to
+// use the same signal or it is the one surface that can still go black.
+{
+  const hero = read('src/styles/components/hero.css')
+  if (!/html:not\(\[data-archive-sample-owner\]\)[^{]*\.hero__screen-page/.test(hero)) {
+    throw new Error('hero.css must show the Index when no room has committed a frame, not only when one explicitly failed.')
+  }
+  const archive = read('src/components/personal-archive/personal-archive.css')
+  if (!/html:not\(\[data-archive-sample-owner\]\)\s*\[data-archive-live-target\]/.test(archive)) {
+    throw new Error('personal-archive.css must keep the chapter fallback on the same signal.')
+  }
+  console.log('[archive-fallback] the Index and the chapters both stay readable when no room arrives.')
+}

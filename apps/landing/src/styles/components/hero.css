@@ -91,7 +91,17 @@
     outline-offset: -4px;
   }
 
-  .hero--archive-index[data-archive-failed='true'] .hero__screen-page {
+  /* Fail readable, not black — the same signal the chapters already use.
+     `data-archive-failed` is only set when prepareArchiveRuntime *rejects*, and a
+     hang is not a rejection: when the KTX2 transcoder stalled in production the
+     promise simply never settled, so this rule never fired and the Index sat at
+     opacity 0 over an empty room for the whole ten-minute deadline. That is the
+     black screen. The room sets data-archive-sample-owner on its first committed
+     frame and keeps it while it owns a surface, so its absence means there is no
+     room to project onto, whether that is a failure, a hang, or a device that
+     never had one. */
+  .hero--archive-index[data-archive-failed='true'] .hero__screen-page,
+  html:not([data-archive-sample-owner]) .hero--archive-index .hero__screen-page {
     opacity: 1 !important;
     transform: none !important;
     pointer-events: auto !important;
