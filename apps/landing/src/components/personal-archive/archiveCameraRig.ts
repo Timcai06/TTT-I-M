@@ -40,6 +40,9 @@ const lookDir = new Vector3()
 const lookDestUp = new Vector3()
 const scratchStandoff = new Vector3()
 const scratchRetreat = new Vector3()
+const scratchRoomPos = new Vector3()
+const scratchRoomTarget = new Vector3()
+const scratchRoomQuat = new Quaternion()
 
 /** How far back a handoff pulls before closing on the destination surface. */
 const STANDOFF_RATIO = 1.85
@@ -329,10 +332,27 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
       const margin = (1 - .2 * Math.sin(Math.PI * intent.travel) * (1 - intent.align)) / watch
       // photo.center is read again below, so this offset point must stay a clone.
       const photoPosition = photo.center.clone().addScaledVector(photo.normal, photo.distance / margin)
+      // Settle onto the room path's own answer, not onto destinationPosition.
+      //
+      // This block is gated on `align < 1`, so at align = 1 it stops running and
+      // the camera falls back to whatever the room path left. The carrier was
+      // converging on destinationPosition while the room path, at that same
+      // progress, has completed only 64% of its dolly — two different points, one
+      // frame apart. Measured on the life-frame bridge: the projected black page
+      // went from 1016.2px wide to 826.0px in a single step, at progress .8014,
+      // and `align` is progressRange(.5, .8). That is the Frame chapter's
+      // background suddenly getting smaller as it opens.
+      //
+      // Settling onto the room pose makes the two branches identical at align = 1
+      // by construction, so there is nothing to step across. The arrival is still
+      // owned by the room path, which is what the endpoint guards check.
+      const roomPosition = scratchRoomPos.copy(camera.position)
+      const roomQuaternion = scratchRoomQuat.copy(camera.quaternion)
+      const roomTarget = scratchRoomTarget.copy(target)
       const settle = intent.align * intent.align
-      camera.position.copy(photoPosition).lerp(destinationPosition, settle)
-      camera.quaternion.copy(photo.rotation).slerp(destination.rotation, settle)
-      target.copy(photo.center).lerp(destination.center, settle)
+      camera.position.copy(photoPosition).lerp(roomPosition, settle)
+      camera.quaternion.copy(photo.rotation).slerp(roomQuaternion, settle)
+      target.copy(photo.center).lerp(roomTarget, settle)
       const inverseRotation = scratchQuat.copy(camera.quaternion).invert()
       let backoff = 0
       for (const point of anchors.FootballTransfer.slice(0, 4)) {
@@ -340,7 +360,10 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
         const requiredDepth = Math.max(Math.abs(local.x) / (Math.tan(camera.fov * Math.PI / 360) * camera.aspect * .99), Math.abs(local.y) / (Math.tan(camera.fov * Math.PI / 360) * .99))
         backoff = Math.max(backoff, requiredDepth + local.z)
       }
-      if (backoff > 0) camera.position.addScaledVector(scratchVec.set(0, 0, 1).applyQuaternion(camera.quaternion), backoff)
+      // Retired with the same curve. A backoff that is still non-zero at align = 1
+      // would reintroduce the seam this block was just taken apart to remove, one
+      // frame wide and in the opposite direction.
+      if (backoff > 0) camera.position.addScaledVector(scratchVec.set(0, 0, 1).applyQuaternion(camera.quaternion), backoff * (1 - settle))
     }
   }
   camera.updateProjectionMatrix(); camera.updateMatrixWorld(true)

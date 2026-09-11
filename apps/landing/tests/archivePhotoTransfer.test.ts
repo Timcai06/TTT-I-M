@@ -269,3 +269,52 @@ void test('every source paper proxy vertex lies on the authored beveled paper an
   writeFileSync('../../output/pm/NR-03/source-paper-endpoint.json',JSON.stringify({vertices:distances.length,maxSurfaceDistance:Math.max(...distances),edgeProjections:start.edgeProjections,maxNearZeroJump:Math.max(...jumps),thickness},null,2))
   transfer.dispose();rig.dispose()
 })
+
+void test('what the reader sees never steps, even where the camera barely moves', () => {
+  // The existing sweep measures camera travel per 1% of progress against a .17m
+  // limit. That is a world-space quantity, and close to a reading surface a
+  // camera move far under the limit is a large change on screen. The Frame
+  // handoff proved it: at progress .8014 the projected page went from 1016.2px
+  // wide to 826.0px in one step -- the chapter's black background visibly
+  // shrinking as it opened -- while the camera step stayed inside .17m and this
+  // file passed. `align` is progressRange(.5, .8), and the carrier block that
+  // owns the life-frame camera was gated on `align < 1`, so it stopped at exactly
+  // that sample and handed back to a room path that had completed 64% of its
+  // dolly. This measures the projection instead, which is the thing with an
+  // audience.
+  const m = model(true), rig = createArchiveAnimationRig(m), execution = createArchiveExecution(m.scene, rig)
+  const viewports = [{ width: 1280, height: 720 }, { width: 1440, height: 900 }] as const
+  const bridges = ['entry','about-life','life-frame','frame-stack','stack-work','work-contact'] as const
+  let requestId = 900_000
+  let worst = { segment: '', progress: 0, jump: 0 }
+  for (const viewport of viewports) {
+    const pageLayout = { width: viewport.width, height: viewport.height,
+      pageWidth: viewport.width * .8333, pageHeight: viewport.height * .8444,
+      originX: viewport.width * .0833, originY: viewport.height * .0778 }
+    for (const segment of bridges) {
+      let previous: { w: number; h: number } | null = null
+      for (let index = 0; index <= 100; index++) {
+        const progress = index / 100
+        const sampled = storyFrame(segment, progress)
+        if (sampled.presentation.targetReveal <= 0) { previous = null; continue }
+        const world = execution.sample(execution.begin('sample','foreground',++requestId,1), sampled)
+        const points = world.anchors[sampled.presentation.targetSurface]
+        if (!points) { previous = null; continue }
+        const camera = solveArchiveCamera(sampled, world.anchors, viewport)
+        const quad = projectArchiveQuad(points, camera, pageLayout, sampled.presentation.targetExpand, .0015)
+        const xs = quad.corners.map(c => c.x), ys = quad.corners.map(c => c.y)
+        const current = { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }
+        if (previous) {
+          const jump = Math.max(Math.abs(current.w - previous.w) / viewport.width,
+                                Math.abs(current.h - previous.h) / viewport.height)
+          if (jump > worst.jump) worst = { segment, progress, jump }
+          assert.ok(jump <= .08,
+            `${segment} projected page jumped ${(jump * 100).toFixed(1)}% of the viewport between ${(progress - .01).toFixed(2)} and ${progress.toFixed(2)}`)
+        }
+        previous = current
+      }
+    }
+  }
+  console.log(`  [projection continuity] worst step ${(worst.jump * 100).toFixed(2)}% at ${worst.segment} ${worst.progress.toFixed(2)}`)
+})
+
