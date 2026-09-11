@@ -95,6 +95,13 @@ const audioBytes = (() => {
   return total
 })()
 const mediaBytes = statSync(join('dist/projects/sciscope', 'sciscope-concept-film.mp4')).size + audioBytes
-const desktopBytes = totalBytes - frameBytes + desktopFrameBytes + modelBytes + mediaBytes
-if (desktopBytes > 50 * 1024 * 1024) throw new Error(`Desktop prepared assets exceed 50 MiB: ${mib(desktopBytes)}`)
-console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / 50 MiB for images, room and finite media (${mib(audioBytes)} audio); JS/fonts budget separately.`)
+const decoderFiles = readdirSync('dist/assets').filter(name => /^basis_transcoder-.*\.(js|wasm)$/.test(name))
+if (decoderFiles.length !== 2) throw new Error('Archive KTX2 requires exactly one JS and one WASM transcoder asset')
+const decoderBytes = decoderFiles.reduce((sum, name) => sum + statSync(join('dist/assets', name)).size, 0)
+const desktopBytes = totalBytes - frameBytes + desktopFrameBytes + modelBytes + mediaBytes + decoderBytes
+// 2026-09-11: tim explicitly relaxed the former 50 MiB cap in favor of material
+// and bake fidelity. Keep a 60 MiB regression guard around this larger delivery.
+const DESKTOP_BUDGET_BYTES = 60 * 1024 * 1024
+if (desktopBytes > DESKTOP_BUDGET_BYTES) throw new Error(`Desktop prepared assets exceed the revised 60 MiB budget: ${mib(desktopBytes)}`)
+if (desktopBytes > 50 * 1024 * 1024) console.warn(`[desktop-preparation-budget] Above the former 50 MiB target; art-first exception authorized 2026-09-11.`)
+console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / 60 MiB for images, room, finite media and KTX2 decoder (${mib(audioBytes)} audio, ${mib(decoderBytes)} decoder); app JS/fonts budget separately.`)

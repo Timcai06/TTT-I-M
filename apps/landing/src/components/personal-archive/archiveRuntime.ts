@@ -1,5 +1,6 @@
 import { HalfFloatType, Mesh, PerspectiveCamera, Raycaster, Scene, Texture, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget, type Material, type BufferGeometry } from 'three'
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { createArchiveModelLoader } from './archiveModelLoader'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js'
@@ -96,18 +97,21 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     const joined = new Uint8Array(received)
     let offset = 0
     for (const chunk of chunks) { joined.set(chunk, offset); offset += chunk.byteLength }
-    bytes = joined.buffer as ArrayBuffer
+    bytes = joined.buffer
   } else {
     bytes = await response.arrayBuffer()
   }
   reportArchiveBytes(1, 1)
   const assetHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('')
-  const model = await new GLTFLoader().parseAsync(bytes, '')
   let lease: ContextLease | undefined, renderer: WebGLRenderer | undefined
-  const cleanup: (() => void)[] = [() => disposeModel(model), resetListenerPosition]
+  const cleanup: (() => void)[] = [resetListenerPosition]
   try {
     signal.throwIfAborted(); lease = acquireRetainedContext('personal-archive-shared')
     renderer = new WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
+    const modelLoader = createArchiveModelLoader(renderer)
+    const model = await modelLoader.loader.parseAsync(bytes, '').finally(modelLoader.dispose)
+    cleanup.push(() => disposeModel(model))
+    signal.throwIfAborted()
     const gl = renderer, canvas = gl.domElement
     let shaderFailure: Error | null = null
     gl.debug.onShaderError = (context, program) => {

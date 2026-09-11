@@ -1,6 +1,6 @@
 // Geometry-only diagnostic used by the local browser regression runner.
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { PerspectiveCamera, Raycaster, Vector2 } from 'three'
+import { MeshBasicMaterial, PerspectiveCamera, Raycaster, Vector2 } from 'three'
 import modelUrl from '../../assets/personal-archive/personal-space.glb?url'
 import { createArchiveAnimationRig } from '../../components/personal-archive/archiveAnimationRig'
 import { createArchiveExecution } from '../../components/personal-archive/archiveExecution'
@@ -10,7 +10,11 @@ import { sampleStory } from '../../core/narrative/sampleStory'
 import { PERSONAL_ARCHIVE_SAMPLE_STORY } from '../../core/narrative/specs'
 import type { SampleSegment } from '../../core/narrative/types'
 export async function inspectCameraClearance() {
-  const model = await new GLTFLoader().loadAsync(modelUrl)
+  const diagnosticMaterial = new MeshBasicMaterial()
+  const model = await new GLTFLoader().register(() => ({
+    name: 'ARCHIVE_GEOMETRY_ONLY',
+    loadMaterial: () => Promise.resolve(diagnosticMaterial),
+  })).loadAsync(modelUrl)
   const animationRig = createArchiveAnimationRig(model)
   const removeContactPlane = addContactReadingPlane(model.scene)
   const execution = createArchiveExecution(model.scene, animationRig)
@@ -39,5 +43,6 @@ export async function inspectCameraClearance() {
     execution.dispose()
     animationRig.dispose()
     removeContactPlane()
+    diagnosticMaterial.dispose()
   }
 }

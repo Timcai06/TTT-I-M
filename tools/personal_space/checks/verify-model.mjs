@@ -11,6 +11,7 @@ assert.equal(bytes.toString('utf8', 0, 4), 'glTF')
 assert.equal(bytes.readUInt32LE(4), 2)
 assert.equal(bytes.readUInt32LE(8), bytes.length)
 const model = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString())
+const textureImage = index => { const t = model.textures[index]; return model.images[t.extensions?.KHR_texture_basisu?.source ?? t.extensions?.EXT_texture_webp?.source ?? t.source] }
 const hinge = model.nodes.findIndex((node) => node.name === 'NotebookHinge')
 const cover = model.nodes.findIndex((node) => node.name === 'NotebookCover')
 assert.ok(hinge >= 0 && cover >= 0, 'Notebook pivot and cover must remain addressable')
@@ -29,8 +30,7 @@ for (const name of ['Walnut_oiled', 'Plaster_warm', 'Linen_natural', 'Paper_fibe
   assert.ok(material?.pbrMetallicRoughness?.baseColorTexture, `${name}: color map missing`)
   assert.ok(material?.normalTexture, `${name}: normal map missing`)
   assert.ok(material?.pbrMetallicRoughness?.metallicRoughnessTexture, `${name}: roughness map missing`)
-  const texture = model.textures[material.pbrMetallicRoughness.baseColorTexture.index]
-  const image = model.images[texture.source]
+  const image = textureImage(material.pbrMetallicRoughness.baseColorTexture.index)
   const view = model.bufferViews[image.bufferView]
   const offset = 28 + bytes.readUInt32LE(12) + (view.byteOffset ?? 0)
   const metadata = await sharp(bytes.subarray(offset, offset + view.byteLength)).metadata()
@@ -38,20 +38,30 @@ for (const name of ['Walnut_oiled', 'Plaster_warm', 'Linen_natural', 'Paper_fibe
 }
 const room = model.meshes.find(mesh => mesh.name === 'ArchiveArchitecture' || mesh.primitives.some(p => model.materials[p.material]?.extras?.archive_lightmap))
 assert.ok(room, 'Baked room geometry missing')
-const originalLight = await sharp(path.join(root, 'art/personal-archive/textures/web-cinema/static-indirect.png')).removeAlpha().raw().toBuffer()
 const checkedImages = new Set()
 for (const primitive of room.primitives) {
   const material = model.materials[primitive.material]
   if (!material.extras?.archive_lightmap) continue
-  const slot = material.occlusionTexture
+  const modern = material.extras.archive_lightmap_version === 2
+  const slot = modern ? material.extras.archiveLightTexture : material.occlusionTexture
   assert.ok(primitive.attributes[`TEXCOORD_${slot.texCoord ?? 0}`] !== undefined, 'Lightmap atlas coordinates missing')
-  const image = model.images[model.textures[slot.index].source]
+  const image = textureImage(slot.index)
   const packed = material.pbrMetallicRoughness?.metallicRoughnessTexture
-  if (packed) assert.notEqual(model.textures[packed.index].source, model.textures[slot.index].source, 'RGB light must not overwrite packed roughness')
+  if (packed) assert.notEqual(textureImage(packed.index), image, 'RGB light must not overwrite packed roughness')
+  if (modern) {
+    assert.equal(material.occlusionTexture.index, packed.index, 'AO and roughness must share ORM storage')
+    assert.ok(Number.isFinite(material.extras.archive_lightmap_scale), 'Linear irradiance scale missing')
+  }
   if (checkedImages.has(image.bufferView)) continue
   const view = model.bufferViews[image.bufferView], offset = 28 + bytes.readUInt32LE(12) + (view.byteOffset ?? 0)
-  assert.equal(image.mimeType, 'image/png', 'Irradiance must stay lossless')
-  assert.deepEqual(await sharp(bytes.subarray(offset, offset + view.byteLength)).removeAlpha().raw().toBuffer(), originalLight, 'RGB indirect light was corrupted during export')
+  if (modern) {
+    assert.equal(image.mimeType, 'image/ktx2', 'Irradiance must use GPU compression')
+    assert.deepEqual(bytes.subarray(offset, offset + 12), Buffer.from('ab4b5458203230bb0d0a1a0a', 'hex'), 'Invalid KTX2 signature')
+  } else {
+    const originalLight = await sharp(path.join(root, 'art/personal-archive/textures/web-cinema/static-indirect.png')).removeAlpha().raw().toBuffer()
+    assert.equal(image.mimeType, 'image/png')
+    assert.deepEqual(await sharp(bytes.subarray(offset, offset + view.byteLength)).removeAlpha().raw().toBuffer(), originalLight)
+  }
   checkedImages.add(image.bufferView)
 }
 assert.ok(checkedImages.size > 0, 'No irradiance image checked')

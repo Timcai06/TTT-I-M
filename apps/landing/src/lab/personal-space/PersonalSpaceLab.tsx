@@ -1,7 +1,8 @@
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Mesh, Texture, type Material, type BufferGeometry } from 'three'
-import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { Mesh, Texture, type Material, type BufferGeometry, type WebGLRenderer } from 'three'
+import type { GLTF } from 'three/addons/loaders/GLTFLoader.js'
+import { createArchiveModelLoader } from '../../components/personal-archive/archiveModelLoader'
 import { facts } from '../../content'
 import { useReducedMotion } from '../../lib/motion'
 import { acquireOptionalContextWhenAvailable, canCreateWebGL2Context, type ContextLease } from '../../lib/webgl/contextRegistry'
@@ -41,6 +42,7 @@ class SceneBoundary extends Component<{ children: ReactNode; onFailure: () => vo
 
 export default function PersonalSpaceLab() {
   const [model, setModel] = useState<GLTF | null>(null)
+  const [renderer, setRenderer] = useState<WebGLRenderer | null>(null)
   const [admitted, setAdmitted] = useState(false)
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
@@ -54,7 +56,6 @@ export default function PersonalSpaceLab() {
 
   useEffect(() => {
     let cancelled = false
-    let loaded: GLTF | null = null
     let lease: ContextLease | null = null
     const timeout = window.setTimeout(fail, 20_000)
     const cancelAdmission = acquireOptionalContextWhenAvailable('personal-space-lab', (acquired) => {
@@ -62,19 +63,10 @@ export default function PersonalSpaceLab() {
       queueMicrotask(() => {
         if (cancelled) return
         if (!canCreateWebGL2Context()) { acquired.release(); fail(); return }
+        window.clearTimeout(timeout)
         setAdmitted(true)
       })
     })
-    new GLTFLoader().load(modelUrl, (result) => {
-      window.clearTimeout(timeout)
-      if (cancelled) { disposeModel(result); return }
-      loaded = result
-      prepareArchiveMaterials(result.scene)
-      const project = result.scene.getObjectByName('MonitorState_project'), photo = result.scene.getObjectByName('MonitorState_photo')
-      if (project) project.visible = true
-      if (photo) photo.visible = false
-      setModel(result)
-    }, undefined, () => { window.clearTimeout(timeout); if (!cancelled) fail() })
     return () => {
       cancelled = true
       window.clearTimeout(timeout)
@@ -82,9 +74,26 @@ export default function PersonalSpaceLab() {
       rendererCleanup.current?.()
       rendererCleanup.current = null
       lease?.release()
-      if (loaded) disposeModel(loaded)
     }
   }, [fail])
+
+  useEffect(() => {
+    if (!renderer) return
+    let cancelled = false, loaded: GLTF | null = null
+    const timeout = window.setTimeout(fail, 20_000)
+    const resource = createArchiveModelLoader(renderer)
+    void resource.loader.loadAsync(modelUrl).then(result => {
+      window.clearTimeout(timeout)
+      if (cancelled) { disposeModel(result); return }
+      loaded = result
+      prepareArchiveMaterials(result.scene, renderer.capabilities.getMaxAnisotropy())
+      const project = result.scene.getObjectByName('MonitorState_project'), photo = result.scene.getObjectByName('MonitorState_photo')
+      if (project) project.visible = true
+      if (photo) photo.visible = false
+      setModel(result)
+    }).catch(() => { window.clearTimeout(timeout); if (!cancelled) fail() }).finally(resource.dispose)
+    return () => { cancelled = true; window.clearTimeout(timeout); if (loaded) disposeModel(loaded) }
+  }, [renderer, fail])
 
   const close = useCallback(() => {
     setReading(false)
@@ -109,11 +118,12 @@ export default function PersonalSpaceLab() {
 
   return <main className={`space-lab ${reading ? 'space-lab--reading' : ''}`} data-ready={ready} data-opened={opened}>
     <div className="space-lab__scene" aria-hidden="true">
-      {admitted && model && !failed && <SceneBoundary onFailure={fail}>
+      {admitted && !failed && <SceneBoundary onFailure={fail}>
         <Canvas shadows frameloop="demand" dpr={[1, getGLQualityProfile().dprMax]}
           camera={{ position: cameras.entrance.position as [number, number, number], fov: cameras.entrance.fov, near: 0.02, far: 30 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
+            setRenderer(gl)
             const lost = (event: Event) => { event.preventDefault(); fail() }
             gl.domElement.addEventListener('webglcontextlost', lost)
             rendererCleanup.current = () => {
@@ -122,7 +132,7 @@ export default function PersonalSpaceLab() {
               gl.forceContextLoss()
             }
           }}>
-          <SpaceScene model={model} opened={opened} reducedMotion={reducedMotion} onOpen={open} onSettled={settled} />
+          {model && <SpaceScene model={model} opened={opened} reducedMotion={reducedMotion} onOpen={open} onSettled={settled} />}
         </Canvas>
       </SceneBoundary>}
     </div>

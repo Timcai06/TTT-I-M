@@ -1,5 +1,5 @@
 {
-  "sourceSha256": "2563428593249e278bf7bcfa0d687d81704b1d2edb9d2a84ca8bdb56f8c91429",
+  "sourceSha256": "bf6b4a7c8b039562e36006cb1128d31d4fcacba2b9d04ed08cae95bdcdd4c20a",
   "views": {
     "home": {
       "position": [
@@ -129,5 +129,14 @@
   "monitorStates": [
     "MonitorState_project",
     "MonitorState_photo"
-  ]
+  ],
+  "materialOptimization": {
+    "version": "sunrise-20260911",
+    "modelSha256": "f79c081dd3a3e38224b67bfbbc122bec89dda8906d9865a41535874ca11d5417",
+    "baselineCommit": "f53ea7638b77b4b7cd155fbfc0e87bc2afad7bc3",
+    "propMaterials": 10,
+    "bakedMaterials": 37,
+    "textureEncoding": "KTX2 UASTC quality 4, no RDO; WebP/JPEG base colors retained",
+    "visualAcceptance": "user-owned"
+  }
 }
