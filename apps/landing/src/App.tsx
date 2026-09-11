@@ -97,8 +97,10 @@ export default function App() {
             experience starts, the way the reference does, instead of burying it in
             the nav where nobody finds it. */}
         <Loader />
-        <ChapterSoundCues />
         <ChapterStateProvider>
+          {/* Inside the provider: useChapterState throws without one, and mounting
+              this outside it crashed the whole tree to a black screen. */}
+          <ChapterSoundCues />
           <Suspense fallback={null}><ArchiveStage /></Suspense>
           <ScrollIndicator />
           <Nav />

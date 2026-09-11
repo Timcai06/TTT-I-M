@@ -328,3 +328,24 @@ if (missingContextConsumers.length > 0) {
 }
 
 console.log('[chapter-state-guards] navigation uses one shared chapter state provider.')
+
+// A context hook that throws without its provider turns a misplaced mount into a
+// blank page, not a local failure. ChapterSoundCues was added directly under
+// SoundProvider and above ChapterStateProvider, and the whole tree crashed to
+// black on mount. Pin the nesting so the next consumer cannot repeat it.
+{
+  const app = readFileSync(new URL('../../src/App.tsx', import.meta.url), 'utf8')
+  const providerAt = app.indexOf('<ChapterStateProvider>')
+  const closeAt = app.indexOf('</ChapterStateProvider>')
+  if (providerAt < 0 || closeAt < 0) {
+    throw new Error('App must mount ChapterStateProvider.')
+  }
+  for (const consumer of ['<ChapterSoundCues />', '<ScrollIndicator />', '<ChapterThemeDriver />']) {
+    const at = app.indexOf(consumer)
+    if (at < 0) throw new Error(`App is missing ${consumer}.`)
+    if (at < providerAt || at > closeAt) {
+      throw new Error(`${consumer} reads chapter state and must be mounted inside ChapterStateProvider.`)
+    }
+  }
+  console.log('[chapter-state-guards] chapter-state consumers are mounted inside their provider.')
+}
