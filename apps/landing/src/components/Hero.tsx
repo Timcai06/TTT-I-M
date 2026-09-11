@@ -45,7 +45,20 @@ const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSu
  */
 export default function Hero() {
   // Same gate ArchiveAbout uses to decide the room exists at all.
-  const archiveIndexMode = !useMobileExperience() && !useReducedMotion()
+  //
+  // Both hooks are called unconditionally and combined afterwards. Written as
+  // `!useMobileExperience() && !useReducedMotion()` the `&&` short-circuits, so
+  // useReducedMotion was only called when the first returned false — a hook behind
+  // a condition. useMobileExperience is two useSyncExternalStore calls and
+  // useReducedMotion is one, so the two branches rendered three hooks or two, and
+  // the moment a media query settled after first paint the count changed under
+  // React. That is the "change in the order of Hooks called by Hero" warning, and
+  // the TypeError reading 'length' that followed it was React failing on the
+  // inconsistent hook list. In production it took the whole Hero chapter into its
+  // error boundary and left the loader waiting at 99.
+  const mobileExperience = useMobileExperience()
+  const reducedMotion = useReducedMotion()
+  const archiveIndexMode = !mobileExperience && !reducedMotion
 
   const root = useRef<HTMLElement>(null)
   const screenPage = useRef<HTMLDivElement>(null)
