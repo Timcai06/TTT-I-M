@@ -26,7 +26,7 @@ function readGlbScene(): Readonly<{
   scene: StaticSceneDescription
   firstKeyByAnimation: ReadonlyMap<string, number | null>
 }> {
-  const bytes = readFileSync(new URL('../src/assets/personal-archive/personal-space.glb', import.meta.url))
+  const bytes = readFileSync(process.env.ARCHIVE_MODEL_PATH ?? new URL('../src/assets/personal-archive/personal-space.glb', import.meta.url))
   assert.equal(bytes.toString('utf8', 0, 4), 'glTF')
   assert.equal(bytes.readUInt32LE(4), 2)
   assert.equal(bytes.readUInt32LE(8), bytes.length)

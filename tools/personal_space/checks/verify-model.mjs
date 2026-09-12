@@ -25,7 +25,14 @@ const animation = model.animations.find((clip) => clip.name === 'NotebookOpen')
 assert.ok(animation?.channels.some((channel) => channel.target.node === hinge && channel.target.path === 'rotation'))
 assert.ok(model.images.length >= 4, 'Real portfolio photographs must survive export')
 assert.ok(model.images.every((image) => Number.isInteger(image.bufferView)), 'GLB must package its textures')
-for (const name of ['Walnut_oiled', 'Plaster_warm', 'Linen_natural', 'Paper_fiber', 'Ceramic_speckle', 'Warm oatmeal upholstery', 'Warm muted clay wool']) {
+const materialResolutions = [
+  ['Walnut_oiled', 2048], ['Plaster_warm', 1024], ['Linen_natural', 1024],
+  ['Paper_fiber', 1024], ['Ceramic_speckle', 1024], ['Warm oatmeal upholstery', 1024],
+  ...['floor', 'textiles', 'furniture-wood', 'shelf-books', 'foliage'].map(group => ['WebRefine / ' + group, 2048]),
+  ...['hardware', 'life-paper-ceramic', 'plant-container', 'desktop'].map(group => ['WebRefine / ' + group, 1024]),
+  ['WebRefine / photo-paper', 512],
+]
+for (const [name, resolution] of materialResolutions) {
   const material = model.materials.find(item => item.name === `RoomBake_${name}` || item.name === name)
   assert.ok(material?.pbrMetallicRoughness?.baseColorTexture, `${name}: color map missing`)
   assert.ok(material?.normalTexture, `${name}: normal map missing`)
@@ -34,9 +41,9 @@ for (const name of ['Walnut_oiled', 'Plaster_warm', 'Linen_natural', 'Paper_fibe
   const view = model.bufferViews[image.bufferView]
   const offset = 28 + bytes.readUInt32LE(12) + (view.byteOffset ?? 0)
   const metadata = await sharp(bytes.subarray(offset, offset + view.byteLength)).metadata()
-  assert.equal(metadata.width, name === 'Walnut_oiled' ? 2048 : 1024, `${name}: texture resolution regressed`)
+  assert.equal(metadata.width, resolution, `${name}: texture resolution regressed`)
 }
-const room = model.meshes.find(mesh => mesh.name === 'ArchiveArchitecture' || mesh.primitives.some(p => model.materials[p.material]?.extras?.archive_lightmap))
+const room = model.meshes[model.nodes.find(node => node.name === 'ArchiveArchitecture')?.mesh]
 assert.ok(room, 'Baked room geometry missing')
 const checkedImages = new Set()
 for (const primitive of room.primitives) {

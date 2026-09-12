@@ -109,9 +109,10 @@ if (!existsSync(workerPath)) {
 const decoderBytes = decoderFiles.reduce((sum, name) => sum + statSync(join('dist/assets', name)).size, 0)
   + statSync(workerPath).size
 const desktopBytes = totalBytes - frameBytes + desktopFrameBytes + modelBytes + mediaBytes + decoderBytes
-// 2026-09-11: tim explicitly relaxed the former 50 MiB cap in favor of material
-// and bake fidelity. Keep a 60 MiB regression guard around this larger delivery.
-const DESKTOP_BUDGET_BYTES = 60 * 1024 * 1024
-if (desktopBytes > DESKTOP_BUDGET_BYTES) throw new Error(`Desktop prepared assets exceed the revised 60 MiB budget: ${mib(desktopBytes)}`)
-if (desktopBytes > 50 * 1024 * 1024) console.warn(`[desktop-preparation-budget] Above the former 50 MiB target; art-first exception authorized 2026-09-11.`)
-console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / 60 MiB for images, room, finite media and KTX2 decoder (${mib(audioBytes)} audio, ${mib(decoderBytes)} decoder); app JS/fonts budget separately.`)
+// 2026-09-12: tim prioritizes the refined model's art. The three source passes
+// now ship at 86.1 MiB with full-quality PBR maps; retain a bounded 90 MiB guard.
+// See docs/landing/delivery/refined-room-web-20260912.md for this new baseline.
+const DESKTOP_BUDGET_MIB = 90
+const DESKTOP_BUDGET_BYTES = DESKTOP_BUDGET_MIB * 1024 * 1024
+if (desktopBytes > DESKTOP_BUDGET_BYTES) throw new Error(`Desktop prepared assets exceed the revised ${DESKTOP_BUDGET_MIB} MiB budget: ${mib(desktopBytes)}`)
+console.log(`[desktop-preparation-budget] ${mib(desktopBytes)} / ${DESKTOP_BUDGET_MIB} MiB for images, room, finite media and KTX2 decoder (${mib(audioBytes)} audio, ${mib(decoderBytes)} decoder); app JS/fonts budget separately.`)

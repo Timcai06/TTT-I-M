@@ -85,6 +85,9 @@ const MAX_RETREAT = .7
  * of riding the photograph full-frame the whole way across.
  */
 const CARRIER_STANDOFF = 2.2
+/** Keep the tilted, curved photo inside the frame as it settles on the wall.
+ * Apply the same margin to reading and both adjoining bridges to retain seams. */
+const FRAME_PAPER_COVERAGE = .97
 
 /** The room shell (ArchiveArchitecture) tops out at y=2.80; keep .25 clear of it. */
 const CEILING_CLEARANCE_Y = 2.55
@@ -123,6 +126,7 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
   const indexFov = views.home.fov + (views.stack.fov - views.home.fov) * indexBase
   const surfacePose = (surfaceName: string, fov: number) => {
     const surface = fit(anchors[surfaceName], fov, camera.aspect)
+    if (surfaceName === 'FrameReading') surface.distance /= FRAME_PAPER_COVERAGE
     // position is a second long-lived point derived from center; center is
     // still exposed on the returned object, so it cannot be mutated here.
     const position = surface.center.clone().addScaledVector(surface.normal, surface.distance)

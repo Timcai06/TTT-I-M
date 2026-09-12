@@ -4,7 +4,7 @@ Never round-trip the production GLB through Blender's exporter. The assembler
 retains its node/animation contract and only adds UV seam vertices when needed.
 """
 from pathlib import Path
-import sys, json, struct, math, base64, hashlib
+import sys, json, struct, math, base64, hashlib, os
 import bpy
 import numpy as np
 from mathutils import Matrix, Quaternion, Vector
@@ -13,7 +13,9 @@ from bake_prop_surfaces import is_prop, make_maps, detail_uv
 from bake_light_falloff import finite_falloff
 
 ROOT = Path(__file__).resolve().parents[3]
-WORK = ROOT/'output/material-optimization'
+WORK = Path(os.environ.get('ARCHIVE_BAKE_WORK', ROOT/'output/material-optimization'))
+REFINED = os.environ.get('ARCHIVE_REFINED_EXPORT') == '1'
+SAMPLES = 256 if REFINED else 64
 OUT = WORK/'bake'; OUT.mkdir(parents=True,exist_ok=True)
 source = WORK/'baseline/personal-space.glb'
 raw = source.read_bytes(); size = struct.unpack_from('<I',raw,12)[0]
@@ -28,7 +30,7 @@ def accessor(index):
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene=bpy.context.scene; scene.render.engine='CYCLES'
-scene.cycles.device='GPU';scene.cycles.samples=64;scene.cycles.use_adaptive_sampling=False
+scene.cycles.device='GPU';scene.cycles.samples=SAMPLES;scene.cycles.use_adaptive_sampling=False
 prefs=bpy.context.preferences.addons['cycles'].preferences;prefs.compute_device_type='METAL';prefs.get_devices()
 for device in prefs.devices:device.use=device.type=='METAL'
 scene.cycles.max_bounces=6;scene.cycles.diffuse_bounces=4;scene.cycles.glossy_bounces=4
@@ -79,13 +81,14 @@ for mi,d in enumerate(doc['materials']):
         node=texture(d['normalTexture'],mat,True);normal=nodes.new('ShaderNodeNormalMap');normal.uv_map='UV'+str(d['normalTexture'].get('texCoord',0));normal.inputs['Strength'].default_value=d['normalTexture'].get('scale',1)
         links.new(node.outputs['Color'],normal.inputs['Color']);links.new(normal.outputs['Normal'],bs.inputs['Normal'])
     name=d['name'].lower()
-    skip=any(x in name for x in ['monitor','screen','display','bulb','panorama','clear window','glass','viewer'])
+    dynamic=d.get('extras',{}).get('archive_dynamic_surface',False)
+    skip=dynamic or any(x in name for x in ['monitor','screen','display','bulb','panorama','clear window','glass','viewer'])
     if skip:
-        excluded[mi]='emissive/interface/glass/panorama: retain authored response'
+        excluded[mi]='moving surface: realtime lighting' if dynamic else 'emissive/interface/glass/panorama: retain authored response'
         if any(x in name for x in ['glass','clear window','panorama']):
             transparent=nodes.new('ShaderNodeBsdfTransparent');links.new(transparent.outputs[0],nodes.get('Material Output').inputs['Surface'])
     else:receivers[mi]=[]
-    if is_prop(d['name']):
+    if not dynamic and is_prop(d['name']):
         maps[mi]=make_maps(d['name'],OUT)
         for kind,img in maps[mi].items():
             node=nodes.new('ShaderNodeTexImage');node.image=img
@@ -114,6 +117,9 @@ for ni,n in enumerate(doc['nodes']):
             if not(channel==1 and detail is not None):values[:,1]=1-values[:,1]
             uv.data.foreach_set('uv',values[triangles.ravel()].ravel())
         if mi in receivers:receivers[mi].append(obj)
+        # Remove moving paper from transport entirely: its resting pose must not
+        # leave permanent AO or indirect shadows on furniture and walls.
+        if doc['materials'][mi].get('extras',{}).get('archive_dynamic_surface'):obj.hide_render=True
         # Screens and printed overlays do not shadow in the shipping renderer.
         if any(x in n['name'] for x in ['MonitorState_photo','MonitorPhoto_','StackPhotoViewerSurface']):obj.hide_render=True
         if any(x in n['name'] for x in ['ArchivePhoto_','Monitor','Work_FileTitle_','Work_FileNumber_','About_PageFolio']):obj.visible_shadow=False
@@ -151,7 +157,9 @@ light('Runtime shelf','POINT','f6c58e',.08*4*math.pi,(.3,2.37,-1.31),distance=1.
 
 manifest={'sourceSha256':hashlib.sha256(raw).hexdigest(),'materials':{},'excluded':excluded,
           'lighting':{'environment':environment['method'],'environmentOrientation':'blender-negative-longitude-v1','sunDirection':[-4.1,-1.1,4.6],'exposureDisplayOnly':1.02,
-                      'samples':64,'indirectOnly':True,'aoDistanceMetres':.18,'localLightCalibration':'4*pi intensity; shader finite falloff (1-(d/r)^4)^2; white-reference probes'},'uv':[]}
+                      'samples':SAMPLES,'indirectOnly':True,'aoDistanceMetres':.18,'movingPaperExcluded':REFINED,'localLightCalibration':'4*pi intensity; shader finite falloff (1-(d/r)^4)^2; white-reference probes'},'uv':[]}
+previous=json.loads((OUT/'manifest.partial.json').read_text()) if (OUT/'manifest.partial.json').exists() else {}
+cached=previous.get('materials',{}) if previous.get('sourceSha256')==manifest['sourceSha256'] and previous.get('lighting')==manifest['lighting'] else {}
 for mi,objects in receivers.items():
     if not objects:continue
     bpy.ops.object.select_all(action='DESELECT')
@@ -161,8 +169,13 @@ for mi,objects in receivers.items():
     mat=materials[mi];nodes,links=mat.node_tree.nodes,mat.node_tree.links
     output=nodes.get('Material Output');original=output.inputs['Surface'].links[0].from_socket
     resolution=1024 if mi in (3,4,5,9,20,46,48) else 512
+    if REFINED:
+        resolution=1024 if mat.name.startswith('WebRefine /') or mat.name in ['Walnut_oiled','Plaster_warm','Paper_fiber'] else 512
     paths={}
     for kind in ['ao','indirect']:
+        saved=cached.get(str(mi),{}).get(kind)
+        if saved and saved['size']==resolution and (ROOT/saved['file']).is_file():
+            paths[kind]=saved;print('BAKE_CACHE',mi,kind,flush=True);continue
         path=OUT/('material-%02d-%s.exr'%(mi,kind))
         image=bpy.data.images.new('RoomBake_%02d_%s'%(mi,kind),width=resolution,height=resolution,alpha=False,float_buffer=True)
         image.colorspace_settings.name='Non-Color'

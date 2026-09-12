@@ -58,7 +58,7 @@ interface GltfDocument {
   animations: GltfAnimation[]
 }
 
-const glbBytes = readFileSync(new URL('../src/assets/personal-archive/personal-space.glb', import.meta.url))
+const glbBytes = readFileSync(process.env.ARCHIVE_MODEL_PATH ?? new URL('../src/assets/personal-archive/personal-space.glb', import.meta.url))
 assert.equal(glbBytes.toString('utf8', 0, 4), 'glTF')
 const jsonLength = glbBytes.readUInt32LE(12)
 const gltf = JSON.parse(glbBytes.subarray(20, 20 + jsonLength).toString()) as GltfDocument

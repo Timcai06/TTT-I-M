@@ -26,7 +26,7 @@ for (const m of doc.materials) if (m.extras?.archive_lightmap && m.occlusionText
 const packed = new Map()
 for (const m of doc.materials) {
   const p = m.pbrMetallicRoughness, info = p?.metallicRoughnessTexture
-  if (!info || m.occlusionTexture) continue
+  if (!info || m.occlusionTexture || m.extras?.archive_dynamic_surface) continue
   const source = imageSource(doc.textures[info.index])
   if (!packed.has(source)) {
     const { data, info: size } = await sharp(imageBytes(source)).removeAlpha().raw().toBuffer({ resolveWithObject: true })

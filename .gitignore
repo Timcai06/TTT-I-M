@@ -45,3 +45,7 @@ apps/landing/public/server.glb
 # installed three version. Committing it would let a three upgrade leave a stale
 # transcoder behind.
 apps/landing/public/archive-basis/
+.vercel
+.env*
+__pycache__/
+*.py[cod]

@@ -1,11 +1,12 @@
 """Convert linear EXR bakes to scaled data PNGs and portable UV JSON sidecars."""
 from pathlib import Path
-import json
+import json, os
 import bpy
 import numpy as np
-ROOT=Path(__file__).resolve().parents[3];OUT=ROOT/'output/material-optimization/bake'
+ROOT=Path(__file__).resolve().parents[3]
+WORK=Path(os.environ.get('ARCHIVE_BAKE_WORK', ROOT/'output/material-optimization'));OUT=WORK/'bake'
 manifest=json.loads((OUT/'manifest.json').read_text())
-model=json.loads((ROOT/'output/material-optimization/baseline/model.json').read_text())
+model=json.loads((WORK/'baseline/model.json').read_text())
 def coverage(mi,size):
     mask=np.zeros((size,size),bool)
     for spec in manifest['uv']:

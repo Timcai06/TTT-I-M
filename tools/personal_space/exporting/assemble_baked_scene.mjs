@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises'
 import sharp from 'sharp'
+import { pathToFileURL } from 'node:url'
 import { readGlb, writeGlb, imageSource } from './glb_io.mjs'
 
 const root = new URL('../../../', import.meta.url)
-const { doc, bin } = await readGlb(new URL('output/material-optimization/baseline/personal-space.glb', root))
-const manifest = JSON.parse(await fs.readFile(new URL('output/material-optimization/bake/portable.json', root)))
+const work = process.env.ARCHIVE_BAKE_WORK ? pathToFileURL(process.env.ARCHIVE_BAKE_WORK + '/') : new URL('output/material-optimization/', root)
+const { doc, bin } = await readGlb(new URL('baseline/personal-space.glb', work))
+const manifest = JSON.parse(await fs.readFile(new URL('bake/portable.json', work)))
 const changes = new Map(), seen = new Set()
 function addView(bytes, target) {
   const index = doc.bufferViews.length; doc.bufferViews.push({ buffer: 0, byteLength: bytes.length, ...(target ? { target } : {}) }); changes.set(index, bytes); return index
@@ -91,7 +93,7 @@ for (const [mi, record] of Object.entries(manifest.materials)) {
   m.extras = { ...m.extras, archive_lightmap: true, archive_lightmap_version: 2,
     archive_lightmap_scale: record.indirect.scale * Math.PI,
     archiveLightTexture: { index: lightIndex, texCoord: 2 },
-    archive_bake: 'sunrise-20260911', archive_bake_slot: m.name.startsWith('RoomBake_') ? m.name : 'RoomBake_' + m.name }
+    archive_bake: process.env.ARCHIVE_REFINED_EXPORT === '1' ? 'room-refinement-20260912' : 'sunrise-20260911', archive_bake_slot: m.name.startsWith('RoomBake_') ? m.name : 'RoomBake_' + m.name }
   if (record.prop) {
     m.normalTexture = { index: addTexture(m.name + '-VeinOrFibreNormal', await fs.readFile(new URL(record.prop.normal, root))), texCoord: 1 }
     m.extras.archive_prop_surface = true
@@ -102,5 +104,5 @@ for (const mi of Object.keys(manifest.excluded)) {
   const m = doc.materials[mi]
   if (m.extras?.archive_lightmap) { delete m.occlusionTexture; delete m.extras.archive_lightmap }
 }
-const bytes = await writeGlb(new URL('output/material-optimization/baked-uncompressed.glb', root), doc, bin, changes)
+const bytes = await writeGlb(new URL('baked-uncompressed.glb', work), doc, bin, changes)
 console.log(JSON.stringify({ bytes, bakedMaterials: Object.keys(manifest.materials).length, propMaterials: Object.values(manifest.materials).filter(m => m.prop).length }))

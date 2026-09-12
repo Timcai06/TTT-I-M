@@ -18,8 +18,9 @@ type Accessor = { bufferView:number; byteOffset?:number; componentType:number; c
 type RawNode = { name:string; mesh?:number; children?:number[]; translation?:number[]; rotation?:number[]; scale?:number[]; matrix?:number[] }
 type Primitive = { attributes:Record<string,number>; indices:number; material:number }
 type Raw = { nodes:RawNode[]; scenes:{nodes:number[]}[]; scene:number; meshes:{primitives:Primitive[]}[]; accessors:Accessor[]; bufferViews:{byteOffset?:number;byteStride?:number;byteLength:number}[]; animations:{name:string;samplers:{input:number;output:number}[];channels:{sampler:number;target:{node:number;path:string}}[]}[]; textures:{source:number}[]; images:{bufferView:number}[]; materials:{name?:string;pbrMetallicRoughness?:{baseColorTexture?:{index:number}}}[] }
-const bytes=readFileSync(new URL('../src/assets/personal-archive/personal-space.glb',import.meta.url))
+const bytes=readFileSync(process.env.ARCHIVE_MODEL_PATH ?? new URL('../src/assets/personal-archive/personal-space.glb',import.meta.url))
 const jsonLength=bytes.readUInt32LE(12), raw=JSON.parse(bytes.subarray(20,20+jsonLength).toString()) as Raw
+const isWalnutMaterial=(name:string|undefined)=>name==='RoomBake_Walnut_oiled'||name==='Walnut_oiled'||name==='WebRefine / furniture-wood'
 function accessor(index:number) {
   const a=raw.accessors[index], view=raw.bufferViews[a.bufferView]
   const width=({SCALAR:1,VEC2:2,VEC3:3,VEC4:4} as Record<string,number>)[a.type]
@@ -43,7 +44,7 @@ function model(includeWalnutPrimitive=false) {
       material.name = raw.materials[p.material].name ?? ''
       object=new Mesh(geometry,material)
       if(includeWalnutPrimitive) primitives.slice(1).forEach((primitive,index)=>{
-        if(raw.materials[primitive.material].name!=='RoomBake_Walnut_oiled') return
+        if(!isWalnutMaterial(raw.materials[primitive.material].name)) return
         const childGeometry=new BufferGeometry()
         for(const [key,name,size] of [['POSITION','position',3],['NORMAL','normal',3],['TEXCOORD_0','uv',2]] as const) if(primitive.attributes[key]!==undefined) childGeometry.setAttribute(name,new Float32BufferAttribute(accessor(primitive.attributes[key]),size))
         childGeometry.setIndex(accessor(primitive.indices))
@@ -120,12 +121,15 @@ void test('real GLB animations and solver keep the opening and all six bridges c
     return {name,bounds:new Box3().setFromObject(object).expandByScalar(.011)}
   })
   const walnutMeshes:Mesh<BufferGeometry,MeshBasicMaterial>[]=[]
-  m.scene.traverse(object=>{if(object instanceof Mesh&&object.name.includes('RoomBake_Walnut_oiled')) walnutMeshes.push(object as Mesh<BufferGeometry,MeshBasicMaterial>)})
-  assert.equal(walnutMeshes.length,1,'real GLB walnut geometry was not loaded exactly once')
-  const walnut=walnutMeshes[0],walnutPosition=walnut.geometry.getAttribute('position'),walnutIndex=walnut.geometry.index
-  assert.ok(walnutIndex,'real GLB walnut geometry has no index')
+  m.scene.traverse(object=>{if(object instanceof Mesh&&isWalnutMaterial((object.material as MeshBasicMaterial).name)) walnutMeshes.push(object as Mesh<BufferGeometry,MeshBasicMaterial>)})
+  assert.ok(walnutMeshes.some(mesh=>mesh.material.name==='Walnut_oiled'),'retained walnut geometry missing')
+  assert.ok(walnutMeshes.some(mesh=>mesh.material.name==='WebRefine / furniture-wood'),'refined wood geometry missing')
   const walnutTriangles:Triangle[]=[]
-  for(let index=0;index<walnutIndex.count;index+=3) walnutTriangles.push(new Triangle(...([0,1,2].map(offset=>new Vector3().fromBufferAttribute(walnutPosition,walnutIndex.getX(index+offset)).applyMatrix4(walnut.matrixWorld)) as [Vector3,Vector3,Vector3])))
+  for(const walnut of walnutMeshes) {
+    const walnutPosition=walnut.geometry.getAttribute('position'),walnutIndex=walnut.geometry.index
+    assert.ok(walnutIndex,'real GLB walnut geometry has no index')
+    for(let index=0;index<walnutIndex.count;index+=3) walnutTriangles.push(new Triangle(...([0,1,2].map(offset=>new Vector3().fromBufferAttribute(walnutPosition,walnutIndex.getX(index+offset)).applyMatrix4(walnut.matrixWorld)) as [Vector3,Vector3,Vector3])))
+  }
   // 'index' is the opening pull-back, and it belongs in this sweep for the same
   // reason the bridges do: it is now the longest single camera move on the site,
   // it starts closer to the monitor than anything else ever gets, and it crosses
@@ -270,7 +274,7 @@ void test('every source paper proxy vertex lies on the authored beveled paper an
   for(let i=0;i<layerVertices;i++) {
     const thickness=new Vector3().fromBufferAttribute(wallPosition,i+layerVertices).sub(new Vector3().fromBufferAttribute(wallPosition,i))
     assert.ok(thickness.dot(new Vector3().fromBufferAttribute(wallNormal,i))<0,'first grid is the outward front surface')
-    assert.ok(Math.abs(thickness.length()-.0008)<1e-5)
+    assert.ok(Math.abs(thickness.length()-.00045)<1e-5,'refined cotton paper is 0.45 mm thick')
   }
   transfer.apply({kind:'life-to-frame',progress:1e-7})
   const near=transfer.readback(),jumps=[]
