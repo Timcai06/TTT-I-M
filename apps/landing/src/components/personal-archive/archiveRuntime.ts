@@ -73,15 +73,12 @@ function disposeModel(model: GLTF) {
   for (const texture of textures) { texture.dispose(); const data: unknown = texture.source.data; if (data instanceof ImageBitmap) data.close() }
 }
 
-/**
- * Ceiling on the drawing buffer, in pixels, whatever the window does.
- *
- * 5 Mpx is a 1440x900 window at DPR 2 — a size this pass stack demonstrably
- * survives, because that is where the room was still rendering when maximising
- * broke it. A maximised window now costs the same as that one instead of three
- * times more; what it loses is effective pixel ratio, not a pass.
- */
-const MAX_DRAWING_PIXELS = 5_000_000
+/** Below this the pointer has arrived and parallax has nothing left to draw. */
+const POINTER_SETTLED = .0004
+/** The sky drifts over minutes and the birds cross in seconds; neither needs 60Hz,
+ *  and at rest this is the only thing asking the room to redraw at all. */
+const ATMOSPHERE_INTERVAL_MS = 66
+
 async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
   const response = await fetch(modelUrl, { signal })
   if (!response.ok) throw new Error(`Archive model HTTP ${response.status}`)
@@ -169,27 +166,6 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       ? Array.from(webgl2.getInternalformatParameter(webgl2.RENDERBUFFER, webgl2.RGBA16F, webgl2.SAMPLES) as Int32Array)
       : []
     const quality = getGLQualityProfile()
-    // The pass stack is priced per pixel of drawing buffer, and nothing used to put
-    // a ceiling on that. The tier is decided by deviceMemory and core count alone,
-    // so a capable machine asks for DPR 2 and 4x MSAA at whatever size the window
-    // happens to be. Half-float RGBA is 8 bytes a pixel, and at full size this
-    // allocates two composer targets (one multisampled), a Bokeh depth target and
-    // UnrealBloom's five-level mip chain twice over:
-    //
-    //   1024x768  @2  ->  3.1 Mpx      1920x1080 @2  ->   8.3 Mpx
-    //   1440x900  @2  ->  5.2 Mpx      2560x1440 @2  ->  14.7 Mpx
-    //
-    // Maximising the window quadruples it against a small one, and an allocation
-    // the driver refuses does not throw — the context is lost, which is why the
-    // room went missing at some window sizes and not others.
-    const pixelBudget = (w: number, h: number) => {
-      const ratio = Math.min(devicePixelRatio || 1, quality.tier === 'high' ? 2 : quality.dprMax)
-      const pixels = w * h * ratio * ratio
-      return pixels <= MAX_DRAWING_PIXELS ? ratio : ratio * Math.sqrt(MAX_DRAWING_PIXELS / pixels)
-    }
-    // Multisampling is left alone. The budget above already holds the buffer at a
-    // size this stack is known to survive, so dropping samples as well would cost
-    // quality at the window sizes that were never in trouble.
     const requestedSamples = quality.tier === 'high' ? 4 : quality.tier === 'medium' ? 2 : 0
     const samples = halfFloatSamples
       .filter(value => Number.isFinite(value) && value > 0 && value <= requestedSamples)
@@ -282,7 +258,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       })
     }
     cleanup.push(() => { try { if (diagnosticHost.__portfolioArchiveExecution === diagnostic) delete diagnosticHost.__portfolioArchiveExecution; records.length = 0 } catch { /* diagnostic cleanup is isolated */ } })
-    let pointerX = 0, pointerY = 0, targetX = 0, targetY = 0, ambientFrame = 0, lastAmbient = 0
+    let pointerX = 0, pointerY = 0, targetX = 0, targetY = 0, ambientFrame = 0, lastAmbient = 0, lastAtmosphere = 0
     const pointerMove = (event: PointerEvent) => {
       targetX = event.clientX / Math.max(1, innerWidth) * 2 - 1
       targetY = 1 - event.clientY / Math.max(1, innerHeight) * 2
@@ -295,7 +271,20 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       const delta = Math.min(.05, (now - lastAmbient) / 1000); lastAmbient = now
       const blend = 1 - Math.exp(-delta * 5)
       pointerX += (targetX - pointerX) * blend; pointerY += (targetY - pointerY) * blend
-      atmosphere.update(now / 1000)
+      // Only redraw for something that actually changed.
+      //
+      // This used to call schedule() every frame for as long as the room was on
+      // screen, so a reader sitting still on the Index paid a full pass stack sixty
+      // times a second — render, finite, bokeh, UnrealBloom's five-level mip chain,
+      // output — to animate two things: pointer parallax that had already settled,
+      // and a sky drift measured in minutes. That is what made the machine hot.
+      //
+      // The smoothing above still runs every frame because it costs nothing. What
+      // is gated is the draw.
+      const settling = Math.abs(targetX - pointerX) > POINTER_SETTLED || Math.abs(targetY - pointerY) > POINTER_SETTLED
+      const atmosphereDue = now - lastAtmosphere >= ATMOSPHERE_INTERVAL_MS
+      if (!settling && !atmosphereDue) return
+      if (atmosphereDue) { lastAtmosphere = now; atmosphere.update(now / 1000) }
       schedule()
     }
     window.addEventListener('pointermove', pointerMove, { passive: true })
@@ -492,7 +481,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       if (readingRoute) endReadingRoute('cancelled')
       if (width !== innerWidth || height !== innerHeight) invalidateSampleLayout()
       width = innerWidth; height = innerHeight
-      gl.setPixelRatio(pixelBudget(width, height))
+      gl.setPixelRatio(Math.min(devicePixelRatio || 1, quality.tier === 'high' ? 2 : quality.dprMax))
       gl.setSize(width, height, false); composer.setPixelRatio(gl.getPixelRatio()); composer.setSize(width, height)
       if (fxaa) {
         const resolution = fxaa.material.uniforms.resolution?.value as Vector2 | undefined

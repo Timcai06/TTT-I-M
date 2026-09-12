@@ -113,25 +113,25 @@ import { read, withoutComments } from './lib/source.mjs'
   console.log('[archive-fallback] the Index and the chapters both stay readable when no room arrives.')
 }
 
-// The drawing buffer must stay bounded by pixels, not by window size.
+// A refused allocation must fail, and a still reader must not be redrawn.
 //
-// The quality tier is decided by deviceMemory and core count alone, so a capable
-// machine asked for DPR 2 at whatever size the window happened to be. Half-float
-// RGBA is 8 bytes a pixel and the stack allocates two composer targets, a Bokeh
-// depth target and UnrealBloom's mip chain twice — so maximising a window
-// quadrupled the allocation against a small one. A driver that refuses does not
-// throw, it drops the context, and the preparation promise then never settles:
-// the room simply did not appear at some window sizes and did at others.
+// There was briefly a pixel cap on the drawing buffer here, on the theory that
+// maximising a window was what broke the room. It was not — the runtime snapshot
+// from the machine that showed the fault had 146 tasks fulfilled, none failed,
+// none pending — and the cap cost effective pixel ratio on large windows for no
+// demonstrated benefit, so it is gone. What survives is the part that is true
+// whatever the cause: a driver that refuses does not throw, it drops the context,
+// and without the check the preparation promise never settles.
 {
   const runtime = withoutComments(read('src/components/personal-archive/archiveRuntime.ts'))
-  if (!runtime.includes('MAX_DRAWING_PIXELS')) {
-    throw new Error('archiveRuntime must cap the drawing buffer by total pixels; window size alone is not a budget.')
-  }
-  if (/setPixelRatio\(Math\.min\(devicePixelRatio/.test(runtime)) {
-    throw new Error('setPixelRatio must go through the pixel budget, not straight from devicePixelRatio.')
-  }
   if (!runtime.includes('isContextLost()')) {
     throw new Error('archiveRuntime must check for a lost context after allocating render targets, or a refused allocation hangs the loader instead of failing it.')
   }
-  console.log('[archive-buffer] the drawing buffer is capped by pixels and a refused allocation fails loudly.')
+  // The ambient loop ran schedule() every frame for as long as the room was on
+  // screen, so sitting still on the Index paid a full pass stack sixty times a
+  // second to animate a settled pointer and a sky that drifts over minutes.
+  if (!runtime.includes('ATMOSPHERE_INTERVAL_MS') || !runtime.includes('POINTER_SETTLED')) {
+    throw new Error('The ambient loop must gate its redraw on something actually changing; an unconditional schedule() per frame is what makes the machine hot.')
+  }
+  console.log('[archive-render-loop] a refused allocation fails loudly, and a still reader is not redrawn at 60Hz.')
 }
