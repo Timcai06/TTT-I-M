@@ -183,7 +183,8 @@ bpy.context.view_layer.update()
 for obj in list(scene.objects):
     if obj.parent and obj.parent.name.startswith(('Book spine','Warm_ShelfBook')):
         world=obj.matrix_world.copy();obj.parent=None;obj.matrix_world=world
-keep={'Monitor screen','NotebookCover','NotebookReadingSurface','LifeMemoryPhoto','Life_PhotoPaper','LifeEnvelopeFlap','StackScreenSurface','StackPhotoViewerSurface',*[f'ArchivePhoto_{i:02}' for i in range(1,5)],*[f'PhotoMount_{i:02}' for i in range(1,5)]}
+# Runtime replaces and sizes both photo screens independently; never batch them.
+keep={'Monitor screen','MonitorPhoto_Thumbnail','NotebookCover','NotebookReadingSurface','LifeMemoryPhoto','Life_PhotoPaper','LifeEnvelopeFlap','StackScreenSurface','StackPhotoViewerSurface',*[f'ArchivePhoto_{i:02}' for i in range(1,5)],*[f'PhotoMount_{i:02}' for i in range(1,5)]}
 batches={}
 for obj in list(scene.objects):
     if obj.type!='MESH' or obj.name in keep or obj.children or obj.name.startswith(('Notebook','About_')) or obj.animation_data or obj.get('archive_panorama') or obj.get('archive_glass'):continue

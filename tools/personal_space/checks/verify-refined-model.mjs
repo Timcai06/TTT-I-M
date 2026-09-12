@@ -24,7 +24,7 @@ function matrix(n) {
   return n.matrix ?? new Matrix4().compose(new Vector3(...(n.translation ?? [0,0,0])), new Quaternion(...(n.rotation ?? [0,0,0,1])), new Vector3(...(n.scale ?? [1,1,1]))).toArray()
 }
 const contract = JSON.parse(await fs.readFile(new URL('baseline/scene-contract.json', work)))
-const protectedNames = new Set(Object.values(contract.surfaces).flat().concat(contract.monitorStates, ['NotebookCover','NotebookReadingSurface','Life_PhotoPaper','PhotoMount_04','Monitor screen']))
+const protectedNames = new Set(Object.values(contract.surfaces).flat().concat(contract.monitorStates, ['NotebookCover','NotebookReadingSurface','Life_PhotoPaper','PhotoMount_04','Monitor screen','MonitorPhoto_Thumbnail','StackPhotoViewerSurface']))
 const parentName = (doc, index) => doc.nodes.find(n => n.children?.includes(index))?.name ?? null
 assert.deepEqual(model.doc.animations.map(a => a.name).sort(), baseline.doc.animations.map(a => a.name).sort())
 for (const old of baseline.doc.animations) {

@@ -18,6 +18,13 @@ assert.ok(hinge >= 0 && cover >= 0, 'Notebook pivot and cover must remain addres
 assert.ok(model.nodes[hinge].children.includes(cover), 'Cover must rotate around its spine')
 assert.ok(model.nodes.some(node => node.name === 'NotebookReadingSurface'), 'Reading surface missing')
 assert.ok(model.nodes.some(node => node.name === 'LifeMemoryPhoto'), 'Life photograph missing')
+for (const name of ['MonitorPhoto_Thumbnail', 'StackPhotoViewerSurface']) {
+  const index = model.nodes.findIndex(node => node.name === name)
+  assert.ok(index >= 0 && Number.isInteger(model.nodes[index].mesh), `${name}: runtime photo mesh missing`)
+  assert.ok(model.nodes.find(node => node.name === 'MonitorState_photo')?.children.includes(index), `${name}: photo state parent missing`)
+  const primitives = model.meshes[model.nodes[index].mesh].primitives
+  assert.equal(primitives.length, 1, `${name}: runtime requires an independently replaceable photo material`)
+}
 for (const name of ['LifeEnvelopeOpen', 'LifePhotoExtract']) {
   assert.ok(model.animations.some(clip => clip.name === name), `${name}: animation missing`)
 }

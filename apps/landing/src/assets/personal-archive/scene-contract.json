@@ -132,7 +132,7 @@
   ],
   "materialOptimization": {
     "version": "refined-room-20260912",
-    "modelSha256": "2aed10468e6ca7bbc3edc5a69a7ca7428dca2a24b984efd16e1e120efc60c311",
+    "modelSha256": "bbe8e936d523d6630d8521925eecc6f633686e5228824d67660ac56e986fa0ab",
     "baselineCommit": "9347a93156f1771afd59b74e818ab13cab36af11",
     "propMaterials": 4,
     "bakedMaterials": 52,

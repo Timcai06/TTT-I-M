@@ -190,6 +190,8 @@ export const PERSONAL_ARCHIVE_REQUIRED_OBJECTS = Object.freeze([
   requiredObject('WorkFolderPivot'),
   requiredObject('MonitorState_project'),
   requiredObject('MonitorState_photo'),
+  requiredObject('MonitorPhoto_Thumbnail', 'MonitorState_photo'),
+  requiredObject('StackPhotoViewerSurface', 'MonitorState_photo'),
   requiredObject('NotebookReadingAnchor'),
   requiredObject('AboutReading_TL', 'NotebookReadingAnchor'),
   requiredObject('AboutReading_TR', 'NotebookReadingAnchor'),
