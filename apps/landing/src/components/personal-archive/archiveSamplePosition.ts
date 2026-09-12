@@ -23,10 +23,33 @@ export interface SampleLayout {
 
 export function createSampleLayout(ranges: SampleRanges, viewport: SampleLayout['viewport'], version: number, pages: SampleLayout['pages'] = {}, storyEnd = ranges['work-contact'].end + 1): SampleLayout {
   const index = ranges.index, e = ranges.entry, al = ranges['about-life'], lf = ranges['life-frame'], fs = ranges['frame-stack'], sw=ranges['stack-work'],wc=ranges['work-contact']
-  if (![viewport.width, viewport.height, viewport.dpr].every(n => Number.isFinite(n) && n > 0)
-    || !Object.values(ranges).every(r => Number.isFinite(r.start) && Number.isFinite(r.end) && r.end > r.start)
-    || !Number.isFinite(storyEnd) || storyEnd <= wc.end
-    || index.start > e.start || e.end > al.start || al.end > lf.start || lf.end > fs.start || fs.end > sw.start || sw.end > wc.start) throw new Error('Invalid sample layout ranges')
+  // Say which constraint failed and with what numbers.
+  //
+  // This threw a bare 'Invalid sample layout ranges' for all eight conditions at
+  // once, and the message is what lands in data-archive-layout-error — the only
+  // trace a dead room leaves on the page. Reading it from a machine where the room
+  // would not appear told us nothing except that something was wrong, which cost a
+  // round of guessing at memory and window size before the real cause was in view.
+  const round = (n: number) => Number.isFinite(n) ? Math.round(n) : n
+  const complaints: string[] = []
+  for (const [name, value] of [['width', viewport.width], ['height', viewport.height], ['dpr', viewport.dpr]] as const) {
+    if (!Number.isFinite(value) || value <= 0) complaints.push(`viewport.${name} is ${value}`)
+  }
+  for (const [name, r] of Object.entries(ranges)) {
+    if (!Number.isFinite(r.start) || !Number.isFinite(r.end)) complaints.push(`${name} is [${r.start}, ${r.end}]`)
+    else if (r.end <= r.start) complaints.push(`${name} is empty or inverted: [${round(r.start)}, ${round(r.end)}]`)
+  }
+  if (!Number.isFinite(storyEnd) || storyEnd <= wc.end) complaints.push(`storyEnd ${round(storyEnd)} does not clear work-contact.end ${round(wc.end)}`)
+  for (const [before, after, beforeName, afterName] of [
+    [index, e, 'index', 'entry'], [e, al, 'entry', 'about-life'], [al, lf, 'about-life', 'life-frame'],
+    [lf, fs, 'life-frame', 'frame-stack'], [fs, sw, 'frame-stack', 'stack-work'], [sw, wc, 'stack-work', 'work-contact'],
+  ] as const) {
+    const left = beforeName === 'index' ? before.start : before.end
+    if (left > after.start) complaints.push(`${beforeName} ${beforeName === 'index' ? 'starts' : 'ends'} at ${round(left)}, past ${afterName}.start ${round(after.start)}`)
+  }
+  if (complaints.length) {
+    throw new Error(`Invalid sample layout ranges at ${round(viewport.width)}x${round(viewport.height)}: ${complaints.join('; ')}`)
+  }
   const spans = [
     { segment: 'index' as const, start: index.start, end: e.start },
     { segment: 'entry' as const, start: e.start, end: e.end },
