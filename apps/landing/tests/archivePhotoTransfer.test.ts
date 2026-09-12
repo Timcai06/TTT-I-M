@@ -327,3 +327,26 @@ void test('what the reader sees never steps, even where the camera barely moves'
   console.log(`  [projection continuity] worst step ${(worst.jump * 100).toFixed(2)}% at ${worst.segment} ${worst.progress.toFixed(2)}`)
 })
 
+void test('the Index page box is shaped like the monitor it is projected onto',()=>{
+  // projectArchiveQuad maps the page's rect corner-to-corner onto the reading
+  // quad, with no aspect preservation - the fixture at the top of
+  // archiveCameraProjection.test.ts maps a 640x300 page onto a 500x250 rect and
+  // pins exactly that. So a page box shaped like the viewport is stretched by
+  // quadAspect / viewportAspect on its way to the monitor: about 1.22x wide on a
+  // 1512x982 window. Invisible while the Index sat small and angled across the
+  // room; plainly wrong once the opening shot put it square and at three
+  // quarters of the frame.
+  //
+  // hero.css sizes the panel from --index-quad-aspect so the mapping is a
+  // uniform scale. That literal is a fact about the GLB, so it is pinned here
+  // rather than trusted: re-export the room with a different monitor and this
+  // fails instead of silently distorting the Index again.
+  const m=model(),rig=createArchiveAnimationRig(m),execution=createArchiveExecution(m.scene,rig)
+  const world=execution.sample(execution.begin('sample','foreground',1,1),storyFrame('index',0))
+  const [tl,tr,,bl]=world.anchors.StackReading.map(point=>new Vector3().fromArray(point))
+  const measured=new Vector3().subVectors(tr,tl).length()/new Vector3().subVectors(tl,bl).length()
+  const css=readFileSync(new URL('../src/styles/components/hero.css',import.meta.url),'utf8')
+  const declared=Number(/--index-quad-aspect:\s*([\d.]+)/.exec(css)?.[1])
+  assert.ok(Number.isFinite(declared),'hero.css declares no --index-quad-aspect')
+  assert.ok(Math.abs(declared-measured)<.002,`hero.css says --index-quad-aspect: ${declared}, the real StackReading quad is ${measured}`)
+})
