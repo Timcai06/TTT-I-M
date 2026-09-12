@@ -39,7 +39,19 @@ export function createSampleLayout(ranges: SampleRanges, viewport: SampleLayout[
     if (!Number.isFinite(r.start) || !Number.isFinite(r.end)) complaints.push(`${name} is [${r.start}, ${r.end}]`)
     else if (r.end <= r.start) complaints.push(`${name} is empty or inverted: [${round(r.start)}, ${round(r.end)}]`)
   }
-  if (!Number.isFinite(storyEnd) || storyEnd <= wc.end) complaints.push(`storyEnd ${round(storyEnd)} does not clear work-contact.end ${round(wc.end)}`)
+  // `storyEnd` only bounds the trailing contact-reading span, and the filter below
+  // already drops a span with no room in it. Treating `storyEnd <= wc.end` as fatal
+  // killed the entire room over the one segment it can cost.
+  //
+  // It is reachable in normal use: the caller passes ScrollTrigger.maxScroll + 1,
+  // the bridges are sized in svh, and the footer's height is content-driven — so
+  // widening the window reflows the footer shorter, the document loses scroll
+  // length, and the last bridge's end lands past where the page can actually
+  // scroll. Measured at 1496x812: maxScroll 53929 against work-contact.end 53930.
+  // One pixel, and the room went dark at that width and not at others.
+  //
+  // A non-finite storyEnd is still fatal, because that is a real corruption.
+  if (!Number.isFinite(storyEnd)) complaints.push(`storyEnd is ${storyEnd}`)
   for (const [before, after, beforeName, afterName] of [
     [index, e, 'index', 'entry'], [e, al, 'entry', 'about-life'], [al, lf, 'about-life', 'life-frame'],
     [lf, fs, 'life-frame', 'frame-stack'], [fs, sw, 'frame-stack', 'stack-work'], [sw, wc, 'stack-work', 'work-contact'],

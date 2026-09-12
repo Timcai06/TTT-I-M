@@ -19,3 +19,35 @@ void test('rejects reversed overlapping missing and nonfinite layouts and skips 
   const layout = createSampleLayout({ ...ranges, 'about-life': { start: 200, end: 400 } }, viewport, 1)
   assert.deepEqual(positionAtScroll(layout, 200), { segment: 'about-life', progress: 0 })
 })
+
+// A document that cannot scroll past its last bridge is a fact about the page, not
+// a corrupt layout — and it used to disable the entire room.
+//
+// The caller passes ScrollTrigger.maxScroll + 1 as storyEnd. The bridges are sized
+// in svh; the footer's height comes from its content. Widening the window reflows
+// the footer shorter, the document loses scroll length, and work-contact.end lands
+// past where the page can actually be scrolled. Measured on the machine that showed
+// the fault: at 1496x812, maxScroll 53929 against work-contact.end 53930. One pixel.
+//
+// `storyEnd` bounds nothing but the trailing contact-reading span, and the span
+// filter already drops one with no room in it, so the only honest cost is that
+// segment. Everything before it must still work.
+void test('a document too short for a trailing read still yields a usable layout', () => {
+  const short = createSampleLayout(ranges, viewport, 3, {}, ranges['work-contact'].end)
+  assert.equal(short.spans.some((span) => span.segment === 'contact-reading'), false)
+  // Every earlier segment is untouched, which is the whole point of not throwing.
+  for (const [scroll, segment] of [[0, 'index'], [100, 'entry'], [200, 'about-reading'], [350, 'about-life'], [1150, 'work-contact']] as const) {
+    assert.equal(positionAtScroll(short, scroll)?.segment, segment)
+  }
+  assert.equal(positionAtScroll(short, 1200), null)
+  // One pixel of room is all it takes to get the segment back.
+  const exact = createSampleLayout(ranges, viewport, 4, {}, ranges['work-contact'].end + 1)
+  assert.equal(positionAtScroll(exact, 1200)?.segment, 'contact-reading')
+})
+
+void test('a non-finite storyEnd is still refused, and the message names it', () => {
+  assert.throws(
+    () => createSampleLayout(ranges, viewport, 5, {}, Number.NaN),
+    (error: Error) => /storyEnd is NaN/.test(error.message),
+  )
+})
