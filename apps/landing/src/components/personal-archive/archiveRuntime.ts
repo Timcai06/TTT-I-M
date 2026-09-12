@@ -20,6 +20,7 @@ import { clearSamplePresentation, presentSampleFrame, projectArchiveQuad, sample
 import { createArchiveSignal } from './archiveRuntimeSignal'
 import { prepareArchiveMaterials } from './archiveMaterials'
 import { prepareArchiveBookMaterials } from './archiveBookMaterials'
+import { prepareArchivePrintMaterials } from './archivePrintMaterials'
 import { createArchiveFinitePass } from './archiveRenderSafety'
 import type { ArchiveProgress } from './scrollPose'
 import { createSharedResource } from '../../lib/resources/sharedResource'
@@ -142,6 +143,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     const textures = new Set<Texture>()
     cleanup.push(prepareArchiveBookMaterials(model.scene))
     prepareArchiveMaterials(model.scene, gl.capabilities.getMaxAnisotropy())
+    cleanup.push(prepareArchivePrintMaterials(model.scene))
     reportArchiveStage('materials')
     const backdrop = createArchiveBackdrop(model.scene)
     if (backdrop) cleanup.push(() => backdrop.dispose())

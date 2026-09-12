@@ -131,12 +131,23 @@
     "MonitorState_photo"
   ],
   "materialOptimization": {
-    "version": "sunrise-20260911",
-    "modelSha256": "f79c081dd3a3e38224b67bfbbc122bec89dda8906d9865a41535874ca11d5417",
+    "version": "sunrise-print-receivers-20260912",
+    "modelSha256": "65561c4c9434709b3f39c7b812f15528d3827bfeac7e310b8ddcdb8301ec3ba8",
     "baselineCommit": "f53ea7638b77b4b7cd155fbfc0e87bc2afad7bc3",
     "propMaterials": 10,
     "bakedMaterials": 37,
     "textureEncoding": "KTX2 UASTC quality 4, no RDO; WebP/JPEG base colors retained",
     "visualAcceptance": "user-owned"
+  },
+  "printLighting": {
+    "version": "print-lighting-20260912",
+    "receiverMaterials": [
+      "RoomBake_Walnut_oiled",
+      "RoomBake_Plaster_warm",
+      "RoomBake_Paper_fiber"
+    ],
+    "bakeExcludesMovingPrints": true,
+    "samples": 256,
+    "movingPrintLighting": "runtime PBR; physical paper casts, ink receives"
   }
 }

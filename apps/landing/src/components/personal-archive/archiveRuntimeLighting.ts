@@ -1,4 +1,4 @@
-import { AgXToneMapping, Color, DirectionalLight, HemisphereLight, Object3D, PCFSoftShadowMap, PMREMGenerator, PointLight, SpotLight, type Scene, type WebGLRenderer } from 'three'
+import { AgXToneMapping, Color, DirectionalLight, HemisphereLight, Object3D, PCFShadowMap, PMREMGenerator, PointLight, SpotLight, type Scene, type WebGLRenderer } from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
 /**
@@ -9,12 +9,11 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
  * here said so: ".38 left the shadow side almost unlit, which reads as a flat
  * model more than as dark." That was a compensation for a missing bake.
  *
- * The bake now exists. 37 of 54 materials carry archive_lightmap_version 2,
- * covering 107,367 of the room's 114,365 triangles — 93.9% of its surface — and
- * archiveBakedIrradiance adds that irradiance after AO so the Cycles bounce keeps
- * its own visibility. The 17 without a bake are the monitor UI, the lamp bulb, the
- * glass and the panorama, which are emissive or transparent and want no indirect
- * light at all.
+ * The asset carries a bake on 37 of 54 materials. Static room surfaces use it;
+ * archiveBookMaterials and archivePrintMaterials remove pose-dependent bakes
+ * from animated paper. They use the live environment and shadow-casting lights.
+ * archiveBakedIrradiance adds the retained room irradiance after AO so the Cycles
+ * bounce keeps its own visibility.
  *
  * So the shadow side was being filled twice: once by a bake that knows what is
  * occluded, and once by two omnidirectional terms that do not. Sunrise is defined
@@ -36,7 +35,9 @@ export function createArchiveLighting(renderer: WebGLRenderer, scene: Scene) {
   // warm/cool split across the room. AgX stays - it is the tone curve that keeps a
   // low, strong, orange key from clipping to white.
   renderer.toneMapping = AgXToneMapping; renderer.toneMappingExposure = 1.02
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFSoftShadowMap
+  // r182's shader map no longer recognises PCFSoftShadowMap; it selects the
+  // unfiltered BASIC branch. PCFShadowMap uses hardware depth comparison.
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = PCFShadowMap
   scene.background = new Color('#c6a583')
   const makeEnvironment = () => {
     const generator = new PMREMGenerator(renderer), room = new RoomEnvironment()
@@ -57,6 +58,9 @@ export function createArchiveLighting(renderer: WebGLRenderer, scene: Scene) {
   // not from the shadow settings.
   window.position.set(4.1, 1.95, -5.4); window.target.position.set(0, .85, -.8)
   window.castShadow = true; window.shadow.mapSize.set(4096, 4096)
+  // A small filtered edge keeps the window's diagonal legible at book distance.
+  // Radius is in shadow texels (5.6m / 4096), not a physical sun angular diameter.
+  window.shadow.radius = 3
   Object.assign(window.shadow.camera, { left: -2.8, right: 2.8, top: 2.8, bottom: -2.8, near: .1, far: 12 })
   window.shadow.normalBias = .004; window.shadow.bias = -.00008
   // The sun is the protagonist at this hour. With the ambient terms down the desk

@@ -6,19 +6,9 @@ import { preserveBakedIrradiance } from './archiveBakedIrradiance'
 export function prepareArchiveMaterials(root: Object3D, maxAnisotropy = 8) {
   root.traverse(object => {
     if (!(object instanceof Mesh)) return
-    // Two different things used to share this exclusion, and only one of them
-    // belongs in it.
-    //
-    // Screen UI and printed ink really are flush with the surface underneath —
-    // a lit monitor's interface, a folio number on a page — so casting a second
-    // shadow from them produces acne and serrated edges at reading distance.
-    //
-    // ArchivePhoto_* is not that. Those are physical prints with a mount, and
-    // PhotoMount_* casts already; excluding the print itself left the postcards
-    // with no realtime shadow at all, so the only shadow under them was the one
-    // baked into the surface they sit on. A bake is taken at rest, which is why
-    // that shadow reads as a hard dark line and why it stays behind when the
-    // print moves.
+    // Screen UI and flush ink must not cast a second shadow. Photo silhouettes
+    // are assigned by archivePrintMaterials to their physical paper backings.
+    // Removing a duplicate realtime caster does not erase shadows in a room bake.
     const flush = /^(StackScreenSurface|StackPhotoViewerSurface|MonitorPhoto_|MonitorProject_|Batch_MonitorState_|Work_FileTitle_|Work_FileNumber_|About_PageFolio)/.test(object.name)
     const screen = /^(StackScreenSurface|StackPhotoViewerSurface|Monitor|Batch_MonitorState_)/.test(object.name)
     object.castShadow = !flush && !object.userData.archive_panorama && !object.userData.archive_glass && !object.name.includes('WindowLandscape')

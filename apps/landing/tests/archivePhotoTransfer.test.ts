@@ -214,6 +214,10 @@ void test('real GLB animations and solver keep the opening and all six bridges c
 
 void test('forward reverse random seeks and resource reconstruction have one carrier and identical geometry',()=>{
   const m=model(),rig=createArchiveAnimationRig(m),execution=createArchiveExecution(m.scene,rig)
+  for (const name of ['LifeMemoryPhoto', 'Life_PhotoPaper']) {
+    const mesh = m.scene.getObjectByName(name) as Mesh
+    mesh.castShadow = name === 'Life_PhotoPaper'; mesh.receiveShadow = true
+  }
   const material=(m.scene.getObjectByName('LifeMemoryPhoto') as Mesh).material as MeshBasicMaterial
   const baseline={opacity:material.opacity,transparent:material.transparent,map:material.map}
   for(const p of [.24,.4,.56,.49,.26,.4,.56,.24,.4]) {
@@ -230,6 +234,12 @@ void test('forward reverse random seeks and resource reconstruction have one car
   assert.equal(m.scene.getObjectByName('ArchiveFootballTransfer'),undefined)
   const after=execution.sample(execution.begin('sample','foreground',1,1),frame(.4)).photo
   assert.deepEqual(after,before);assert.notEqual(m.scene.getObjectByName('ArchiveFootballTransfer'),old)
+  for (const name of ['ArchiveFootballTransfer', 'ArchiveFootballTransferPaper']) {
+    const proxy = m.scene.getObjectByName(name) as Mesh
+    assert.ok(proxy, name)
+    assert.equal(proxy.castShadow, name === 'ArchiveFootballTransferPaper')
+    assert.equal(proxy.receiveShadow, true)
+  }
   assert.deepEqual({opacity:material.opacity,transparent:material.transparent,map:material.map},baseline)
   execution.dispose();rig.dispose()
 })
@@ -326,4 +336,3 @@ void test('what the reader sees never steps, even where the camera barely moves'
   }
   console.log(`  [projection continuity] worst step ${(worst.jump * 100).toFixed(2)}% at ${worst.segment} ${worst.progress.toFixed(2)}`)
 })
-

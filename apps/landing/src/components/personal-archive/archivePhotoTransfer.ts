@@ -94,6 +94,10 @@ export function createArchivePhotoTransfer(root: Object3D) {
   paperGeometry.setAttribute('position',new Float32BufferAttribute(paperStart.slice(),3))
   const image = new Mesh(imageGeometry,sourceMaterial.clone()), paper = new Mesh(paperGeometry,materialOf(sourcePaper).clone())
   image.name='ArchiveFootballTransfer'; paper.name='ArchiveFootballTransferPaper'
+  // The carrier is created after the room material pass. Keep the same shadow
+  // ownership as both endpoint prints so neither takeoff nor landing changes light.
+  image.castShadow=source.castShadow; image.receiveShadow=source.receiveShadow
+  paper.castShadow=sourcePaper.castShadow; paper.receiveShadow=sourcePaper.receiveShadow
   image.visible=false; paper.visible=false
   image.frustumCulled=false; paper.frustumCulled=false
   root.add(image,paper)

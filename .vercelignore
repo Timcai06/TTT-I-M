@@ -1,0 +1,12 @@
+# Authoring inputs and local evidence are not required by the web build.
+art/
+sources/
+output/
+tmp/
+.playwright-cli/
+**/node_modules/
+**/dist/
+**/.next/
+**/test-results/
+**/.env*
+*.log

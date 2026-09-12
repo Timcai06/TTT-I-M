@@ -22,9 +22,11 @@ cache.sourceSha256 = sha(source)
 await fs.writeFile(new URL('art/personal-archive/textures/web-cinema/manifest.json', root), JSON.stringify(cache, null, 2) + '\n')
 const contract = await read('apps/landing/src/assets/personal-archive/scene-contract.json')
 contract.sourceSha256 = sha(source)
-contract.materialOptimization = { version: 'sunrise-20260911', modelSha256: sha(candidate),
+contract.materialOptimization = { version: 'sunrise-print-receivers-20260912', modelSha256: sha(candidate),
   baselineCommit: 'f53ea7638b77b4b7cd155fbfc0e87bc2afad7bc3', propMaterials: 10, bakedMaterials: 37,
   textureEncoding: 'KTX2 UASTC quality 4, no RDO; WebP/JPEG base colors retained', visualAcceptance: 'user-owned' }
+contract.printLighting = { version: 'print-lighting-20260912', receiverMaterials: ['RoomBake_Walnut_oiled', 'RoomBake_Plaster_warm', 'RoomBake_Paper_fiber'],
+  bakeExcludesMovingPrints: true, samples: 256, movingPrintLighting: 'runtime PBR; physical paper casts, ink receives' }
 await fs.writeFile(new URL('apps/landing/src/assets/personal-archive/scene-contract.json', root), JSON.stringify(contract, null, 2) + '\n')
 await fs.writeFile(new URL('apps/landing/src/assets/personal-archive/personal-space.glb', root), candidate)
 console.log(JSON.stringify({ deliveredBytes: candidate.length, sourceSha256: sha(source), modelSha256: sha(candidate) }))

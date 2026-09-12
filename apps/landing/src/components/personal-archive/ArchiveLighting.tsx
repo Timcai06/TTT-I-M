@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
-import { ACESFilmicToneMapping, PMREMGenerator, PCFSoftShadowMap, Object3D, type WebGLRenderer, type Scene } from 'three'
+import { ACESFilmicToneMapping, PMREMGenerator, PCFShadowMap, Object3D, type WebGLRenderer, type Scene } from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 
 function installLighting(gl: WebGLRenderer, scene: Scene) {
@@ -12,7 +12,7 @@ function installLighting(gl: WebGLRenderer, scene: Scene) {
     scene.environmentIntensity = .42
     gl.toneMapping = ACESFilmicToneMapping
     gl.toneMappingExposure = 1.1
-    gl.shadowMap.type = PCFSoftShadowMap
+    gl.shadowMap.type = PCFShadowMap
     room.dispose(); generator.dispose()
     return () => {
       scene.environment = previous.environment; scene.environmentIntensity = previous.intensity

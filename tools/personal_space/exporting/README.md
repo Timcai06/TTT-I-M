@@ -10,6 +10,10 @@ rtk proxy node tools/personal_space/exporting/rebuild_sunrise.mjs
 
 流程先生成压缩基线，再校准灯光、制作道具贴图、烘焙 37 个接收材质的 AO/间接色、组装 ORM、压缩为 KTX2，最后验证几何、动画、受保护材质与源模型。验证的 SHA 必须与待交付文件一致，才替换网页资产。
 
+2026-09-12 增加移动纸片接收面修正：`bake_print_receivers.py` 使用已有 UV2，以 256 samples 重烘焙木、墙与静态纸面的 AO/间接光，排除四组墙上印刷品、Life 照片及信封盖。`assemble_print_receivers.mjs` 仅替换这三个材质的六张贴图；几何、动画、原始图片以及其他材质贴图必须通过逐字节保留校验。完整流程已包含此步骤，单独重烘焙的结果保存在 `output/print-lighting/`。
+
+动态书页与纸片在运行时移除静态姿态的 AO/lightMap。纸片背板负责投影，印刷层只接收光影；照片搬运代理继承这组设置。不要给印刷层重新添加第二套投影，也不要用提高曝光掩盖固定残影。
+
 现有法线和粗糙度使用原 UV/原分辨率。ORM 的 R/G/B 分别为 AO/粗糙度/金属度；AO 可以通过 glTF 的独立 `texCoord` 读取同一纹理的另一个 UV。RGB 间接色通过 `extras.archiveLightTexture` 单独传输，不占用 AO 槽。`RoomBake_` 名称保留，新增槽在 `archive_bake_slot` 中记录。
 
 编码采用 UASTC quality 4、关闭 RDO、Zstandard 18、完整 mipmap。WebP/JPEG 基础色保留。tim 已明确放宽原 50 MiB 目标，以材质质量优先；构建继续报告真实总量，并计入 KTX2 解码器。
