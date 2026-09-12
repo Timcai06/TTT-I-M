@@ -112,3 +112,26 @@ import { read, withoutComments } from './lib/source.mjs'
   }
   console.log('[archive-fallback] the Index and the chapters both stay readable when no room arrives.')
 }
+
+// The drawing buffer must stay bounded by pixels, not by window size.
+//
+// The quality tier is decided by deviceMemory and core count alone, so a capable
+// machine asked for DPR 2 at whatever size the window happened to be. Half-float
+// RGBA is 8 bytes a pixel and the stack allocates two composer targets, a Bokeh
+// depth target and UnrealBloom's mip chain twice — so maximising a window
+// quadrupled the allocation against a small one. A driver that refuses does not
+// throw, it drops the context, and the preparation promise then never settles:
+// the room simply did not appear at some window sizes and did at others.
+{
+  const runtime = withoutComments(read('src/components/personal-archive/archiveRuntime.ts'))
+  if (!runtime.includes('MAX_DRAWING_PIXELS')) {
+    throw new Error('archiveRuntime must cap the drawing buffer by total pixels; window size alone is not a budget.')
+  }
+  if (/setPixelRatio\(Math\.min\(devicePixelRatio/.test(runtime)) {
+    throw new Error('setPixelRatio must go through the pixel budget, not straight from devicePixelRatio.')
+  }
+  if (!runtime.includes('isContextLost()')) {
+    throw new Error('archiveRuntime must check for a lost context after allocating render targets, or a refused allocation hangs the loader instead of failing it.')
+  }
+  console.log('[archive-buffer] the drawing buffer is capped by pixels and a refused allocation fails loudly.')
+}

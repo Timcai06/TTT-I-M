@@ -73,6 +73,15 @@ function disposeModel(model: GLTF) {
   for (const texture of textures) { texture.dispose(); const data: unknown = texture.source.data; if (data instanceof ImageBitmap) data.close() }
 }
 
+/**
+ * Ceiling on the drawing buffer, in pixels, whatever the window does.
+ *
+ * 5 Mpx is a 1440x900 window at DPR 2 — a size this pass stack demonstrably
+ * survives, because that is where the room was still rendering when maximising
+ * broke it. A maximised window now costs the same as that one instead of three
+ * times more; what it loses is effective pixel ratio, not a pass.
+ */
+const MAX_DRAWING_PIXELS = 5_000_000
 async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
   const response = await fetch(modelUrl, { signal })
   if (!response.ok) throw new Error(`Archive model HTTP ${response.status}`)
@@ -160,6 +169,27 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       ? Array.from(webgl2.getInternalformatParameter(webgl2.RENDERBUFFER, webgl2.RGBA16F, webgl2.SAMPLES) as Int32Array)
       : []
     const quality = getGLQualityProfile()
+    // The pass stack is priced per pixel of drawing buffer, and nothing used to put
+    // a ceiling on that. The tier is decided by deviceMemory and core count alone,
+    // so a capable machine asks for DPR 2 and 4x MSAA at whatever size the window
+    // happens to be. Half-float RGBA is 8 bytes a pixel, and at full size this
+    // allocates two composer targets (one multisampled), a Bokeh depth target and
+    // UnrealBloom's five-level mip chain twice over:
+    //
+    //   1024x768  @2  ->  3.1 Mpx      1920x1080 @2  ->   8.3 Mpx
+    //   1440x900  @2  ->  5.2 Mpx      2560x1440 @2  ->  14.7 Mpx
+    //
+    // Maximising the window quadruples it against a small one, and an allocation
+    // the driver refuses does not throw — the context is lost, which is why the
+    // room went missing at some window sizes and not others.
+    const pixelBudget = (w: number, h: number) => {
+      const ratio = Math.min(devicePixelRatio || 1, quality.tier === 'high' ? 2 : quality.dprMax)
+      const pixels = w * h * ratio * ratio
+      return pixels <= MAX_DRAWING_PIXELS ? ratio : ratio * Math.sqrt(MAX_DRAWING_PIXELS / pixels)
+    }
+    // Multisampling is left alone. The budget above already holds the buffer at a
+    // size this stack is known to survive, so dropping samples as well would cost
+    // quality at the window sizes that were never in trouble.
     const requestedSamples = quality.tier === 'high' ? 4 : quality.tier === 'medium' ? 2 : 0
     const samples = halfFloatSamples
       .filter(value => Number.isFinite(value) && value > 0 && value <= requestedSamples)
@@ -174,6 +204,14 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     composer.addPass(renderPass); composer.addPass(finite); composer.addPass(focus); composer.addPass(bloom); composer.addPass(output)
     if (fxaa) composer.addPass(fxaa)
     canvas.dataset.archiveAa = samples > 0 ? `msaa-${samples}x` : 'fxaa'
+    // The heaviest allocation in the whole boot just happened, and the listener that
+    // handles a lost context is not attached for another few hundred lines. A driver
+    // that refuses these targets does not throw — it drops the context — so without
+    // this check the preparation promise simply never settles, the loader waits out
+    // its 600s deadline, and the reader is left with no room and no error.
+    if (gl.getContext().isContextLost()) {
+      throw new Error(`Archive render targets lost the WebGL context at ${innerWidth}x${innerHeight} (dpr ${gl.getPixelRatio()}, ${samples > 0 ? `msaa ${samples}x` : 'fxaa'})`)
+    }
     cleanup.push(() => { finite.dispose(); focus.dispose(); bloom.dispose(); output.dispose(); fxaa?.dispose(); composer.dispose(); renderTarget.dispose() })
     let width = innerWidth, height = innerHeight, frame = 0, disposed = false
     let state: 'ready' | 'recovering' | 'failed' = 'ready', recovery = 0, recoveryTimer = 0
@@ -454,7 +492,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       if (readingRoute) endReadingRoute('cancelled')
       if (width !== innerWidth || height !== innerHeight) invalidateSampleLayout()
       width = innerWidth; height = innerHeight
-      gl.setPixelRatio(Math.min(devicePixelRatio || 1, quality.tier === 'high' ? 2 : quality.dprMax))
+      gl.setPixelRatio(pixelBudget(width, height))
       gl.setSize(width, height, false); composer.setPixelRatio(gl.getPixelRatio()); composer.setSize(width, height)
       if (fxaa) {
         const resolution = fxaa.material.uniforms.resolution?.value as Vector2 | undefined
