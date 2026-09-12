@@ -6,6 +6,29 @@
 
 支架已移至屏幕后方，底座位置同步调整。两种屏幕状态继续保留。最新工程哈希见 `reviews/cinema/model-manifest.json`；`reviews/monitor/stand-fix.json` 记录支架修正时的历史版本。
 
+## ⚠ 这个工程没有任何备份
+
+`git ls-files '*.blend'` 返回 0。`art/personal-archive/.gitignore` 排除了
+`/source/`、`/textures/`、`/reviews/`、`/history/`，仓库根的 `.gitignore` 又排除了
+整个 `output/`。所以下面这些只存在于这一台机器的这一块硬盘上：
+
+| 大小 | 路径 | 是什么 |
+| --- | --- | --- |
+| 31 MB | `art/personal-archive/source/` | 唯一活跃的 Blender 工程 |
+| 37 MB | `art/personal-archive/history/` | 早期 graybox 与自动备份 |
+| 882 MB | `output/material-optimization/` | 日出重烘焙的工作区与中间产物 |
+
+导出的 GLB 不是替代品：材质节点、烘焙设置、灯光装置都只在 .blend 里，从 GLB
+回不到可编辑的工程。这块盘坏掉，整个房间就要从概念稿重做。
+
+体积大不是不备份的理由，只是不适合放进 git。外置盘、对象存储、或者 git-lfs 都
+可以，但要有一份在这台机器之外。
+
+2026-09-12：`output/pm/` 的 531 MB PM 证据已归档到
+`~/DEV/TTT I'M/archive/pm-evidence-2026-09-12.tar.gz`（104 MB，验证过逐文件一致）
+后删除。其中 `VR-01/` 的两份 .blend/.glb 历史快照在归档里，它们是 09-09/09-10 的
+版本，比 source/ 里的母版旧。
+
 ## 打开模型
 
 唯一活跃工程：[tim-cai-personal-archive.blend](source/tim-cai-personal-archive.blend)。
