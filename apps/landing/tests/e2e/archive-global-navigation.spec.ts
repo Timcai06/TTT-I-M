@@ -118,8 +118,10 @@ test('global requests cover a Frame subanchor, project card offset, Index cancel
 
   await page.evaluate(() => window.scrollTo(0, 0))
   await expect.poll(async () => (await latest(page)).position.segment).toBe('index')
-  const screen = page.locator('.hero__screen-page')
-  await screen.evaluate(node => node.dispatchEvent(new MouseEvent('click', { bubbles: true })))
+  await expect(page.locator('.hero__screen-page')).toHaveCount(1)
+  // Scrolling into the pull-back raises index progress; the panel is no longer a
+  // control that could do it with a click.
+  await page.evaluate(() => window.scrollTo(0, Math.round(innerHeight * .2)))
   await expect.poll(() => page.locator('canvas[data-archive-shared]').getAttribute('data-archive-progress').then(Number)).toBeGreaterThan(.08)
   await page.evaluate(() => {
     window.dispatchEvent(new WheelEvent('wheel', { deltaY: 360, cancelable: true }))

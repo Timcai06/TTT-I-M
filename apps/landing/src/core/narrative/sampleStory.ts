@@ -35,9 +35,6 @@ function assertInput(input: SampleInput): void {
   if (input.contentVersion !== PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion) {
     throw new TypeError(`Unsupported content version: ${input.contentVersion}`)
   }
-  if (input.user && (!Number.isFinite(input.user.indexInspection) || input.user.indexInspection < 0 || input.user.indexInspection > 1)) {
-    throw new RangeError('Index inspection must be finite and between 0 and 1.')
-  }
 }
 
 function chapterForReading(segment: SampleSegment): StoryReadingOwner | null {
@@ -118,8 +115,8 @@ function sampleWorld(segment: SampleSegment, progress: number): SemanticWorld {
   })
 }
 
-function sampleCamera(segment: SampleSegment, progress: number, inspection: number): CameraIntent {
-  if (segment === 'index') return Object.freeze({ mode: 'index', inspection })
+function sampleCamera(segment: SampleSegment, progress: number): CameraIntent {
+  if (segment === 'index') return Object.freeze({ mode: 'index', pullback: phase(progress, PERSONAL_ARCHIVE_SAMPLE_STORY.timing.indexPullback) })
   const readingChapter = chapterForReading(segment)
   if (readingChapter) {
     return Object.freeze({
@@ -154,13 +151,16 @@ function sampleCamera(segment: SampleSegment, progress: number, inspection: numb
   })
 }
 
-function samplePresentation(segment: SampleSegment, progress: number, inspection: number): PresentationIntent {
+function samplePresentation(segment: SampleSegment, progress: number): PresentationIntent {
   if (segment === 'index') return Object.freeze({
-    // targetExpand carries the click-to-enlarge. At 0 the Index sits projected on
-    // the physical monitor; at 1 the same projection has opened to an unwarped
-    // full-viewport rectangle. Nothing about the room camera changes.
-    sourceSurface:null,targetSurface:'StackReading',sourceReveal:0,sourceExpand:0,targetReveal:1,targetExpand:inspection,
-    readingOwner:'index',roomHitEnabled:false,focusEnabled:inspection < .5,aperture:baseAperture * (1 - inspection),
+    // targetExpand stays 0 for the whole segment. The Index is on the physical
+    // monitor the entire time and never leaves it; what changes is where the
+    // camera stands. At pullback 0 the camera is square to the monitor and backed
+    // off just enough to hold it at three quarters of the frame, so the quad
+    // projects to an axis-aligned rectangle - the one state in which a rounded
+    // frame reads as a frame rather than a warped smear.
+    sourceSurface:null,targetSurface:'StackReading',sourceReveal:0,sourceExpand:0,targetReveal:1,targetExpand:0,
+    readingOwner:'index',roomHitEnabled:false,focusEnabled:true,aperture:baseAperture,
   })
   const readingChapter = chapterForReading(segment)
   if (readingChapter) {
@@ -220,7 +220,7 @@ export function sampleStory(input: SampleInput): Readonly<StoryFrame> {
     storyVersion: input.storyVersion,
     contentVersion: input.contentVersion,
     world: sampleWorld(position.segment, position.progress),
-    camera: sampleCamera(position.segment, position.progress, input.user?.indexInspection ?? 0),
-    presentation: samplePresentation(position.segment, position.progress, input.user?.indexInspection ?? 0),
+    camera: sampleCamera(position.segment, position.progress),
+    presentation: samplePresentation(position.segment, position.progress),
   })
 }

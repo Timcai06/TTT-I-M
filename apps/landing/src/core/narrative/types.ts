@@ -53,7 +53,6 @@ export interface SampleInput {
   readonly position: StoryPosition
   readonly storyVersion: string
   readonly contentVersion: string
-  readonly user?: Readonly<{ indexInspection: number }>
 }
 
 export type PhotoPlacement =
@@ -77,7 +76,15 @@ export interface SemanticWorld {
 export type CameraIntent =
   | Readonly<{
       mode: 'index'
-      inspection: number
+      /**
+       * 0 = the opening shot, tight on the monitor and square to it. 1 = the wide
+       * room shot the entry flight departs from.
+       *
+       * This replaces `inspection`, which was a click-driven camera owner running
+       * beside the story clock. The pull-back makes the same move part of the
+       * scroll, so scrolling back to the top *is* the enlarged Index.
+       */
+      pullback: number
     }>
   | Readonly<{
       mode: 'surface-fit'

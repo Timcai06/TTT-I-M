@@ -352,19 +352,29 @@ console.log('[chapter-state-guards] navigation uses one shared chapter state pro
 
 // A corner radius on a surface that carries a matrix3d homography cuts into the 3D
 // quad it is projected onto and exposes the room behind the seam the projection
-// exists to hide. The Index frame is the one rounded projected surface and it works
-// only because its clip-path stays at inset(0 0 round 0) until the panel has
-// un-projected to a flat rect. Nothing else in the suite would catch a radius here.
+// exists to hide.
+//
+// The Index panel is the one rounded projected surface, and the rounding is a
+// clip-path scaled by --index-frame, not a border-radius. --index-frame is the
+// camera's pullback: it is 1 only at the opening shot, where the camera stands on
+// the monitor's normal and the quad projects to an axis-aligned rectangle, and it
+// is 0 everywhere the quad is warped. A static border-radius would have no such
+// gate, so it would cut the corners at every angle -- which looks correct in the
+// one frame someone checks, and wrong through the whole pull-back.
+//
+// Nothing else in the suite would catch a radius here.
 {
   const projected = [
     '.archive-bridge__page',
     '.archive-chapter-bridge__page',
     '.archive-bridge__page--source',
     '.archive-handoff-page',
+    '.hero__screen-page',
   ]
   const sheets = [
     'src/components/personal-archive/personal-archive.css',
     'src/components/personal-archive/natural-room.css',
+    'src/styles/components/hero.css',
   ]
   for (const sheet of sheets) {
     const css = readFileSync(new URL(`../../${sheet}`, import.meta.url), 'utf8')
@@ -372,7 +382,15 @@ console.log('[chapter-state-guards] navigation uses one shared chapter state pro
       const [, selector, body] = match
       if (!/border-radius\s*:/.test(body)) continue
       if (/border-radius\s*:\s*0(\D|$)/.test(body)) continue
-      const hit = projected.find((name) => selector.includes(name))
+      // Match the projected element itself, not things drawn inside it. A rounded
+      // pill on `.hero__screen-page::after` is a badge printed on the page, which
+      // the homography carries like any other pixel; only a radius on the quad's
+      // own box cuts the seam. So: last compound of each comma-separated part,
+      // and never a pseudo-element.
+      const hit = projected.find((name) => selector.split(',').some((part) => {
+        const last = part.trim().split(/[\s>+~]+/).pop() ?? ''
+        return last.includes(name) && !last.includes('::')
+      }))
       if (hit) {
         throw new Error(`${hit} is projected with matrix3d and must not declare a border-radius (${sheet}).`)
       }

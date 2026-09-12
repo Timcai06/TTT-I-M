@@ -6,7 +6,6 @@ import { usePretextTextInteraction } from '../lib/pretextIntroText'
 import { onChapterArrived } from '../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
 import SignatureMark from './SignatureMark'
-import { setIndexZoom, toggleIndexZoom } from '../lib/indexZoom'
 import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
 const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSurface'))
@@ -326,23 +325,12 @@ export default function Hero() {
   return (
     <section className="hero hero--archive-index" id="hero" ref={root}>
       <Suspense fallback={null}><ArchiveIndexSurface root={root} page={screenPage} /></Suspense>
-      <div
-        ref={screenPage}
-        className="hero__screen-page"
-        role="group"
-        tabIndex={0}
-        aria-label="Interactive Index on the archive monitor. Press Enter to move closer and Escape to return."
-        onClick={(event) => {
-          // Anything inside the Index keeps its own behaviour; only the surround
-          // toggles the enlargement, so no link or control is hijacked by it.
-          if ((event.target as HTMLElement).closest("a,button,input,select,textarea,[role=button],[role=link]")) return
-          toggleIndexZoom()
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && event.target === event.currentTarget) { event.preventDefault(); setIndexZoom(1) }
-          else if (event.key === "Escape") { event.preventDefault(); setIndexZoom(0) }
-        }}
-      >
+      {/* The Index panel is no longer a control. Click-to-enlarge was the only
+          movement it had while the opening camera was fixed; the pull-back gives
+          that movement to scroll, so scrolling back to the top is the enlarged
+          Index and there is nothing left to toggle. Its own links stay focusable,
+          which is all the keyboard ever needed here. */}
+      <div ref={screenPage} className="hero__screen-page">
       {/* Canvas 层：幽灵照片 → 粒子肖像 (条件渲染) → 扫描线光泽，三层堆叠 */}
       <div className="hero__canvas">
         <img className="hero__ghost hero__portrait-ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />

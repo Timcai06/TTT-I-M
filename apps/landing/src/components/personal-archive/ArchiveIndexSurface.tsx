@@ -7,7 +7,7 @@ import { useReducedMotion } from '../../lib/motion'
 import { createArchiveProgress } from './scrollPose'
 import PersonalArchiveSurface from './PersonalArchiveSurface'
 import { getPreparedArchiveRuntime } from './archiveRuntime'
-import { resetIndexZoom } from '../../lib/indexZoom'
+import { resetIndexFrame } from '../../lib/indexFrame'
 
 const ready = () => undefined
 const released = () => undefined
@@ -30,7 +30,7 @@ export default function ArchiveIndexSurface({ root, page }: {
     // dead and the panel — which is opacity 0 by default in archive mode, waiting
     // to be projected — stayed invisible on exactly the failure it was written for.
     root.current?.setAttribute('data-archive-failed', 'true')
-    resetIndexZoom()
+    resetIndexFrame()
     setFailed(true)
   }, [])
 
@@ -45,10 +45,10 @@ export default function ArchiveIndexSurface({ root, page }: {
         // a wheel notch was enough to release the panel the reader is meant to be
         // able to sit on and click. The Index owns the whole hero span.
         const at = self.progress < 1
-        // Scrolling away from the Index must not strand an enlarged panel across
-        // the room; the story moves on to the entry segment and would keep
-        // drawing it at full viewport.
-        if (!at) resetIndexZoom()
+        // Scrolling away from the Index must not strand the signature frame on a
+        // panel the camera is no longer square to; past this point the story is on
+        // the entry segment and the quad is warping.
+        if (!at) resetIndexFrame()
         setAtIndex(at)
         progress.set(self.progress)
       },

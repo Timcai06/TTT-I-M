@@ -43,9 +43,20 @@ const scratchRetreat = new Vector3()
 const scratchRoomPos = new Vector3()
 const scratchRoomTarget = new Vector3()
 const scratchRoomQuat = new Quaternion()
+const scratchOpen = new Vector3()
 
 /** How far back a handoff pulls before closing on the destination surface. */
 const STANDOFF_RATIO = 1.85
+/**
+ * How much of the frame the monitor holds at the opening shot, as a fraction of
+ * the surface fit.
+ *
+ * 1 is the fit itself, where the screen touches the viewport edge on its limiting
+ * axis and the room survives only as slivers. Three quarters keeps the Index the
+ * clear subject while leaving a real margin of room around it, so the first frame
+ * already reads as a screen standing in a space.
+ */
+const INDEX_OPEN_COVERAGE = .75
 /** How far a mid-segment inspect push may travel toward the surface fit. */
 const INSPECT_FRACTION = .35
 /** How much pointer parallax survives once the camera has docked onto a reading
@@ -122,10 +133,36 @@ export function solveArchiveCamera(frame: StoryFrame, anchors: SampleAnchors, vi
     indexTarget.x += pointer.x * .008; indexTarget.y += pointer.y * .006
   }
   if (intent.mode === 'index') {
-    // Index interaction lives inside the real monitor DOM. It must not also
-    // move the room camera or create a second, timer-owned scroll axis.
-    applyIndexPointer()
-    camera.position.copy(indexPosition); target.copy(indexTarget); camera.fov = indexFov
+    // The opening pull-back. At pullback 0 the camera stands on the monitor's own
+    // normal, backed off until the screen holds INDEX_OPEN_COVERAGE of the frame;
+    // at 1 it has arrived at the wide room shot the entry flight departs from.
+    //
+    // Standing on the normal is what makes the signature radius legal here: the
+    // quad projects to an axis-aligned rectangle, and that is the only state in
+    // which a rounded frame reads as a frame instead of a warped smear.
+    //
+    // This used to be a fixed pose, because click-to-enlarge owned the only
+    // movement the Index had and a second camera owner would have fought the story
+    // clock. Folding the move into scroll removes that owner entirely: scrolling
+    // back to the top now *is* the enlarged Index.
+    const monitor = anchors.StackReading ? fit(anchors.StackReading, views.stack.fov, camera.aspect) : null
+    // No monitor anchors means there is no opening shot to pull back from. Land on
+    // the room shot instead of throwing - this is the segment the visit opens on,
+    // and a throw here is a blank page rather than a degraded one.
+    const pullback = monitor ? intent.pullback : 1
+    if (monitor) {
+      scratchOpen.copy(monitor.center).addScaledVector(monitor.normal, monitor.distance / INDEX_OPEN_COVERAGE)
+      camera.position.copy(scratchOpen).lerp(indexPosition, pullback)
+      target.copy(monitor.center).lerp(indexTarget, pullback)
+    } else {
+      camera.position.copy(indexPosition); target.copy(indexTarget)
+    }
+    // Parallax rides the result rather than indexPosition, so the opening shot has
+    // it too. At pullback 1 this lands on exactly the pose the entry branch builds
+    // through applyIndexPointer(), which is the seam the projection test pins.
+    camera.position.x += pointer.x * .032; camera.position.y += pointer.y * .020
+    target.x += pointer.x * .008; target.y += pointer.y * .006
+    camera.fov = views.stack.fov + (indexFov - views.stack.fov) * pullback
     camera.lookAt(target)
   } else if (intent.mode === 'surface-fit') {
     const surface = surfacePose(intent.targetSurface, camera.fov)

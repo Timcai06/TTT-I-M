@@ -59,7 +59,6 @@ async function ownsProjectedPoint(hit: ReturnType<Page['locator']>) {
 test('About return exposes a real clickable Life object instead of its sticky stage', async ({ page }) => {
   test.setTimeout(120_000)
   await boot(page)
-  await page.locator('.hero__screen-page').click()
   await page.getByRole('button', { name: 'Scroll to ABOUT', exact: true }).click()
   const about = page.locator('#about')
   await expect(about).not.toHaveAttribute('inert', '')

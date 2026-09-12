@@ -19,6 +19,7 @@ import { createArchiveLighting } from './archiveRuntimeLighting'
 import { clearSamplePresentation, presentSampleFrame, projectArchiveQuad, samplePageLayout } from './archiveReadingSurface'
 import { createArchiveSignal } from './archiveRuntimeSignal'
 import { prepareArchiveMaterials } from './archiveMaterials'
+import { prepareArchiveBookMaterials } from './archiveBookMaterials'
 import { createArchiveFinitePass } from './archiveRenderSafety'
 import type { ArchiveProgress } from './scrollPose'
 import { createSharedResource } from '../../lib/resources/sharedResource'
@@ -30,6 +31,7 @@ import { phase } from './chapterTracks'
 import { createArchiveAnimationRig } from './archiveAnimationRig'
 import { createArchiveExecution } from './archiveExecution'
 import { solveArchiveCamera, applyArchiveCamera } from './archiveCameraRig'
+import { publishIndexFrame } from '../../lib/indexFrame'
 import { getSampleLayout, positionAtScroll, retainSamplePosition, getRetainedSamplePosition, invalidateSampleLayout, ARCHIVE_ROOM_PROGRESS } from './archiveSamplePosition'
 import { currentArchiveRequest, cancelArchiveRouting } from '../../lib/archiveRoute'
 import { sampleStory } from '../../core/narrative/sampleStory'
@@ -50,7 +52,6 @@ interface ActiveSurface {
 export interface ArchiveRuntime {
   readingTransition(requestId: number, chapter: StoryChapter, mode: 'return' | 'open', layer: HTMLElement, from?: number): Promise<ArchiveSeekResult>
   commitPosition(requestId: number, targetId?: string): ArchiveSeekResult
-  setIndexInspection(amount: number): void
   mount(host: HTMLElement): () => void
   rest(view: ArchiveView): void
   activate(page: HTMLElement | null, sourcePage: HTMLElement | null, shot: SpatialShot, progress: ArchiveProgress, events: SurfaceEvents): () => void
@@ -139,6 +140,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     await prepareChapterPages(signal)
     await document.fonts.ready
     const textures = new Set<Texture>()
+    cleanup.push(prepareArchiveBookMaterials(model.scene))
     prepareArchiveMaterials(model.scene, gl.capabilities.getMaxAnisotropy())
     reportArchiveStage('materials')
     const backdrop = createArchiveBackdrop(model.scene)
@@ -198,7 +200,6 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     let sampleUnavailable: string | null = null
     let transientSampleFailure: Readonly<{ layoutVersion: number; requestId: number; resourceGeneration: number }> | null = null
     let lastSampleCommitted = false
-    let indexInspection=0
     let readingRoute: { requestId: number; layoutVersion: number; resourceGeneration: number; chapter: StoryChapter; mode: 'return' | 'open'; layer: HTMLElement; started: number; from?: number; resolve(result: ArchiveSeekResult): void } | null = null
     let lastWorldKey = ''
     function endReadingRoute(result: ArchiveSeekResult) {
@@ -367,7 +368,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         if (currentArchiveRequest().requestId !== requestId) throw new Error('Stale sample request')
         const permit = execution.begin('sample', 'foreground', requestId, layout.version)
         trace.push('permit-check')
-        const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion, user:{indexInspection} })
+        const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion })
         for (const id of ['about', 'life', 'frame', 'skills', 'projects', 'contact']) if (!document.getElementById(id)) throw new Error(`Missing live chapter:${id}`)
         const currentIndexPage = indexPage ?? document.querySelector<HTMLElement>('.hero__screen-page')
         if (!indexPage && currentIndexPage) indexPage = currentIndexPage
@@ -433,7 +434,12 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         focus.enabled = sampled.presentation.focusEnabled && !target && !source
         trace.push('DOM/passes')
         canvas.dataset.archiveShot = position.segment
-        canvas.dataset.archiveProgress = String(position.segment === 'index' ? indexInspection : position.progress)
+        canvas.dataset.archiveProgress = String(position.progress)
+        // The signature frame on the Index panel. It is legal only while the camera
+        // is square to the monitor, which is exactly pullback 0, so it retires as
+        // the pull-back opens the room. publishIndexFrame skips unchanged values,
+        // so this is not a style write every frame.
+        publishIndexFrame(sampled.camera.mode === 'index' ? 1 - sampled.camera.pullback : 0)
         canvas.dataset.archiveSheet = target ? JSON.stringify(target) : 'hidden'
         const beforeRender = diagnosticEnabled ? { animation: animationRig.readback(), nodes: execution.readNodes() } : null
         // The room is static between story states, so its two shadow maps only need
@@ -495,7 +501,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       signal.throwIfAborted()
       const requestId = currentArchiveRequest().requestId
       const permit = execution.begin('sample', 'prepare', requestId, getSampleLayout()?.version ?? 0)
-      const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion, user:{ indexInspection:0 } })
+      const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion })
       const world = execution.sample(permit, sampled)
       applyArchiveCamera(camera, solveArchiveCamera(sampled, world.anchors, { width, height }))
       await gl.compileAsync(scene, camera)
@@ -581,11 +587,6 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         if (disposed || state !== 'ready' || preparing || !mountedHost || currentArchiveRequest().requestId !== requestId) return 'readable-fallback'
         if (drawSample(requestId)) return lastSampleCommitted && getSampleLayout() ? 'committed' : 'readable-fallback'
         return 'readable-fallback'
-      },
-      setIndexInspection(amount) {
-        if(!Number.isFinite(amount))return
-        indexInspection=Math.max(0,Math.min(1,amount))
-        schedule()
       },
       mount(host) {
         mountedHost = host

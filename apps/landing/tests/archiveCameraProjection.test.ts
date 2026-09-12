@@ -35,24 +35,43 @@ const anchors = {
   FrameReading: plane(.5, .25, -.2), StackReading: plane(1.2, .1, -.15),
   WorkReading: plane(.8, -.1, -.3), ContactReading: plane(.2, -.3, -.5),
 }
-const storyFrame = (segment: SampleSegment, progress: number, inspection = 0) => sampleStory({
+const storyFrame = (segment: SampleSegment, progress: number) => sampleStory({
   position: { segment, progress }, storyVersion: story.storyVersion, contentVersion: story.contentVersion,
-  user: { indexInspection: inspection },
 })
-const solved = (segment: SampleSegment, progress: number, inspection = 0) => solveArchiveCamera(storyFrame(segment, progress, inspection), anchors, { width: 1440, height: 900 })
+const solved = (segment: SampleSegment, progress: number) => solveArchiveCamera(storyFrame(segment, progress), anchors, { width: 1440, height: 900 })
 const closeCamera = (left: FinalArchiveCamera, right: FinalArchiveCamera) => {
   for (const key of ['position','quaternion','view','projection'] as const) left[key].forEach((value, index) => assert.ok(Math.abs(value - right[key][index]) < 1e-9, `${key}[${index}]`))
   assert.ok(Math.abs(left.fov - right.fov) < 1e-9)
   assert.ok(Math.abs(left.focus - right.focus) < 1e-9)
 }
 
-void test('Index camera stays canonical while its real monitor content remains interactive', () => {
+void test('the opening pull-back starts square to the monitor and lands on the entry pose', () => {
+  // The seam: the pull-back finishes exactly where the About flight departs from.
+  // It has to be pinned at 1 rather than anywhere, because the index camera is no
+  // longer static - that is the whole point of the segment.
+  closeCamera(solved('index', 1), solved('entry', 0))
   closeCamera(solved('index', .999), solved('entry', 0))
   closeCamera(solved('entry', 1), solved('about-reading', .5))
-  const base = solved('index', .5, 0)
-  const inspected = solved('index', .5, 1)
-  closeCamera(inspected, base)
-  closeCamera(solved('index', .1, .7), solved('index', .9, .7))
+
+  // At pullback 0 the camera stands on the monitor's normal, which is what makes
+  // the signature radius legal: the quad projects to an axis-aligned rectangle.
+  // Anything else warps the corners and a radius would cut into the room.
+  const open = solved('index', 0)
+  const projected = projectArchiveQuad(anchors.StackReading, open, layout, 0, .0015)
+  const [tl, tr, br, bl] = projected.corners
+  assert.ok(Math.abs(tl.y - tr.y) < 1e-6, 'opening quad top edge is not level')
+  assert.ok(Math.abs(bl.y - br.y) < 1e-6, 'opening quad bottom edge is not level')
+  assert.ok(Math.abs(tl.x - bl.x) < 1e-6, 'opening quad left edge is not plumb')
+  assert.ok(Math.abs(tr.x - br.x) < 1e-6, 'opening quad right edge is not plumb')
+
+  // ...and far enough back that the monitor holds about three quarters of the
+  // frame, so the room is around it rather than cropped away.
+  const coverage = Math.max((br.y - tr.y) / layout.height, (tr.x - tl.x) / layout.width)
+  assert.ok(Math.abs(coverage - .75) < .02, `monitor holds ${coverage} of the frame, not .75`)
+
+  // The pull-back actually travels: the two ends are nowhere near each other.
+  const travelled = Math.hypot(...open.position.map((value, axis) => value - solved('index', 1).position[axis]))
+  assert.ok(travelled > .5, `pull-back only moved ${travelled}m`)
 })
 
 void test('every physical handoff shares exact reading endpoints and finite mid-stops', () => {

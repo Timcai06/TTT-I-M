@@ -167,16 +167,34 @@ void test('rejects unknown segments, versions, and invalid progress explicitly',
     () => sampleStory({ position: { segment: 'about-reading', progress: 0 }, ...versions, contentVersion: 'old' }),
     /Unsupported content version/,
   )
-  for (const indexInspection of [Number.NaN, -0.01, 1.01]) {
-    assert.throws(
-      () => sampleStory({ position: { segment: 'index', progress: 0 }, ...versions, user: { indexInspection } }),
-      /Index inspection must be finite and between 0 and 1/,
-    )
+})
+
+void test('the index segment is the opening pull-back, not a held pose', () => {
+  // The visit opens tight on the monitor and the first scroll backs the camera out
+  // to the room. This is the invariant the old `inspection` field cannot express:
+  // it is scroll, not a click, and it is monotonic.
+  assert.deepEqual(frameAt('index', 0).camera, { mode: 'index', pullback: 0 })
+  let previous = -1
+  for (let step = 0; step <= 100; step++) {
+    const camera = frameAt('index', step / 100).camera
+    assert.equal(camera.mode, 'index')
+    const pullback = camera.mode === 'index' ? camera.pullback : Number.NaN
+    assert.ok(pullback >= previous, `pull-back went backwards at ${step / 100}`)
+    previous = pullback
   }
-  assert.deepEqual(
-    sampleStory({ position: { segment: 'index', progress: 0 }, ...versions, user: { indexInspection: .7 } }).camera,
-    { mode: 'index', inspection: .7 },
-  )
+  // It lands before the segment ends, so the last quarter is a held room shot
+  // rather than a camera still arriving when the About flight takes over.
+  assert.equal(previous, 1)
+  const pullbackAt = (progress: number) => {
+    const camera = frameAt('index', progress).camera
+    assert.equal(camera.mode, 'index')
+    return camera.mode === 'index' ? camera.pullback : Number.NaN
+  }
+  assert.equal(pullbackAt(.75), 1)
+  assert.ok(pullbackAt(.74) < 1)
+  // The Index never leaves the monitor: what moves is where the camera stands.
+  assert.equal(frameAt('index', 0).presentation.targetExpand, 0)
+  assert.equal(frameAt('index', 1).presentation.targetExpand, 0)
 })
 
 void test('is deterministic across forward, reverse, shuffled, and repeated sampling', () => {

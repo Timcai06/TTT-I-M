@@ -403,9 +403,10 @@ test('Frame subanchor deep link and Index inspection cancellation cannot replay 
   await expect.poll(() => page.locator('#frame-cuisine').evaluate(node => Math.abs(node.getBoundingClientRect().top-40))).toBeLessThan(8)
   await page.evaluate(() => window.scrollTo(0,0))
   await expect(page.locator('canvas[data-archive-shared]')).toHaveAttribute('data-archive-shot', /index|rest:home/)
-  const indexPage = page.locator('.hero__screen-page')
-  await expect(indexPage).toHaveCount(1)
-  await indexPage.evaluate(node => node.dispatchEvent(new MouseEvent('click',{bubbles:true})))
+  await expect(page.locator('.hero__screen-page')).toHaveCount(1)
+  // Scrolling into the pull-back is what raises index progress now; it used to be
+  // a click on the panel, back when the index camera could not move at all.
+  await page.evaluate(() => window.scrollTo(0, Math.round(innerHeight * .2)))
   await expect.poll(() => page.locator('canvas[data-archive-shared]').getAttribute('data-archive-progress').then(Number)).toBeGreaterThan(.08)
   await page.evaluate(() => {
     window.dispatchEvent(new WheelEvent('wheel',{deltaY:450,cancelable:true}))
@@ -499,7 +500,12 @@ test('entry dossier mapping, full About and legacy Final Horizon Work Contact re
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
   await boot(page)
   const directory = '../../output/pm/NR-02B'
-  await expect(page.locator('.hero__screen-page')).toHaveAttribute('tabindex','0')
+  // The Index panel is not a control any more: the opening pull-back gives it its
+  // movement, so it carries no tabindex and its own links are what the keyboard
+  // reaches. Asserted rather than dropped, so re-adding a focusable wrapper is a
+  // deliberate act.
+  await expect(page.locator('.hero__screen-page')).toHaveCount(1)
+  await expect(page.locator('.hero__screen-page')).not.toHaveAttribute('tabindex','0')
   await page.screenshot({path:`${directory}/index.png`})
   await page.locator('#archive-entry').evaluate(node => {
     const r = node.getBoundingClientRect(); window.scrollTo(0,scrollY+r.top-innerHeight+r.height*.96)

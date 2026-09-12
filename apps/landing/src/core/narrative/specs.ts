@@ -63,8 +63,25 @@ export const PERSONAL_ARCHIVE_SAMPLE_STORY = Object.freeze({
     targetReveal: progressRange(0.58, 0.82),
     dolly: progressRange(0.62, 0.9),
     targetExpand: progressRange(0.82, 1),
-    entryCamera: progressRange(0.06, 0.64),
+    /**
+     * The entry flight now starts at 0. The .06 lead-in was authored when the
+     * entry bridge was 740svh, where it bought a held beat worth .44 screens;
+     * at 380svh it is .17 screens of stillness sitting directly after the index
+     * pull-back, which already ends on a held room shot. Two beats in a row is
+     * the pause the reader complained about, so the flight picks up where the
+     * pull-back sets down.
+     */
+    entryCamera: progressRange(0, 0.64),
     entryAlign: progressRange(0.5, 0.86),
+    /**
+     * The opening pull-back: the visit starts tight on the monitor and the first
+     * scroll backs the camera out until the whole room is in frame.
+     *
+     * It ends at .75 rather than 1 so the last quarter of the index segment is a
+     * held room shot - "this is a room" needs a moment to land before the About
+     * flight takes the frame.
+     */
+    indexPullback: progressRange(0, 0.75),
     frameSignal: progressRange(0.03, 0.61),
     drawerOpen: progressRange(0.14, 0.52),
     folderOpen: progressRange(0.38, 0.73),

@@ -110,7 +110,7 @@ void test('all nine UV probes and every target paper vertex fit real nonuniform 
   transfer.dispose();rig.dispose()
 })
 
-void test('real GLB animations and solver keep all six bridges continuous, projected, and clear of exported walnut and monitor geometry',()=>{
+void test('real GLB animations and solver keep the opening and all six bridges continuous, projected, and clear of exported walnut and monitor geometry',()=>{
   const m=model(true),rig=createArchiveAnimationRig(m),execution=createArchiveExecution(m.scene,rig)
   const viewports=[{width:1280,height:720},{width:1440,height:900}] as const
   const obstacleNames=['Monitor screen','StackScreenSurface']
@@ -126,7 +126,12 @@ void test('real GLB animations and solver keep all six bridges continuous, proje
   assert.ok(walnutIndex,'real GLB walnut geometry has no index')
   const walnutTriangles:Triangle[]=[]
   for(let index=0;index<walnutIndex.count;index+=3) walnutTriangles.push(new Triangle(...([0,1,2].map(offset=>new Vector3().fromBufferAttribute(walnutPosition,walnutIndex.getX(index+offset)).applyMatrix4(walnut.matrixWorld)) as [Vector3,Vector3,Vector3])))
-  const bridges=['entry','about-life','life-frame','frame-stack','stack-work','work-contact'] as const
+  // 'index' is the opening pull-back, and it belongs in this sweep for the same
+  // reason the bridges do: it is now the longest single camera move on the site,
+  // it starts closer to the monitor than anything else ever gets, and it crosses
+  // the whole room. Walnut clearance and the .17m-per-percent continuity bound are
+  // exactly the things that could go wrong with it.
+  const bridges=['index','entry','about-life','life-frame','frame-stack','stack-work','work-contact'] as const
   let requestId=0
   let minimumWalnutClearance=Infinity,maximumOnePercentStep=0,maximumPhotoNdcExtent=0
   let walnutClearanceChecks=0,monitorClearanceChecks=0,activeSurfaceProjectionChecks=0,lineOfSightChecks=0
@@ -186,7 +191,9 @@ void test('real GLB animations and solver keep all six bridges continuous, proje
   for(const viewport of viewports) {
     const entryStartWorld=execution.sample(execution.begin('sample','foreground',++requestId,1),storyFrame('entry',0))
     const entryStart=solveArchiveCamera(storyFrame('entry',0),entryStartWorld.anchors,viewport)
-    const indexStart=solveArchiveCamera(storyFrame('index',.5),entryStartWorld.anchors,viewport)
+    // Pinned at 1, not mid-segment: the index camera is no longer static, so the
+    // seam is its endpoint rather than any point on it.
+    const indexStart=solveArchiveCamera(storyFrame('index',1),entryStartWorld.anchors,viewport)
     close([...entryStart.position],[...indexStart.position]);close([...entryStart.quaternion],[...indexStart.quaternion]);assert.equal(entryStart.fov,indexStart.fov)
     const entryEndWorld=execution.sample(execution.begin('sample','foreground',requestId+1,1),storyFrame('entry',1))
     const entryEnd=solveArchiveCamera(storyFrame('entry',1),entryEndWorld.anchors,viewport)

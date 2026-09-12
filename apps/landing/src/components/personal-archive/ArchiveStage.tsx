@@ -17,19 +17,6 @@ const viewByChapter: Record<string, ArchiveView> = {
  * The room has exactly one DOM home for the whole visit. Chapter adapters only
  * change the seekable shot; they never move or unmount the renderer canvas.
  */
-/** Screens of stillness on the Index *after* the hero interval, before the About
- *  flight begins.
- *
- * Zero, because the hero interval is already that screen. `atIndex` covers the
- * whole hero span, so the Index is held still and clickable for a full screen of
- * scrolling; anything added here lands after the Index has detached and before
- * entry has started, which is a dead zone rather than a rest. Measured at 1, that
- * dead zone was 768px of scrolling in which nothing on screen changed at all.
- *
- * It was 2.5 for one round before that, compensating for the Index sliding off the
- * monitor — which turned out to be a coordinate-space bug in samplePageLayout. */
-const INDEX_DWELL = 0
-
 export default function ArchiveStage() {
   const host = useRef<HTMLDivElement>(null)
   const [failed, setFailed] = useState(false)
@@ -63,18 +50,12 @@ export default function ArchiveStage() {
         // The legacy Hero and entry triggers intentionally overlap from scroll
         // zero. A single story clock cannot let both own that interval, so the
         // semantic entry begins exactly where the Hero/Index interval ends.
-        // Give the Index a dwell before the About flight begins. The hero trigger is
-        // exactly one screen, so entry used to start the moment the reader scrolled at
-        // all — the Index was something you fell through rather than something you
-        // could stop and use. The entry bridge carries a matching +100svh so its own
-        // flight keeps the pace tuned for it.
-        // Entry begins INDEX_DWELL screens after the hero interval ends. Clicking
-        // the Index (seekArchiveChapter) remains the fast path that skips the wait.
-        //
-        // Deliberately NOT gated on the click alone: a reader who only scrolls
-        // would then pass the whole dwell and arrive in About's body with the
-        // entry flight never played.
-        ranges.entry = { start: ranges.index!.end + innerHeight * INDEX_DWELL, end: ranges.entry!.end }
+        // Entry begins exactly where the hero interval ends, with nothing between.
+        // A dwell lived here for three rounds at 2.5 screens, then 1, then 0, each
+        // time buying stillness for an Index whose camera could not move. The index
+        // segment is now the opening pull-back, so that whole screen already moves
+        // the camera and there is no longer anything to wait for.
+        ranges.entry = { start: ranges.index!.end, end: ranges.entry!.end }
         const pages: Record<string, ProjectionLayout> = {}
         for (const track of ['about-life', 'life-frame', 'frame-stack', 'stack-work', 'work-contact']) for (const kind of ['target', 'source']) {
           const page = document.querySelector<HTMLElement>(`[data-archive-track="${track}"] ${kind === 'target' ? '.archive-chapter-bridge__page' : '.archive-bridge__page--source'}`)

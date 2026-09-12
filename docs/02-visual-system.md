@@ -27,8 +27,8 @@
 ## Corner Radius (design language)
 
 Every radius used to be a one-off. The only accidental clusters were 18px and
-12px, and the enlarged Index frame's 44px was unique — which is a problem, because
-that enlarged frame is the shape the work is meant to be recognised by. Four steps
+12px, and the Index frame's 44px was unique — which is a problem, because
+that frame is the shape the work is meant to be recognised by. Four steps
 in `packages/tokens/src/tokens.css` absorb all of it, mirrored as `radii` in
 `packages/tokens/src/index.ts`:
 
@@ -37,19 +37,28 @@ in `packages/tokens/src/tokens.css` absorb all of it, mirrored as `radii` in
 | `--radius-sm` | 12px | dialogs, carousels, small media frames |
 | `--radius-md` | 18px | panels, buttons, bento cards, footer |
 | `--radius-lg` | 24px | scroll-expand frame, border-glow cards |
-| `--radius-signature` | 44px | the enlarged Index frame, and only it |
+| `--radius-signature` | 44px | the Index frame at the opening shot, and only it |
 
 Pick a step. Do not introduce a fifth value, and do not reach for
 `--radius-signature` for anything that is not the Index: it is a signature because
 it appears once.
 
 **Never on a projected surface.** `.archive-bridge__page`,
-`.archive-chapter-bridge__page`, `.archive-bridge__page--source` and
-`.archive-handoff-page` carry an inline `matrix3d` homography. Their corners are
-the seam the projection hides; a radius there cuts into the quad and shows the room
-behind it. `tests/build/chapter-state-guards.mjs` fails the build if one appears.
-The Index frame is the exception that proves it — its `clip-path` stays at
-`inset(0 0 round 0)` until the panel has un-projected to a flat rect.
+`.archive-chapter-bridge__page`, `.archive-bridge__page--source`,
+`.archive-handoff-page` and `.hero__screen-page` carry an inline `matrix3d`
+homography. Their corners are the seam the projection hides; a radius there cuts
+into the quad and shows the room behind it. `tests/build/chapter-state-guards.mjs`
+fails the build if one appears on the element itself — a rounded badge drawn
+*inside* one is fine, because the homography carries it like any other pixel.
+
+The Index frame is the exception that proves the rule, and the reason is
+geometric rather than a special case. It is a `clip-path` scaled by
+`--index-frame`, which is the camera's pull-back: 1 only at the opening shot,
+where the camera stands on the monitor's own normal and the homography degenerates
+to an axis-aligned rectangle, and 0 everywhere the quad is warped. So the radius
+exists exactly in the state where a rounded frame can read as a frame. A static
+`border-radius` would look right in that one frame and cut the corners through the
+entire rest of the pull-back, which is what the guard is there to prevent.
 
 ## Sound
 
