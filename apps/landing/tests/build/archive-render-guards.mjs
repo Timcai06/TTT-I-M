@@ -106,6 +106,15 @@ import { read, withoutComments } from './lib/source.mjs'
   if (!/html:not\(\[data-archive-sample-owner\]\)[^{]*\.hero__screen-page/.test(hero)) {
     throw new Error('hero.css must show the Index when no room has committed a frame, not only when one explicitly failed.')
   }
+  // Layout is captured before the first room frame. Changing the Index's box
+  // when that frame claims ownership invalidates the captured dimensions on the
+  // next draw, which returns to fallback and repeats on subsequent scrolls.
+  const geometryProperty = /(?:^|;)\s*(?:width|height|min-width|min-height|max-width|max-height|aspect-ratio|margin(?:-[\w-]+)?|padding(?:-[\w-]+)?|inset(?:-[\w-]+)?|top|right|bottom|left|position|display|box-sizing)\s*:/
+  for (const [, selector, rawBody] of hero.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!selector.includes('data-archive-sample-owner') || !selector.includes('.hero__screen-page')) continue
+    const body = rawBody.replace(/\/\*[\s\S]*?\*\//g, '')
+    if (geometryProperty.test(body)) throw new Error('Index fallback must preserve the projected page box: ownership cannot change measured geometry.')
+  }
   const archive = read('src/components/personal-archive/personal-archive.css')
   if (!/html:not\(\[data-archive-sample-owner\]\)\s*\[data-archive-live-target\]/.test(archive)) {
     throw new Error('personal-archive.css must keep the chapter fallback on the same signal.')

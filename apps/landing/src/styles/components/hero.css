@@ -114,14 +114,11 @@
     opacity: 1 !important;
     transform: none !important;
     pointer-events: auto !important;
-    /* With no room, there is no monitor to be shaped like. The panel is the page
-       now, so it takes the whole viewport back rather than sitting letterboxed
-       inside it at the shape of a screen the reader cannot see. */
-    inset: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    aspect-ratio: auto !important;
+    /* Keep the same border box as the projected panel. The layout snapshot is
+       measured before the first committed room frame. Resizing here makes that
+       frame change its own input dimensions; the next draw rejects the layout,
+       returns to fallback, and repeats as the reader scrolls. Fallback changes
+       paint and interaction only, so a room can resume without changing layout. */
   }
 }
 
