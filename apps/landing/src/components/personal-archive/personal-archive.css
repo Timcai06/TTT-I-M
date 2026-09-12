@@ -29,7 +29,12 @@
   main { position: relative; z-index: 1; }
   /* Entry (Index -> About) is the first spatial move a visitor sees; it shares
      the same 1.6x slowdown as the chapter handoffs in chapterTracks.ts. */
-  .archive-bridge { position: relative; height: 740svh; background: transparent; color: #eee9df; pointer-events: none; }
+  /* 740svh made the entry the longest transition on the site and the first one the
+     reader meets: measured, 4147px of flight after 1536px in which nothing moved at
+     all — 7.4 screens to reach About, against 220svh for a chapter bridge. The
+     flight is one camera move into the room and does not need five and a half
+     screens to land it. */
+  .archive-bridge { position: relative; height: 380svh; background: transparent; color: #eee9df; pointer-events: none; }
   .archive-bridge__stage { position: sticky; top: 0; height: 100svh; overflow: clip; isolation: isolate; pointer-events: none; }
   .archive-bridge__backdrop { position: absolute; inset: 0; opacity: 1; pointer-events: none; }
   .archive-bridge__veil { opacity: var(--archive-vignette, var(--archive-copy, 1)); position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, #050505f0, #08080850 42%, #05050510 70%), linear-gradient(0deg, #000000ef, transparent 24%, transparent 74%, #000000b8); }

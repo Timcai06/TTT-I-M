@@ -17,16 +17,18 @@ const viewByChapter: Record<string, ArchiveView> = {
  * The room has exactly one DOM home for the whole visit. Chapter adapters only
  * change the seekable shot; they never move or unmount the renderer canvas.
  */
-/** Screens of stillness on the Index before the About flight begins.
+/** Screens of stillness on the Index *after* the hero interval, before the About
+ *  flight begins.
  *
- * This was 2.5 for one round, which was a mistake: it was compensating for the
- * Index panel sliding off the monitor, on the theory that the reader was being
- * hurried past it. The sliding turned out to be a coordinate-space bug in
- * samplePageLayout, and with that fixed the compensation is just empty scrolling —
- * two and a half screens where nothing moves at all. One screen is what the hero
- * trigger is worth, and with a panel that genuinely holds still it is enough to
- * stop on and click. */
-const INDEX_DWELL = 1
+ * Zero, because the hero interval is already that screen. `atIndex` covers the
+ * whole hero span, so the Index is held still and clickable for a full screen of
+ * scrolling; anything added here lands after the Index has detached and before
+ * entry has started, which is a dead zone rather than a rest. Measured at 1, that
+ * dead zone was 768px of scrolling in which nothing on screen changed at all.
+ *
+ * It was 2.5 for one round before that, compensating for the Index sliding off the
+ * monitor — which turned out to be a coordinate-space bug in samplePageLayout. */
+const INDEX_DWELL = 0
 
 export default function ArchiveStage() {
   const host = useRef<HTMLDivElement>(null)
