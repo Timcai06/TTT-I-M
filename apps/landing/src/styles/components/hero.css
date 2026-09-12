@@ -22,14 +22,30 @@
   }
 
   .hero--archive-index .hero__screen-page {
+    /* The panel is shaped like the monitor it gets projected onto, not like the
+       viewport.
+
+       projectArchiveQuad maps this box's corners onto the StackReading quad's
+       corners and does not preserve aspect, so a viewport-shaped box arrives on
+       a 1.87 monitor stretched by quadAspect / viewportAspect - about 1.22x wide
+       on a 1512x982 window, and everything off-centre inside it is displaced by
+       that much. It was always true; it only became visible when the opening
+       shot put the Index square and at three quarters of the frame.
+
+       Shaping the box like the quad makes the mapping a uniform scale. The
+       number is a measured fact about the room GLB, and archivePhotoTransfer
+       pins it against the real anchors so a re-export cannot silently undo this. */
+    --index-quad-aspect: 1.8731;
     position: fixed;
     inset: 0;
+    margin: auto;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     box-sizing: border-box;
-    width: 100%;
-    height: 100%;
+    width: min(100%, calc(100svh * var(--index-quad-aspect)));
+    height: auto;
+    aspect-ratio: var(--index-quad-aspect);
     padding-bottom: clamp(40px, 6vw, 80px);
     overflow: hidden;
     opacity: 0;
@@ -98,6 +114,14 @@
     opacity: 1 !important;
     transform: none !important;
     pointer-events: auto !important;
+    /* With no room, there is no monitor to be shaped like. The panel is the page
+       now, so it takes the whole viewport back rather than sitting letterboxed
+       inside it at the shape of a screen the reader cannot see. */
+    inset: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
   }
 }
 
