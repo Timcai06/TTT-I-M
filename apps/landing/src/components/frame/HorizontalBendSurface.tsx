@@ -1,29 +1,32 @@
-import { useEffect, useState, type RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { createHorizontalBend, type HorizontalBendHandle } from '../../lib/canvas-ui/horizontalBend'
 import { useMobileExperience } from '../../lib/device'
 import { useReducedMotion } from '../../lib/motion'
-import {
-  acquireOptionalContextWhenAvailable,
-  type ContextLease,
-} from '../../lib/webgl/contextRegistry'
+import { acquireBendCanvas } from '../../lib/canvas-ui/bendCanvasPool'
+import type { HorizontalBendState } from '../../lib/canvas-ui/horizontalBendMath'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
+import { supportsHtmlInCanvas } from '../../lib/canvas-ui/runtime'
 
 export default function HorizontalBendSurface({
   capture,
   viewport,
   handleRef,
+  scrollState,
   onEnhancedChange,
 }: {
   capture: RefObject<HTMLDivElement | null>
   viewport: RefObject<HTMLDivElement | null>
   handleRef: RefObject<HorizontalBendHandle | null>
+  scrollState: RefObject<HorizontalBendState>
   onEnhancedChange: (enhanced: boolean) => void
 }) {
   const { ref, visible, mounted } = useGLSurface({
     renderMargin: '0px',
-    mountMargin: '20% 0px',
+    mountMargin: '100% 0px',
     initiallyMounted: false,
   })
+  const visibleRef = useRef(visible)
+  useEffect(() => { visibleRef.current = visible }, [visible])
   const [enhanced, setEnhanced] = useState(false)
   const [failed, setFailed] = useState(false)
   const reducedMotion = useReducedMotion()
@@ -34,13 +37,12 @@ export default function HorizontalBendSurface({
     const host = ref.current
     const captureEl = capture.current
     const viewportEl = viewport.current
-    if (!mounted || !visible || failed || !host || !captureEl || !viewportEl) return
-    if (disabled) return
-    const canvas = host.querySelector('canvas')
-    if (!canvas) return
+    if (!mounted || failed || !host || !captureEl || !viewportEl) return
+    if (disabled || !supportsHtmlInCanvas()) return
 
     let handle: HorizontalBendHandle | null = null
-    let contextLease: ContextLease | null = null
+    let releaseCanvas: ((discard?: boolean) => void) | null = null
+    let broken = false
     let stopWaiting = () => {}
     let released = false
     const resize = () => handle?.resize()
@@ -55,30 +57,36 @@ export default function HorizontalBendSurface({
       } catch {
         // Continue through lease and DOM fallback restoration on driver errors.
       } finally {
-        contextLease?.release()
-        contextLease = null
+        releaseCanvas?.(broken)
+        releaseCanvas = null
         setEnhanced(false)
         onEnhancedChange(false)
       }
     }
     const fail = () => {
+      broken = true
       cleanup()
       setFailed(true)
     }
 
-    stopWaiting = acquireOptionalContextWhenAvailable('horizontal-bend', (lease) => {
+    stopWaiting = acquireBendCanvas((canvas, release) => {
       if (released) {
-        lease.release()
+        release()
         return
       }
-      contextLease = lease
+      releaseCanvas = release
+      host.append(canvas)
       let created: HorizontalBendHandle | null
       try {
         created = createHorizontalBend({
           canvas,
           capture: captureEl,
           viewport: viewportEl,
+          initialState: scrollState.current,
+          reusable: true,
           onFirstFrame: () => {
+            if (released) return
+            if (!visibleRef.current) handle?.pause()
             setEnhanced(true)
             onEnhancedChange(true)
           },
@@ -93,6 +101,7 @@ export default function HorizontalBendSurface({
         return
       }
       if (!created) {
+        broken = true
         cleanup()
         return
       }
@@ -101,13 +110,20 @@ export default function HorizontalBendSurface({
       window.addEventListener('resize', resize)
     })
     return cleanup
-  }, [capture, disabled, failed, handleRef, mounted, onEnhancedChange, ref, viewport, visible])
+  }, [capture, disabled, failed, handleRef, mounted, onEnhancedChange, ref, scrollState, viewport])
 
   useEffect(() => {
-    if (visible || !failed) return
+    if (visible) handleRef.current?.resume()
+    else if (enhanced) handleRef.current?.pause()
+  }, [enhanced, handleRef, visible])
+
+  useEffect(() => {
+    // Failed warmups retry only after leaving the preparation range. Retrying
+    // merely because they are offscreen would loop before the user reaches them.
+    if (mounted || !failed) return
     const timer = window.setTimeout(() => setFailed(false), 0)
     return () => window.clearTimeout(timer)
-  }, [failed, visible])
+  }, [failed, mounted])
 
   if (disabled) return null
 
@@ -117,8 +133,6 @@ export default function HorizontalBendSurface({
       data-horizontal-bend={enhanced ? 'active' : 'fallback'}
       ref={ref}
       aria-hidden="true"
-    >
-      {mounted && visible && !failed && <canvas />}
-    </div>
+    />
   )
 }

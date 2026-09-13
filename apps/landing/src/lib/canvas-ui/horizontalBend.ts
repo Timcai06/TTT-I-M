@@ -183,7 +183,20 @@ void main() {
   outColor = vec4(mix(u_background, base.rgb * foldLighting, coverage), 1.0);
 }`
 
+const programs = new WeakMap<WebGL2RenderingContext, WebGLProgram>()
+
+export function disposeHorizontalBendCanvas(canvas: HTMLCanvasElement) {
+  const gl = canvas.getContext('webgl2')
+  if (!gl) return
+  const program = programs.get(gl)
+  if (program) gl.deleteProgram(program)
+  programs.delete(gl)
+  gl.getExtension('WEBGL_lose_context')?.loseContext()
+}
+
 function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {
+  const cached = programs.get(gl)
+  if (cached && !gl.isContextLost()) return cached
   const compile = (type: number, source: string) => {
     const shader = gl.createShader(type)
     if (!shader) throw new Error('Unable to allocate Bend shader')
@@ -210,6 +223,7 @@ function compileProgram(gl: WebGL2RenderingContext): WebGLProgram {
       gl.deleteProgram(program)
       throw new Error(message)
     }
+    programs.set(gl, program)
     return program
   } finally {
     gl.deleteShader(vertex)
@@ -221,6 +235,8 @@ export function createHorizontalBend(options: {
   canvas: HTMLCanvasElement
   capture: HTMLElement
   viewport: HTMLElement
+  initialState?: HorizontalBendState
+  reusable?: boolean
   onFirstFrame?: () => void
   onFailure?: () => void
 }): HorizontalBendHandle | null {
@@ -258,6 +274,7 @@ export function createHorizontalBend(options: {
     slot.style.contentVisibility = 'visible'
   })
   const originalImages = capture.querySelectorAll<HTMLImageElement>('img')
+  const decodedImages = new Set<number>()
   drawable.querySelectorAll<HTMLImageElement>('img').forEach((image, index) => {
     const original = originalImages[index]
     const resolvedSource = original?.currentSrc || original?.src
@@ -270,7 +287,10 @@ export function createHorizontalBend(options: {
       if (!destroyed && source.isConnected) source.requestPaint?.()
     }
     image.addEventListener('load', requestSourcePaint, { once: true, signal: imageLifecycle.signal })
-    void image.decode().then(requestSourcePaint).catch(() => undefined)
+    void image.decode().then(() => {
+      decodedImages.add(index)
+      requestSourcePaint()
+    }).catch(() => { if (!destroyed) fail() })
   })
   source.className = 'horizontal-bend__capture'
   source.append(drawable)
@@ -297,7 +317,10 @@ export function createHorizontalBend(options: {
   let currentTiltX = 0
   let currentTiltY = 0
   let previousTime = performance.now()
-  let state: HorizontalBendState = { progress: 0, distance: 0, direction: 'right-to-left' }
+  let state: HorizontalBendState = options.initialState ?? { progress: 0, distance: 0, direction: 'right-to-left' }
+  const initialStrengths = bendEdgeStrengths(state.progress, state.direction, state.distance, HORIZONTAL_BEND_CONFIG.ease)
+  currentLeft = targetLeft = initialStrengths.left
+  currentRight = targetRight = initialStrengths.right
 
   try {
     program = compileProgram(gl)
@@ -322,8 +345,7 @@ export function createHorizontalBend(options: {
     imageLifecycle.abort()
     if (texture) gl.deleteTexture(texture)
     if (buffer) gl.deleteBuffer(buffer)
-    if (program) gl.deleteProgram(program)
-    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    disposeHorizontalBendCanvas(canvas)
     unmark()
     source.remove()
     onFailure?.()
@@ -352,11 +374,20 @@ export function createHorizontalBend(options: {
 
   const drawCapture = () => {
     try {
+      const captureRect = capture.getBoundingClientRect()
+      const viewportRect = viewport.getBoundingClientRect()
+      const imagesReady = Array.from(originalImages).every((image, index) => {
+        const rect = image.getBoundingClientRect()
+        const inCapture = rect.right > viewportRect.left && rect.left < viewportRect.right
+          && rect.bottom > viewportRect.top && rect.top < viewportRect.bottom
+        return !inCapture || decodedImages.has(index)
+      })
+      if (!imagesReady) return
+      // Size before capturing: a later resize would clear the prepared pixels.
+      resizeCanvasToDisplaySize(source)
       const dpr = source.width / Math.max(1, source.clientWidth)
       context.setTransform(dpr, 0, 0, dpr, 0, 0)
       context.clearRect(0, 0, source.clientWidth, source.clientHeight)
-      const captureRect = capture.getBoundingClientRect()
-      const viewportRect = viewport.getBoundingClientRect()
       drawElementImage(drawable, captureRect.left - viewportRect.left, captureRect.top - viewportRect.top)
       contentDirty = true
       scheduleRender()
@@ -392,7 +423,10 @@ export function createHorizontalBend(options: {
       if (Math.abs(targetTiltY - currentTiltY) < 0.0001) currentTiltY = targetTiltY
 
       resizeCanvasToDisplaySize(canvas)
-      if (resizeCanvasToDisplaySize(source)) source.requestPaint?.()
+      if (resizeCanvasToDisplaySize(source)) {
+        contentDirty = false
+        source.requestPaint?.()
+      }
       if (contentDirty) {
         contentDirty = false
         gl.bindTexture(gl.TEXTURE_2D, texture)
@@ -531,8 +565,7 @@ export function createHorizontalBend(options: {
       source.remove()
       if (texture) gl.deleteTexture(texture)
       if (buffer) gl.deleteBuffer(buffer)
-      if (program) gl.deleteProgram(program)
-      gl.getExtension('WEBGL_lose_context')?.loseContext()
+      if (!options.reusable) disposeHorizontalBendCanvas(canvas)
     },
   }
 }

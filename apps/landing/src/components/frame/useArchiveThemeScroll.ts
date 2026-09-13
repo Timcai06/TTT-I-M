@@ -5,6 +5,7 @@ import { enqueueImageDecode } from '../../lib/resources/imageDecodeQueue'
 import type { ArchiveTheme } from '../../content'
 import type { ActiveArchiveState } from './ArchiveRail'
 import type { HorizontalBendHandle } from '../../lib/canvas-ui/horizontalBend'
+import type { HorizontalBendState } from '../../lib/canvas-ui/horizontalBendMath'
 import { computeFrameScrollDuration } from './frameScrollMath'
 
 interface ArchiveThemeScrollOptions {
@@ -16,13 +17,14 @@ interface ArchiveThemeScrollOptions {
   track: RefObject<HTMLDivElement | null>
   /** Optional HTML-in-Canvas bend surface. DOM remains the semantic and failure fallback authority. */
   bendHandle: RefObject<HorizontalBendHandle | null>
+  bendState: RefObject<HorizontalBendState>
 }
 
 /**
  * @description 驱动 Frame 单个主题段落的桌面横向滚动、章节 rail 状态和临近图片预热
  * @dependencies 依赖 GSAP ScrollTrigger、wordReveal、imageDecodeQueue、ArchiveTheme 内容结构
  * @performance 只在桌面且非 reduced-motion 下启用 pin scrub；active cluster 更新用 rAF 节流，避免 ScrollTrigger 高频回调反复 setState
- * @caveats 移动端不启用 horizontal pin，必须由 CSS 文档流兜底；图片预热只处理当前和下一个 cluster，避免早期 decode 风暴
+ * @caveats 移动端不启用 horizontal pin；图片预热处理当前与前后相邻 cluster，支持反向滚动
  * @steps
  * step1: 进入 section 后触发 marker 标题和正文的文字 reveal
  * step2: 桌面端根据 track.scrollWidth 创建横向 fromTo pin 动画
@@ -34,6 +36,7 @@ export default function useArchiveThemeScroll({
   theme,
   track,
   bendHandle,
+  bendState,
 }: ArchiveThemeScrollOptions) {
   const activeClusterIndex = useRef(-1)
   const activeUpdateFrame = useRef(0)
@@ -55,12 +58,12 @@ export default function useArchiveThemeScroll({
       Array.from(cluster.querySelectorAll<HTMLImageElement>('.archive-slot img')),
     ]))
     /**
-     * @description 低优先级预热当前 cluster 和下一个 cluster 的图片，减少快速滑到 Frame 时的空白
+     * @description 低优先级预热当前与前后相邻 cluster 的图片，减少正反向滚动时的等待
      * @dependencies 依赖 DOM 中已渲染的 .archive-cluster/.archive-slot img 和 imageDecodeQueue
      * @performance 每个 src 只预热一次；load 后再进 idle decode 队列，避免和首屏 critical decode 抢主线程
      */
     const warmClusterImages = (clusterIndex: number) => {
-      const nearbyClusters = [clusterIndex, clusterIndex + 1].map((index) => {
+      const nearbyClusters = [clusterIndex - 1, clusterIndex, clusterIndex + 1].map((index) => {
         const clusterId = theme.clusters[index]?.id
         return clusterId ? clustersById.get(clusterId) : undefined
       })
@@ -141,6 +144,10 @@ export default function useArchiveThemeScroll({
           return measuredScrollDistance
         }
         const scrollEndDistance = () => computeFrameScrollDuration(measureScrollDistance(), window.innerHeight)
+        const syncBend = (progress: number) => {
+          bendState.current = { progress, distance: measuredScrollDistance, direction: theme.direction }
+          bendHandle.current?.setScrollState(bendState.current)
+        }
         const tween = gsap.fromTo(
           trackEl,
           { x: () => (theme.direction === 'left-to-right' ? -measureScrollDistance() : 0) },
@@ -158,22 +165,20 @@ export default function useArchiveThemeScroll({
               anticipatePin: 1,
               onUpdate: (self) => {
                 updateActiveCluster(self.progress)
-                bendHandle.current?.setScrollState({
-                  progress: self.progress,
-                  distance: measuredScrollDistance,
-                  direction: theme.direction,
-                })
+                syncBend(self.progress)
               },
               onRefresh: (self) => {
                 measureScrollDistance()
                 updateActiveCluster(self.progress)
+                syncBend(self.progress)
                 bendHandle.current?.resize()
               },
             },
           }
         )
 
-        updateActiveCluster(0)
+        updateActiveCluster(tween.scrollTrigger?.progress ?? 0)
+        syncBend(tween.scrollTrigger?.progress ?? 0)
 
         return () => {
           tween.scrollTrigger?.kill()
@@ -196,7 +201,7 @@ export default function useArchiveThemeScroll({
       mm.revert()
       ctx.revert()
     }
-  }, [bendHandle, section, theme, track])
+  }, [bendHandle, bendState, section, theme, track])
 
   return active
 }

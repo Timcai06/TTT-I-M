@@ -7,6 +7,7 @@ import GradualBlur from '../GradualBlur'
 import useArchiveThemeScroll from './useArchiveThemeScroll'
 import HorizontalBendSurface from './HorizontalBendSurface'
 import type { HorizontalBendHandle } from '../../lib/canvas-ui/horizontalBend'
+import type { HorizontalBendState } from '../../lib/canvas-ui/horizontalBendMath'
 import ArchiveEditorialCopy from './ArchiveEditorialCopy'
 
 /**
@@ -20,8 +21,9 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
   const track = useRef<HTMLDivElement>(null)
   const pin = useRef<HTMLDivElement>(null)
   const bendHandle = useRef<HorizontalBendHandle | null>(null)
+  const bendState = useRef<HorizontalBendState>({ progress: 0, distance: 0, direction: theme.direction })
   const [bendEnhanced, setBendEnhanced] = useState(false)
-  const active = useArchiveThemeScroll({ section, theme, track, bendHandle })
+  const active = useArchiveThemeScroll({ section, theme, track, bendHandle, bendState })
   const themeWord = theme.id.toUpperCase()
   const visualClusters = theme.direction === 'left-to-right'
     ? theme.clusters.map((cluster, clusterIndex) => ({ cluster, clusterIndex })).reverse()
@@ -84,6 +86,7 @@ export default function ArchiveThemeSection({ theme, themeIndex }: { theme: Arch
           capture={track}
           viewport={pin}
           handleRef={bendHandle}
+          scrollState={bendState}
           onEnhancedChange={setBendEnhanced}
         />
       </div>
