@@ -52,7 +52,17 @@ void test('applies continuous photo carriers and monitors with real rig actions;
   const result = execution.sample(execution.begin('sample', 'foreground', 1, 1), frame)
   assert.equal(result.animation.actions.length, 11)
   assert.equal(result.transferGeometryApplied, true)
-  assert.equal(result.nodes.length, 38)
+  // readNodes() is PERSONAL_ARCHIVE_REQUIRED_OBJECTS.map(...), so this length is
+  // that list's length by construction and a literal here is just a snapshot of
+  // it. It was 38; 007ae70 restored MonitorPhoto_Thumbnail and
+  // StackPhotoViewerSurface, which room startup requires, and the snapshot went
+  // stale and stayed red. Derive it, and let the contract be the one statement of
+  // what the room needs.
+  assert.equal(result.nodes.length, PERSONAL_ARCHIVE_REQUIRED_OBJECTS.length)
+  // What the restored pair is actually for: both hang off the photo monitor state.
+  for (const name of ['MonitorPhoto_Thumbnail', 'StackPhotoViewerSurface']) {
+    assert.equal(result.nodes.find(n => n.name === name)?.parent, 'MonitorState_photo', name)
+  }
   assert.deepEqual(['LifeMemoryPhoto', 'Life_PhotoPaper', 'ArchivePhoto_04', 'PhotoMount_04', 'MonitorState_project', 'MonitorState_photo'].map(name => result.nodes.find(n => n.name === name)?.visible), [false, false, true, true, false, false])
   scene.getObjectByName('PhotoMount_04')!.removeFromParent()
   const before = rig.readback()
