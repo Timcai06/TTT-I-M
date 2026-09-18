@@ -130,7 +130,8 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     # Headroom for the wider CI per-test timeout; the lane ran 19-23m at 45s.
-    timeout-minutes: 45
+    # The loader itself costs ~90s per test on a two-core runner.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -168,7 +169,8 @@ jobs:
   e2e-canvas-experimental:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Two tests, each paying the ~90s loader once, against a 240s per-test cap.
+    timeout-minutes: 25
     env:
       HTML_CANVAS_EXPERIMENTAL: '1'
     steps:

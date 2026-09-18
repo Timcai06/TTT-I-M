@@ -57,7 +57,7 @@ export default defineConfig({
   // the intro wait was widened to 90s, and every test still died at 45s with the
   // wider budget unused. Ordering is the whole point - INTRO_TIMEOUT_MS (90s on
   // CI) must stay comfortably under this.
-  timeout: process.env.CI ? 150_000 : 45_000,
+  timeout: process.env.CI ? 240_000 : 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
   // The landing page owns several WebGL surfaces. Letting Playwright default to

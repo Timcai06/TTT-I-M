@@ -14,7 +14,15 @@
  * So CI gets a budget that matches CI. Local keeps 20s, where anything slower is
  * a real regression worth failing on.
  */
-// Must stay comfortably under playwright.config.ts's per-test timeout (150s on
-// CI), which is what actually stops a test. 120s here against a 45s test timeout
-// was a budget that could never be spent.
-export const INTRO_TIMEOUT_MS = process.env.CI ? 90_000 : 20_000
+// Must stay comfortably under playwright.config.ts's per-test timeout, which is
+// what actually stops a test. 120s here against a 45s test timeout was a budget
+// that could never be spent.
+//
+// 90s then missed by seconds. Two screencast frames from the same CI run measured
+// it: the counter was at 54 around 45s, and the last frame caught the exit
+// already running - counter and hairline faded, title not yet lifted - which is
+// the first half-second of a ~2.5s exit animation. Linear from 54% at 45s puts
+// the hand-off near 83s, and the test gave up at 90.
+//
+// So 180s: roughly twice the measured cost, not another guess one notch up.
+export const INTRO_TIMEOUT_MS = process.env.CI ? 180_000 : 20_000
