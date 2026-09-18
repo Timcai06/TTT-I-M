@@ -85,6 +85,16 @@ export default defineConfig({
           executablePath: findCachedChromiumExecutable(),
           args: [
             '--disable-dev-shm-usage',
+            // GitHub runners have no GPU, and headless Chromium will not hand out
+            // WebGL2 on a software path unless it is asked to. Without these the
+            // room prewarm never settles, `.intro` never clears, and every test in
+            // e2e-gates and e2e times out on its first line - red since
+            // 2026-09-11, with `verify` green the whole time, which is why local
+            // runs looked fine.
+            //
+            // A runner capability, not product behaviour: CI only, so local and
+            // agent runs keep real hardware GL.
+            ...(process.env.CI ? ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
             ...(process.env.HTML_CANVAS_EXPERIMENTAL === '1'
               ? ['--enable-features=CanvasDrawElement', '--enable-blink-features=CanvasDrawElement']
               : []),
