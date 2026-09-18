@@ -52,7 +52,12 @@ const e2eBaseURL = `http://127.0.0.1:${e2ePort}`
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 45_000,
+  // The per-test timeout has to clear the intro budget with room to spare, or
+  // raising the intro budget does nothing: CI showed the loader at 69% after 20s,
+  // the intro wait was widened to 90s, and every test still died at 45s with the
+  // wider budget unused. Ordering is the whole point - INTRO_TIMEOUT_MS (90s on
+  // CI) must stay comfortably under this.
+  timeout: process.env.CI ? 150_000 : 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
   // The landing page owns several WebGL surfaces. Letting Playwright default to

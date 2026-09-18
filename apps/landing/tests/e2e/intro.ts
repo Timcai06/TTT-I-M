@@ -14,4 +14,7 @@
  * So CI gets a budget that matches CI. Local keeps 20s, where anything slower is
  * a real regression worth failing on.
  */
-export const INTRO_TIMEOUT_MS = process.env.CI ? 120_000 : 20_000
+// Must stay comfortably under playwright.config.ts's per-test timeout (150s on
+// CI), which is what actually stops a test. 120s here against a 45s test timeout
+// was a budget that could never be spent.
+export const INTRO_TIMEOUT_MS = process.env.CI ? 90_000 : 20_000

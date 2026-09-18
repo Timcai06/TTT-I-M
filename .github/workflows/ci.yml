@@ -129,7 +129,8 @@ jobs:
   e2e-gates:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # Headroom for the wider CI per-test timeout; the lane ran 19-23m at 45s.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
