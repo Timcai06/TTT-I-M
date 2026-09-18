@@ -4,6 +4,17 @@ on:
   pull_request:
   push:
     branches: [main]
+  # The extended e2e lane runs here instead of on every push. See the `e2e` job.
+  schedule:
+    - cron: '17 19 * * *'
+  workflow_dispatch:
+
+# One run per ref. Three commits pushed in a row used to start three full CI
+# runs that all kept going, each carrying an e2e job that could burn 94 minutes;
+# nothing cancelled the runs the next push had already made irrelevant.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Deterministic gates: typecheck + lint (both workspaces), unit tests, build
@@ -12,7 +23,9 @@ jobs:
   # and platform boundaries). These must
   # always pass.
   verify:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -26,21 +39,25 @@ jobs:
       - run: npm run build:studio
       - run: npm run test:build # builds landing + landing build guards + platform guard
 
-  # Runtime gates: real-browser Playwright (frame structure + Plan 05 perf budgets).
+  # Extended runtime coverage: the archive room, loader, frame, mobile and the
+  # hardware-sensitive performance budgets. NIGHTLY, not per-push.
   #
-  # ADVISORY in CI (continue-on-error), AUTHORITATIVE locally. These tests drive the
-  # full Lenis + GSAP + ScrollTrigger + IntersectionObserver + WebGL pipeline, whose
-  # performance timing is hardware-variant on shared 2-core CI runners. CI runs the
-  # complete suite for VISIBILITY but does not let hardware-sensitive budgets block; the
-  # hard gate is `verify` (typecheck/lint/build/studio + deterministic build guards). Run
-  # `npm run test:e2e` locally before merging UI/scroll changes.
-  # Deterministic accessibility, degradation, navigation, effect-lifecycle, and
-  # interaction contracts are duplicated in the blocking `e2e-gates` job below.
-  # Frame/mobile/performance coverage remains advisory until its hardware-sensitive
-  # timing can be replaced with event-driven assertions.
+  # It used to run all 20 specs on every push, advisory, taking 78-94 minutes -
+  # by far the most expensive thing in CI. Six of those specs are the ones
+  # `e2e-gates` already runs as a blocking lane, so that work was done twice, and
+  # `continue-on-error: true` meant the result never affected anything. Expensive,
+  # duplicated, and unread: it had been red for weeks without anyone noticing.
+  #
+  # So it now runs the thirteen specs that no other lane covers, once a night,
+  # and reports honestly instead of being marked advisory - on a schedule there
+  # is nothing for it to block, so hiding its result buys nothing.
+  #
+  # Its archive specs deserve to be a blocking per-push lane. That is a follow-up
+  # and it is gated on their current failures being fixed, not on CI plumbing.
   e2e:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    continue-on-error: true
+    timeout-minutes: 60
     env:
       # Perf budgets get CI headroom via PERF_* env (2-core runner is slower than
       # local M-series). Load long tasks balloon during WebGL init under the covered
@@ -62,10 +79,30 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # The browser binaries cache; the OS packages they link against do not, so
+      # a cache hit still needs install-deps.
       - run: npx playwright install --with-deps chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
         working-directory: apps/landing
-      - run: npm run test:e2e
+      - run: npx playwright install-deps chromium
+        if: steps.browsers.outputs.cache-hit == 'true'
         working-directory: apps/landing
+      - run: npm run test:e2e:extended
+        working-directory: apps/landing
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-extended-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/landing/playwright-report
+            apps/landing/test-results
+          retention-days: 7
+          if-no-files-found: ignore
 
   # Cross-zone runtime smoke: BLOCKING on pushes to main. Fetches the *deployed*
   # main domain and asserts /blog,/work,/dashboard HTML + their /_next assets all
@@ -88,10 +125,11 @@ jobs:
 
   # Product-safety e2e gates: BLOCKING. Accessibility, degradation (reduced
   # motion, no WebGL, missing image/renderer), navigation, Canvas fallback/context
-  # lifecycle, Work gate, and representative scroll handoffs run here. The broad
-  # frame/mobile/performance matrix remains in the advisory lane above.
+  # lifecycle, Work gate, and representative scroll handoffs run here.
   e2e-gates:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -99,17 +137,37 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        working-directory: apps/landing
+      - run: npx playwright install-deps chromium
+        if: steps.browsers.outputs.cache-hit == 'true'
         working-directory: apps/landing
       - run: npm run test:e2e:gates
         working-directory: apps/landing
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-gates-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/landing/playwright-report
+            apps/landing/test-results
+          retention-days: 7
+          if-no-files-found: ignore
 
   # Chromium's HTML-in-Canvas API is still experimental, so keep its proof in
   # a separate blocking lane. Stable-browser fallback remains covered above;
   # this lane verifies that the enhanced Bend/Laser path also renders and that
   # a lost WebGL context restores the DOM fallback instead of leaking budget.
   e2e-canvas-experimental:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       HTML_CANVAS_EXPERIMENTAL: '1'
     steps:
@@ -119,7 +177,25 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        working-directory: apps/landing
+      - run: npx playwright install-deps chromium
+        if: steps.browsers.outputs.cache-hit == 'true'
         working-directory: apps/landing
       - run: npm run test:e2e:canvas-experimental
         working-directory: apps/landing
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-canvas-experimental-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/landing/playwright-report
+            apps/landing/test-results
+          retention-days: 7
+          if-no-files-found: ignore

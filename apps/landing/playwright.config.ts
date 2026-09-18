@@ -60,7 +60,10 @@ export default defineConfig({
   // headless Chromium/GitHub runners can reliably allocate, which shows up as
   // unrelated "Error creating WebGL context" noise and advisory e2e flakes.
   workers: 1,
-  reporter: [['list']],
+  // CI keeps an HTML report so a failure arrives as something you can open.
+  // trace and screenshot were already retained on failure, but nothing uploaded
+  // them, so every CI failure had to be diagnosed by scraping `gh run view --log`.
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: e2eBaseURL,
     colorScheme: 'dark',
