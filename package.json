@@ -39,12 +39,12 @@
     "test:content": "node --import ./packages/content/tests/register-ts-loader.mjs --test packages/content/tests/*.test.ts"
   },
   "devDependencies": {
-    "@types/three": "0.182.0",
-    "three": "0.182.0"
+    "@types/three": "0.186.0",
+    "three": "0.186.0"
   },
   "overrides": {
     "brace-expansion": "5.0.9",
     "js-yaml": "3.15.2",
-    "three": "0.182.0"
+    "three": "0.186.0"
   }
 }

@@ -23,7 +23,7 @@ function disposeModel(model: GLTF) {
     for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) materials.add(material)
   })
   materials.forEach((material) => {
-    Object.values(material).forEach((value) => { if (value instanceof Texture) textures.add(value) })
+    Object.values(material).forEach((value) => { if (value instanceof Texture) textures.add(value as Texture) })
     material.dispose()
   })
   textures.forEach((texture) => {

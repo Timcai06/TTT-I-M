@@ -70,7 +70,11 @@ function disposeModel(model: GLTF) {
     for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) materials.add(material)
   })
   for (const material of materials) {
-    Object.values(material).forEach(value => { if (value instanceof Texture) textures.add(value) }); material.dispose()
+    // three 0.186 made Texture generic, and `instanceof` on a generic class always
+    // narrows to its `any` instantiation - Texture<any, any> - whatever the input
+    // type is. These are real runtime textures off a Material, so the Set's default
+    // Texture<unknown, TextureEventMap> is the accurate type; say so at the add.
+    Object.values(material).forEach(value => { if (value instanceof Texture) textures.add(value as Texture) }); material.dispose()
   }
   for (const texture of textures) { texture.dispose(); const data: unknown = texture.source.data; if (data instanceof ImageBitmap) data.close() }
 }
@@ -150,7 +154,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     model.scene.traverse(object => {
       if (!(object instanceof Mesh)) return
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-        Object.values(material as Material).forEach(value => { if (value instanceof Texture) textures.add(value) })
+        Object.values(material as Material).forEach(value => { if (value instanceof Texture) textures.add(value as Texture) })
       }
     })
     // Raise only. This loop used to assign min(8, max) unconditionally, eleven
