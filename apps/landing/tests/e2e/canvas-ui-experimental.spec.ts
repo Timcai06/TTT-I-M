@@ -1,8 +1,31 @@
 import { expect, test } from '@playwright/test'
 
+/**
+ * Every canvas on the page must belong to a known owner.
+ *
+ * Both tests here used to assert `page.locator('canvas').count() <= 2`, which had
+ * gone stale twice over: the horizontal bend draws through a capture canvas *and*
+ * an output canvas, and the archive Index panel is `position: fixed`, so the hero
+ * particle portrait never leaves the viewport and never unmounts. Four canvases,
+ * against a budget of two, red since 46c62cb.
+ *
+ * A bare number also could not say which canvas was the surprising one. This
+ * checks ownership instead, so it still fails on a leaked or duplicated surface
+ * while being true about the four that are meant to be there.
+ */
+async function expectOnlyKnownCanvases(page: import('@playwright/test').Page, extra: readonly string[]) {
+  const owners = ['.archive-stage', '.hero__canvas', ...extra]
+  await expect.poll(async () => page.evaluate(
+    selectors => [...document.querySelectorAll('canvas')]
+      .filter(canvas => !selectors.some(selector => canvas.closest(selector)))
+      .map(canvas => canvas.className || canvas.parentElement?.className || '(anonymous)'),
+    owners,
+  )).toEqual([])
+}
+
 test.skip(process.env.HTML_CANVAS_EXPERIMENTAL !== '1', 'Requires Chromium HTML-in-Canvas experimental feature.')
 
-test('HTML-in-Canvas enables Bend capture and Laser content refraction', async ({ page }) => {
+test('HTML-in-Canvas enables Frame Bend capture, rail advance and context-loss fallback', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
   expect(await page.evaluate(() => {
@@ -21,7 +44,7 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   await expect(semanticTrack).toHaveCSS('opacity', '0')
   await expect(semanticTrack.locator('.archive-slot__caption').first()).toHaveCSS('visibility', 'visible')
   await expect(page.locator('#frame-building [data-horizontal-bend-capture] .archive-slot__caption').first()).toHaveCSS('visibility', 'visible')
-  await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
+  await expectOnlyKnownCanvases(page, ['#frame-building'])
 
   const bendCanvas = bend.locator('canvas').first()
   const pinRange = await page.locator('#frame-building').evaluate((section) => {
@@ -60,103 +83,29 @@ test('HTML-in-Canvas enables Bend capture and Laser content refraction', async (
   await expect(page.locator('#frame-building .frame-edge-blur').first()).toBeVisible()
   await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track')).toHaveCSS('opacity', '1')
   await expect(page.locator('#frame-building .archive-theme-section__pin > .archive-theme-section__track .archive-slot__media').first()).toHaveCSS('opacity', '1')
-
-  const transition = page.locator('#work-transition')
-  const gateTarget = await transition.evaluate((section) => {
-    const rect = section.getBoundingClientRect()
-    return rect.top + window.scrollY + (rect.height - window.innerHeight) * 0.995
-  })
-  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), gateTarget)
-  await expect(transition).toHaveAttribute('data-gate', 'locked')
-  await transition.frameLocator('.liquid-metal-button__frame').locator('#btn').click()
-  await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-active', 'true')
-  await expect(transition.locator('.liquid-metal-button')).toHaveCount(0)
-  await expect(page.locator('#projects .projects__laser canvas').first()).toBeAttached()
-  await expect(page.locator('#projects .projects__laser')).toHaveAttribute('data-mode', 'html-canvas')
-  await expect(page.locator('#projects [data-project-laser-capture]')).toHaveCount(1)
-  await expect(page.locator('#projects [data-project-laser-capture].projects__intro-content')).toHaveCount(1)
-  await expect(page.locator('#projects [data-project-laser-capture] .projects__bento')).toHaveCount(1)
-  await expect(page.locator('#projects .projects__laser-capture')).toHaveAttribute('data-capture-state', 'ready')
-  await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
-  await expect(page.locator(
-    '#projects .projects__intro-sticky > .projects__intro-content .projects__bento button',
-  ).first()).toBeEnabled()
-
-  const lastPreview = page.locator('#projects .projects__bento .bento-glow').last()
-  const settleTarget = await lastPreview.evaluate((node) => {
-    const rect = node.getBoundingClientRect()
-    // Move clearly beyond the ScrollTrigger end instead of sampling its exact
-    // threshold. Linux CI and macOS resolve fonts/images to slightly different
-    // card heights, and a boundary sample can leave the reversible portal live.
-    return rect.bottom + window.scrollY - window.innerHeight + 150 + window.innerHeight * 0.35
-  })
-  await page.evaluate((top) => window.scrollTo({ top, behavior: 'auto' }), settleTarget)
-  await expect(page.locator('#projects .projects__laser canvas')).toHaveCount(0)
 })
 
-test('HTML-in-Canvas dissolves the Frame handoff and releases it before Stack', async ({ page }) => {
+/**
+ * The Work transition tail that used to continue this test asserted
+ * data-gate="locked" on #work-transition and clicked the liquid-metal-button
+ * iframe to enter Projects. ArchiveWorkTransition renders that legacy surface
+ * only for mobile and reduced motion; on desktop it is
+ * ArchiveChapterBridge track="stack-work", so the attribute is never set and the
+ * button is never in the DOM. Everything after it - the Projects laser's
+ * html-canvas mode and capture state - was reached *through* that click, so it
+ * went unreachable with it. That desktop laser coverage is now missing and wants
+ * a test that arrives the way a reader does.
+ */
+
+test('the desktop chapter handoffs are archive bridges, not the legacy particle and gate surfaces', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
-
-  const handoff = page.locator('.frame-particle-handoff')
-  const handoffRange = await handoff.evaluate((section) => {
-    const rect = section.getBoundingClientRect()
-    return {
-      start: rect.top + window.scrollY,
-      distance: rect.height - window.innerHeight,
-    }
-  })
-  await page.evaluate(
-    ({ start, distance }) => window.scrollTo({ top: start + distance * 0.5, behavior: 'auto' }),
-    handoffRange,
-  )
-  await expect(handoff).toHaveAttribute('data-frame-particles', 'active')
-  await expect(handoff.locator('[data-frame-particle-capture]')).toHaveCount(1)
-  await expect(handoff.locator('canvas')).toHaveCount(2)
-  await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
-
-  const captureGeometry = await handoff.locator('[data-frame-particle-capture]').evaluate((content) => ({
-    clientHeight: content.clientHeight,
-    scrollHeight: content.scrollHeight,
-    scrollTop: content.scrollTop,
-    exposures: content.querySelectorAll('.frame-particle-document__figure').length,
-  }))
-  expect(captureGeometry.scrollHeight).toBeLessThanOrEqual(captureGeometry.clientHeight * 1.05)
-  expect(captureGeometry.scrollTop).toBe(0)
-  expect(captureGeometry.exposures).toBe(1)
-
-  // The transition used to mount/unmount exactly at its ScrollTrigger edge,
-  // which made fast direction changes flash or jump. Exercise both directions
-  // inside the pinned range and require the enhanced surface to stay complete.
-  for (const progress of [0.22, 0.76, 0.34, 0.88, 0.48]) {
-    await page.evaluate(
-      ({ start, distance, progress }) => window.scrollTo({
-        top: start + distance * progress,
-        behavior: 'auto',
-      }),
-      { ...handoffRange, progress },
-    )
-    await page.waitForTimeout(120)
-    await expect(handoff).toHaveAttribute('data-frame-particles', 'active')
-    await expect(handoff.locator('canvas')).toHaveCount(2)
-    await expect.poll(async () => Number.parseFloat(
-      await handoff.locator('.frame-particle-handoff__surface').evaluate((node) => getComputedStyle(node).opacity),
-    )).toBeGreaterThan(0.25)
-    await expect.poll(() => page.locator('canvas').count()).toBeLessThanOrEqual(2)
-  }
-
-  const beforeProgress = await handoff.evaluate((section) => Number.parseFloat(
-    getComputedStyle(section).getPropertyValue('--particle-progress'),
-  ))
-  await page.evaluate(
-    ({ start, distance }) => window.scrollTo({ top: start + distance * 0.58, behavior: 'auto' }),
-    handoffRange,
-  )
-  await expect.poll(async () => handoff.evaluate((section) => Number.parseFloat(
-    getComputedStyle(section).getPropertyValue('--particle-progress'),
-  ))).toBeGreaterThan(beforeProgress)
-  await expect(handoff).toHaveAttribute('data-handoff-phase', 'canvas-owned')
-
-  await page.mouse.wheel(0, 1_800)
-  await expect(handoff.locator('canvas')).toHaveCount(0)
+  await expect(page.locator('[data-archive-track="frame-stack"]')).toHaveCount(1)
+  await expect(page.locator('.frame-particle-handoff')).toHaveCount(0)
+  // Same branch, same reason: the liquid-metal gate is the mobile/reduced surface.
+  // Scoped to the section - the SciScope film dialog uses the same button
+  // component on desktop, so a page-wide count is not the question here.
+  await expect(page.locator('#work-transition[data-archive-track="stack-work"]')).toHaveCount(1)
+  await expect(page.locator('#work-transition .liquid-metal-button')).toHaveCount(0)
+  await expect(page.locator('#work-transition[data-gate]')).toHaveCount(0)
 })
