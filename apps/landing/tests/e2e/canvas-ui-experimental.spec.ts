@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 /**
  * Every canvas on the page must belong to a known owner.
@@ -27,7 +28,7 @@ test.skip(process.env.HTML_CANVAS_EXPERIMENTAL !== '1', 'Requires Chromium HTML-
 
 test('HTML-in-Canvas enables Frame Bend capture, rail advance and context-loss fallback', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   expect(await page.evaluate(() => {
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('2d')
@@ -99,7 +100,7 @@ test('HTML-in-Canvas enables Frame Bend capture, rail advance and context-loss f
 
 test('the desktop chapter handoffs are archive bridges, not the legacy particle and gate surfaces', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('[data-archive-track="frame-stack"]')).toHaveCount(1)
   await expect(page.locator('.frame-particle-handoff')).toHaveCount(0)
   // Same branch, same reason: the liquid-metal gate is the mobile/reduced surface.

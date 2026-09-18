@@ -69,7 +69,15 @@ export default defineConfig({
     colorScheme: 'dark',
     viewport: { width: 1440, height: 900 },
     screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
+    // Measured: a full trace of this page is 51 MB, 43 MB of which is captured
+    // page resources - the site ships 115 MB of assets. Eleven failures in
+    // e2e-gates produced a 1.9 GB artifact.
+    //
+    // snapshots: false drops the resource and DOM capture and keeps the action
+    // log and the screencast frames, which is exactly what was needed to read a
+    // CI failure: one frame showed the loader at 69% and settled a week of wrong
+    // guesses. DOM time-travel stays available by re-running the spec locally.
+    trace: { mode: 'retain-on-failure', snapshots: false, screenshots: true },
   },
   webServer: {
     // PLAYWRIGHT_PORT lets local/agent runs avoid a developer-owned Vite

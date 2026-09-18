@@ -8,6 +8,7 @@
  * suite which is advisory.
  */
 import { expect, test, type Page } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 async function waitForLive(page: Page, timeout = 20000) {
   // Loader mounts .intro and unmounts it when the intro hands off.
@@ -93,7 +94,7 @@ test('a non-archive bounded visual failure still blocks the readiness hand-off',
   })
 
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro__stage')).toHaveText('Preparation incomplete', { timeout: 20_000 })
+  await expect(page.locator('.intro__stage')).toHaveText('Preparation incomplete', { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('.intro__retry')).toBeVisible()
   await expect(page.locator('.intro')).toHaveCount(1)
   expect(aborted).toBeGreaterThan(0)

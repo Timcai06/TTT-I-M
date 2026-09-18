@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 async function openHome(page: Page) {
   page.on('pageerror', (error) => {
@@ -12,7 +13,7 @@ async function openHome(page: Page) {
   // flips the shared stage to `live`. DOM availability alone is therefore not
   // an interaction-ready signal: wait for the intro overlay to unmount before
   // clicking an archive preview or sampling pinned geometry.
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await waitForFrameReady(page)
 }
 

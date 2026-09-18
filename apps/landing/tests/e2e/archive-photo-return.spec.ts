@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { Matrix4, Quaternion, Vector3 } from 'three'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 const directory='../../output/pm/NR-03'
 type Commit={photoVisibility:Array<{blockedBy:string|null;ndc:number[]}>|null;kind:string;frameId:number;position:{segment:string;progress:number};permit:{requestId:number;layoutVersion:number;resourceGeneration:number};readingRoute:null|{mode:string;phase:string;progress:number;snapshotInert:boolean};camera:{position:number[];view:number[];projection:number[]};world:{photo:{progress:number;owner:string;sourceVisible:boolean;wallVisible:boolean;transferVisible:boolean;paperVisible:boolean;source:number[][];target:number[][];actual:number[][];uv:number[];paper:number[];texture:{sameSource:boolean;proxySameMap:boolean}}}}
@@ -13,7 +14,7 @@ async function boot(page:Page,url='/') {
     Object.defineProperty(navigator,'hardwareConcurrency',{configurable:true,get:()=>4})
     ;(window as unknown as {__portfolioArchiveExecutionEnabled:boolean}).__portfolioArchiveExecutionEnabled=true
   })
-  await page.goto(url);await expect(page.locator('.intro')).toHaveCount(0,{timeout:20000})
+  await page.goto(url);await expect(page.locator('.intro')).toHaveCount(0,{ timeout: INTRO_TIMEOUT_MS })
 }
 async function seek(page:Page,p:number) {
   await page.locator('[data-archive-track="life-frame"]').evaluate((node,p)=>{const r=node.getBoundingClientRect();window.scrollTo(0,scrollY+r.top-innerHeight+r.height*p)},p)

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 test('core Landing narrative remains usable across browser engines', async ({ page }) => {
   const fatalErrors: string[] = []
@@ -8,7 +9,7 @@ test('core Landing narrative remains usable across browser engines', async ({ pa
 
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('#hero .hero__name')).toContainText('Tim')
 
   const menuButton = page.getByRole('button', { name: /open section menu/i })
@@ -20,7 +21,7 @@ test('core Landing narrative remains usable across browser engines', async ({ pa
   await expect(menuButton).toBeFocused()
 
   await page.goto('/#projects', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('#projects .border-glow-card')).toHaveCount(6)
   await expect(page.locator('.sciscope-film')).toHaveAttribute('data-mode', 'scroll-expand')
   expect(fatalErrors, fatalErrors.join('\n')).toEqual([])

@@ -98,9 +98,9 @@ jobs:
         if: failure()
         with:
           name: playwright-extended-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            apps/landing/playwright-report
-            apps/landing/test-results
+          # playwright-report embeds the traces under its own data/ directory, so
+          # uploading test-results as well shipped every trace twice.
+          path: apps/landing/playwright-report
           retention-days: 7
           if-no-files-found: ignore
 
@@ -154,9 +154,9 @@ jobs:
         if: failure()
         with:
           name: playwright-gates-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            apps/landing/playwright-report
-            apps/landing/test-results
+          # playwright-report embeds the traces under its own data/ directory, so
+          # uploading test-results as well shipped every trace twice.
+          path: apps/landing/playwright-report
           retention-days: 7
           if-no-files-found: ignore
 
@@ -194,8 +194,8 @@ jobs:
         if: failure()
         with:
           name: playwright-canvas-experimental-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            apps/landing/playwright-report
-            apps/landing/test-results
+          # playwright-report embeds the traces under its own data/ directory, so
+          # uploading test-results as well shipped every trace twice.
+          path: apps/landing/playwright-report
           retention-days: 7
           if-no-files-found: ignore

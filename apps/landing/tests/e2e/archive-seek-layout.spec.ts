@@ -1,12 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 const output = path.resolve('../../output/pm/NR-05-R3')
 
 async function boot(page: Page, url = '/') {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 
 async function projectedOwner(hit: Locator) {

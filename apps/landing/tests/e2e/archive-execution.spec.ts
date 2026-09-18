@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { Matrix4, Vector3 } from 'three'
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 type Projection = { matrix: number[]; corners: Array<{ x: number; y: number }>; offset: number; layout: { width: number; height: number; pageWidth: number; pageHeight: number; originX: number; originY: number } }
 type Commit = { beforeRender: { animation: Commit['world']['animation']; nodes: Commit['world']['nodes'] }; kind: string; reason?: string; frameId: number; permit: { resourceGeneration: number; layoutVersion: number; requestId: number }; position: { segment: string; progress: number }; trace: string[]; camera: { position: number[]; quaternion: number[]; view: number[]; projection: number[]; fov: number }; world: { anchors: Record<string, number[][]>; animation: { actions: Array<{ clip: string; action: { time: number; effectiveTimeScale: number; effectiveWeight: number }; node: { position: number[]; quaternion: number[]; scale: number[]; matrixWorld: number[] } }> }; transferGeometryApplied: boolean; nodes: Array<{ name: string; visible: boolean }> }; target: Projection | null; source: Projection | null }
@@ -15,7 +16,7 @@ async function boot(page: Page, url = '/', diagnostics = true, waitForIntroExit 
     if (enabled) (window as unknown as { __portfolioArchiveExecutionEnabled: boolean }).__portfolioArchiveExecutionEnabled = true
   }, diagnostics)
   await page.goto(url)
-  if (waitForIntroExit) await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20000 })
+  if (waitForIntroExit) await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 async function seek(page: Page, track: string, p: number) {
   await page.locator(`[data-archive-track="${track}"]`).evaluate((node, progress) => {

@@ -1,4 +1,5 @@
 import { expect, test, type Browser, type Locator, type Page } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 type Commit = {
   kind: string
@@ -26,7 +27,7 @@ async function boot(page: Page) {
     ;(window as unknown as { __portfolioArchiveExecutionEnabled: boolean }).__portfolioArchiveExecutionEnabled = true
   })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 
 async function commits(page: Page) {
@@ -50,7 +51,7 @@ async function exerciseBridge(browser: Browser, shadowFlag: boolean) {
   }, shadowFlag)
   try {
     await page.goto('/?archiveSample=legacy', { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+    await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
     const bridge = page.locator('[data-archive-track="about-life"]')
     await alignSectionProgress(bridge, 0.48)
     await expect(bridge).toHaveAttribute('data-scene-ready', 'true', { timeout: 15_000 })

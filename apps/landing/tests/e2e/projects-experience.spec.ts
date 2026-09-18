@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 async function waitForProjects(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await page.locator('#projects').scrollIntoViewIfNeeded()
 }
 

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 async function waitForLive(page: Page) {
   page.on('pageerror', (error) => {
@@ -6,7 +7,7 @@ async function waitForLive(page: Page) {
     throw error
   })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 
 async function alignSectionTop(

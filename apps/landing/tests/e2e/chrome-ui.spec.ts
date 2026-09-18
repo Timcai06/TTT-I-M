@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 test('Scroll indicator stays aligned with the active chapter after navigation', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 
   await page.getByRole('button', { name: '02 · Frame' }).click()
   await expect(page.locator('#frame')).toBeInViewport()
@@ -21,7 +22,7 @@ test('Scroll indicator stays aligned with the active chapter after navigation', 
 
 test('Staggered section map opens from the retained top nav and jumps to chapters', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 
   await expect(page.locator('.nav__links')).toBeVisible()
   const menuButton = page.getByRole('button', { name: /open section menu/i })
@@ -48,7 +49,7 @@ test('Staggered section map opens from the retained top nav and jumps to chapter
 
 test('Direct Contact hash lands on a stable readable footer', async ({ page }) => {
   await page.goto('/#contact', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('#contact')).toBeInViewport()
 
   const footerState = await page.evaluate(() => {

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 type Commit = {
   kind: string
@@ -31,7 +32,7 @@ async function boot(page: Page, url = '/') {
     ;(window as unknown as { __portfolioArchiveExecutionEnabled: boolean }).__portfolioArchiveExecutionEnabled = true
   })
   await page.goto(url)
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect.poll(async () => (await latest(page))?.position.segment).toBeTruthy()
 }
 

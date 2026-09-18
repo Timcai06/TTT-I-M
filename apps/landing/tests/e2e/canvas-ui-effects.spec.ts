@@ -1,8 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
+import { INTRO_TIMEOUT_MS } from './intro'
 
 async function waitForLive(page: Page) {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('.intro')).toHaveCount(0, { timeout: 20_000 })
+  await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 
 test('stable Chromium keeps Frame DOM fallback and a non-blocking Projects laser', async ({ page }) => {
@@ -109,5 +110,5 @@ test('Loader exposes the local two-cell status without changing the real preload
     await expect(loader.locator('.intro__spinner')).toHaveAttribute('aria-hidden', 'true')
     await expect(loader.locator('.intro__stage')).not.toHaveText('')
   }
-  await expect(loader).toHaveCount(0, { timeout: 20_000 })
+  await expect(loader).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 })
