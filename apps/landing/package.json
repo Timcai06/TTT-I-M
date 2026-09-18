@@ -31,7 +31,10 @@
     "preview": "vite preview",
     "test:build:render": "node tests/build/archive-render-guards.mjs",
     "test:build:react": "node tests/build/react-safety-guards.mjs",
-    "test:e2e:extended": "playwright test --project=chromium-desktop tests/e2e/archive-execution.spec.ts tests/e2e/archive-global-navigation.spec.ts tests/e2e/archive-photo-return.spec.ts tests/e2e/archive-rollout.spec.ts tests/e2e/archive-room-entry.spec.ts tests/e2e/archive-seek-layout.spec.ts tests/e2e/archive-shadow.spec.ts tests/e2e/award-readiness.spec.ts tests/e2e/frame.spec.ts tests/e2e/loader.spec.ts tests/e2e/mobile.spec.ts tests/e2e/performance.spec.ts tests/e2e/projects-experience.spec.ts"
+    "test:e2e:extended": "playwright test --project=chromium-desktop tests/e2e/archive-execution.spec.ts tests/e2e/archive-global-navigation.spec.ts tests/e2e/archive-photo-return.spec.ts tests/e2e/archive-rollout.spec.ts tests/e2e/archive-room-entry.spec.ts tests/e2e/archive-seek-layout.spec.ts tests/e2e/archive-shadow.spec.ts tests/e2e/award-readiness.spec.ts tests/e2e/frame.spec.ts tests/e2e/loader.spec.ts tests/e2e/mobile.spec.ts tests/e2e/performance.spec.ts tests/e2e/projects-experience.spec.ts",
+    "test:e2e:gates:1": "playwright test --project=chromium-desktop tests/e2e/effects-context.spec.ts",
+    "test:e2e:gates:2": "playwright test --project=chromium-desktop tests/e2e/degradation.spec.ts tests/e2e/hero-pretext.spec.ts tests/e2e/accessibility.spec.ts",
+    "test:e2e:gates:3": "playwright test --project=chromium-desktop tests/e2e/canvas-ui-effects.spec.ts tests/e2e/chrome-ui.spec.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

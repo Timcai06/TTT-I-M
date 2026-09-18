@@ -129,9 +129,15 @@ jobs:
   e2e-gates:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    # Headroom for the wider CI per-test timeout; the lane ran 19-23m at 45s.
-    # The loader itself costs ~90s per test on a two-core runner.
-    timeout-minutes: 60
+    # Each shard is about a third of 40.8m. 30 leaves room for a slow runner.
+    timeout-minutes: 30
+    strategy:
+      # Every shard must report. Without this, the first shard to fail cancels
+      # the others and the failure list comes back truncated, which is the whole
+      # reason this lane exists.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -150,12 +156,20 @@ jobs:
       - run: npx playwright install-deps chromium
         if: steps.browsers.outputs.cache-hit == 'true'
         working-directory: apps/landing
-      - run: npm run test:e2e:gates
+      # 24 tests at workers: 1, each paying the ~90s loader on its own page load,
+      # is 40.8 minutes of mostly waiting. Three runners cut the wall clock to a
+      # third for the same runner minutes.
+      #
+      # Hand-authored shards rather than playwright's --shard, which splits by
+      # file: these six specs hold 8/6/5/3/1/1 tests and it divided them 9/14/1,
+      # so the longest shard saved almost nothing. These are 8/8/8.
+      # tests/e2eShards.test.ts asserts they still partition the lane exactly.
+      - run: npm run test:e2e:gates:${{ matrix.shard }}
         working-directory: apps/landing
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-gates-${{ github.run_id }}-${{ github.run_attempt }}
+          name: playwright-gates-${{ github.run_id }}-${{ github.run_attempt }}-shard${{ matrix.shard }}
           # playwright-report embeds the traces under its own data/ directory, so
           # uploading test-results as well shipped every trace twice.
           path: apps/landing/playwright-report
