@@ -6,6 +6,16 @@ async function waitForLive(page: Page) {
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 
+/** Put the pointer inside #contact, which is what arms the footer liquid. */
+async function hoverContact(page: import('@playwright/test').Page) {
+  const box = await page.locator('#contact').boundingBox()
+  if (!box) throw new Error('#contact has no box to hover')
+  const x = box.x + box.width / 2
+  const y = Math.max(1, Math.min(box.y + box.height / 2, (page.viewportSize()?.height ?? 900) - 2))
+  await page.mouse.move(x, y)
+  await page.mouse.move(x + 6, y + 4, { steps: 4 })
+}
+
 test('stable Chromium keeps Frame DOM fallback and a non-blocking Projects laser', async ({ page }) => {
   const fatal: string[] = []
   page.on('pageerror', (error) => {
@@ -33,22 +43,28 @@ test('stable Chromium keeps Frame DOM fallback and a non-blocking Projects laser
   expect(fatal).toEqual([])
 })
 
-test('the final Work gate yields to an explicit Work or Contact chapter jump', async ({ page }) => {
+test('the end of the stack-to-work bridge yields to an explicit Contact jump', async ({ page }) => {
+  // This asserted data-gate locked -> open on #work-transition. That gate is the
+  // liquid-metal one in WorkTransition, and ArchiveWorkTransition renders it only
+  // for mobile and reduced motion; on desktop the section is
+  // ArchiveChapterBridge track="stack-work", which has no forward gate at all, so
+  // the attribute is never set.
+  //
+  // What the test was protecting is still worth protecting: sitting at the very
+  // end of that transition must not trap the reader when they ask for a chapter
+  // by name. That is asserted directly now.
   await waitForLive(page)
   const transition = page.locator('#work-transition')
+  await expect(transition).toHaveAttribute('data-archive-track', 'stack-work')
+  await expect(transition.locator('.liquid-metal-button')).toHaveCount(0)
   const target = await transition.evaluate((section) => {
     const rect = section.getBoundingClientRect()
     return rect.top + scrollY + (rect.height - innerHeight) * 0.995
   })
   await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), target)
-  await expect(transition).toHaveAttribute('data-gate', 'locked')
 
-  await page.evaluate(() => {
-    history.replaceState(null, '', '#contact')
-    document.querySelector('#contact')?.scrollIntoView({ block: 'start' })
-  })
-  await expect(transition).toHaveAttribute('data-gate', 'open')
-  await expect(page.locator('#contact')).toBeInViewport()
+  await page.getByRole('button', { name: 'Scroll to CONTACT', exact: true }).click()
+  await expect(page.locator('#contact')).toBeInViewport({ timeout: 20_000 })
 })
 
 test('Footer liquid stays pointer-transparent and reduced motion mounts no optional canvases', async ({ browser }) => {
@@ -79,6 +95,13 @@ test('Footer liquid acquires a fresh context after leaving and re-entering Conta
 
   await page.evaluate(() => window.history.replaceState(null, '', '#contact'))
   await page.locator('#contact').scrollIntoViewIfNeeded()
+  // The liquid is pointer-driven: FooterLiquidCursor only activates while
+  // `pointerInside` is true, set from pointerenter/pointermove on #contact. This
+  // test asserted is-active before ever moving the pointer in - its mouse moves
+  // came twenty lines later - so it was asserting activation without satisfying
+  // activation's precondition. Its real subject is reacquisition after leaving
+  // and re-entering Contact, which is unchanged.
+  await hoverContact(page)
   await expect(liquid).toHaveClass(/is-active/)
   await expect(liquid).toHaveAttribute('data-liquid-state', 'live')
   await expect(liquid).toHaveCSS('pointer-events', 'none')
@@ -98,6 +121,7 @@ test('Footer liquid acquires a fresh context after leaving and re-entering Conta
   await expect(liquid).toHaveAttribute('data-liquid-state', 'idle')
 
   await page.locator('#contact').scrollIntoViewIfNeeded()
+  await hoverContact(page)
   await expect(liquid).toHaveClass(/is-active/)
   await expect(liquid).toHaveAttribute('data-liquid-state', 'live')
   await expect(liquid.locator('canvas')).not.toHaveAttribute('data-context-state', 'lost')

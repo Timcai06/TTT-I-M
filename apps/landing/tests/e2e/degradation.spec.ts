@@ -88,7 +88,14 @@ test('a 404 frame image does not strand the loader (A1)', async ({ page }) => {
 
 test('a non-archive bounded visual failure still blocks the readiness hand-off', async ({ page }) => {
   let aborted = 0
-  await page.route('**/frame/buildings/03-720.webp', (route) => {
+  // Retargeted at a gating asset. It used to abort frame/buildings/03-720.webp,
+  // which collectImageUrls does not list at all - only the largest candidate per
+  // frame image is preloaded - and every image task is optional besides. So the
+  // abort landed on nothing and the loader handed off exactly as it should have.
+  //
+  // texture:hero is in the critical tier with no optional flag, and it is an
+  // image, so it is the bounded visual failure this contract is about.
+  await page.route('**/portrait/tim.jpg', (route) => {
     aborted += 1
     return route.abort()
   })
@@ -120,12 +127,19 @@ test('a missing Liquid Metal source cannot trap the Work gate', async ({ page })
   })
   await page.evaluate((top) => scrollTo({ top, behavior: 'auto' }), target)
 
-  await expect(transition).toHaveAttribute('data-gate', 'locked')
-  const fallback = transition.locator('.liquid-metal-button__fallback')
-  await expect(fallback).toBeVisible()
-  await fallback.click()
-  await expect(transition).toHaveAttribute('data-gate', 'open')
-  await expect.poll(() => page.evaluate(() => location.hash)).toBe('#projects')
+  // The gate and its fallback button live in WorkTransition, which
+  // ArchiveWorkTransition renders only for mobile and reduced motion; on desktop
+  // this section is ArchiveChapterBridge track="stack-work" and has neither.
+  //
+  // The contract worth keeping is the one in the test's name: a missing artifact
+  // must not trap the reader. The artifact is still requested on desktop - the
+  // preload manifest fetches it - so aborting it is still a real failure to
+  // survive, and surviving it now means Work is still reachable.
+  await expect(transition).toHaveAttribute('data-archive-track', 'stack-work')
+  await expect(transition.locator('.liquid-metal-button')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Scroll to WORK', exact: true }).click()
+  await expect(page.locator('#projects')).toBeInViewport({ timeout: 20_000 })
+  await expect(page.locator('#projects .projects__bento button').first()).toBeEnabled()
 })
 
 test('loader hands off after render-ready tasks without downloading every frame variant', async ({ page }) => {

@@ -5,10 +5,13 @@ import { scrollToChapter } from '../../lib/chapterScroll'
 import { mixHexColor } from '../../lib/hex'
 
 function scrollToProject(id: string, source: HTMLElement) {
+  // Target the detail card, not `#project-<id>` - that id belongs to the bento
+  // tile below, so this used to resolve to the element the reader had just
+  // clicked and scroll to it, which moves nothing.
   const card = source
     .closest<HTMLElement>('#projects')
-    ?.querySelector<HTMLElement>(`#project-${CSS.escape(id)}`)
-  if (!card) return
+    ?.querySelector<HTMLElement>(`.project-card[data-project-id="${id}"]`)
+  if (!card?.id) return
 
   void scrollToChapter(card.id, { offset: -72 })
 }

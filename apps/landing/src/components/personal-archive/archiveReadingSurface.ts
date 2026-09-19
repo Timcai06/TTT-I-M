@@ -84,6 +84,17 @@ export function clearSamplePresentation(resetLive = true) {
     }
   }
   for (const bridge of document.querySelectorAll<HTMLElement>('.archive-bridge')) {
+    // Every other piece of bridge state is reset here and re-established by the
+    // bridge that is actually presenting; data-phase was the one that leaked, so
+    // a bridge the story had already left kept claiming 'transfer' forever.
+    //
+    // That also made 'released' dead: it is written only when readingOwner is a
+    // real chapter, which happens at handoff progress exactly 1, and
+    // positionAtScroll's spans are half-open so progress 1 is never sampled. Past
+    // the boundary the segment is a reading one, which has no bridge at all, so
+    // the line never ran. Defaulting to released here is what makes the value
+    // mean what it says: this bridge is not presenting.
+    bridge.dataset.phase = 'released'
     bridge.style.setProperty('--archive-room', '0'); bridge.style.setProperty('--archive-stage', 'hidden')
     for (const page of bridge.querySelectorAll<HTMLElement>('.archive-bridge__page')) { page.style.opacity = '0'; page.style.pointerEvents = 'none' }
     const hit = bridge.querySelector<HTMLButtonElement>('.archive-bridge__room-hit')

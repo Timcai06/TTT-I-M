@@ -53,11 +53,16 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
   await expect(page.locator('#contact')).toBeInViewport()
 
   const footerState = await page.evaluate(() => {
+    // Scoped to the live footer. The archive keeps clone surfaces for projection
+    // and they carry the same class names, so an unscoped querySelector can
+    // return a clone that is deliberately held at opacity 0 - which is what this
+    // read did, reporting an unreadable footer while the screenshot showed a
+    // perfectly readable one.
     const footer = document.querySelector<HTMLElement>('#contact')
-    const inner = document.querySelector<HTMLElement>('.footer__inner')
-    const ascii = document.querySelector<HTMLElement>('.footer__ascii')
-    const irisWrap = document.querySelector<HTMLElement>('.contact__blob-wrap')
-    const irisCore = document.querySelector<SVGCircleElement>('[data-iris-core]')
+    const inner = footer?.querySelector<HTMLElement>('.footer__inner') ?? null
+    const ascii = footer?.querySelector<HTMLElement>('.footer__ascii') ?? null
+    const irisWrap = footer?.querySelector<HTMLElement>('.contact__blob-wrap') ?? null
+    const irisCore = footer?.querySelector<SVGCircleElement>('[data-iris-core]') ?? null
     if (!footer || !inner) return null
 
     return {
@@ -73,12 +78,22 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
   })
 
   expect(footerState).not.toBeNull()
-  expect(footerState?.footerClass).toContain('is-iris-reveal')
   expect(footerState?.footerTop ?? Number.POSITIVE_INFINITY).toBeLessThan(220)
   expect(footerState?.innerOpacity).toBe(1)
   expect(footerState?.asciiOpacity).toBeGreaterThan(0.3)
-  await expect(page.locator('.footer__ascii pre')).toHaveCount(1)
-  expect(footerState?.irisWrapOpacity).toBeGreaterThan(0.95)
-  expect(footerState?.irisWrapVisibility).toBe('visible')
-  expect(footerState?.irisCoreRadius).toBeGreaterThan(0)
+  await expect(page.locator('#contact .footer__ascii pre')).toHaveCount(1)
+
+  // The full-screen iris is retired on desktop, deliberately. useFooterReveal
+  // computes `spatialHandoff` from the footer sitting inside
+  // [data-archive-destination="contact"] and drops the animated path, with the
+  // reason in its own comment: the room already expands Contact from its
+  // desk-aligned reading plane, so the legacy iris would be a second unrelated
+  // transition and could cover the room before the handoff is ready.
+  //
+  // What this test is named for - a direct #contact link landing on a stable,
+  // readable footer - is asserted above and is what still matters. The retirement
+  // is asserted rather than dropped, so bringing the iris back on desktop fails
+  // here instead of quietly stacking two transitions.
+  expect(footerState?.footerClass).not.toContain('is-iris-reveal')
+  expect(footerState?.irisWrapOpacity).toBe(0)
 })

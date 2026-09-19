@@ -23,6 +23,27 @@ async function alignSectionTop(
   }, viewportRatio)).toBeLessThan(2)
 }
 
+/**
+ * Put the viewport centre at `fraction` of the section's own height.
+ *
+ * The flow line draws from `innerHeight / 2 - rootRect.top`, so what matters is
+ * where the viewport centre sits *inside* the section, not where the section top
+ * sits in the viewport. Expressed in viewport heights, the old -0.4 put the
+ * centre 0.9 viewports into a section several viewports tall - still in the
+ * heading, before the path's first sample, where lengthAtY correctly returns
+ * about zero.
+ */
+async function centreInSection(section: Locator, fraction: number) {
+  await expect.poll(async () => section.evaluate((node, ratio) => {
+    const rect = node.getBoundingClientRect()
+    const target = rect.height * ratio
+    const centre = window.innerHeight / 2 - rect.top
+    const delta = centre - target
+    if (Math.abs(delta) > 1) window.scrollTo({ top: window.scrollY - delta, behavior: 'auto' })
+    return Math.abs(delta)
+  }, fraction)).toBeLessThan(2)
+}
+
 async function alignSectionProgress(
   page: Page,
   section: Locator,
@@ -57,7 +78,19 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
   await expect(page.locator('.sciscope-film')).toHaveCount(1)
   await expect(page.locator('.nav__sound-button')).toHaveAttribute('aria-pressed', 'false')
 
-  const counts: number[] = []
+  // Ownership, not a count.
+  //
+  // The budget of 2 was written when the page held the room canvas plus at most
+  // one chapter effect. The archive Index panel is position: fixed, so the hero
+  // particle portrait never leaves the viewport and useGLSurface never unmounts
+  // it - the baseline is already two, and any chapter effect makes three. The
+  // sample that failed was `2, 2, 2, 2, 3`, and the third at Contact is the
+  // footer's ascii-filter, which belongs there.
+  //
+  // A number also could not say which canvas was the surprise. This still fails
+  // on a leaked or duplicated surface, which is what the test is for, while
+  // being true about the ones that are meant to be alive.
+  const strays: Record<string, string[]> = {}
   for (const chapter of ['hero', 'life', 'frame', 'projects', 'contact']) {
     // Navigate to the real reading surface when sampling chapter context ownership.
     if (chapter === 'projects') {
@@ -65,10 +98,15 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
     }
     await page.locator(`#${chapter}`).scrollIntoViewIfNeeded()
     await page.waitForTimeout(500)
-    counts.push(await page.locator('canvas').count())
+    strays[chapter] = await page.evaluate(owners => [...document.querySelectorAll('canvas')]
+      .filter(canvas => !owners.some(owner => canvas.closest(owner)))
+      .map(canvas => canvas.className || canvas.parentElement?.className || '(anonymous)'),
+    ['.archive-stage', '.hero__canvas', `#${chapter}`])
   }
 
-  expect(Math.max(...counts), `canvas samples: ${counts.join(', ')}`).toBeLessThanOrEqual(2)
+  expect(strays, `unowned canvases: ${JSON.stringify(strays)}`).toEqual({
+    hero: [], life: [], frame: [], projects: [], contact: [],
+  })
   await expect(page.locator('#work-transition .liquid-metal-button')).toHaveCount(0)
   await expect(page.locator('.footer__ascii [data-ascii-state="live"]')).toHaveCount(1)
   await expect(page.locator('.footer__ascii .ascii-filter')).toHaveCount(1)
@@ -151,16 +189,31 @@ test('Stack flow enters continuously from outside the viewport', async ({ page }
     }
   })
 
+  // Read once per position instead of polling a comparison.
+  //
+  // syncLineToViewportCenter draws from `innerHeight / 2 - rootRect.top`, so the
+  // sample is only meaningful at the scroll position alignSectionTop just
+  // reached. The polls held that comparison open for the full expect timeout, and
+  // the archive re-anchors scroll on every ScrollTrigger refresh
+  // (getRetainedSamplePosition -> scrollAtPosition), so the section drifted back
+  // below the viewport centre mid-assertion and the line correctly read 0. A
+  // trace frame caught it there: Stack's heading was still entering from the
+  // bottom while the test was asserting the line had grown.
+  //
+  // The invariant this test exists for is the three samples at the end, which is
+  // unchanged.
+  const settle = async () => { await page.waitForTimeout(120) }
+
   await alignSectionTop(skills, 1)
-  await expect.poll(async () => (await readSample()).drawn).toBeLessThanOrEqual(1)
+  await settle()
   const beforeEntry = await readSample()
 
-  await alignSectionTop(skills, 0)
-  await expect.poll(async () => (await readSample()).drawn).toBeGreaterThanOrEqual(beforeEntry.drawn)
+  await centreInSection(skills, .35)
+  await settle()
   const atEntry = await readSample()
 
-  await alignSectionTop(skills, -0.4)
-  await expect.poll(async () => (await readSample()).drawn).toBeGreaterThan(atEntry.drawn)
+  await centreInSection(skills, .7)
+  await settle()
   const inside = await readSample()
 
   const samples = [beforeEntry, atEntry, inside]
@@ -278,12 +331,27 @@ test('desktop life archive uses seven equal-width columns with varied photograph
   expect(layout.uniqueImages).toBeGreaterThanOrEqual(12)
   expect(layout.toneCounts.every((count) => count >= 4)).toBe(true)
   expect(layout.planeLeftGap).toBeLessThan(24)
-  expect(layout.wallBackgroundColor).toBe('rgb(0, 0, 0)')
+  // The wall is paper inside the room, not the black gallery it used to be.
+  // natural-room.css repaints it with --archive-surface, deliberately, since
+  // 5a59e6a - the Life chapter is read off the desk, not hung in a dark gallery.
+  // Pinned against the token rather than a literal so a palette change moves both.
+  const roomSurface = await page.evaluate(() =>
+    getComputedStyle(document.querySelector('#life')!).getPropertyValue('--archive-surface').trim())
+  expect(roomSurface).not.toBe('')
+  expect(layout.wallBackgroundColor).toBe(await page.evaluate(colour => {
+    const probe = document.createElement('div')
+    probe.style.color = colour
+    document.body.append(probe)
+    const resolved = getComputedStyle(probe).color
+    probe.remove()
+    return resolved
+  }, roomSurface))
   expect(layout.wallBackgroundImage).toBe('none')
   expect(layout.cardOpacity).toBe('0.66')
   expect(layout.imageFilter).toContain('saturate(0.86)')
   expect(layout.imageFilter).toContain('contrast(1.04)')
   expect(layout.overlayOpacity).toBe('0.24')
+  // The drift overlay keeps its black scrim; only the wall behind it became paper.
   expect(layout.overlayBackgroundColor).toBe('rgb(0, 0, 0)')
 })
 

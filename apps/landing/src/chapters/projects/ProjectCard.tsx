@@ -26,6 +26,12 @@ export default function ProjectCard({ project, alternate, onOpenCaseStudy }: Pro
   return (
     <article
       className="project-card"
+      // The bento tile already owns `project-<id>`, so the detail card needs its
+      // own anchor. Without one, ProjectsBento's scrollToProject resolved
+      // `#project-<id>` to the tile the reader had just clicked and scrolled to
+      // it - a no-op by construction, which is why every bento tile was a dead
+      // link.
+      id={`project-card-${project.id}`}
       data-accent={project.accent}
       data-project-id={project.id}
       data-motion="project-card"
