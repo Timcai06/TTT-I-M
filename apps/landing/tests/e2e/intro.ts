@@ -25,4 +25,8 @@
 // the hand-off near 83s, and the test gave up at 90.
 //
 // So 180s: roughly twice the measured cost, not another guess one notch up.
-export const INTRO_TIMEOUT_MS = process.env.CI ? 180_000 : 20_000
+// 180s was still short: a run hit the 240s per-test cap with the intro up, so the
+// preload passed three minutes on that runner. The cost varies by runner, and the
+// only durable fix is to stop the intro waiting on the room at all - see the note
+// in playwright.config.ts. Until then the budget covers the observed spread.
+export const INTRO_TIMEOUT_MS = process.env.CI ? 300_000 : 20_000

@@ -129,15 +129,17 @@ jobs:
   e2e-gates:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    # Each shard is about a third of 40.8m. 30 leaves room for a slow runner.
-    timeout-minutes: 30
+    # One spec per shard. The long pole is effects-context at eight tests, and a
+    # test costs 1.7-3 minutes because it reloads the page and pays the room
+    # preload again, so 35 covers it with the wider per-test cap.
+    timeout-minutes: 35
     strategy:
       # Every shard must report. Without this, the first shard to fail cancels
       # the others and the failure list comes back truncated, which is the whole
       # reason this lane exists.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -160,10 +162,11 @@ jobs:
       # is 40.8 minutes of mostly waiting. Three runners cut the wall clock to a
       # third for the same runner minutes.
       #
-      # Hand-authored shards rather than playwright's --shard, which splits by
-      # file: these six specs hold 8/6/5/3/1/1 tests and it divided them 9/14/1,
-      # so the longest shard saved almost nothing. These are 8/8/8.
-      # tests/e2eShards.test.ts asserts they still partition the lane exactly.
+      # One spec file per shard. Playwright's own --shard splits by file anyway
+      # and divided these six specs 9/14/1, and balancing by test count did not
+      # help either: the cost per test is the room preload, not the assertions,
+      # so three balanced shards still ran 24 minutes against a 30 minute cap.
+      # tests/e2eShards.test.ts asserts the shards partition the lane exactly.
       - run: npm run test:e2e:gates:${{ matrix.shard }}
         working-directory: apps/landing
       - uses: actions/upload-artifact@v4

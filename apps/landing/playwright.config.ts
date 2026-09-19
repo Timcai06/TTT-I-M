@@ -57,7 +57,12 @@ export default defineConfig({
   // the intro wait was widened to 90s, and every test still died at 45s with the
   // wider budget unused. Ordering is the whole point - INTRO_TIMEOUT_MS (90s on
   // CI) must stay comfortably under this.
-  timeout: process.env.CI ? 240_000 : 45_000,
+  // Every test reloads the page and pays the room preload again: measured 1.7 to
+  // 3 minutes per test on a runner, occasionally past three. That is the real
+  // cost driver in CI, and raising caps only buys tolerance for it - the durable
+  // fix is a bounded room prewarm so the intro hands off without waiting for the
+  // whole 22.9 MB room, which also cures the slow first load in production.
+  timeout: process.env.CI ? 360_000 : 45_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
   // The landing page owns several WebGL surfaces. Letting Playwright default to
