@@ -1,4 +1,5 @@
 import { archiveImages, photos, projects } from '../../content'
+import { approvedArtwork } from '../../content/approvedArtwork'
 import { archiveDownloadFraction } from './downloadProgress'
 import {
   loadFonts,
@@ -131,7 +132,7 @@ function collectImageUrls() {
   )
 
   return unique([
-    '/portrait/about_me.jpg',
+    '/design/approved-2d/paper-texture.webp',
     '/noise/grain-128.png',
     '/projects/sciscope/sciscope-film-poster.jpg',
     ...photos.map((photo) => photo.src),
@@ -227,7 +228,7 @@ export function buildResourceManifest(): ResourceTask[] {
     },
   ]
 
-  const responsiveImages: ResourceTask[] = archiveImages.map((image) => ({
+  const responsiveImages: ResourceTask[] = [...archiveImages, ...Object.values(approvedArtwork)].map((image) => ({
     id: `responsive-image:${image.src}`,
     optional: true,
     label: image.src,

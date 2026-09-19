@@ -1,5 +1,7 @@
 import { Mesh, SRGBColorSpace, TextureLoader, type BufferGeometry, type MeshStandardMaterial, type Object3D } from 'three'
 import { resolveFinalHorizonImage } from '../../content/narrativeObjects'
+import { signalGradeAt } from './archiveSignalGrade'
+import type { StoryPosition } from '../../core/narrative/types'
 
 /** The photograph stays on the physical monitor; no screen-space wave overlay. */
 export async function createArchiveSignal(model: Object3D) {
@@ -16,10 +18,27 @@ export async function createArchiveSignal(model: Object3D) {
   })
   const texture = await new TextureLoader().loadAsync(image.src)
   texture.colorSpace = SRGBColorSpace; texture.flipY = false
+  const grade = { value: 0 }
   const restore = targets.map(({ screen, bounds, maxWidth, maxHeight }) => {
     const previous = { material: screen.material as MeshStandardMaterial, scale: screen.scale.clone() }
     const material = previous.material.clone()
     material.map = texture; material.emissiveMap = texture; material.needsUpdate = true
+    // Grade only the photo's existing material pass, including its emissive map.
+    // No new canvas, render pass, animation loop, or changes to Work's surfaces.
+    material.onBeforeCompile = shader => {
+      shader.uniforms.uArchivePhotoGrade = grade
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>
+uniform float uArchivePhotoGrade;
+vec3 archivePhotoGrade(vec3 rgb) {
+  float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
+  vec3 calm = mix(rgb, vec3(luma), 0.35 * uArchivePhotoGrade);
+  return calm * mix(vec3(1.0), vec3(1.025, 0.96, 0.86), uArchivePhotoGrade);
+}`)
+        .replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor.rgb = archivePhotoGrade(diffuseColor.rgb);')
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance = archivePhotoGrade(totalEmissiveRadiance);')
+    }
+    material.customProgramCacheKey = () => 'archive-photo-grade-v1'
     screen.material = material
     const ratio = image.width / image.height, width = Math.min(maxWidth, maxHeight * ratio)
     screen.scale.x *= width / (bounds.max.x - bounds.min.x)
@@ -27,6 +46,7 @@ export async function createArchiveSignal(model: Object3D) {
     return () => { screen.material = previous.material; screen.scale.copy(previous.scale); material.dispose() }
   })
   return {
+    update(position: StoryPosition) { grade.value = signalGradeAt(position) },
     textures: [texture],
     content: Object.freeze({
       contentId: 'frame-final-horizon' as const,

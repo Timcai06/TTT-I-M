@@ -394,6 +394,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         // Slide the outside view before anything reads the scene, so the window can
         // never frame past the edge of it from any authored position.
         backdrop?.update(camera.position, performance.now() / 1000)
+        signalPicture.update(position)
         // Same position, same frame: the window ambience has to track the view it
         // belongs to, not a value sampled somewhere else a frame later.
         publishListenerPosition(camera.position)

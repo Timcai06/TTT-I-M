@@ -254,7 +254,7 @@ if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
 if (!projects.includes("project.id === 'sciscope'") || !projects.includes('<SciScopeFilm />')) {
   throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
 }
-for (const token of ['AboutDecryptReveal', 'about__dossier', 'MOVE TO DECRYPT', 'about__grid--evidence']) {
+for (const token of ['AboutDecryptReveal', 'about__dossier', 'approvedArtwork.about', 'about__grid--evidence']) {
   if (!about.includes(token)) throw new Error(`About Decrypt dossier is missing ${token}.`)
 }
 for (const token of ['height: min(100svh, 960px)', 'grid-template-columns: repeat(12', '@media (min-width: 901px) and (max-height: 800px)']) {
@@ -480,9 +480,10 @@ for (const forbidden of ['WheelEvent', 'KeyboardEvent', 'lenis.stop()', 'overflo
   }
 }
 
-for (const token of ['FooterLiquidCursor', 'liquidEnabled', 'progress > 0.08', 'is-over-footer']) {
-  if (!footer.includes(token)) throw new Error(`Footer liquid cursor is missing ${token}.`)
+for (const token of ['FooterArtwork', 'staticArtwork: true', 'liquidEnabled', 'is-over-footer']) {
+  if (!footer.includes(token)) throw new Error(`Contact static composition and effect opt-out must preserve ${token}.`)
 }
+if (footer.includes('<FooterLiquidCursor') || footer.includes('<ASCIIText')) throw new Error('The approved Contact artwork must not mount the retired liquid cursor or ASCII canvas.')
 const footerStyle = read('src/styles/components/footer.css')
 for (const token of ['position: absolute', 'height: 100%', 'pointer-events: none', 'mix-blend-mode: multiply']) {
   if (!footerStyle.includes(token)) throw new Error(`Footer local liquid layer must keep ${token}.`)
@@ -638,7 +639,7 @@ for (const [path, expected] of Object.entries(canonicalScenes)) {
 for (const [source, component, owner] of [
   [life, 'DriftWall', 'Life'],
   [projects, 'BorderGlow', 'Projects'],
-  [footer, 'ASCIIText', 'Contact'],
+  [footer, 'FooterArtwork', 'Contact'],
 ]) {
   if (!source.includes(component)) throw new Error(`${owner} must mount ${component}.`)
 }

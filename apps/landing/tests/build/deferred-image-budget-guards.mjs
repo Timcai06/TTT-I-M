@@ -13,7 +13,7 @@ import { extname, join } from 'node:path'
 // variants to every visitor.
 const BUDGET_BYTES = 15 * 1024 * 1024
 
-const STATIC_IMAGE_ROOTS = ['dist/life', 'dist/projects', 'dist/portrait', 'dist/noise']
+const STATIC_IMAGE_ROOTS = ['dist/life', 'dist/projects', 'dist/portrait', 'dist/noise', 'dist/design']
 const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
 
 function walkBytes(dir) {

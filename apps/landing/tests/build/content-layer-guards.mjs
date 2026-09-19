@@ -84,8 +84,8 @@ if (!projectsStyleSource.includes('.bento-glow') || !projectsStyleSource.include
   throw new Error('Projects must retain the blurred-rest and clear-focused BorderGlow card treatment.')
 }
 
-if (!footerSource.includes('ASCIIText') || !footerSource.includes('footer__ascii')) {
-  throw new Error('Footer must use ASCIIText as the scoped final signal.')
+if (!footerSource.includes('<FooterArtwork />') || !footerSource.includes('staticArtwork: true') || footerSource.includes('<ASCIIText')) {
+  throw new Error('Contact must use the approved static artwork while keeping text and links in the DOM.')
 }
 for (const needle of ["from 'three'", 'vertexShader', 'fragmentShader', 'getImageData', 'hue-rotate', 'useGLSurface', 'forceContextLoss']) {
   if (!asciiTextSource.includes(needle)) throw new Error(`ASCIIText must preserve ${needle}.`)

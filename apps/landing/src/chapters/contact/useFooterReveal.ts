@@ -21,7 +21,7 @@ function setFooterCursorState(active: boolean): void {
 }
 
 /** Owns Contact's scroll reveal, section-local liquid gate, and local clock. */
-export function useFooterReveal(): FooterRevealResult {
+export function useFooterReveal({ staticArtwork = false }: { staticArtwork?: boolean } = {}): FooterRevealResult {
   const root = useRef<HTMLElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -40,8 +40,8 @@ export function useFooterReveal(): FooterRevealResult {
     // plane. The legacy full-screen iris would become a second, unrelated
     // transition and can cover the room before the handoff is ready.
     const spatialHandoff = Boolean(rootEl.closest('[data-archive-destination="contact"]'))
-    const animated = !reducedMotion && !mobileExperience && !spatialHandoff
-    const liquidEnabled = !reducedMotion && !mobileExperience
+    const animated = !staticArtwork && !reducedMotion && !mobileExperience && !spatialHandoff
+    const liquidEnabled = !staticArtwork && !reducedMotion && !mobileExperience
     const aura = svgEl.querySelector<SVGCircleElement>('[data-iris-aura]')
     const core = svgEl.querySelector<SVGCircleElement>('[data-iris-core]')
     const rim = svgEl.querySelector<SVGCircleElement>('[data-iris-rim]')
@@ -168,7 +168,7 @@ export function useFooterReveal(): FooterRevealResult {
       setFooterCursorState(false)
       context.revert()
     }
-  }, [mobileExperience, reducedMotion])
+  }, [mobileExperience, reducedMotion, staticArtwork])
 
   return { clockRef, liquidRef, root, svgRef, wrapRef }
 }

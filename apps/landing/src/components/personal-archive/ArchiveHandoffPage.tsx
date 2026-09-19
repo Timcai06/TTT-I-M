@@ -3,6 +3,7 @@ import { archiveIntro } from '../../content'
 import { ProjectsHeader } from '../../chapters/projects/ProjectsIntro'
 import FooterContact from '../../chapters/contact/FooterContact'
 import FooterMeta from '../../chapters/contact/FooterMeta'
+import FooterArtwork from '../../chapters/contact/FooterArtwork'
 import { LifeIntro } from '../LifeGallery'
 import { StackContinuityFrame } from '../Skills'
 import ArchiveTextPanel from '../frame/ArchiveTextPanel'
@@ -40,6 +41,7 @@ export default function ArchiveHandoffPage({ track }: { track: ArchiveTrack }) {
     </div>
   }
   return <div className="archive-handoff-page archive-handoff-page--contact footer" data-archive-reading-theme="contact">
+    <FooterArtwork />
     <div className="container footer__content"><div className="footer__inner">
       <FooterContact />
       <FooterMeta clockRef={contactClock} />

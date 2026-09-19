@@ -300,9 +300,9 @@ if (globalStyleSource.includes('transform: translateZ(0); /* Force GPU composite
 if (
   skillsSource.includes('setTimeout(') ||
   skillsSource.includes("classList.add('is-visible')") ||
-  !skillsSource.includes('useSkillsFlowLine')
+  skillsSource.includes('useSkillsFlowLine')
 ) {
-  throw new Error('Skills must remain stable after the Canvas handoff and delegate only the delayed active-flow line to its hook.')
+  throw new Error('The approved static Stack must remain readable after the Canvas handoff without a delayed reveal or the retired flow-line animation.')
 }
 
 if (projectsSource.includes("document.querySelectorAll<HTMLElement>('.project-card')") ||

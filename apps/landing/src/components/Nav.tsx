@@ -80,7 +80,7 @@ export default function Nav() {
 
   return (
     <>
-      <header className={`nav${menuOpen ? ' nav--menu-open' : ''}`}>
+      <header className={`nav${menuOpen ? ' nav--menu-open' : ''}`} data-chapter={activeId}>
         <div className="container nav__inner">
           <a className="nav__brand" href={blogHref} aria-label="Open Tim Cai blog">
             Tim · 蔡

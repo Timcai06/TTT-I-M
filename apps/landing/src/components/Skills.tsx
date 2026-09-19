@@ -1,6 +1,5 @@
-import { useRef } from 'react'
 import { skillRows as rows } from '../content'
-import { useSkillsFlowLine } from './skills/useSkillsFlowLine'
+import { approvedArtwork } from '../content/approvedArtwork'
 import SkillRowItem from './skills/SkillRowItem'
 import LogoLoop from './LogoLoop'
 import type { LogoItem } from './LogoLoop'
@@ -44,17 +43,10 @@ export function SkillsWorkingSet() {
         speed={38}
         direction="left"
         logoHeight={24}
-        gap={64}
+        gap={56}
         hoverSpeed={8}
-        fadeOut
-        // Follow whatever surface the strip is actually sitting on. This was a
-        // hardcoded #000000, which is close enough inside #skills — the one
-        // deliberately dark chapter — but SkillsWorkingSet is also rendered by
-        // StackContinuityFrame inside the paper-themed archive bridge, where two
-        // black gradients were being drawn across paper. logo-loop.css lives in
-        // layer(primitives) and outranks the room theme in layer(chapters), so
-        // this prop is the only lever that can reach the fade.
-        fadeOutColor="var(--archive-surface, #000000)"
+        // Alpha masking in the chapter CSS lets the actual surface show through.
+        fadeOut={false}
         ariaLabel="Tools used across shipped systems"
       />
     </div>
@@ -67,8 +59,8 @@ export function SkillsHeading() {
     <>
       <div className="section__label">Stack — 技术栈</div>
       <h2 className="section__title">
-        <span className="split-line"><span className="split-line__inner">The stack <em>I work</em></span></span>
-        <span className="split-line"><span className="split-line__inner">with.</span></span>
+        <span className="split-line"><span className="split-line__inner">The stack</span></span>
+        <span className="split-line"><span className="split-line__inner"><em>I work</em> with<span className="skills__period">.</span></span></span>
       </h2>
     </>
   )
@@ -93,74 +85,27 @@ export function StackContinuityFrame() {
   )
 }
 
-/**
- * @description Skills 章节 —— 技术栈与工程交付能力矩阵（组合层）。
- *   每行代表一个技能领域 (Frontend / Motion·3D / Backend / AI·Data / Infra / Math·Modeling)，
- *   含分类标签、工具链、项目落地引用。
- *
- *   视觉亮点：技能列表背后一条流动的三段式贝塞尔曲线（蛇形 S 走势），
- *   红色 active 线段的前端跟随屏幕垂直中心，滚动时线条被视口持续“牵引”。
- *
- *   分层（frame/ 同范式，2026-06-12 拆分）：
- *   - 几何计算：`lib/skillsFlowPath`（纯函数，单测覆盖）
- *   - 测量 + 滚动同步：`skills/useSkillsFlowLine`（hook 持有 ScrollTrigger）
- *   - 行展示：`skills/SkillRowItem`（无动画状态的纯渲染）
- *   - 本组件：组合 + 标题/逐行 reveal 时间线
- *
- * @dependencies useSkillsFlowLine（红色 active flow 在 Frame → Stack 完成接棒后启动）
- * @steps
- *   step1: useSkillsFlowLine — 蛇形曲线测量、resize 重建、视口中心 dasharray 同步
- *   step2: 标题与首屏技能行保持稳定，避免 Canvas 接棒后再次整体展开
- */
+/** Approved static folio; the original photo handoff and closing tool strip remain. */
 export default function Skills() {
-  const body = useRef<HTMLDivElement>(null)
-  const { pathRef, pathD, svgLeft, svgWidth } = useSkillsFlowLine(body)
-
   return (
     <section className="section skills container" id="skills" style={{ position: 'relative' }}>
       <StackContinuityFrame />
-      <div className="skills__body" ref={body} data-chapter-reading-target>
-        {/* Stack 深处的红色 active flow；从视口外连续接入，不再阈值式整段显现。 */}
-        <svg
-          className="skills__flow-svg"
-          style={{ left: svgLeft, width: svgWidth }}
-          fill="none"
-          pointerEvents="none"
-          aria-hidden="true"
-        >
-          {pathD && (
-            <>
-              {/* 红色背景引导轨道 */}
-              <path
-                className="skills__flow-guide"
-                d={pathD}
-                stroke="rgba(255, 51, 51, 0.05)"
-                strokeWidth="46"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {/* active 流动高亮 */}
-              <path
-                className="skills__flow-active"
-                ref={pathRef}
-                d={pathD}
-                stroke="#ff3333"
-                strokeWidth="46"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </>
-          )}
-        </svg>
-
-        <SkillsHeading />
-
-        <div className="skills__list">
-          {rows.map((row) => (
-            <SkillRowItem key={row.index} row={row} />
-          ))}
+      <div className="skills__body" data-chapter-reading-target>
+        <div className="skills__folio">
+          <div className="approved__index" aria-hidden="true"><span>03</span><span>// STACK</span></div>
+          <img className="skills__art" {...approvedArtwork.stack} decoding="async" alt="" aria-hidden="true" />
+          <div className="skills__opening">
+            <SkillsHeading />
+            <p className="skills__caption">TOOLS FOR<br />IDEAS THAT<br />RUN.</p>
+            <p className="skills__caption skills__caption--right">SAME<br />TOOLS<br />DIFFERENT<br />POSSIBILITIES.</p>
+          </div>
+          <div className="skills__list">
+            {rows.map((row) => (
+              <SkillRowItem key={row.index} row={row} compact />
+            ))}
+          </div>
+          <div className="skills__edition-note">// BUILD A MORE OPEN TOMORROW</div>
         </div>
-
         <SkillsWorkingSet />
       </div>
     </section>

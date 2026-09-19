@@ -1,10 +1,12 @@
+import { approvedArtwork } from '../content/approvedArtwork'
+
 /** Shared opening: the paper and the readable chapter have identical typography. */
 export default function AboutDossier() {
   return (
         <div className="about__dossier">
+          <div className="approved__index" aria-hidden="true"><span>01</span><span>// ABOUT</span></div>
           <div className="about__dossier-header">
-            <div className="section__label">About — 自述</div>
-            <div className="about__dossier-kicker">IDENTITY DOSSIER / 00—06</div>
+            <div className="section__label">About — 个人简介</div>
           </div>
 
           <div className="about__dossier-copy">
@@ -20,10 +22,7 @@ export default function AboutDossier() {
           </div>
 
           <div className="about__portrait-frame">
-            <div className="about__portrait-glow" />
-            <img className="about__portrait-img" src="/portrait/about_me.jpg" alt="Tim's Portrait" />
-            <div className="about__portrait-vignette" />
-            <div className="about__portrait-meta">PROFILE CAPTURE → V3.0</div>
+            <img className="about__portrait-img" {...approvedArtwork.about} decoding="async" alt="Tim's Portrait — Build, Learn, Iterate, Repeat." />
           </div>
 
           <dl className="about__dossier-meta">
@@ -32,10 +31,7 @@ export default function AboutDossier() {
             <div><dt>BASE</dt><dd>SHANGHAI / CN</dd></div>
           </dl>
 
-          <div className="about__decrypt-hint" aria-hidden="true">
-            <span>MOVE TO DECRYPT</span>
-            <span>移动以解密</span>
-          </div>
+          <div className="about__edition-note">// A MORE OPEN INTELLIGENCE</div>
         </div>
   )
 }

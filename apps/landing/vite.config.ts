@@ -44,7 +44,8 @@ export default defineConfig(({ mode }) => {
       glsl({ warnDuplicatedImports: true, removeDuplicatedImports: true }),
       ViteImageOptimizer({
         test: /\.(jpe?g|png|gif|tiff|webp|svg|avif)$/i,
-        exclude: /public\/frame\//,
+        // Preserve the approved artwork's grain and photo details byte-for-byte.
+        exclude: /public\/(?:frame|design\/approved-2d)\//,
         includePublic: true,
         logStats: true,
         cache: true,
