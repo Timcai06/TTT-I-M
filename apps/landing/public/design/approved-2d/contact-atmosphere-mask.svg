@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1477" height="1065" viewBox="0 0 1477 1065">
+  <defs>
+    <linearGradient id="vertical" x1="0" y1="300" x2="0" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="black"/><stop offset=".25" stop-color="white"/><stop offset=".5" stop-color="white"/><stop offset="1" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="horizontal" x1="100" y1="0" x2="1060" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="black"/><stop offset=".18" stop-color="white"/><stop offset=".55" stop-color="white"/><stop offset="1" stop-color="black"/>
+    </linearGradient>
+    <mask id="envelope" maskUnits="userSpaceOnUse" x="0" y="0" width="1477" height="1065">
+      <rect width="1477" height="1065" fill="url(#vertical)"/>
+    </mask>
+  </defs>
+  <rect width="1477" height="1065" fill="black"/>
+  <!-- Fade across the valley as a whole, never cut a silhouette around the person.
+       The entire right foreground and lower rock remain part of the original photo. -->
+  <rect width="1477" height="1065" fill="url(#horizontal)" mask="url(#envelope)"/>
+</svg>

@@ -7,8 +7,8 @@ export const approvedArtwork = {
   },
   stack: {
     src: '/design/approved-2d/stack-art.webp',
-    srcSet: '/design/approved-2d/stack-art-960.webp 960w, /design/approved-2d/stack-art.webp 1479w',
-    sizes: '100vw', width: 1479, height: 1064,
+    srcSet: '/design/approved-2d/stack-art.webp 1477w',
+    sizes: '100vw', width: 1477, height: 1065,
   },
   contact: {
     src: '/design/approved-2d/contact-art.webp',

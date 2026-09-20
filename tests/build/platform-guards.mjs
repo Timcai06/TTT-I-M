@@ -174,14 +174,17 @@ if (badStudioDeps.length > 0) {
   throw new Error(`Studio must not depend on landing runtime packages: ${badStudioDeps.join(', ')}`)
 }
 
-if (!studioHome.includes('without importing GSAP, R3F, or Lenis') || !studioContent.includes('createStaticRepository')) {
-  throw new Error('Studio must document the runtime split and consume repository-backed content.')
+if (
+  forbiddenStudioRuntime.some((dependency) => new RegExp(`from\\s+['"]${dependency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`).test(studioHome)) ||
+  !studioHome.includes("from '../content'") ||
+  !studioContent.includes('createStaticRepository')
+) {
+  throw new Error('Studio must keep the runtime split and consume repository-backed content.')
 }
 
 if (
-  !studioHome.includes("href: '/graph'") ||
-  !studioHome.includes("href: '/graph/preview'") ||
   !studioLayout.includes("href: '/graph'") ||
+  !studioGraph.includes('href="/graph/preview"') ||
   !studioContent.includes('timPublicDemoBuilderGraphRepository') ||
   !studioContent.includes('@timcai/content/github-graph-adapter') ||
   !studioGraph.includes('builderGraph.getSnapshot') ||

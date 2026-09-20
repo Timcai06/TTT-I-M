@@ -7,7 +7,13 @@
  *   （字符四组依次升起、进度条 99% 边界在 renderReady 前不可越过）
  */
 
-/** 'Tim Cai.' 的字符入场分组：T | im | Ca | i. —— 每组一拍，组内再细分。 */
+/**
+ * 'Tim Cai' 的字符入场分组：T | im␣ | Cai —— 每组一拍，组内再细分。
+ *
+ * 标题原本带一个句点（'Tim Cai.'），落在第 4 组自己一拍。句点是 2016 年前后
+ * 设计师作品集的通用修辞，首屏已经删掉了它；分组函数本身是位置无关的，索引
+ * 7 之后的分支就此不再被调用。
+ */
 export function introCharGroup(index: number): number {
   if (index === 0) return 0
   if (index >= 1 && index <= 3) return 1

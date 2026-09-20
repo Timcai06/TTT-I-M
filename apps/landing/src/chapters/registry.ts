@@ -65,7 +65,14 @@ export interface Chapter {
   Component: ComponentType | LazyExoticComponent<ComponentType>
   /** Deterministic geometry reserve when a chunk fails before first render. */
   failureMinHeight: string
-  /** Top-nav entry. Omit to keep the chapter out of the nav. */
+  /**
+   * Top-nav entry. Omit to keep the chapter out of the nav.
+   *
+   * Words only. The labels used to carry the chapter index (`00 · Index`), which
+   * is the house style of every dark portfolio built since 2021 and tells the
+   * reader nothing the rail on the right does not already say. The numbers live
+   * on `progress`, where they are actually doing work.
+   */
   nav?: { label: string }
   /** Scroll-progress rail entry. Omit to keep it off the rail. */
   progress?: { index: string; name: string }
@@ -76,14 +83,14 @@ export const chapters: Chapter[] = [
     id: 'hero',
     Component: Hero,
     failureMinHeight: '100svh',
-    nav: { label: '00 · Index' },
+    nav: { label: 'Index' },
     progress: { index: '01', name: 'HOME' },
   },
   {
     id: 'about',
     Component: About,
     failureMinHeight: '100svh',
-    nav: { label: '01 · About' },
+    nav: { label: 'About' },
     progress: { index: '02', name: 'ABOUT' },
   },
   {
@@ -98,14 +105,14 @@ export const chapters: Chapter[] = [
     id: 'frame',
     Component: Frame,
     failureMinHeight: '100svh',
-    nav: { label: '02 · Frame' },
+    nav: { label: 'Frame' },
     progress: { index: '03', name: 'FRAME' },
   },
   {
     id: 'skills',
     Component: Skills,
     failureMinHeight: '100svh',
-    nav: { label: '03 · Stack' },
+    nav: { label: 'Stack' },
     progress: { index: '04', name: 'STACK' },
   },
   {
@@ -119,14 +126,14 @@ export const chapters: Chapter[] = [
     id: 'projects',
     Component: Projects,
     failureMinHeight: '100svh',
-    nav: { label: '04 · Work' },
+    nav: { label: 'Work' },
     progress: { index: '05', name: 'WORK' },
   },
   {
     id: 'contact',
     Component: Footer,
     failureMinHeight: '100svh',
-    nav: { label: '05 · Contact' },
+    nav: { label: 'Contact' },
     progress: { index: '06', name: 'CONTACT' },
   },
 ]

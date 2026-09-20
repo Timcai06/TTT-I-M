@@ -1,0 +1,174 @@
+/* Artwork-only loops. Typography, controls and the photographed people stay still. */
+.chapter-atmosphere {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+}
+.chapter-atmosphere > span,
+.chapter-atmosphere__lighting > span {
+  position: absolute;
+  inset: 0;
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+.chapter-atmosphere--about {
+  z-index: 1;
+  mask: url('/design/approved-2d/about-collage.webp') center / contain no-repeat;
+}
+.chapter-atmosphere--about .chapter-atmosphere__light {
+  inset: -15%;
+  background: linear-gradient(112deg, transparent 22%, rgb(255 220 168 / 28%) 43%, transparent 62%);
+  mix-blend-mode: soft-light;
+  animation: folio-paper-light 12s ease-in-out infinite;
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+.chapter-atmosphere--about .chapter-atmosphere__depth { display: none; }
+/* Keep the portrait at its layout resolution; only its lighting moves. */
+.about__dossier .about__portrait-img { transform: none; }
+
+.chapter-atmosphere--stack { z-index: -1; height: 100svh; mix-blend-mode: lighten; }
+.chapter-atmosphere--stack .chapter-atmosphere__lighting {
+  mask: url('/design/approved-2d/stack-light-mask.webp') center / 100% 100% no-repeat luminance;
+  transform-origin: 62% 27%;
+  animation: folio-moon-float 8s ease-in-out infinite;
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+.chapter-atmosphere--stack .chapter-atmosphere__light {
+  inset: -20%;
+  background: linear-gradient(115deg, transparent 34%, rgb(226 232 220 / 85%) 46%, transparent 58%);
+  animation: folio-moon-light 8s ease-in-out infinite;
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+.chapter-atmosphere__arc { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; fill: none; stroke: #dc4e36; }
+/* Only this small repair is visible; the full original background remains the base. */
+.chapter-atmosphere__orbit-repair {
+  background: url('/design/approved-2d/stack-orbit-repair.webp') center / 100% 100% no-repeat;
+  mask-image: radial-gradient(ellipse 1.5% 2.1% at 79.55% 21.41%, #000 70%, transparent 100%), url('/design/approved-2d/stack-track-mask.svg');
+  mask-mode: alpha, luminance;
+  mask-size: 100% 100%;
+  mask-composite: intersect;
+}
+.chapter-atmosphere--stack .chapter-atmosphere__orbit-repair,
+.chapter-atmosphere__arc {
+  transform-origin: 62% 27%;
+  animation: folio-moon-float 8s ease-in-out infinite;
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+.chapter-atmosphere__arc-tail,
+.chapter-atmosphere__arc-body,
+.chapter-atmosphere__arc-tip {
+  stroke-linecap: round;
+}
+/* 0–15% enters slowly, 15–58% glides, 58–78% fades; reset occurs while hidden. */
+.chapter-atmosphere__arc-tail {
+  stroke-width: 2.2;
+  stroke-dasharray: 70 3000;
+  animation: folio-arc-tail 7s linear infinite;
+}
+.chapter-atmosphere__arc-body {
+  stroke-width: 2.2;
+  stroke-dasharray: 42 3000;
+  animation: folio-arc-body 7s linear infinite;
+}
+.chapter-atmosphere__arc-tip {
+  stroke-width: 2.6;
+  stroke-dasharray: 12 3000;
+  animation: folio-arc-tip 7s linear infinite;
+}
+.chapter-atmosphere__arc-tail,
+.chapter-atmosphere__arc-body,
+.chapter-atmosphere__arc-tip {
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+@keyframes folio-arc-tail {
+  0% { opacity: 0; stroke-dashoffset: -15; }
+  15% { opacity: .2; stroke-dashoffset: -55; }
+  58% { opacity: .2; stroke-dashoffset: -650; }
+  78% { opacity: 0; stroke-dashoffset: -865; }
+  100% { opacity: 0; stroke-dashoffset: -15; }
+}
+@keyframes folio-arc-body {
+  0% { opacity: 0; stroke-dashoffset: -43; }
+  15% { opacity: .5; stroke-dashoffset: -83; }
+  58% { opacity: .5; stroke-dashoffset: -678; }
+  78% { opacity: 0; stroke-dashoffset: -893; }
+  100% { opacity: 0; stroke-dashoffset: -43; }
+}
+@keyframes folio-arc-tip {
+  0% { opacity: 0; stroke-dashoffset: -73; }
+  15% { opacity: 1; stroke-dashoffset: -113; }
+  58% { opacity: 1; stroke-dashoffset: -708; }
+  78% { opacity: 0; stroke-dashoffset: -923; }
+  100% { opacity: 0; stroke-dashoffset: -73; }
+}
+@keyframes folio-moon-float {
+  0%, 100% { transform: translateY(5px) rotate(-.6deg); }
+  50% { transform: translateY(-5px) rotate(.6deg); }
+}
+.chapter-atmosphere--contact {
+  z-index: 1;
+  contain: none;
+  mask-image: url('/design/approved-2d/contact-atmosphere-mask.svg');
+  mask-mode: luminance;
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  mix-blend-mode: screen;
+}
+.chapter-atmosphere--contact .chapter-atmosphere__cloud {
+  right: auto;
+  bottom: auto;
+  left: -20%;
+  width: 140%;
+  background: url('/design/approved-2d/contact-clouds.webp') center / 100% 100% no-repeat;
+  filter: brightness(2.4);
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+.chapter-atmosphere--contact .chapter-atmosphere__cloud--far {
+  top: 30%;
+  height: 35%;
+  animation: folio-cloud-far 14s linear infinite;
+}
+.chapter-atmosphere--contact .chapter-atmosphere__cloud--near {
+  top: 55%;
+  height: 28%;
+  animation: folio-cloud-near 10s linear infinite;
+}
+.chapter-atmosphere--contact .chapter-atmosphere__cloud--far.chapter-atmosphere__cloud--copy { animation-delay: -7s; }
+.chapter-atmosphere--contact .chapter-atmosphere__cloud--near.chapter-atmosphere__cloud--copy { animation-delay: -5s; }
+.chapter-atmosphere--contact .chapter-atmosphere__cloud {
+  animation-play-state: var(--art-motion-play-state, paused);
+}
+@keyframes folio-paper-light {
+  0%, 100% { transform: translateX(-12%); opacity: .3; }
+  50% { transform: translateX(12%); opacity: .8; }
+}
+@keyframes folio-moon-light {
+  0%, 100% { transform: translateX(-22%); opacity: .3; }
+  50% { transform: translateX(18%); opacity: .95; }
+}
+@keyframes folio-cloud-near {
+  0% { opacity: 0; transform: translateX(-20%); }
+  15%, 70% { opacity: .9; }
+  100% { opacity: 0; transform: translateX(20%); }
+}
+@keyframes folio-cloud-far {
+  0% { opacity: 0; transform: translateX(20%); }
+  15%, 70% { opacity: .7; }
+  100% { opacity: 0; transform: translateX(-20%); }
+}
+@media (max-width: 900px) {
+  .chapter-atmosphere--stack {
+    height: 450px;
+  }
+  .chapter-atmosphere--stack .chapter-atmosphere__lighting {
+    mask-size: cover;
+    mask-position: 65% top;
+  }
+  .chapter-atmosphere--stack .chapter-atmosphere__surface { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapter-atmosphere { display: none; }
+  .about__dossier .about__portrait-img { animation: none; transform: none; }
+}

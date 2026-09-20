@@ -10,11 +10,11 @@ import {
   usableResourceProgress,
 } from '../src/lib/loaderTiming.ts'
 
-// Groups are positional over 'Tim Cai.': [T] [im␣] [Cai] [.]
-void test('intro chars group as T / im+space / Cai / dot', () => {
-  const text = 'Tim Cai.'
+// Groups are positional over 'Tim Cai': [T] [im␣] [Cai]
+void test('intro chars group as T / im+space / Cai', () => {
+  const text = 'Tim Cai'
   const groups = text.split('').map((_, i) => introCharGroup(i))
-  assert.deepEqual(groups, [0, 1, 1, 1, 2, 2, 2, 3])
+  assert.deepEqual(groups, [0, 1, 1, 1, 2, 2, 2])
 })
 
 void test('group beats dominate the rise stagger over per-char offsets', () => {
@@ -24,8 +24,8 @@ void test('group beats dominate the rise stagger over per-char offsets', () => {
   const firstOfNextGroup = introRiseStagger(1, 0)
   assert.ok(lastOfGroup < firstOfNextGroup)
 
-  // Stagger grows monotonically across the real 'Tim Cai.' sequence.
-  const seq = Array.from({ length: 8 }, (_, i) => introRiseStagger(introCharGroup(i), i))
+  // Stagger grows monotonically across the real 'Tim Cai' sequence.
+  const seq = Array.from({ length: 7 }, (_, i) => introRiseStagger(introCharGroup(i), i))
   for (let i = 1; i < seq.length; i += 1) {
     assert.ok(seq[i] > seq[i - 1], `stagger must increase at index ${i}`)
   }

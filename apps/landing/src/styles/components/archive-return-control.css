@@ -1,0 +1,77 @@
+.archive-return {
+  position: fixed;
+  z-index: 80;
+  right: clamp(24px, 4.3vw, 72px);
+  bottom: clamp(20px, 3vh, 36px);
+  display: inline-flex;
+  width: max-content;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #f5f1e7;
+  cursor: pointer;
+  font: 400 10px/1.2 var(--font-mono);
+  letter-spacing: .1em;
+  mix-blend-mode: difference;
+}
+
+.archive-return__arrow {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  transition: transform 180ms ease;
+}
+
+.archive-return__label { white-space: nowrap; }
+
+.archive-return__hint {
+  margin-left: 8px;
+  font-size: 8px;
+  opacity: .55;
+}
+
+.archive-return::after {
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  content: '';
+  opacity: .35;
+  transform: scaleX(.4);
+  transform-origin: left;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.archive-return:hover::after,
+.archive-return:focus-visible::after {
+  opacity: .8;
+  transform: scaleX(1);
+}
+
+.archive-return:hover .archive-return__arrow,
+.archive-return:focus-visible .archive-return__arrow { transform: translate(-2px, -2px); }
+
+.archive-return:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-return::after,
+  .archive-return__arrow { transition: none; }
+
+  .archive-return:hover .archive-return__arrow,
+  .archive-return:focus-visible .archive-return__arrow { transform: none; }
+
+  .archive-return:hover::after,
+  .archive-return:focus-visible::after { transform: scaleX(.4); }
+}

@@ -12,7 +12,12 @@ test('core Landing narrative remains usable across browser engines', async ({ pa
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('#hero .hero__name')).toContainText('Tim')
 
+  // The section menu is the narrow-viewport affordance: above 1200px every
+  // section is already listed in the nav, so the button that opens a panel
+  // listing the same six is hidden. Assert it where it exists.
+  await page.setViewportSize({ width: 1024, height: 900 })
   const menuButton = page.getByRole('button', { name: /open section menu/i })
+  await expect(menuButton).toBeVisible()
   await menuButton.click()
   const menu = page.locator('.staggered-section-menu')
   await expect(menu.getByRole('dialog', { name: 'Section map' })).toBeVisible()
@@ -20,6 +25,7 @@ test('core Landing narrative remains usable across browser engines', async ({ pa
   await page.keyboard.press('Escape')
   await expect(menuButton).toBeFocused()
 
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/#projects', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('#projects .border-glow-card')).toHaveCount(6)

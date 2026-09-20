@@ -6,28 +6,111 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* One rail for every band on the page. Header, content and footer hang off
+     the same two edges; only a `.bleed` child is allowed to escape it. */
+  --shell-max: 1240px;
+  --gutter: clamp(24px, 6vw, 100px);
+  --col-gap: clamp(20px, 2.2vw, 32px);
+  /* Every ruled row on the site — index, work ledger, blog archive — runs on
+     these three tracks of the same twelve-column rail: the number in track 1,
+     the label in 2–4, the body from track 5 to the right edge. */
+  --track: calc((100% - var(--col-gap) * 11) / 12);
+  /* Index rows: title on the rail's left edge, gloss from track 5, ordinal
+     flush against the right edge so the page is tensioned on both sides. */
+  /* The description column opens on track 6 — the same vertical the hero's
+     plate opens on — so the page has one interior rule, not two that nearly
+     agree with each other. */
+  --row-cols:
+    calc(var(--track) * 5 + var(--col-gap) * 4)
+    minmax(0, 1fr)
+    calc(var(--track) * 3 + var(--col-gap) * 2);
+  /* Ledger rows (work, archive): body on the left edge, meta and ordinal
+     right-aligned into the last four tracks. */
+  --ledger-cols:
+    minmax(0, 1fr)
+    calc(var(--track) * 3 + var(--col-gap) * 2)
+    var(--track);
+
+  /* Vertical scale. Roughly 1.5× per step from an 8px base, so every gap on
+     the page is a ratio of another gap rather than a separate opinion. */
+  --s1: 8px;
+  --s2: 16px;
+  --s3: 24px;
+  --s4: 40px;
+  --s5: 64px;
+  --s6: 96px;
+  --s7: clamp(72px, 10vw, 144px);
+  --s8: 216px;
+
+  /* Ink. Six steps, warm, so a label can be quiet without being unreadable.
+     Studio runs warmer than the shared token set because the display face is
+     a Didone and a neutral grey makes its hairlines read blue. */
+  --ink: 244, 241, 235;
+  --v1: rgb(var(--ink));
+  --v2: rgba(var(--ink), 0.88);
+  --v3: rgba(var(--ink), 0.70);
+  /* v4 is the quiet step and it still has to be read: on this ground it lands
+     near 5.7:1, where the old 0.46 measured about 3.5:1. Reticence is a
+     choice; illegibility is an accident. */
+  --v4: rgba(var(--ink), 0.56);
+  /* 0.40 measured about 3.6:1 on this ground, under the body threshold. */
+  --v5: rgba(var(--ink), 0.50);
+  --v6: rgba(var(--ink), 0.24);
+
+  /* Hairlines carry their own three-step hierarchy: hem < rule < spine. */
+  /* One interval, ~1.85x per step, and the lightest of the three still has to
+     be visible: 0.08 measured 1.25:1 on this ground, which disappears on any
+     screen with light falling on it. */
+  --line-hem: rgba(var(--ink), 0.13);
+  --line-rule: rgba(var(--ink), 0.24);
+  --line-spine: rgba(var(--ink), 0.44);
+  /* The shared tokens ship a 4% hairline that disappears on this background.
+     Studio re-points the two legacy names so older surfaces inherit the same
+     three-step hierarchy instead of a single invisible weight. */
+  --line: var(--line-hem);
+  --line-strong: var(--line-rule);
+
+  --fg: var(--v1);
+  --fg-soft: var(--v2);
+  --fg-mute: var(--v3);
+  --fg-dim: var(--v4);
+
+  --font-serif: 'Bodoni Moda Variable', 'Noto Serif SC', 'Songti SC', serif;
+}
+
+html {
+  background: var(--bg);
+  /* The plate bleeds to the viewport edge; clip keeps a reserved scrollbar
+     from turning that into a horizontal scroll. */
+  overflow-x: clip;
+}
+
 body {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
   margin: 0;
-  background:
-    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(120, 144, 168, 0.10) 0%, transparent 100%),
-    radial-gradient(ellipse 40% 30% at 85% 100%, rgba(214, 197, 168, 0.06) 0%, transparent 100%),
-    var(--bg);
-  color: var(--fg);
+  background: var(--bg);
+  color: var(--v1);
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.6;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Same grain as landing — 1.5% opacity, overlay blend, SVG turbulence */
+/* One material, applied once: SVG turbulence at 2%, overlay blend. No glow,
+   no vignette, no radial lift — the field is flat and stays flat. */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.015;
+  opacity: 0.02;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   background-size: 200px 200px;
@@ -38,91 +121,170 @@ a {
   text-decoration: none;
 }
 
-/* ── Shell & header ──────────────────────────────────────────────────────── */
+::selection {
+  background: var(--accent-warm);
+  color: var(--bg);
+}
 
-.studio-shell__header {
+/* ── The rail ────────────────────────────────────────────────────────────── */
+
+.shell-header__inner,
+.shell-footer__inner,
+.shell-main > * {
+  width: min(var(--shell-max), 100% - var(--gutter) * 2);
+  margin-inline: auto;
+}
+
+/* The rail's own left edge, for anything that has to sit on it without taking
+   the whole width (the back link) or that escapes it entirely (the plate).
+   Measured against the viewport, not the using element — a percentage here
+   resolves against whatever box asks for it, which silently changed the value
+   inside a narrow grid area. */
+:root {
+  --rail-start: max(var(--gutter), (100vw - var(--shell-max)) / 2);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+/* Structure carries the heavier rule; repetition (the index dividers) carries
+   the lighter one. The two weights are exactly 2x apart. */
+.shell-header {
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid var(--line-rule);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(18px) saturate(1.1);
+}
+
+.shell-header__inner {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 20px clamp(20px, 5vw, 72px);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(20px);
-  background: rgba(10, 10, 10, 0.72);
+  gap: var(--s4);
+  padding-block: 18px 16px;
 }
 
-.studio-shell__brand {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg-mute);
-  transition: color 0.25s;
+/* The wordmark is the identity, so it is set in the identity's face — at the
+   text optical size and a heavier grade, which is what keeps a Modern's
+   hairlines intact this small. */
+.shell-brand {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  line-height: 1;
+  color: var(--v1);
+  transition: opacity 0.25s var(--ease-out);
 }
-.studio-shell__brand:hover { color: var(--fg); }
-.studio-shell__brand::before {
-  content: '// ';
-  color: var(--accent);
-}
+.shell-brand:hover { opacity: 0.6; }
 
-.studio-shell__nav {
+.shell-nav {
   display: flex;
-  align-items: center;
-  gap: clamp(14px, 2vw, 32px);
+  align-items: baseline;
+  gap: clamp(18px, 2.2vw, 34px);
 }
-.studio-shell__nav a {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--fg-mute);
-  transition: color 0.2s;
+.shell-nav a {
+  position: relative;
+  font-size: 13.5px;
+  letter-spacing: -0.002em;
+  color: var(--v4);
+  transition: color 0.22s var(--ease-out);
 }
-.studio-shell__nav a:hover { color: var(--fg); }
+.shell-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s var(--ease-out);
+}
+.shell-nav a:hover { color: var(--v1); }
+.shell-nav a:hover::after { transform: scaleX(1); }
 
-/* ── Main container ──────────────────────────────────────────────────────── */
-
-.studio-shell {
-  width: min(1080px, calc(100% - clamp(32px, 8vw, 144px)));
-  margin-inline: auto;
-  padding-block: clamp(72px, 12vw, 160px);
+.shell-main {
+  flex: 1;
+  padding-block: var(--s5) var(--s6);
 }
 
-/* ── Hero block ──────────────────────────────────────────────────────────── */
+/* ── Footer ──────────────────────────────────────────────────────────────── */
 
+.shell-footer {
+  border-top: 1px solid var(--line-rule);
+}
+
+.shell-footer__inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-block: var(--s4);
+}
+
+/* The giant repeated wordmark is the template's tell; the page now ends on a
+   real invitation instead, and the footer goes back to being a footer. */
+.shell-footer__mark {
+  font-size: 13.5px;
+  color: var(--v4);
+}
+
+.shell-footer__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  font-size: 13.5px;
+  line-height: 1;
+  color: var(--v4);
+}
+
+.shell-footer__link {
+  font-size: 13.5px;
+  color: var(--v4);
+  transition: color 0.22s var(--ease-out);
+}
+.shell-footer__link:hover { color: var(--v1); }
+.shell-footer__link::after {
+  content: '\00a0\2197';
+}
+
+/* ── Shared page heads (work / blog / graph / dashboard) ─────────────────── */
+
+/* No max-width here: a narrower box plus the rail's auto margins would centre
+   the head inside the rail and leave its rule stopping short of both edges.
+   The measure is held by the title and copy instead. */
 .studio-hero {
   display: grid;
-  gap: 28px;
-  max-width: 880px;
-  padding-bottom: clamp(48px, 8vw, 96px);
-  border-bottom: 1px solid var(--line);
-  margin-bottom: clamp(48px, 8vw, 80px);
+  gap: var(--s3);
+  padding-bottom: var(--s5);
+  margin-bottom: var(--s6);
+  border-bottom: 1px solid var(--line-rule);
 }
 
 .studio-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
+  font-size: 13.5px;
+  color: var(--v4);
 }
 
 .studio-title {
+  max-width: 14ch;
   margin: 0;
   font-family: var(--font-serif);
-  font-size: clamp(42px, 8vw, 96px);
-  font-weight: 400;
-  line-height: 0.95;
-  letter-spacing: -0.045em;
-  color: var(--fg);
+  font-size: clamp(40px, 6.2vw, 84px);
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: -0.022em;
+  color: var(--v1);
 }
 
 .studio-copy {
-  max-width: 600px;
+  max-width: 54ch;
   margin: 0;
-  color: var(--fg-mute);
-  font-size: clamp(15px, 1.6vw, 19px);
-  line-height: 1.7;
+  color: var(--v2);
+  font-size: clamp(15px, 1.35vw, 18px);
+  line-height: 1.55;
+  text-wrap: pretty;
 }

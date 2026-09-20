@@ -162,17 +162,7 @@
 
 @media (min-width: 901px) {
   body:has(.nav:is([data-chapter='about'], [data-chapter='skills'], [data-chapter='contact'])) .cursor { display: none; }
-  body:has(.nav:is([data-chapter='about'], [data-chapter='skills'], [data-chapter='contact'])) .archive-return {
-    right: 4.3vw;
-    bottom: 4.3vh;
-    width: 16.6vw;
-    min-height: 5.4vh;
-    padding: 0;
-    font-size: .88vw;
-    letter-spacing: .1em;
-    background: #615d50;
-    border: 1px solid #aaa595;
-  }
+
   body:has(.nav:is([data-chapter='about'], [data-chapter='skills'], [data-chapter='contact'])) .scroll-indicator { top: 21vh; right: 4vw; transform: none; }
   body:has(.nav:is([data-chapter='about'], [data-chapter='skills'], [data-chapter='contact'])) .scroll-indicator__label { visibility: hidden; }
   body:has(.nav:is([data-chapter='about'], [data-chapter='skills'], [data-chapter='contact'])) .scroll-indicator__track-container { opacity: 0; }
@@ -275,8 +265,25 @@
     --fg-soft: #d0cdc5;
     background: #111210;
   }
-  .skills__folio .skills__art { height: 100svh; }
-  .skills__opening { height: 42vh; }
+  /* One height-led artwork plane preserves the source ratio at every desktop width.
+     Extra horizontal space becomes quiet background instead of stretching subjects. */
+  .skills__folio .skills__art,
+  .skills__folio .chapter-atmosphere--stack,
+  .footer__art,
+  .footer .chapter-atmosphere--contact {
+    inset: 0 0 auto auto;
+    width: calc(100svh * 1477 / 1065);
+    max-width: none;
+    height: 100svh;
+  }
+  .skills__folio .skills__art,
+  .footer__art {
+    object-fit: contain;
+    mask-image: linear-gradient(to right, transparent, #000 14%);
+  }
+  .skills__folio { overflow: clip; }
+
+  .skills__opening { min-height: 42vh; padding-bottom: 3vh; }
   .skills__folio .section__label { font-size: .9vw; margin-bottom: 4.4vh; gap: 1vw; color: #cecac1; }
   .skills__folio .section__title {
     font-family: 'Times New Roman', 'Noto Serif SC', serif;
@@ -314,6 +321,8 @@
     height: 100%;
     padding: 9.2vh 4.2vw 0;
   }
+  /* The image-backed composition is already revealed by its chapter wrapper. */
+  :is(#contact, [data-archive-clone='contact'], .archive-handoff-page--contact) .footer__inner { opacity: 1; visibility: visible; }
   .footer .footer__kicker { margin-bottom: 4.8vh; font-size: .9vw; letter-spacing: .13em; }
   .footer .footer__title {
     max-width: 75%;

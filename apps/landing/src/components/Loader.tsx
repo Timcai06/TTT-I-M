@@ -27,7 +27,7 @@ function randomBaffleChar() {
 
 /**
  * @description Loader 全屏加载页 —— 站点入口动画的 start-to-end 编排。
- *   阶段 1 (intro): 标题 "Tim Cai." 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
+ *   阶段 1 (intro): 标题 "Tim Cai" 字符从遮罩边缘升起 + Baffle 乱码效果 (42ms 间隔 × 15 帧) → 进度条动画
  *   阶段 2 (hand-off): 一旦 introReady (字符落地) 且完整空间已就绪，或仅空间失败但
  *     完整正文与布局已就绪，标题向上浮出遮罩 → 计数器/进度条淡出 → 面板原位淡出
  *   阶段 3 (complete): `done` 状态置 true，组件返回 null，彻底从 DOM 卸载
@@ -306,7 +306,7 @@ const countRef = useRef<HTMLSpanElement>(null)
 
   if (done) return null
 
-  const text = 'Tim Cai.'
+  const text = 'Tim Cai'
   const charClassName = (ch: string) => {
     if (ch.toLowerCase() === 'i') return 'intro__char intro__char--narrow'
     if (ch.toLowerCase() === 'm') return 'intro__char intro__char--wide'

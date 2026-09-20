@@ -5,7 +5,6 @@ import { onIntroExit } from '../lib/intro'
 import { usePretextTextInteraction } from '../lib/pretextIntroText'
 import { onChapterArrived } from '../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
-import SignatureMark from './SignatureMark'
 import { useMobileExperience } from '../lib/device'
 import { useReducedMotion } from '../lib/motion'
 const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSurface'))
@@ -42,6 +41,24 @@ const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSu
  *   step4: 绑定 5 个 scroll-scrub tweens: canvas, ghost, scan, content, title parallax
  *   step5: 滚动事件 rAF 回调中判断 scrollY>6 决定 pretext 开关
  */
+/**
+ * The three pieces of work the opening frame puts forward, in reading order.
+ *
+ * Each note is a fact about the thing, not a line about it: the frame already
+ * carries one aphorism under the name and a second register of the same voice
+ * would read as copy rather than as evidence.
+ *
+ * Every row used to carry a right-aligned `2026` as well. Three identical
+ * monospace labels stacked down one column is a typographic impression of a data
+ * table, not a table: they distinguished nothing from anything. The dates live on
+ * the work chapter, beside the rest of each project's record.
+ */
+const selectedWork = [
+  { name: 'SciScope', note: 'Every answer links back to the sentence it came from.' },
+  { name: 'Earnlytics', note: '109 filings from 30 companies, summarised and still answerable.' },
+  { name: 'BDI Infra Scan', note: 'Drone photographs turned into inspectable defect records.' },
+]
+
 export default function Hero() {
   // Same gate ArchiveAbout uses to decide the room exists at all.
   //
@@ -82,10 +99,9 @@ export default function Hero() {
       // ── 初始化：将所有 split-line sub-element 推到视口下方 ──
       gsap.set('.hero__split .split-line__inner', { yPercent: 110, skewY: 6 })
       gsap.set('.hero__meta-block', { opacity: 0, y: 12 })
-      gsap.set('.hero__subline > *', { opacity: 0, y: 8 })
+      gsap.set('.hero__subline', { opacity: 0, y: 8 })
       gsap.set('.hero__kicker', { opacity: 0, y: 10 })
-      gsap.set('.hero__signature-hotspot', { opacity: 0, scale: 0.55 })
-      gsap.set('.hero__signature-mark', { opacity: 0, y: 6 })
+      gsap.set('.hero__signature-seal', { opacity: 0, scale: 1.16, rotate: -3.4 })
 
       // 暂停 timeline —— 等待 intro exit 信号
       const tl = gsap.timeline({ paused: true })
@@ -114,9 +130,7 @@ export default function Hero() {
           xPercent: 0,
           yPercent: 0,
         })
-        gsap.set('.hero__signature-stroke, .hero__signature-glow', { strokeDashoffset: 0 })
-        gsap.set('.hero__signature-hotspot', { opacity: 1, scale: 1 })
-        gsap.set('.hero__signature-mark', { opacity: 1, y: 0 })
+        gsap.set('.hero__signature-seal', { opacity: 1, scale: 1, rotate: -3.4 })
         window.clearTimeout(pretextEnableTimer.current)
         // 延迟激活 pretext，让滚动 settle
         pretextEnableTimer.current = window.setTimeout(() => {
@@ -136,23 +150,20 @@ export default function Hero() {
         stagger: 0.12,
       }, '-=1.2')
         .to('.hero__meta-block', { opacity: 1, y: 0, duration: 1.8, stagger: 0.15, ease: 'expo.out' }, '-=1.6')
-        .to('.hero__subline > *', { opacity: 1, y: 0, duration: 1.8, stagger: 0.12, ease: 'expo.out' }, '-=1.4')
+        .to('.hero__subline', { opacity: 1, y: 0, duration: 1.8, ease: 'expo.out' }, '-=1.4')
 
-      // ── 签名出笔：句点先点亮，再顺势甩出一笔不断写到「蔡」收尾。
-      // 字标延后半拍出现，让签名先像动作，再成为品牌落款。 ──
-      const signatureStroke = root.current?.querySelector<SVGPathElement>('.hero__signature-stroke')
-      const signatureGlow = root.current?.querySelector<SVGPathElement>('.hero__signature-glow')
-      if (signatureStroke) {
-        const strokeLength = signatureStroke.getTotalLength()
-        gsap.set([signatureStroke, signatureGlow].filter(Boolean), {
-          strokeDasharray: strokeLength,
-          strokeDashoffset: strokeLength,
-        })
-        tl.to('.hero__signature-hotspot', { opacity: 1, scale: 1, duration: 0.34, ease: 'power3.out' }, '-=1.72')
-          .to([signatureGlow, signatureStroke].filter(Boolean), { strokeDashoffset: 0, duration: 1.86, ease: 'power1.inOut' }, '-=1.58')
-          .to('.hero__signature-mark', { opacity: 1, y: 0, duration: 0.82, ease: 'expo.out' }, '-=0.54')
-          .to('.hero__signature-hotspot', { scale: 1.22, duration: 0.28, yoyo: true, repeat: 1, ease: 'sine.inOut' }, '-=0.72')
-      }
+      // ── 钤印：标题落定后半拍盖下，是这一段唯一的动作。──
+      // 原来是 1.86s 的描边书写动画 + glow path + 发光 hotspot + 「signed / 2026」字标。
+      // 描边在实际尺寸下读起来是一根红电线，所以整条路径都删了；留下的是一次钤印。
+      tl.fromTo(
+        '.hero__signature-seal',
+        // rotation travels in the tween, not in CSS: GSAP writes the whole
+        // `transform`, so a rotate() left in the stylesheet is erased the moment
+        // the stamp scales.
+        { opacity: 0, scale: 1.16, rotate: -3.4 },
+        { opacity: 1, scale: 1, rotate: -3.4, duration: 0.32, ease: 'power4.out', transformOrigin: '62% 32%' },
+        '-=1.1',
+      )
 
       // The Index lives projected on the room's monitor, so the hero must not also
       // parallax itself out of the way. These five scrub tweens are the pre-archive
@@ -188,18 +199,6 @@ export default function Hero() {
           },
         })
 
-        // ── 扫描线光泽：透明度降至接近不可见
-        gsap.to('.hero__scan', {
-          opacity: 0.05,
-          yPercent: 12,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: root.current,
-            start: 'top top',
-            end: 'bottom top',
-            scrub: true,
-          },
-        })
 
         // ── 内容层：上移 + 淡出，为下方的 About 章节让出视口
         gsap.to('.hero__content', {
@@ -221,35 +220,14 @@ export default function Hero() {
 
     }, root)
 
-    // ── 签名锚定：把 swash 起笔点（viewBox 的 6,18）钉在 "Cai." 句点圆心上。
-    // 用 offsetLeft/offsetTop 链测量 —— 它无视 transform，入场动画进行中
-    // 也能拿到最终布局位；resize 时重测。 ──
-    const positionSignature = () => {
-      const rootEl = root.current
-      if (!rootEl) return
-      const sig = rootEl.querySelector<HTMLElement>('.hero__signature')
-      const dot = rootEl.querySelector<HTMLElement>('.hero__name .pretext-glyph[data-final="."]')
-      if (!sig || !dot) return
-      let x = dot.offsetLeft + dot.offsetWidth / 2
-      let y = dot.offsetTop + dot.offsetHeight * 0.82
-      let node = dot.offsetParent as HTMLElement | null
-      const anchor = sig.offsetParent as HTMLElement | null
-      while (node && node !== anchor) {
-        x += node.offsetLeft
-        y += node.offsetTop
-        node = node.offsetParent as HTMLElement | null
-      }
-      const scale = sig.offsetWidth / 340
-      sig.style.left = `${x - 6 * scale}px`
-      sig.style.top = `${y - 18 * scale}px`
-    }
-    positionSignature()
-    window.addEventListener('resize', positionSignature)
+    // 印章不再需要运行时测量。它曾经用 offsetLeft/offsetTop 链把起笔点钉在
+    // 标题最后一个字形上（更早还钉在那个句点上），resize 时重测；现在它是右下角
+    // 的一方压脚章，位置由 CSS 的栏边距给出，这段测量代码连同它的 resize 监听
+    // 一起删掉了。
 
     return () => {
       cancelIntroExit()
       cancelHeroArrived()
-      window.removeEventListener('resize', positionSignature)
       window.clearTimeout(pretextEnableTimer.current)
       ctx.revert()
     }
@@ -303,7 +281,7 @@ export default function Hero() {
     interactionRoot: screenPage,
     refreshKey: pretextRefreshKey,
     strength: 0.78,
-    text: 'Tim Cai.',
+    text: 'Tim Cai',
   })
 
   /**
@@ -311,16 +289,11 @@ export default function Hero() {
    * 每个字符被包裹在 `.pretext-glyph` span 中，data-final 属性记录最终字符
    * （用于 pretext 引擎计算目标位置）。句点 (.) 额外加 `<em>` 以适配特殊样式。
    */
-  const heroGlyphs = (text: string) => text.split('').map((char, index) => {
-    if (char === '.') {
-      return <em className="pretext-glyph" data-final="." key={`${char}-${index}`}>.</em>
-    }
-    return (
-      <span className="pretext-glyph" data-final={char} key={`${char}-${index}`}>
-        {char}
-      </span>
-    )
-  })
+  const heroGlyphs = (text: string) => text.split('').map((char, index) => (
+    <span className="pretext-glyph" data-final={char} key={`${char}-${index}`}>
+      {char}
+    </span>
+  ))
 
   return (
     <section className="hero hero--archive-index" id="hero" ref={root}>
@@ -330,71 +303,159 @@ export default function Hero() {
           that movement to scroll, so scrolling back to the top is the enlarged
           Index and there is nothing left to toggle. Its own links stay focusable,
           which is all the keyboard ever needed here. */}
+      {/* The room recedes while the opening frame is up. The first shot is a lit
+          screen in a dark space, not a landscape with a monitor in it: at
+          --index-frame 1 the photograph behind the glass is held down to a
+          suggestion, and it comes back as the camera pulls away from the
+          monitor. Rides the same number as the panel's signature radius, so the
+          room arriving and the frame retiring are one gesture. */}
+      <div className="hero__room-scrim" aria-hidden="true" />
       <div ref={screenPage} className="hero__screen-page">
       {/* Canvas 层：幽灵照片 → 粒子肖像 (条件渲染) → 扫描线光泽，三层堆叠 */}
       <div className="hero__canvas">
         <img className="hero__ghost hero__portrait-ghost" src="/portrait/tim.jpg" alt="" aria-hidden="true" />
         <ParticlePortrait />
-        <div className="hero__scan" aria-hidden="true" />
-      </div>
+        </div>
       {/* 暗角遮罩：CSS 径向渐变，使视线聚焦中央 */}
       <div className="hero__vignette" />
-      {/* 内容层：坐标 meta → kicker → 标题 → subline + scroll 指示器 */}
+      {/* There used to be an identity block in the top-right corner: two lines of
+          10px mono reading `Freshman / AI builder` and `Shanghai / open to
+          collaborations`. It said, in the frame's least legible type, what the
+          sentence under the name says in a sentence — and `open to
+          collaborations` belongs on the contact chapter, which is where a reader
+          goes to act on it. */}
+      {/* 落款：一方朱文印，钤在整幅的右下角。
+          它曾经紧挨着「Cai」，被当成标点用 —— 既不在 cap line 也不在 baseline，
+          悬在两者之间，而且是画面里唯一一处饱和色，只出现一次、不承担任何结构。
+          现在它回到落款该在的位置：右下角的一方压脚章。红色在页面上出现两次
+          （这方印，和证据块那条规则线左端的红头），于是它是一套记号，不是贴纸。
+          印面刻意做了 3.4° 的歪斜、不匀的边缘和不匀的墨色 ——
+          真正的印不会是一个完美的矩形。纯装饰，aria-hidden。 */}        <div className="hero__signature" aria-hidden="true">
+        <svg viewBox="0 0 96 96" fill="none">
+          <defs>
+            {/* A chop is cut into stone and pressed into paper: the edge is
+                bitten, the ink is uneven, and no two impressions match. A flat
+                rect with a knocked-out glyph is a sticker. feTurbulence at a
+                low frequency displaces the edge by a couple of units, which is
+                what the stone's grain does. */}
+            <filter
+              id="hero-seal-ink"
+              x="-25%"
+              y="-25%"
+              width="150%"
+              height="150%"
+              colorInterpolationFilters="sRGB"
+            >
+              {/* Bite the edge: low-frequency noise displaces the outline by a
+                  few units, which is what the stone's grain does to the line a
+                  blade cut. */}
+              <feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="3" seed="7" result="edgeNoise" />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="edgeNoise"
+                scale="5.2"
+                xChannelSelector="R"
+                yChannelSelector="G"
+                result="bitten"
+              />
+              {/* Wear the ink: cinnabar paste does not lay down evenly, so a
+                  high-frequency field is thresholded into an alpha and punched
+                  out of the impression. Without this the seal is a flat red
+                  chip — a sticker, not a stamp. */}
+              <feTurbulence type="fractalNoise" baseFrequency="0.58" numOctaves="2" seed="19" result="grain" />
+              <feColorMatrix
+                in="grain"
+                type="matrix"
+                values="0 0 0 0 0
+                        0 0 0 0 0
+                        0 0 0 0 0
+                        1.7 0 0 0 -0.66"
+                result="grainAlpha"
+              />
+              <feComposite in="bitten" in2="grainAlpha" operator="out" result="worn" />
+              {/* Displacement interpolates, so the bitten edge came back soft —
+                  visibly lower fidelity than the vector serif 40px away. A
+                  steep alpha ramp throws it back to a hard edge while keeping
+                  the shape the noise cut. */}
+              <feComponentTransfer in="worn">
+                <feFuncA type="linear" slope="4.2" intercept="-0.85" />
+              </feComponentTransfer>
+            </filter>
+            <mask id="hero-seal-mask">
+              {/* Each edge is off true by 1–2 units and no corner is 90°. */}
+              <path d="M 33.1,2.4 L 87.4,0.9 L 89.0,55.2 L 34.6,56.8 Z" fill="#fff" />
+              {/* Stroked as well as filled: at this size a Songti 蔡 knocks out
+                  as hairlines, and a chop is cut with a blade, not a nib. */}
+              <text
+                x="61.2"
+                y="28.7"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontFamily="'Noto Serif SC', 'Songti SC', serif"
+                fontSize="38"
+                fill="#000"
+                stroke="#000"
+                strokeWidth="1.5"
+              >蔡</text>
+            </mask>
+          </defs>
+          <g className="hero__signature-seal">
+            <rect
+              x="31"
+              y="-1"
+              width="60"
+              height="60"
+              fill="#b5342a"
+              mask="url(#hero-seal-mask)"
+              filter="url(#hero-seal-ink)"
+            />
+          </g>
+        </svg>
+      </div>
+      {/* 页脚登记行：把画面的下缘收住。
+          顶上有 nav，底下什么都没有 —— 内容悬在中间，上下各留一百多像素的黑，
+          读起来是一块没有落地的版心。这一行只有两项，和 nav 共用左右两条边距。 */}
+      <div className="hero__register">
+        <span>Shanghai</span>
+        <span>Open for work — 2026</span>
+      </div>
+      {/* 内容层：标题 → subline → index */}
       <div className="container hero__content">
-        <div className="hero__meta">
-          <div className="hero__meta-block">
-            <div>// Profile · 2026</div>
-            <div>Shanghai · 31°N 121°E</div>
-            <div>Available for collaborations</div>
-          </div>
-          <div className="hero__meta-block" style={{ textAlign: 'right' }}>
-            <div>Tim · Cai</div>
-            <div>freshman / AI builder</div>
-            <div>systems · RAG · 建模</div>
-          </div>
-        </div>
-
-        <div className="hero__kicker">AI systems / evidence / visual interfaces</div>
+        {/* The eyebrow is gone. `AI systems / evidence / visual interfaces` was a
+            slash-delimited triad — the syntax of every agency about-page since
+            2018 — and it said, in 10px tracked-out mono, roughly what the
+            sentence under the name says in a sentence. */}
         <h1 className="hero__name hero__split" ref={nameRef}>
           <span className="split-line"><span className="split-line__inner">{heroGlyphs('Tim')}</span></span>
-          <span className="split-line"><span className="split-line__inner">{heroGlyphs('Cai.')}</span></span>
+          <span className="split-line"><span className="split-line__inner">{heroGlyphs('Cai')}</span></span>
         </h1>
 
-        {/* 签名手势：一条不断笔的 SVG 线 —— 从 "Cai." 句点（运行时测量锚定）
-            甩出 swash，下探、回环，行至右侧直接连笔写出行书「蔡」
-            （由真实笔画中线连笔化生成，字形保真），收笔向右上扬出。
-            单路径 = 单 dashoffset，整个签名是一次不间断的运笔。纯装饰，aria-hidden。 */}
-        <div className="hero__signature" aria-hidden="true">
-          <svg viewBox="0 0 340 175" fill="none">
-            <defs>
-              <linearGradient id="hero-signature-gradient" x1="0" y1="18" x2="329" y2="95" gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor="#fff0d2" />
-                <stop offset="0.12" stopColor="#ff6a30" />
-                <stop offset="0.48" stopColor="#ff2e1f" />
-                <stop offset="1" stopColor="#9b1518" />
-              </linearGradient>
-            </defs>
-            <path
-              className="hero__signature-glow"
-              d="M 6,18 C 18,40 40,50 64,46 C 80,43 92,36 98,28 C 102,21 96,15 90,20 C 84,26 90,36 104,38 C 114,40 124,48 132.7,61.3 C 143.3,60.2 174.3,56.4 187.9,55.7 C 201.5,54.9 210.6,58.7 203.7,57.3 C 196.7,55.8 160.9,49.2 151.8,48.1 C 142.7,47.0 154.8,47.7 156.3,51.5 C 157.7,55.4 154.7,69.5 159.4,68.0 C 164.0,66.4 176.1,48.0 180.5,43.5 C 184.9,38.9 181.5,43.6 182.3,44.4 C 183.0,45.2 185.3,43.2 184.3,47.6 C 183.4,52.1 184.3,63.4 177.2,67.5 C 170.1,71.6 153.2,66.9 147.4,68.8 C 141.6,70.6 150.3,72.3 147.0,77.2 C 143.6,82.0 129.6,93.8 130.2,94.0 C 130.8,94.1 144.1,80.9 150.2,78.1 C 156.3,75.3 164.0,72.9 161.8,79.2 C 159.6,85.6 146.4,103.1 138.9,111.2 C 131.4,119.3 122.0,126.1 122.8,121.3 C 123.6,116.6 138.8,93.2 142.9,86.5 C 147.1,79.8 143.3,85.7 144.4,86.4 C 145.6,87.0 150.9,88.5 148.9,89.9 C 146.9,91.3 136.3,92.8 133.8,93.6 C 131.4,94.4 135.0,93.5 136.0,94.0 C 137.1,94.4 138.1,95.0 139.1,96.0 C 140.2,97.1 134.6,103.9 141.7,99.6 C 148.7,95.3 166.1,79.2 175.7,73.7 C 185.3,68.3 187.7,71.1 191.7,71.2 C 195.7,71.3 197.6,71.5 196.4,74.4 C 195.2,77.3 190.3,85.6 185.5,86.3 C 180.6,86.9 170.0,75.4 171.2,77.8 C 172.4,80.1 182.1,92.1 191.8,98.4 C 201.5,104.8 228.4,110.2 221.5,110.5 C 214.6,110.9 167.2,102.0 155.9,100.2 C 144.7,98.3 159.4,101.1 162.8,100.9 C 166.2,100.6 170.2,99.2 173.6,98.8 C 177.0,98.4 186.0,96.1 180.5,98.9 C 175.1,101.7 144.3,111.5 145.1,113.5 C 145.9,115.5 175.3,109.9 184.7,109.5 C 194.0,109.0 197.4,110.3 193.8,111.2 C 190.1,112.1 170.6,109.0 165.8,114.1 C 161.0,119.2 170.5,133.4 168.9,137.8 C 167.3,142.1 161.3,139.5 157.5,136.6 C 153.8,133.8 151.7,124.2 149.4,123.1 C 147.1,122.0 147.3,127.9 145.5,130.9 C 143.6,133.9 132.1,140.2 139.6,138.6 C 147.1,137.0 173.3,123.8 184.4,122.6 C 195.6,121.4 194.5,130.0 197.4,132.5 C 200.4,135.0 199.1,134.4 199.7,135.7 C 200.4,137.0 200.8,138.7 201.0,139.4 C 231.0,141.4 265.0,131.4 293.0,117.4 C 307.0,110.4 319.0,103.4 329.0,95.4"
-            />
-            <path
-              className="hero__signature-stroke"
-              d="M 6,18 C 18,40 40,50 64,46 C 80,43 92,36 98,28 C 102,21 96,15 90,20 C 84,26 90,36 104,38 C 114,40 124,48 132.7,61.3 C 143.3,60.2 174.3,56.4 187.9,55.7 C 201.5,54.9 210.6,58.7 203.7,57.3 C 196.7,55.8 160.9,49.2 151.8,48.1 C 142.7,47.0 154.8,47.7 156.3,51.5 C 157.7,55.4 154.7,69.5 159.4,68.0 C 164.0,66.4 176.1,48.0 180.5,43.5 C 184.9,38.9 181.5,43.6 182.3,44.4 C 183.0,45.2 185.3,43.2 184.3,47.6 C 183.4,52.1 184.3,63.4 177.2,67.5 C 170.1,71.6 153.2,66.9 147.4,68.8 C 141.6,70.6 150.3,72.3 147.0,77.2 C 143.6,82.0 129.6,93.8 130.2,94.0 C 130.8,94.1 144.1,80.9 150.2,78.1 C 156.3,75.3 164.0,72.9 161.8,79.2 C 159.6,85.6 146.4,103.1 138.9,111.2 C 131.4,119.3 122.0,126.1 122.8,121.3 C 123.6,116.6 138.8,93.2 142.9,86.5 C 147.1,79.8 143.3,85.7 144.4,86.4 C 145.6,87.0 150.9,88.5 148.9,89.9 C 146.9,91.3 136.3,92.8 133.8,93.6 C 131.4,94.4 135.0,93.5 136.0,94.0 C 137.1,94.4 138.1,95.0 139.1,96.0 C 140.2,97.1 134.6,103.9 141.7,99.6 C 148.7,95.3 166.1,79.2 175.7,73.7 C 185.3,68.3 187.7,71.1 191.7,71.2 C 195.7,71.3 197.6,71.5 196.4,74.4 C 195.2,77.3 190.3,85.6 185.5,86.3 C 180.6,86.9 170.0,75.4 171.2,77.8 C 172.4,80.1 182.1,92.1 191.8,98.4 C 201.5,104.8 228.4,110.2 221.5,110.5 C 214.6,110.9 167.2,102.0 155.9,100.2 C 144.7,98.3 159.4,101.1 162.8,100.9 C 166.2,100.6 170.2,99.2 173.6,98.8 C 177.0,98.4 186.0,96.1 180.5,98.9 C 175.1,101.7 144.3,111.5 145.1,113.5 C 145.9,115.5 175.3,109.9 184.7,109.5 C 194.0,109.0 197.4,110.3 193.8,111.2 C 190.1,112.1 170.6,109.0 165.8,114.1 C 161.0,119.2 170.5,133.4 168.9,137.8 C 167.3,142.1 161.3,139.5 157.5,136.6 C 153.8,133.8 151.7,124.2 149.4,123.1 C 147.1,122.0 147.3,127.9 145.5,130.9 C 143.6,133.9 132.1,140.2 139.6,138.6 C 147.1,137.0 173.3,123.8 184.4,122.6 C 195.6,121.4 194.5,130.0 197.4,132.5 C 200.4,135.0 199.1,134.4 199.7,135.7 C 200.4,137.0 200.8,138.7 201.0,139.4 C 231.0,141.4 265.0,131.4 293.0,117.4 C 307.0,110.4 319.0,103.4 329.0,95.4"
-            />
-          </svg>
-          <span className="hero__signature-hotspot" />
-          <SignatureMark className="hero__signature-mark" />
-        </div>
-        <div className="hero__subline">
-          <span>↳ coursework, models, and strange ideas rendered into interfaces</span>
-          <span className="hero__scroll">
-            scroll
-            <svg viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v12M3 9l5 5 5-5" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-          </span>
-        </div>
+        {/* The middle of the type scale. Everything here used to be either 320px
+            or 10px with nothing between, so the one line that says what the work
+            actually is arrived as tracked-out 10px mono and got skipped. It is a
+            sentence now, set in the serif, on a measure short enough to read in
+            one pass. The second scroll cue that used to sit beside it is gone —
+            the framed panel already carries one. */}
+        <p className="hero__subline">
+          Coursework, models, and strange ideas rendered into interfaces.
+        </p>
+
+        {/* 第二落点。首屏原本是「名字 → 印章 → 没了」：没有作品、没有年份、没有
+            一句可验证的主张，眼睛落一次就无处可去。这一行是画面里唯一另一个
+            要求被读的东西，而且它是真的 —— 点进去就是那个项目。 */}
+        {/* 三条，不是一条。
+            这里原来只有一个项目：一条发丝规则线、一个红头、一个右对齐年份和一句
+            描述 —— 那是一份索引的解剖结构，却只装了一行，读起来是个孤儿；而首屏
+            剩下四分之一的高度是空的。三条把规则线变成一个真正的系统，给眼睛第三、
+            第四个落点，也把画面的脚撑住了。 */}
+        <nav className="hero__index" aria-label="Selected work">
+          {selectedWork.map((project) => (
+            <a className="hero__index-row" href="#projects" key={project.name}>
+              <span className="hero__index-name">{project.name}</span>
+              <span className="hero__index-note">{project.note}</span>
+            </a>
+          ))}
+        </nav>
       </div>
       </div>
     </section>

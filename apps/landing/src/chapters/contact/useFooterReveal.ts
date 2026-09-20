@@ -112,6 +112,15 @@ export function useFooterReveal({ staticArtwork = false }: { staticArtwork?: boo
     }
 
     const context = gsap.context(() => {
+      // The archive already owns entry/return transitions. An independent
+      // scrubbed text reveal can stay at zero after a direct chapter jump.
+      if (staticArtwork) {
+        gsap.set('.footer__inner', { autoAlpha: 1 })
+        gsap.set('.footer__kicker, .contact__btn, .footer__meta', { opacity: 1, y: 0 })
+        gsap.set('.footer__title .split-line__inner', { yPercent: 0, skewY: 0 })
+        gsap.set(wrapEl, { autoAlpha: 0 })
+        return
+      }
       gsap.set('.footer__kicker', { opacity: 0, y: 15 })
       gsap.set('.footer__title .split-line__inner', { yPercent: 110, skewY: 6 })
       gsap.set('.contact__btn', { opacity: 0 })

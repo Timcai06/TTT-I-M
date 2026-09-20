@@ -21,5 +21,17 @@ export default function ArchiveReturnControl() {
   }, [activeId, available])
 
   if (!available) return null
-  return <button className="archive-return" type="button" onClick={() => returnToArchiveObject(activeId)}>RETURN TO OBJECT ↖</button>
+  return <button
+    className="archive-return"
+    type="button"
+    aria-label="RETURN TO OBJECT ↖"
+    aria-keyshortcuts="Escape"
+    onClick={() => returnToArchiveObject(activeId)}
+  >
+    <svg className="archive-return__arrow" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M 12 12 L 4 4 M 4 4 H 10 M 4 4 V 10" />
+    </svg>
+    <span className="archive-return__label">RETURN TO OBJECT</span>
+    <span className="archive-return__hint" aria-hidden="true">ESC</span>
+  </button>
 }

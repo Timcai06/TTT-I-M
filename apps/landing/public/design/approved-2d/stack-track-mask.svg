@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1477" height="1065" viewBox="0 0 1477 1065">
+  <rect width="1477" height="1065" fill="white"/>
+  <!-- Lower the baked track locally; preserve the source artwork itself. -->
+  <path d="M 978 38 C 1090 70 1164 130 1175 228 C 1196 408 1088 554 865 606" fill="none" stroke="#666" stroke-width="7" stroke-linecap="round"/>
+</svg>

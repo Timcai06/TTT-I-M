@@ -1,4 +1,5 @@
 import { approvedArtwork } from '../content/approvedArtwork'
+import ChapterAtmosphere from './ChapterAtmosphere'
 
 /** Shared opening: the paper and the readable chapter have identical typography. */
 export default function AboutDossier() {
@@ -23,6 +24,7 @@ export default function AboutDossier() {
 
           <div className="about__portrait-frame">
             <img className="about__portrait-img" {...approvedArtwork.about} decoding="async" alt="Tim's Portrait — Build, Learn, Iterate, Repeat." />
+            <ChapterAtmosphere variant="about" />
           </div>
 
           <dl className="about__dossier-meta">

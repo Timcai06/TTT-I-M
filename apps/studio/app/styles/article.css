@@ -2,8 +2,10 @@
 
 /* ── Article (blog post) ─────────────────────────────────────────────────── */
 
+/* The article block itself stays on the rail; the reading measure is held by
+   the header and the MDX body so the head rules still run edge to edge. */
 .studio-article {
-  max-width: 780px;
+  max-width: none;
 }
 
 .studio-article > .studio-eyebrow { margin-bottom: 20px; }
@@ -14,54 +16,47 @@
 }
 
 .studio-article--post {
-  max-width: 820px;
+  max-width: none;
 }
 
 .studio-article__header {
   display: grid;
-  gap: 20px;
-  padding-bottom: 34px;
-  border-bottom: 1px solid var(--line-strong);
+  gap: var(--s3);
+  padding-bottom: var(--s4);
+  border-bottom: 1px solid var(--line-rule);
 }
 
+/* Ruled, not boxed. Every other table on the site is held by hairlines; a
+   bordered three-up here would be the only card on the site. */
 .studio-meta-strip {
   display: grid;
+  max-width: 760px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  margin: 18px 0 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  background: var(--line);
+  gap: var(--col-gap);
+  margin: var(--s2) 0 0;
+  padding: var(--s2) 0 0;
+  border-top: 1px solid var(--line-hem);
 }
 
 .studio-meta-strip div {
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
-  background: var(--bg);
+  gap: 6px;
 }
 
 .studio-meta-strip dt,
 .studio-meta-strip dd {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.studio-meta-strip dt {
-  color: var(--fg-dim);
-}
-
-.studio-meta-strip dd {
-  color: var(--fg-mute);
-}
+.studio-meta-strip dt { color: var(--v5); }
+.studio-meta-strip dd { color: var(--v2); }
 
 /* ── Case study ─────────────────────────────────────────────────────────── */
 
 .studio-case-study {
-  max-width: 900px;
+  max-width: none;
 }
 
 .studio-case-section {
@@ -102,27 +97,25 @@
 
 .studio-case-links a {
   display: inline-flex;
-  padding: 10px 12px;
-  border: 1px solid var(--line-strong);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-mute);
-  transition: border-color 0.2s, color 0.2s;
+  padding: 10px 14px;
+  border: 1px solid var(--line-rule);
+  font-size: 13.5px;
+  color: var(--v2);
+  transition: border-color 0.25s var(--ease-out), color 0.25s var(--ease-out);
 }
 
 .studio-case-links a:hover {
-  border-color: var(--accent);
-  color: var(--fg);
+  border-color: var(--line-spine);
+  color: var(--v1);
 }
 
 /* ── MDX body ────────────────────────────────────────────────────────────── */
 
 .studio-mdx {
   display: grid;
-  gap: 30px;
-  padding-top: 52px;
+  gap: var(--s4);
+  max-width: 66ch;
+  padding-top: var(--s5);
   color: var(--fg-soft);
   font-size: clamp(17px, 1.65vw, 20px);
   line-height: 1.82;
@@ -198,36 +191,12 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 40px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--fg-dim);
-  transition: color 0.2s;
+  width: auto;
+  margin-inline: var(--rail-start) auto;
+  margin-bottom: var(--s4);
+  font-size: 13.5px;
+  color: var(--v5);
+  transition: color 0.25s var(--ease-out);
 }
-.studio-back:hover { color: var(--fg-mute); }
+.studio-back:hover { color: var(--v2); }
 .studio-back::before { content: '← '; }
-
-/* ── Footer ──────────────────────────────────────────────────────────────── */
-
-.studio-footer {
-  margin-top: clamp(80px, 14vw, 160px);
-  padding-top: 28px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-dim);
-}
-.studio-footer a {
-  color: var(--fg-dim);
-  transition: color 0.2s;
-}
-.studio-footer a:hover { color: var(--fg-mute); }

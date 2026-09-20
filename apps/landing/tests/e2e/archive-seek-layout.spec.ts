@@ -101,7 +101,7 @@ test('bookmark, RETURN object and a newer navigation request retain distinct int
   const about = page.locator('#about')
   await expect(about).not.toHaveAttribute('inert', '')
   await about.locator('.about__block--manifesto').scrollIntoViewIfNeeded()
-  await expect(page.locator('.nav__link.is-active')).toHaveAttribute('aria-label', '01 · About')
+  await expect(page.locator('.nav__link.is-active')).toHaveAttribute('aria-label', 'About')
   await page.evaluate(() => {
     window.addEventListener('click', event => {
       const button = (event.target as Element | null)?.closest?.('button[aria-label="Scroll to CONTACT"]')

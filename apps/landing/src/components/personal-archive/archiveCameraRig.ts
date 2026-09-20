@@ -52,11 +52,26 @@ const STANDOFF_RATIO = 1.85
  * the surface fit.
  *
  * 1 is the fit itself, where the screen touches the viewport edge on its limiting
- * axis and the room survives only as slivers. Three quarters keeps the Index the
- * clear subject while leaving a real margin of room around it, so the first frame
- * already reads as a screen standing in a space.
+ * axis and the room survives only as slivers.
+ *
+ * This was .75, and three quarters was too generous to the room. Measured on a
+ * 1600x1000 capture it left 52% of the frame to a photograph of a lake that does
+ * no work, and put the site's own fixed nav on that photograph rather than on the
+ * page - two planes competing, neither winning. .93 fixed the proportion but kept
+ * the frame-in-a-frame: a rounded panel inset inside a bezel inside a viewport.
+ *
+ * 1 is the value the DOM panel was already built for. `--index-quad-aspect` shapes
+ * .hero__screen-page exactly like the monitor, so at coverage 1 the homography is
+ * the identity on the limiting axis: the panel maps to the quad 1:1, its container
+ * gutters land on the same pixels as the fixed nav's, and the page renders at
+ * native scale instead of being resampled. The bezel crops out of frame and the
+ * room survives as two letterbox bands, which is what the pull-back then opens.
+ *
+ * It cannot go above 1 without cost: the quad would overflow the viewport, the
+ * mapping would stop being 1:1, and the content column would drift off the nav's
+ * gutter by the amount of the overflow.
  */
-const INDEX_OPEN_COVERAGE = .75
+export const INDEX_OPEN_COVERAGE = 1
 /** How far a mid-segment inspect push may travel toward the surface fit. */
 const INSPECT_FRACTION = .35
 /** How much pointer parallax survives once the camera has docked onto a reading

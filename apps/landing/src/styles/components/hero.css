@@ -11,6 +11,8 @@
 }
 
 .hero__screen-page { display: contents; }
+.hero__room-scrim,
+.hero__register { display: none; }
 .hero__archive-marker { position: absolute; inset: 0; pointer-events: none; }
 
 @media (min-width: 769px) and (prefers-reduced-motion: no-preference) {
@@ -21,7 +23,40 @@
     isolation: isolate;
   }
 
+  .hero--archive-index .hero__room-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--index-frame, 0);
+    /* Exactly the panel's own ground. #050506 against the panel's drew a
+       measurable step across the full width at the panel's bottom edge — two
+       blacks two levels apart, which is all a seam needs to be.
+       Both were lifted off #07: thin white type on a near-pure black halates on
+       an OLED panel, and #0c reads as the same black without the smearing. */
+    background: #0c0c0d;
+  }
+
+  .hero--archive-index .hero__register {
+    position: absolute;
+    left: max(32px, calc((100% - 1280px) / 2));
+    right: max(32px, calc((100% - 1280px) / 2));
+    bottom: clamp(26px, 3.6vh, 46px);
+    z-index: 3;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgb(240 240 240 / 58%);
+    mix-blend-mode: difference;
+  }
+
   .hero--archive-index .hero__screen-page {
+    z-index: 1;
     /* The panel is shaped like the monitor it gets projected onto, not like the
        viewport.
 
@@ -41,16 +76,24 @@
     margin: auto;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    /* Centred, not bottom-packed. Packing against the floor left 170px of black
+       between the nav and the first line doing nothing, and any change to the
+       column's height moved its top edge instead of its bottom. */
+    justify-content: center;
     box-sizing: border-box;
     width: min(100%, calc(100svh * var(--index-quad-aspect)));
     height: auto;
     aspect-ratio: var(--index-quad-aspect);
-    padding-bottom: clamp(40px, 6vw, 80px);
+    /* Centred in the panel, then pushed down. The nav occupies the head of the
+       frame, so a column that is centred on the panel's own axis leaves a foot
+       roughly 100px deeper than its head — a quarter of the viewport holding
+       nothing, which reads as unfinished rather than as held space. */
+    padding-top: clamp(48px, 7.2vh, 116px);
+    padding-bottom: 0;
     overflow: hidden;
     opacity: 0;
     transform-origin: 0 0;
-    background: #070708;
+    background: #0c0c0d;
     will-change: transform, opacity;
     /* The signature frame. --index-frame is published by lib/indexFrame straight
        from the camera's pullback, so the radius is at full strength exactly while
@@ -60,45 +103,24 @@
 
        There is no inset term any more. It existed to hold the old click-enlarged
        panel off the viewport edges; the opening shot is framed by the camera
-       standing back instead, so the page fills its quad and only the corners are
-       cut. Set --index-frame-radius to 50% for a circular crop; 44px is the
-       signature and does not cut into the Index UI. */
-    --index-frame-radius: var(--radius-signature);
+       standing back instead, so the page fills its quad.
+
+       The radius is 0 and the hairline is gone. Both were drawn for a panel that
+       sat inset inside a bezel inside the viewport — a frame inside a frame
+       inside a frame. At INDEX_OPEN_COVERAGE 1 the quad reaches the viewport's
+       own edge, so a 44px radius would cut the corners off the page itself and
+       show the room through them, and the inset border would draw a box around
+       the browser window. The variable stays because the room scrim, the scroll
+       hint and the progress rail all still ride it. */
+    --index-frame-radius: 0px;
     clip-path: inset(0 0 round calc(var(--index-frame, 0) * var(--index-frame-radius)));
-    box-shadow: inset 0 0 0 1px rgb(238 233 223 / calc(var(--index-frame, 0) * .28));
   }
 
-  /* Tell the reader the page moves. The opening shot is a still, square, framed
-     panel and nothing else on it suggests scrolling; the hint rides --index-frame
-     so it retires exactly as the pull-back opens the room and answers itself. */
-  .hero--archive-index .hero__screen-page::after {
-    position: absolute;
-    right: clamp(16px, 2vw, 28px);
-    bottom: clamp(16px, 2vw, 28px);
-    z-index: 4;
-    padding: 7px 13px;
-    border: 1px solid rgb(238 233 223 / 22%);
-    border-radius: 999px;
-    color: rgb(238 233 223 / 72%);
-    font-size: 11px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: var(--index-frame, 0);
-    content: 'Scroll';
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .hero--archive-index .hero__screen-page::after {
-      animation: index-scroll-hint 2.8s ease-in-out infinite;
-    }
-    @keyframes index-scroll-hint {
-      0%, 100% { border-color: rgb(238 233 223 / 22%); }
-      50% { border-color: rgb(238 233 223 / 52%); }
-    }
-  }
-
+  /* The scroll cue is gone. It was a word reading `Scroll` in the corner — a
+     2017 convention that says the composition was not trusted to invite the
+     scroll on its own — and holding it at the foot of the text column left 130px
+     of black between the last line and it, doing nothing. `--index-frame` still
+     drives the room scrim and the progress rail, which is what it is for. */
 
   /* Fail readable, not black — the same signal the chapters already use.
      `data-archive-failed` is only set when prepareArchiveRuntime *rejects*, and a
@@ -126,21 +148,64 @@
   position: absolute;
   inset: 0;
   z-index: 0;
+  /* A plate, not a layer that happens to stop.
+
+     The image used to fill the panel and end wherever the render ended — a hard
+     horizontal at the panel's foot with dead black beneath it, a soft left
+     boundary somewhere inside the figure's shoulder, and no edge anywhere that
+     agreed with anything in the type column. Two posters glued together.
+
+     Now it is cropped like a photograph placed in a magazine: a hard left edge
+     on the seventh column, a hard top on the display's cap line and a hard foot
+     on the last baseline, bleeding off the right. The clip also takes the
+     ambiguous mass of arm and shoulder that was occupying the upper left and
+     resolving into nothing. Percentages rather than the column variables because
+     clip-path resolves against this box, which is the panel, not the container.
+     Column 7 starts at 160 + 6 × 108.67 = 812 of 1600 = 50.75%; 11.9% of the
+     panel's 854 puts the head on the display's cap line and 10.7% puts the foot
+     on the last baseline of the index, so both halves of the frame start and
+     stop together. The left edge is column 7, so the air between the two blocks is
+     column 6 exactly. The right edge is the frame's: the plate bleeds, rather
+     than stopping at x=1545 — not far enough to read as a bleed, far enough to
+     read as a mistake — or at the container margin, which made the crop cut
+     across the face. A plate that runs off the frame is a decision; one parked
+     inside four margins is a div. */
+  clip-path: inset(11.9% 0 10.7% 50.75%);
 }
 
 .hero__ghost {
   position: absolute;
   top: 50%;
-  right: clamp(-80px, 3vw, 64px);
-  width: min(54vw, 720px);
+  right: clamp(-120px, 1vw, 24px);
+  width: min(58vw, 790px);
   height: min(86vh, 820px);
   object-fit: contain;
   object-position: center;
-  opacity: 0.26;
-  filter: grayscale(1) contrast(1.42) brightness(0.82) blur(1.2px);
-  transform: translateY(-50%);
+  /* 0.26 at brightness .82 put the whole portrait between 12% and 22% luminance
+     on a 6% ground — at arm's length it was a smudge, which is the worst thing a
+     portrait can be. It is the only light source in the frame; let it be one. */
+  /* Raised from .26 so the face reads at all, then pulled back from .46 and
+     tightened onto the head: at .46 across the whole ellipse the figure carried
+     the same visual weight as the headline and the eye oscillated between them
+     instead of moving. The mask now behaves like a raking key — the jaw and
+     cheek keep the light, everything below the collar falls to true black. */
+  /* The photograph carries the picture and the point field carries its edge.
+     For eight revisions this was the other way round — the plate's whole surface
+     was a luminance-sampled dot grid, which is the default Three.js portfolio
+     flex and reads as an effect applied to a photo rather than as a picture. A
+     face has to resolve. It resolves here, and disperses where it stops. */
+  opacity: 0.96;
+  filter: grayscale(1) contrast(1.46) brightness(1.04);
+  /* The plate now stops on the container's right margin, and the head was
+     sitting on that line. Both layers shift by the same amount so the figure
+     moves inside the crop without the photograph and the point field coming
+     apart; the clip lives on the parent, so it does not travel with them. */
+  transform: translate(-36px, calc(-50% + 16px));
   mix-blend-mode: screen;
-  mask-image: radial-gradient(ellipse at 56% 48%, #000 0 46%, rgba(0, 0, 0, 0.72) 58%, transparent 78%);
+  /* Centred on the face, not on the middle of the plate. At 63%/38% the key was
+     landing on the hair and the jaw was in the falloff, which is why raising the
+     opacity brightened the wrong half of the picture. */
+  mask-image: radial-gradient(ellipse 42% 38% at 67% 52%, #000 0 30%, rgba(0, 0, 0, 0.5) 56%, transparent 80%);
   pointer-events: none;
   z-index: 0;
 }
@@ -148,84 +213,94 @@
 .hero__canvas canvas {
   position: relative;
   z-index: 1;
-}
-
-.hero__scan {
-  position: absolute;
-  top: 12%;
-  right: 0;
-  width: min(56vw, 780px);
-  height: 76vh;
-  opacity: 0.28;
-  pointer-events: none;
-  z-index: 2;
-  mix-blend-mode: screen;
-  background:
-    linear-gradient(180deg, transparent 0%, rgba(107, 143, 181, 0.22) 48%, transparent 58%),
-    repeating-linear-gradient(180deg, rgba(237, 237, 238, 0.08) 0 1px, transparent 1px 9px);
-  mask-image: radial-gradient(ellipse at 58% 48%, #000 0 42%, transparent 72%);
-}
-
-.hero__vignette {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 72% 50%,
-    rgba(10, 10, 12, 0.05) 0%,
-    rgba(10, 10, 12, 0.2) 34%,
-    rgba(10, 10, 12, 0.86) 92%
+  transform: translate(-36px, 16px);
+  /* The inverse of the photograph's own mask: no points where the face is, all
+     of them where it has gone. The two layers hand the picture to each other
+     instead of stacking a screen over an image. */
+  mask-image: radial-gradient(
+    ellipse 42% 38% at 67% 52%,
+    transparent 0 24%,
+    rgb(0 0 0 / 55%) 44%,
+    #000 72%
   );
-  z-index: 1;
 }
+
+/* The scanline layer is gone. It drew 1px horizontal lines every 9px across the
+   portrait — a CRT artefact, from when this panel was a page projected onto a
+   monitor inside a room. Full-bleed there is no monitor, so it was decorative
+   noise standing in for texture, and it was laying visible horizontal banding
+   over a halftone screen whose whole job is to read as an even field of ink. */
+
+.hero__vignette { display: none; }
 
 .hero__content {
   position: relative;
   z-index: 2;
+  /* One display size, published so the small type can be indented as a fraction
+     of it. The mono label and the sentence have to hang a hair right of the
+     display's bounding box for all three to read as one left edge, and that
+     hair is a property of the display size, not of the viewport. */
+  --hero-display: clamp(68px, 8.6vw, 138px);
+  /* One measure for the whole text column: the sentence wraps on it and the
+     evidence rule stops on it, so the column has a right edge as well as a left
+     one. `ch` was the wrong unit here — it resolves against each element's own
+     font, so a rule set in 10px mono and a sentence set in 18px serif ended on
+     two different pixels while claiming the same number.
+
+     The column system is declared here rather than implied: twelve columns and
+     an 24px gutter across the container, which is 84.67px a column on a 1600
+     frame. The text block is five of them — 519px — which is the widest it can
+     be and still stop clear of where the portrait's first points land (x≈700).
+     The rule under the sentence therefore ends on a column line instead of
+     fading out inside the image, which is what it did at 50% (x=800). */
+  --hero-gutter: 24px;
+  --hero-col: calc((100% - 11 * var(--hero-gutter)) / 12);
+  --hero-measure: min(100%, calc(5 * var(--hero-col) + 4 * var(--hero-gutter)));
 }
 
-.hero__meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg-mute);
-  margin-bottom: 32px;
-  mix-blend-mode: difference;
-}
-
-.hero__meta-block {
-  max-width: 280px;
-  line-height: 1.7;
-}
+/* The top-right identity block is gone; see the note in Hero.tsx. Its styles
+   went with it rather than being left to rot. */
 
 .hero__name {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(100px, 18vw, 320px);
-  line-height: 0.85;
-  letter-spacing: -0.06em;
+  font-size: var(--hero-display, clamp(68px, 8.6vw, 138px));
+  /* Set against the measurement, not the intention: .split-line's negative block
+     margins adjoin and collapse to the larger of the two rather than summing, so
+     the declared value and the cap-to-cap distance are not the same number.
+     0.70 measures 0.80em between the cap lines, which is where the two words
+     lock into one carved mass.
+
+     The size itself came down from 190px. A name is the one thing on a portfolio
+     a reader can already get from the tab title, the URL and the wordmark; at
+     190px it outweighed the three pieces of work below it by roughly seven to
+     one, which is the hierarchy upside down. */
+  line-height: 0.70;
+  /* Default metrics leave a hole after the `T` and a loose `C`/`a`; at this size
+     a Didone wants tightening, not the text-size fit. */
+  letter-spacing: -0.048em;
+  font-kerning: normal;
   margin: 0;
   mix-blend-mode: difference;
 }
 
-.hero__kicker {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg);
-  margin-bottom: 24px;
-  mix-blend-mode: difference;
-}
+/* One column, declared and then obeyed. The container gutter is the column, at
+   x=160 on a 1600px frame, and every piece of small type sits hard on it with no
+   indent. The display hangs off it, because bounding boxes are not edges: the
+   `T`'s crossbar serif is its leftmost point and the round `C` has to overshoot
+   further still or it reads as indented. Measured off a 1600px capture: these
+   values put the `T` at 158 and the `C` at 154 against a 160 column. */
+.hero__name .split-line:nth-of-type(1) .split-line__inner { margin-left: -0.055em; }
+.hero__name .split-line:nth-of-type(2) .split-line__inner { margin-left: -0.095em; }
 
+/* The eyebrow's styles went with the eyebrow; see the note in Hero.tsx. */
+
+/* Plain ink. A red full stop next to a red seal put two terminal marks in a row
+   after `Cai`, and the seal is the one that carries meaning. One accent, once. */
 .hero__name em {
-  font-style: italic;
+  font-style: normal;
   font-weight: 400;
-  color: var(--fg-mute);
+  color: inherit;
 }
 
 .hero__name .pretext-glyph {
@@ -234,48 +309,111 @@
 }
 
 .hero__subline {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 32px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg-soft);
+  max-width: var(--hero-measure);
+  margin: 40px 0 0;
+  /* Not the display cut, and not a fourth family either. Playfair's hairlines are
+     drawn for 200px and break up on a dark ground at 18; Inter solved that and
+     put a geometric sans in a frame that already had a display serif, a text
+     serif and a mono in it. Noto Serif SC is the text cut: it is already loaded
+     for the 蔡 in the wordmark and the seal — except that @fontsource ships it
+     without a Latin subset, so every Latin word fell straight back through to
+     Playfair and the fix changed nothing. A grotesk it is: display serif for the
+     name, Inter for text, mono for labels. Three registers, one each. */
+  font-family: var(--font-sans);
+  font-size: clamp(16px, 1.2vw, 19px);
+  font-weight: 300;
+  line-height: 1.55;
+  letter-spacing: -0.002em;
+  text-transform: none;
+  /* The page's positioning statement outranks a project caption; at one shared
+     grey they had the same optical weight. */
+  color: rgb(240 240 240 / 90%);
+  text-wrap: balance;
   mix-blend-mode: difference;
 }
 
-.hero__scroll {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--fg-mute);
+/* ── The index ──
+   The frame used to run name → nothing: no work, no date, no claim, so the eye
+   had one place to land and then quit. Then it ran name → one entry, which is
+   the anatomy of an index carrying a single row — an orphan, with a quarter of
+   the viewport empty under it. Three rows make the rule a system, give the eye a
+   third and fourth stop, and put the foot of the composition where the foot of
+   the frame is. */
+.hero__index {
+  display: block;
+  width: var(--hero-measure);
+  max-width: 100%;
+  margin-top: 46px;
+  /* No frame. Four evenly spaced full-width hairlines turned three projects into
+     a table; two dividers between three items is all the structure a list of
+     three needs, and the space above it is what separates it from the sentence. */
 }
 
-.hero__scroll svg {
-  width: 16px;
-  height: 16px;
-  animation: hint 2.2s var(--ease-inout) infinite;
+.hero__index-row {
+  display: block;
+  padding: 18px 0 20px;
+  border-bottom: 1px solid rgb(240 240 240 / 9%);
+  transition: border-color 420ms var(--ease-out);
 }
 
-@keyframes hint {
-  0%, 100% { transform: translateY(0); opacity: 0.5; }
-  50% { transform: translateY(8px); opacity: 1; }
+.hero__index-row:first-child { padding-top: 0; }
+/* The last row keeps its rule: two dividers and a frayed end read as a list
+   that ran out, not as a list that finished. */
+
+.hero__index-row:hover,
+.hero__index-row:focus-visible {
+  border-color: rgb(240 240 240 / 40%);
+}
+
+.hero__index-name {
+  /* In the display voice, not a third one. At 31px in the grotesk it was a
+     weight and a size that matched nothing else on the page; in the serif it is
+     the same voice as the name, which is the right claim to make about the work
+     the page puts forward. Not smaller than this, either: a Didone's hairlines
+     go patchy below the high twenties on a near-black ground. */
+  display: inline;
+  /* Out of the display cut. A Didone's hairlines are drawn for 140px; at 30 they
+     are already fragile and on a non-retina screen they break. One display
+     moment on the page — the name — and the work is set in the text voice at a
+     weight that can hold its own. */
+  font-family: var(--font-sans);
+  font-size: clamp(21px, 1.7vw, 27px);
+  font-weight: 500;
+  letter-spacing: -0.017em;
+  line-height: 1.15;
+  color: var(--fg);
+  /* A rule that grows under the name, not an arrow after it. `→` after a project
+     name is the affordance equivalent of a shrug, and it was the only icon in
+     the frame. */
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0 1px;
+  transition: background-size 520ms var(--ease-out);
+}
+
+.hero__index-row:hover .hero__index-name,
+.hero__index-row:focus-visible .hero__index-name {
+  background-size: 100% 1px;
+}
+
+.hero__index-note {
+  display: block;
+  margin-top: 9px;
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: 300;
+  letter-spacing: -0.002em;
+  line-height: 1.5;
+  /* Under AA at 62% of #f0f0f0 on this ground once the renderer has thinned a
+     300-weight grotesk. The dimmest grey on the page is not a style. */
+  color: rgb(240 240 240 / 66%);
 }
 
 @media (max-width: 768px) {
   .hero {
     min-height: 100svh;
     padding-bottom: clamp(22px, 6svh, 44px);
-  }
-
-  .hero__meta {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-    margin-bottom: 18px;
-    max-width: 86vw;
   }
 
   .hero__meta-block {
@@ -291,14 +429,6 @@
     mask-image: radial-gradient(ellipse at 56% 48%, #000 0 42%, rgba(0, 0, 0, 0.62) 58%, transparent 76%);
   }
 
-  .hero__scan {
-    top: 8%;
-    width: 92vw;
-    height: 72svh;
-    right: -18vw;
-    opacity: 0.22;
-  }
-
   .hero__kicker {
     max-width: 86vw;
     margin-bottom: 18px;
@@ -311,15 +441,19 @@
   }
 
   .hero__subline {
-    align-items: flex-end;
-    gap: 18px;
-    margin-top: 20px;
+    max-width: 100%;
+    margin-top: 24px;
+    font-size: 15px;
     line-height: 1.55;
   }
 
-  .hero__subline > span:first-child {
-    max-width: 260px;
+  .hero__index {
+    width: 100%;
+    margin-top: 28px;
   }
+
+  .hero__index-name { font-size: 19px; }
+  .hero__index-note { font-size: 14px; }
 }
 
 /* ── 签名手势 ──
@@ -328,9 +462,16 @@
    起笔点像素级贴住 "Cai." 的句点。这里只给兜底初值。 */
 .hero__signature {
   position: absolute;
-  left: 24%;
-  top: 60%;
-  width: clamp(230px, 21vw, 330px);
+  right: calc(max(32px, (100% - 1280px) / 2) + 24px);
+  bottom: clamp(74px, 9vh, 108px);
+  z-index: 3;
+  /* Just the stamp, in the corner. The box used to run 330px to hold a stroke
+     that wrote out 「蔡」 and trailed off through the portrait's field; then it
+     shrank to the stamp alone and sat inside the name's lockup, where it was
+     being asked to work as punctuation. A 压脚章 goes in the corner — and this
+     one is stamped on the print, inside the plate's bottom-right corner rather
+     than floating in the margin beside it. */
+  width: clamp(48px, 4.4vw, 70px);
   pointer-events: none;
   isolation: isolate;
 }
@@ -341,68 +482,25 @@
   overflow: visible;
 }
 
-.hero__signature-stroke {
-  stroke: url('#hero-signature-gradient');
-  stroke-width: 2.85;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
-  opacity: 0.96;
-  filter:
-    drop-shadow(0 0 3px rgba(255, 86, 44, 0.38))
-    drop-shadow(0 0 16px rgba(255, 43, 31, 0.16));
-}
-
-.hero__signature-glow {
-  stroke: rgba(255, 108, 58, 0.34);
-  stroke-width: 6.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
-  opacity: 0.54;
-  filter: blur(1.4px);
-}
-
-.hero__signature-hotspot {
-  position: absolute;
-  left: -1px;
-  top: -1px;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, #fff4cd 0 18%, #ff6b2f 34%, rgba(255, 43, 31, 0.3) 60%, transparent 72%);
-  box-shadow:
-    0 0 14px rgba(255, 84, 39, 0.72),
-    0 0 34px rgba(255, 43, 31, 0.32);
-  opacity: 0;
-  transform-origin: center;
-  mix-blend-mode: screen;
-  z-index: 2;
-}
-
-.hero__signature-mark {
-  position: absolute;
-  left: 55%;
-  top: 75%;
-  display: grid;
-  gap: 0.18em;
-  opacity: 0;
-  color: rgba(255, 241, 222, 0.88);
-  text-shadow:
-    0 0 12px rgba(255, 72, 35, 0.28),
-    0 0 34px rgba(255, 44, 31, 0.12);
-  transform: translateY(6px);
-  white-space: nowrap;
+/* Flat ink, no bloom. The outer glow pass and the two drop-shadows read as
+   neon, and neon fights the Didone's crispness — the whole point of the serif
+   is a hard edge. A brush leaves ink, not light. */
+/* The chop is never perfectly square to the baseline. The 3.4° tilt lives in the
+   GSAP tween (it writes the whole `transform`); the uneven edge is in the mask
+   path. Together they are the difference between a stamp and a rectangle. */
+.hero__signature-seal {
+  transform-origin: 62% 32%;
+  /* Cinnabar on paper is never fully opaque and never the loudest thing in a
+     frame. At .95 it was the highest-saturation object on the page by a long
+     way, which is backwards for a mark that is meant to be read last. */
+  opacity: 0.74;
 }
 
 @media (max-width: 768px) {
   .hero__signature {
-    width: clamp(240px, 62vw, 350px);
+    right: 16px;
+    bottom: 20px;
+    width: clamp(46px, 13vw, 64px);
   }
 
-  .hero__signature-mark {
-    left: 52%;
-    top: 78%;
-  }
 }

@@ -1,0 +1,252 @@
+/* Studio index page — the lede, the one plate, the work catalogue. */
+
+/* ── Lede ────────────────────────────────────────────────────────────────── */
+
+.lede {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--col-gap);
+  /* Both halves of this band hang from the same rule. Bottom-aligning them
+     left the two objects related by nothing a reader could see. */
+  align-items: start;
+  margin-bottom: var(--s7);
+}
+
+/* A colophon line, not an eyebrow: it names the scope of the index below, and
+   it uses both rail edges so the top of the page is held on two sides before
+   the headline arrives. */
+.lede__scope {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin: 0 0 var(--s4);
+  font-size: 13.5px;
+  color: var(--v4);
+}
+
+.lede__title {
+  grid-column: 1 / -1;
+  margin: 0 0 var(--s5);
+  font-family: var(--font-serif);
+  font-size: clamp(36px, 7.4vw, 106px);
+  font-weight: 500;
+  /* Tight enough to read as one mass, loose enough that the y descender in
+     "system" clears line two whatever word happens to sit under it. */
+  line-height: 0.94;
+  /* Tuned so line one's ink closes on the rail's right edge; one step tighter
+     and it falls 36px short, one step looser and it wraps. */
+  letter-spacing: -0.013em;
+  /* The browser's default word space is roughly 0.36em on this face; at 106px
+     that opens holes between words while the letterfit stays tight. */
+  word-spacing: -0.2em;
+  /* Line two is set larger so it closes on the same two margins line one does.
+     Sizing a line to the measure is the fat-face move; leaving it 300px short
+     is what an automatic wrap does. */
+  word-spacing: -0.06em;
+  color: var(--v1);
+}
+
+/* Optical left. Line one opens on a diagonal apex, which has to hang well past
+   the rail — roughly 9px at this size — or it reads pushed in against the
+   straight-sided i below it. Line two is pulled back by its own side bearing
+   only. */
+.lede__title span { display: block; }
+.lede__title span:nth-child(1) { margin-left: -0.056em; }
+.lede__title span:nth-child(2) {
+  margin-left: -0.034em;
+  font-size: 1.162em;
+  line-height: 0.81;
+}
+
+.lede__copy {
+  grid-column: 1 / 6;
+  margin: 0;
+  color: var(--v3);
+  font-size: clamp(16px, 1.32vw, 19px);
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  text-wrap: pretty;
+}
+
+/* ── The proof ───────────────────────────────────────────────────────────── */
+
+/* Everything else on this page opens on the rail's left edge; the proof closes
+   against the right instead, on the same vertical the index descriptions open
+   on. It is drawn in the page's own face and grey ramp rather than pasted in
+   from another product's UI. */
+.proof {
+  grid-column: 6 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s2) var(--s3);
+  align-items: baseline;
+  margin: 0;
+}
+
+.proof__count {
+  grid-row: 1;
+  font-family: var(--font-serif);
+  font-size: clamp(52px, 6.2vw, 90px);
+  font-weight: 500;
+  line-height: 0.8;
+  letter-spacing: -0.03em;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--v1);
+}
+
+.proof__note {
+  grid-row: 1;
+  max-width: 34ch;
+  margin: 0;
+  color: var(--v3);
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Twenty-three jobs, drawn to scale. The failed run is the brightest segment
+   because it is the one the page is making an argument about. */
+.proof__bar {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 2px;
+  height: 3px;
+  margin-top: var(--s2);
+}
+
+.proof__seg { display: block; }
+.proof__seg--done    { flex: 14; background: var(--v5); }
+.proof__seg--failed  { flex: 7;  background: var(--v1); }
+.proof__seg--running { flex: 1;  background: var(--v4); }
+.proof__seg--queued  { flex: 1;  background: var(--v6); }
+
+.proof__caption {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--v4);
+}
+
+/* ── Work catalogue ──────────────────────────────────────────────────────── */
+
+.catalogue__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-bottom: var(--s2);
+  font-size: 13.5px;
+  color: var(--v4);
+}
+
+.catalogue {
+  display: grid;
+  margin-bottom: var(--s6);
+  border-top: 1px solid var(--line-rule);
+}
+
+/* Six peers, set identically: one size, one rhythm, no taper and no feature
+   row. Emphasis, when it is wanted, comes from hover, not from scale. */
+.catalogue__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--row-cols);
+  gap: var(--col-gap);
+  align-items: baseline;
+  padding-block: var(--s4);
+  border-bottom: 1px solid var(--line-hem);
+}
+/* The notes section's opening rule closes this table; two rules 96px apart
+   with nothing between them is an empty band, not a terminator. */
+.catalogue__row:last-child { border-bottom: 0; }
+
+/* Only the rows that actually go somewhere light up. */
+a.catalogue__row::before {
+  content: '';
+  position: absolute;
+  inset: 0 calc(var(--gutter) * -0.38);
+  background: rgba(var(--ink), 0.035);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out);
+  pointer-events: none;
+}
+a.catalogue__row:hover::before { opacity: 1; }
+
+.catalogue__name {
+  font-family: var(--font-serif);
+  font-size: clamp(27px, 2.9vw, 42px);
+  font-weight: 500;
+  line-height: 0.92;
+  letter-spacing: -0.026em;
+  word-spacing: -0.05em;
+  color: var(--v1);
+}
+
+/* Two lines' worth of height whatever the sentence length, so the row pitch is
+   a chosen rhythm rather than a by-product of how long the copy ran. */
+.catalogue__claim {
+  font-size: 15px;
+  max-width: 46ch;
+  min-height: 3em;
+  line-height: 1.5;
+  color: var(--v3);
+  text-wrap: pretty;
+  transition: color 0.35s var(--ease-out);
+}
+
+/* Set in the grotesque, not a monospace. A mono stack column is the most
+   shipped element on developer portfolios, and it announces the architecture
+   on a page whose argument is that the architecture is not the part that
+   mattered. */
+.catalogue__stack {
+  /* Left-aligned on a grid line. Right-aligning a data lane leaves its left
+     edge ragged by 47px across the set, which reads as sloppiness. */
+  justify-self: start;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--v4);
+}
+
+a.catalogue__row:hover .catalogue__stack { color: var(--v2); }
+a.catalogue__row:hover .catalogue__claim { color: var(--v2); }
+
+
+/* ── Say something ───────────────────────────────────────────────────────── */
+
+.say {
+  display: grid;
+  gap: var(--s3);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--line-rule);
+}
+
+/* The closing gesture is the sentence; the address under it is the largest
+   grotesque on the page so the one action is not styled as the least
+   important link. The Didone stays out of it — its @ collides with whatever
+   sits either side at display size. */
+.say__lead {
+  max-width: 18ch;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(26px, 2.9vw, 42px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.024em;
+  color: var(--v1);
+}
+
+.say__address {
+  justify-self: start;
+  font-size: clamp(20px, 1.95vw, 28px);
+  line-height: 1.3;
+  color: var(--v2);
+  text-decoration: underline;
+  text-decoration-color: var(--line-spine);
+  text-underline-offset: 0.28em;
+  transition: text-decoration-color 0.3s var(--ease-out), color 0.3s var(--ease-out);
+}
+.say__address:hover {
+  color: var(--v1);
+  text-decoration-color: var(--v1);
+}

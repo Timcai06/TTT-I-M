@@ -12,6 +12,10 @@
   pointer-events: none;
   mix-blend-mode: difference;
   color: #ffffff;
+  /* The opening shot is one framed panel. A progress rail on the viewport edge
+     while the camera is still square to the monitor is chrome for a page the
+     reader has not entered yet; it arrives with the room. */
+  opacity: calc(1 - var(--index-frame, 0));
 }
 
 /* ── Active Chapter Label ── */

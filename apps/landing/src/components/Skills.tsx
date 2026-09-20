@@ -1,5 +1,6 @@
 import { skillRows as rows } from '../content'
 import { approvedArtwork } from '../content/approvedArtwork'
+import ChapterAtmosphere from './ChapterAtmosphere'
 import SkillRowItem from './skills/SkillRowItem'
 import LogoLoop from './LogoLoop'
 import type { LogoItem } from './LogoLoop'
@@ -34,9 +35,10 @@ export function SkillsWorkingSet() {
   return (
     <div className="skills-working-set">
       <div className="skills-working-set__header">
-        <span>Working set · 当前工具链</span>
-        <small>Used across shipped systems / 2026</small>
+        <span>当前工具链 / IN ROTATION</span>
+        <small>2026</small>
       </div>
+      <h3 className="skills-working-set__title">Working<br /><em>set.</em><span aria-hidden="true">↗</span></h3>
       <LogoLoop
         className="skills-working-set__loop"
         logos={workingSetLogos}
@@ -49,6 +51,7 @@ export function SkillsWorkingSet() {
         fadeOut={false}
         ariaLabel="Tools used across shipped systems"
       />
+      <p className="skills-working-set__foot"><span>10 TOOLS</span><span>INTERFACE → SYSTEM</span></p>
     </div>
   )
 }
@@ -85,7 +88,7 @@ export function StackContinuityFrame() {
   )
 }
 
-/** Approved static folio; the original photo handoff and closing tool strip remain. */
+/** Continuous artwork, with an asymmetric inventory and shared tool-loop closing. */
 export default function Skills() {
   return (
     <section className="section skills container" id="skills" style={{ position: 'relative' }}>
@@ -94,19 +97,22 @@ export default function Skills() {
         <div className="skills__folio">
           <div className="approved__index" aria-hidden="true"><span>03</span><span>// STACK</span></div>
           <img className="skills__art" {...approvedArtwork.stack} decoding="async" alt="" aria-hidden="true" />
+          <ChapterAtmosphere variant="stack" />
           <div className="skills__opening">
             <SkillsHeading />
             <p className="skills__caption">TOOLS FOR<br />IDEAS THAT<br />RUN.</p>
             <p className="skills__caption skills__caption--right">SAME<br />TOOLS<br />DIFFERENT<br />POSSIBILITIES.</p>
           </div>
-          <div className="skills__list">
-            {rows.map((row) => (
-              <SkillRowItem key={row.index} row={row} compact />
-            ))}
+          <div className="skills__inventory">
+            <div className="skills__list">
+              {rows.map((row) => (
+                <SkillRowItem key={row.index} row={row} compact />
+              ))}
+            </div>
+            <SkillsWorkingSet />
           </div>
           <div className="skills__edition-note">// BUILD A MORE OPEN TOMORROW</div>
         </div>
-        <SkillsWorkingSet />
       </div>
     </section>
   )

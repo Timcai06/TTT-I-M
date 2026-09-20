@@ -18,14 +18,20 @@ export default function WorkIndex() {
       </section>
 
       <section className="studio-work-ledger" aria-label="Work archive">
-        <div className="studio-section-label">Selected Systems</div>
+        <div className="studio-section-label studio-section-label--split">
+          <span>Selected systems</span>
+          <span>
+            {works.all().length} shipped
+            {' · '}
+            {[...new Set(works.all().map((entry) => entry.year ?? entry.meta.publishedAt?.slice(0, 4)))]
+              .filter(Boolean)
+              .join('–')}
+          </span>
+        </div>
         <div className="studio-work-ledger__list">
           {works.all().map((work, index) => (
             <Link className="studio-work-row" href={`/work/${work.slug}`} key={work.slug}>
               <span className="studio-work-row__index">{String(index + 1).padStart(2, '0')}</span>
-              <span className="studio-work-row__meta">
-                {work.year ?? work.meta.publishedAt ?? 'Now'} · {work.status ?? 'Case study'}
-              </span>
               <span className="studio-work-row__body">
                 <strong>{work.title}</strong>
                 <span>{work.summary ?? work.description}</span>

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { PerspectiveCamera } from 'three'
 import { projectArchiveQuad, samplePageLayout } from '../src/components/personal-archive/archiveReadingSurface.ts'
-import { solveArchiveCamera, type FinalArchiveCamera } from '../src/components/personal-archive/archiveCameraRig.ts'
+import { INDEX_OPEN_COVERAGE, solveArchiveCamera, type FinalArchiveCamera } from '../src/components/personal-archive/archiveCameraRig.ts'
 import { sampleStory } from '../src/core/narrative/sampleStory.ts'
 import { PERSONAL_ARCHIVE_SAMPLE_STORY as story } from '../src/core/narrative/specs.ts'
 import type { SampleSegment } from '../src/core/narrative/types.ts'
@@ -64,10 +64,23 @@ void test('the opening pull-back starts square to the monitor and lands on the e
   assert.ok(Math.abs(tl.x - bl.x) < 1e-6, 'opening quad left edge is not plumb')
   assert.ok(Math.abs(tr.x - br.x) < 1e-6, 'opening quad right edge is not plumb')
 
-  // ...and far enough back that the monitor holds about three quarters of the
-  // frame, so the room is around it rather than cropped away.
+  // ...and backed off by exactly the authored coverage, so the room reads as a
+  // held margin around the screen rather than as the subject. Asserted against
+  // the constant so the intent lives in one place, plus a floor that keeps the
+  // room from being cropped away entirely.
   const coverage = Math.max((br.y - tr.y) / layout.height, (tr.x - tl.x) / layout.width)
-  assert.ok(Math.abs(coverage - .75) < .02, `monitor holds ${coverage} of the frame, not .75`)
+  assert.ok(
+    Math.abs(coverage - INDEX_OPEN_COVERAGE) < .02,
+    `monitor holds ${coverage} of the frame, not ${INDEX_OPEN_COVERAGE}`,
+  )
+  // Never past 1: beyond it the quad overflows the viewport, the panel stops
+  // mapping 1:1 and the Index's own gutters drift off the fixed nav's.
+  // The .0015 bleed passed to projectArchiveQuad above overdraws the quad by
+  // 0.15% to hide the seam, so 1 arrives as 1.00075. Anything past that is the
+  // camera actually pushed in too far: the quad would spill off the viewport,
+  // the panel would stop mapping 1:1 and the Index's gutters would drift off the
+  // fixed nav's.
+  assert.ok(coverage <= 1.001, `the opening shot must not overflow the viewport; holds ${coverage}`)
 
   // The pull-back actually travels: the two ends are nowhere near each other.
   const travelled = Math.hypot(...open.position.map((value, axis) => value - solved('index', 1).position[axis]))

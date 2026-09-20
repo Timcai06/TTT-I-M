@@ -28,6 +28,9 @@
 @import '../components/personal-archive/personal-archive.css' layer(chapters);
 @import '../components/personal-archive/natural-room.css' layer(chapters);
 @import './components/approved-2d.css' layer(chapters);
+@import './components/chapter-atmosphere.css' layer(chapters);
+@import './components/stack-editorial.css' layer(chapters);
+@import './components/archive-return-control.css' layer(chapters);
 
 @layer utilities {
   @media (max-width: 768px) {

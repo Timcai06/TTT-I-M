@@ -514,7 +514,7 @@ export function usePretextTextInteraction(
 }
 
 /**
- * @description Intro 标题 Tim Cai. 的专用 Pretext 交互封装，固定选择 intro 字符节点和文本内容
+ * @description Intro 标题 Tim Cai 的专用 Pretext 交互封装，固定选择 intro 字符节点和文本内容
  * @dependencies 复用 usePretextTextInteraction；字符 DOM 由 Intro 组件中的 .intro__char-glyph 提供
  * @caveats 这里不要改变 text 文案，否则 Pretext 测量中心线会和 Intro 实际字符不一致
  */
@@ -526,6 +526,6 @@ export function useIntroPretextInteraction(
     enabled,
     glyphSelector: '.intro__char-glyph',
     strength: 1,
-    text: 'Tim Cai.',
+    text: 'Tim Cai',
   })
 }
