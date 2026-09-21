@@ -40,6 +40,31 @@ const PREWARM_DEADLINE_MS = 600_000
 const IMAGE_DEADLINE_MS = 90_000
 
 /**
+ * Deadline for the code and texture tasks that decide whether the door opens.
+ *
+ * Measured on production from a cold load: `chunks:pretext`, `texture:hero` and
+ * `chunks:chapters` each burned the entire three-attempt critical budget —
+ * 40.5 s of 3 x 12 s plus backoff — and were reported failed, while on the same
+ * connection `renderer:personal-archive` finished its 22.9 MB download in 116 s
+ * and `layout:chapter-pages` in 114 s. Nothing was missing: the preload snapshot
+ * ended 145 fulfilled, 0 pending, and every request returned 200. The resources
+ * arrived. Only the stopwatch had expired.
+ *
+ * Three of those four are required, and `isReadingFallbackReady` admits a
+ * visitor only when every failure is optional — so the intro never released and
+ * a cold visit was answered with the retry panel instead of the site.
+ *
+ * These were the only tasks in the manifest still on the generic 12 s default.
+ * IMAGE_DEADLINE_MS above already carries this reasoning for photographs, and it
+ * applies with more force here: these payloads are larger than any single image,
+ * they share the same window as the room, and they are the ones entry depends
+ * on. The retry does not rescue them either — a dynamic `import()` already in
+ * flight cannot be aborted, so attempts two and three re-await the promise that
+ * is still running and just spend the budget again.
+ */
+const CODE_DEADLINE_MS = 90_000
+
+/**
  * Run the laser once, offscreen, during the intro.
  *
  * Parsing its modules early removed the fetch, but the stutter entering Work is
@@ -154,10 +179,10 @@ function collectImageUrls() {
  */
 export function buildResourceManifest(): ResourceTask[] {
   const critical: ResourceTask[] = [
-    { id: 'chunks:pretext', weight: 3, label: 'Pretext', tier: 'critical', type: 'chunk', load: loadPretext },
-    { id: 'texture:hero', weight: 4, label: 'hero texture', tier: 'critical', type: 'texture', load: loadHeroTexture },
-    { id: 'fonts:document', weight: 6, label: 'fonts', tier: 'critical', type: 'font', load: loadFonts },
-    { id: 'chunks:chapters', weight: 8, label: 'chapters', tier: 'critical', type: 'chunk', load: preloadLazyChapters },
+    { id: 'chunks:pretext', weight: 3, label: 'Pretext', tier: 'critical', type: 'chunk', timeoutMs: CODE_DEADLINE_MS, load: loadPretext },
+    { id: 'texture:hero', weight: 4, label: 'hero texture', tier: 'critical', type: 'texture', timeoutMs: CODE_DEADLINE_MS, load: loadHeroTexture },
+    { id: 'fonts:document', weight: 6, label: 'fonts', tier: 'critical', type: 'font', timeoutMs: CODE_DEADLINE_MS, load: loadFonts },
+    { id: 'chunks:chapters', weight: 8, label: 'chapters', tier: 'critical', type: 'chunk', timeoutMs: CODE_DEADLINE_MS, load: preloadLazyChapters },
   ]
 
   // Prewarm, not the only load path: every one of these is an <img> the browser
@@ -195,6 +220,7 @@ export function buildResourceManifest(): ResourceTask[] {
       load: async (signal: AbortSignal) => { const { prepareSiteMedia } = await import('./mediaCache'); await prepareSiteMedia(signal) },
     }, {
       id: 'chunks:interactions', optional: true, weight: 5, label: 'Preparing project details', tier: 'visual' as const, type: 'chunk' as const,
+      timeoutMs: CODE_DEADLINE_MS,
       // The Stack -> Work handoff used to fetch and parse the laser and its Canvas UI
       // engines at the exact frame it mounted them, on top of acquiring a WebGL lease
       // and taking the first HTML capture. That is the stutter entering Work: the
