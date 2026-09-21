@@ -193,7 +193,10 @@ html[data-archive-sample-fallback] :is([data-archive-track='about-life'], [data-
   .archive-handoff-page--stack > .skills { min-height: 100%; }
   .archive-handoff-page--work { background: var(--archive-surface, var(--room-paper, #e9e0d0)); }
   .archive-handoff-page--work > .projects { min-height: 100%; }
-  .archive-handoff-page--work .projects__intro-sticky { justify-content: flex-start; }
+  /* No `justify-content` override. It existed to stop a header-only replica
+     collapsing to the middle of an otherwise empty centred flex column; the
+     replica now carries the same children as the live chapter, so the shared
+     `center` is what puts the two on the same pixels. */
   .archive-handoff-page--work .projects__header { width: 100%; }
   .archive-handoff-page--contact {
     min-height: clamp(620px, 70svh, 700px);
