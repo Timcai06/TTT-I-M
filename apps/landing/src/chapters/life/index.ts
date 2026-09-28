@@ -1,1 +1,1 @@
-export { default } from '../../components/LifeGallery'
+export { default } from './LifeGallery'

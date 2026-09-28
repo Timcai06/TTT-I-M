@@ -1,19 +1,19 @@
 import { readdirSync, readFileSync } from 'node:fs'
 
-const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
-const sectionSource = readFileSync('src/components/frame/ArchiveThemeSection.tsx', 'utf8')
-const hookSource = readFileSync('src/components/frame/useArchiveThemeScroll.ts', 'utf8')
-const slotSource = readFileSync('src/components/frame/ArchiveImageSlot.tsx', 'utf8')
+const frameSource = readFileSync('src/chapters/frame/Frame.tsx', 'utf8')
+const sectionSource = readFileSync('src/chapters/frame/ArchiveThemeSection.tsx', 'utf8')
+const hookSource = readFileSync('src/chapters/frame/useArchiveThemeScroll.ts', 'utf8')
+const slotSource = readFileSync('src/chapters/frame/ArchiveImageSlot.tsx', 'utf8')
 const bendSource = readFileSync('src/lib/canvas-ui/horizontalBend.ts', 'utf8')
 const bendMathSource = readFileSync('src/lib/canvas-ui/horizontalBendMath.ts', 'utf8')
-const bendSurfaceSource = readFileSync('src/components/frame/HorizontalBendSurface.tsx', 'utf8')
+const bendSurfaceSource = readFileSync('src/chapters/frame/HorizontalBendSurface.tsx', 'utf8')
 const bendPoolSource = readFileSync('src/lib/canvas-ui/bendCanvasPool.ts', 'utf8')
 // frame.css was split into frame/*.css (archive-theme/cluster/slot/responsive);
 // concatenate the entry + all partials so these contract checks find the rules
 // regardless of which split file they landed in.
-const frameStyleDir = 'src/styles/components/frame'
+const frameStyleDir = 'src/chapters/frame/styles/frame'
 const frameStyleSource = [
-  readFileSync('src/styles/components/frame.css', 'utf8'),
+  readFileSync('src/chapters/frame/styles/frame.css', 'utf8'),
   ...readdirSync(frameStyleDir)
     .filter((file) => file.endsWith('.css'))
     .map((file) => readFileSync(`${frameStyleDir}/${file}`, 'utf8')),

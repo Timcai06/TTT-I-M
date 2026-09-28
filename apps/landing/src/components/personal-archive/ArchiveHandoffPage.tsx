@@ -5,9 +5,9 @@ import ProjectsBento from '../../chapters/projects/ProjectsBento'
 import FooterContact from '../../chapters/contact/FooterContact'
 import FooterMeta from '../../chapters/contact/FooterMeta'
 import FooterArtwork from '../../chapters/contact/FooterArtwork'
-import { LifeIntro } from '../LifeGallery'
-import { StackContinuityFrame } from '../Skills'
-import ArchiveTextPanel from '../frame/ArchiveTextPanel'
+import { LifeIntro } from '../../chapters/life/LifeGallery'
+import { StackContinuityFrame } from '../../chapters/skills/Skills'
+import ArchiveTextPanel from '../../chapters/frame/ArchiveTextPanel'
 import type { ArchiveTrack } from './chapterTracks'
 
 /**

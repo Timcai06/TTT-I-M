@@ -1,15 +1,23 @@
 # TTT I M Platform
 
-> 当前桌面 Personal Archive 精修阶段请从 [PM 工作入口](docs/pm/README.md) 开始。任务卡、模型分工与验收以该入口为准；下方 `plan/` 为独立产品路线。
+Tim Cai's portfolio platform is an npm-workspace monorepo. The cinematic Landing and content-focused Studio share design tokens and content contracts while keeping their runtimes separate.
 
-Monorepo for Tim Cai's cinematic landing and future content studio.
+## Start here
 
-## Structure
+- [Documentation index](docs/README.md) — current architecture, runtime, asset, and verification guides.
+- [Personal Archive asset tools](tools/personal_space/README.md) — source model and reproducible website-material pipeline.
+- [Builder Graph OS roadmap](docs/roadmap/builder-graph/README.md) — a separate future product direction, not the current implementation queue.
+
+Older PM task cards and delivery reports remain under `docs/archive/personal-archive-pm/` and `docs/landing/delivery/` as historical records. Check current source and runtime behavior before treating their status or acceptance statements as current.
+
+## Workspaces and boundaries
 
 - `apps/landing` — current React/Vite portfolio landing with GSAP, Lenis, R3F, preload, Frame, and chapter runtime.
 - `apps/studio` — Next App Router content surface for `/blog`, `/work`, `/dashboard`, RSS, sitemap, and OG images.
 - `packages/tokens` — shared color/type/motion tokens consumed by both apps.
 - `packages/content` — shared content schema and repository contracts.
+
+Studio serves content through its repository interface and must not import the Landing runtime stack (GSAP, Lenis, Three, R3F, or Landing preload). Landing remains the client-side visual entry. The [architecture guide](docs/architecture/01-architecture.md) covers the chapter and cross-app boundaries.
 
 ## Commands
 
@@ -45,14 +53,4 @@ Canvas UI's HTML capture effects require Chromium's experimental `CanvasDrawElem
 - Studio brand link: set `NEXT_PUBLIC_LANDING_URL` to the deployed Landing origin so `Tim Cai Studio` returns to the cinematic landing.
 - Local defaults already point `landing:5173 → studio:5174/blog` and `studio:5174 → landing:5173`; run `npm run dev:landing` and `npm run dev:studio` in two terminals for local cross-app navigation. The landing dev server uses a strict `5173` port so Studio's return link cannot drift to the wrong app.
 
-## Runtime Boundary
-
-The studio must never import the landing runtime stack: GSAP, Lenis, Three, R3F, or the landing preload system. Studio pages are content-first SSR/SSG surfaces; landing remains the tuned client-side cinematic entry.
-
-## Documentation
-
-- `plan/README.md` — next-phase blueprint: Builder Graph OS, a GitHub-native
-  growth graph and narrative system for builders.
-- `plan/01-north-star.md` — product north star, target users, and emotional goals.
-- `plan/02-system-boundaries.md` — Landing / Studio / GitHub / DB / AI boundaries.
-- `docs/` — landing architecture and visual/runtime docs (mirrors current source).
+For command scope and limits, see [tests and guards](docs/architecture/05-tests-and-guards.md). `test:smoke` checks deployed cross-zone routes only after both apps expose the expected commit.

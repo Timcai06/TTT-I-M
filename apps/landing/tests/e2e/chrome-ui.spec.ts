@@ -60,7 +60,6 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
     // perfectly readable one.
     const footer = document.querySelector<HTMLElement>('#contact')
     const inner = footer?.querySelector<HTMLElement>('.footer__inner') ?? null
-    const ascii = footer?.querySelector<HTMLElement>('.footer__ascii') ?? null
     const irisWrap = footer?.querySelector<HTMLElement>('.contact__blob-wrap') ?? null
     const irisCore = footer?.querySelector<SVGCircleElement>('[data-iris-core]') ?? null
     if (!footer || !inner) return null
@@ -70,7 +69,6 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
       footerTop: footer.getBoundingClientRect().top,
       footerBg: getComputedStyle(footer).backgroundColor,
       innerOpacity: Number(getComputedStyle(inner).opacity),
-      asciiOpacity: ascii ? Number(getComputedStyle(ascii).opacity) : 0,
       irisWrapOpacity: irisWrap ? Number(getComputedStyle(irisWrap).opacity) : 0,
       irisWrapVisibility: irisWrap ? getComputedStyle(irisWrap).visibility : 'missing',
       irisCoreRadius: irisCore ? Number(irisCore.getAttribute('r')) : 0,
@@ -80,8 +78,9 @@ test('Direct Contact hash lands on a stable readable footer', async ({ page }) =
   expect(footerState).not.toBeNull()
   expect(footerState?.footerTop ?? Number.POSITIVE_INFINITY).toBeLessThan(220)
   expect(footerState?.innerOpacity).toBe(1)
-  expect(footerState?.asciiOpacity).toBeGreaterThan(0.3)
-  await expect(page.locator('#contact .footer__ascii pre')).toHaveCount(1)
+  await expect(page.locator('#contact .footer__art')).toBeVisible()
+  await expect.poll(() => page.locator('#contact .footer__art').evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true)
+  await expect(page.locator('#contact .footer__ascii')).toHaveCount(0)
 
   // The full-screen iris is retired on desktop, deliberately. useFooterReveal
   // computes `spatialHandoff` from the footer sitting inside

@@ -1,13 +1,12 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-// plan/02-system-boundaries.md: UI components depend on the src/content/ boundary,
+// docs/roadmap/builder-graph/02-system-boundaries.md: UI components depend on the src/content/ boundary,
 // never on src/data/* directly, so the data source is an adapter swap rather than
 // a component rewrite. This guard locks that in.
 
 const requiredContentFiles = [
   'src/content/schema.ts',
-  'src/content/repositories.ts',
   'src/content/adapters/static.ts',
   'src/content/index.ts',
 ]
@@ -27,12 +26,11 @@ function walk(dir) {
 const componentFiles = [...walk('src/components'), ...walk('src/chapters')]
   .filter((file) => /\.(ts|tsx)$/.test(file))
 const dataImport = /from\s+['"][./]*data\//
-const lifeGallerySource = readFileSync('src/components/LifeGallery.tsx', 'utf8')
+const lifeGallerySource = readFileSync('src/chapters/life/LifeGallery.tsx', 'utf8')
 const gradualBlurSource = readFileSync('src/components/GradualBlur.tsx', 'utf8')
 const driftWallSource = readFileSync('src/components/DriftWall.tsx', 'utf8')
 const borderGlowSource = readFileSync('src/components/BorderGlow.tsx', 'utf8')
-const asciiTextSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
-const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
+const frameSource = readFileSync('src/chapters/frame/Frame.tsx', 'utf8')
 const projectsSource = [
   'src/chapters/projects/ProjectsIntro.tsx',
   'src/chapters/projects/ProjectsBento.tsx',
@@ -45,7 +43,6 @@ const projectsStyleSource = [
   'src/chapters/projects/styles/enhancements.css',
 ].map((path) => readFileSync(path, 'utf8')).join('\n')
 const footerSource = readFileSync('src/chapters/contact/Footer.tsx', 'utf8')
-const footerStyleSource = readFileSync('src/styles/components/footer.css', 'utf8')
 const appStyleSource = readFileSync('src/styles/app.css', 'utf8')
 const packageManifest = JSON.parse(readFileSync('package.json', 'utf8'))
 
@@ -87,28 +84,15 @@ if (!projectsStyleSource.includes('.bento-glow') || !projectsStyleSource.include
 if (!footerSource.includes('<FooterArtwork />') || !footerSource.includes('staticArtwork: true') || footerSource.includes('<ASCIIText')) {
   throw new Error('Contact must use the approved static artwork while keeping text and links in the DOM.')
 }
-for (const needle of ["from 'three'", 'vertexShader', 'fragmentShader', 'getImageData', 'hue-rotate', 'useGLSurface', 'forceContextLoss']) {
-  if (!asciiTextSource.includes(needle)) throw new Error(`ASCIIText must preserve ${needle}.`)
-}
-
-if (!footerStyleSource.includes('.footer__ascii') || !appStyleSource.includes("./components/ascii-text.css")) {
-  throw new Error('Footer ASCIIText must keep its scoped styling and app import.')
-}
-
 for (const retired of ['ParticleContinuum', 'LaserFlow', 'Strands', 'ShapeBlur', 'SpotlightCard']) {
   if (componentFiles.some((file) => file.endsWith(`/${retired}.tsx`))) {
     throw new Error(`Retired global/duplicate effect remains: ${retired}`)
   }
 }
 
-// The repository abstraction must expose both the sync landing accessor and the
-// async (future MDX/DB) contract.
-const repoSource = readFileSync('src/content/repositories.ts', 'utf8')
-for (const needle of ['all()', 'list()', 'get(']) {
-  if (!repoSource.includes(needle)) {
-    throw new Error(`CollectionRepository must declare ${needle} (sync landing + async studio contract).`)
-  }
-}
+// The real keyed repository contract and its sync/async behavior live in
+// packages/content/src/index.ts and packages/content/tests/staticRepository.test.ts.
+// Landing keeps only its schema, adapter, and public content boundary.
 
 // Forward-looking metadata must be in the schema now (UGC publish workflow, plan 03).
 const schemaSource = readFileSync('src/content/schema.ts', 'utf8')
@@ -308,4 +292,4 @@ for (const needle of [
   }
 }
 
-console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; repository + schema + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview + GitHub Public Service + fixture tests present.`)
+console.log(`[content-layer-guards] ${componentFiles.length} component files all source data via src/content; content boundary + Builder Graph + GitHub Connector + GitHub Graph Adapter + Public Preview + GitHub Public Service + fixture tests present.`)

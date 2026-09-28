@@ -102,7 +102,7 @@ import { read, withoutComments } from './lib/source.mjs'
 // which covers failure, hang and a device that never had a room; the hero has to
 // use the same signal or it is the one surface that can still go black.
 {
-  const hero = read('src/styles/components/hero.css')
+  const hero = read('src/chapters/hero/styles/hero.css')
   if (!/html:not\(\[data-archive-sample-owner\]\)[^{]*\.hero__screen-page/.test(hero)) {
     throw new Error('hero.css must show the Index when no room has committed a frame, not only when one explicitly failed.')
   }

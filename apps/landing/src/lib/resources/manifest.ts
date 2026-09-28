@@ -14,7 +14,7 @@ import {
 
 // SCOPE = LANDING. This manifest covers only the bounded, curated landing asset
 // set. The future blog / work / UGC zones grow without bound and must NOT be
-// added here — they load lazily / via SSR. (See plan/00-principles.md.)
+// added here — they load lazily / via SSR. (See docs/roadmap/builder-graph/00-principles.md.)
 
 /**
  * Ceiling for the heavy prewarms (room, chapter pages, film/sound).

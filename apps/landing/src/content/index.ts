@@ -7,7 +7,7 @@ import { createStaticRepository } from './adapters/static'
 
 // Public content surface. UI components import types + data from here, never from
 // src/data/* directly — so the data source is an adapter swap, not a component
-// rewrite. (plan/02-system-boundaries.md)
+// rewrite. (docs/roadmap/builder-graph/02-system-boundaries.md)
 
 export * from './schema'
 

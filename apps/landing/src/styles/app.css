@@ -7,14 +7,14 @@
 @import './components/staggered-section-menu.css' layer(primitives);
 @import './components/nav.css' layer(chapters);
 @import './components/signature-mark.css' layer(primitives);
-@import './components/hero.css' layer(chapters);
-@import './components/about.css' layer(chapters);
-@import './components/about-evidence.css' layer(chapters);
-@import './components/life-gallery.css' layer(chapters);
-@import './components/frame.css' layer(chapters);
-@import './components/skills.css' layer(chapters);
+@import '../chapters/hero/styles/hero.css' layer(chapters);
+@import '../chapters/about/styles/about.css' layer(chapters);
+@import '../chapters/about/styles/about-evidence.css' layer(chapters);
+@import '../chapters/life/styles/life-gallery.css' layer(chapters);
+@import '../chapters/frame/styles/frame.css' layer(chapters);
+@import '../chapters/skills/styles/skills.css' layer(chapters);
 @import './components/logo-loop.css' layer(primitives);
-@import './components/work-transition.css' layer(chapters);
+@import '../chapters/work-transition/styles/work-transition.css' layer(chapters);
 @import './components/masked-heading.css' layer(primitives);
 @import './components/projects.css' layer(chapters);
 @import './components/scroll-expand.css' layer(effects);
@@ -23,14 +23,13 @@
 @import './components/scroll-indicator.css' layer(primitives);
 @import './components/drift-wall.css' layer(effects);
 @import './components/accordion-gallery.css' layer(primitives);
-@import './components/ascii-text.css' layer(effects);
 @import './components/border-glow.css' layer(effects);
 @import './components/particle-portal.css' layer(effects);
 @import '../components/personal-archive/personal-archive.css' layer(chapters);
 @import '../components/personal-archive/natural-room.css' layer(chapters);
 @import './components/approved-2d.css' layer(chapters);
 @import './components/chapter-atmosphere.css' layer(chapters);
-@import './components/stack-editorial.css' layer(chapters);
+@import '../chapters/skills/styles/stack-editorial.css' layer(chapters);
 @import './components/archive-return-control.css' layer(chapters);
 
 @layer utilities {

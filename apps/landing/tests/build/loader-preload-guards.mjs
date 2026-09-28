@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 
 const loaderSource = readFileSync('src/components/Loader.tsx', 'utf8')
-const aboutSource = readFileSync('src/components/About.tsx', 'utf8')
-const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
+const aboutSource = readFileSync('src/chapters/about/About.tsx', 'utf8')
+const heroSource = readFileSync('src/chapters/hero/Hero.tsx', 'utf8')
 const archiveIndexSource = readFileSync('src/components/personal-archive/ArchiveIndexSurface.tsx', 'utf8')
 const globalStyleSource = readFileSync('src/styles/global.css', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
@@ -32,9 +32,8 @@ const readinessSource = readFileSync(resourceFiles.readiness, 'utf8')
 const imageDecodeQueueSource = readFileSync(resourceFiles.imageDecodeQueue, 'utf8')
 const sharedResourceSource = readFileSync(resourceFiles.sharedResource, 'utf8')
 const taskDeadlineSource = readFileSync(resourceFiles.taskDeadline, 'utf8')
-const particlePortraitSource = readFileSync('src/components/ParticlePortrait.tsx', 'utf8')
+const particlePortraitSource = readFileSync('src/chapters/hero/ParticlePortrait.tsx', 'utf8')
 const ditherSource = readFileSync('src/components/DitherBackground.tsx', 'utf8')
-const asciiSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
 const chapterTransitionSource = readFileSync('src/components/ChapterTransition.tsx', 'utf8')
 const contextRegistrySource = readFileSync('src/lib/webgl/contextRegistry.ts', 'utf8')
 const glQualitySource = readFileSync('src/lib/webgl/quality.ts', 'utf8')
@@ -329,13 +328,6 @@ if (
 if (!ditherSource.includes("acquireContext('loader-dither')") || !ditherSource.includes('webglcontextlost') || !ditherSource.includes('contextLease.release()') || !ditherSource.includes('renderer.debug.onShaderError') || !ditherSource.includes('disposeSurface()')) {
   throw new Error('loader-dither must fail closed and release its owned context after allocation, shader, or context failure.')
 }
-for (const token of ["acquireOptionalContextWhenAvailable('contact-ascii'", 'useGLSurface', 'stopWaitingForContext()', 'webglcontextlost', 'contextLease?.release()', 'renderer.debug.onShaderError', 'recoverFromFailure']) {
-  if (!asciiSource.includes(token)) throw new Error(`Contact ASCII lifecycle is missing ${token}.`)
-}
-if (asciiSource.includes('canCreateWebGL2Context')) {
-  throw new Error('Contact ASCII must not allocate a competing WebGL2 probe before waiting for its optional lease.')
-}
-
 if (chapterTransitionSource.includes('quality.transitionParticles') || chapterTransitionSource.includes('canAcquireOptionalSurface') || chapterTransitionSource.includes("import('three')")) {
   throw new Error('ChapterTransition must stay CSS-only so chapter jumps do not acquire extra WebGL contexts.')
 }

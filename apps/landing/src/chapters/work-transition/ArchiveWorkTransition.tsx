@@ -1,4 +1,4 @@
-import WorkTransition from '../../components/WorkTransition'
+import WorkTransition from './WorkTransition'
 import ArchiveChapterBridge from '../../components/personal-archive/ArchiveChapterBridge'
 import { useMobileExperience } from '../../lib/device'
 import { useReducedMotion } from '../../lib/motion'

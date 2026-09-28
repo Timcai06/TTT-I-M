@@ -5,7 +5,7 @@ import {
   clearFrameTitleRevealStyles,
   cloneStaticFrameTitleCapture,
   pixelBufferHasVisibleAlpha,
-} from '../src/components/frame/frameTitleCapture.ts'
+} from '../src/chapters/frame/frameTitleCapture.ts'
 
 void test('Frame capture clears only GSAP reveal paint state from cloned word spans', () => {
   const removed: string[][] = [[], []]
