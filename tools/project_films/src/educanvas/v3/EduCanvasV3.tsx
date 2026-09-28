@@ -26,7 +26,7 @@ const PEN = '#d77b5f'
 /**
  * 'still'  the five approval stills stand in for their shots (a slow push so the timing reads)
  * 'test'   Codex's motion test: every 4th frame at half size, out/blender/motion-test/<film frame>.png
- * 'final'  the rendered 1920 × 1080 sequences, out/blender/P1…P5/<film frame>.png
+ * 'final'  the rendered 1920 × 1080 sequences, out/blender/v3-final/P1…P5/<film frame>.png
  */
 const PLATES = 'test' as 'still' | 'test' | 'final'
 const SHOTS = [
@@ -45,7 +45,7 @@ function Plate({ frame }: { frame: number }) {
   }
   if (PLATES === 'final') {
     const shot = SHOTS.find((s) => f >= s.from && f <= s.to) ?? SHOTS[4]
-    return <Img src={staticFile(`blender/${shot.id}/${pad4(f)}.png`)} style={{ position: 'absolute', inset: 0, width: 1920, height: 1080 }} />
+    return <Img src={staticFile(`blender/v3-final/${shot.id}/${pad4(f)}.png`)} style={{ position: 'absolute', inset: 0, width: 1920, height: 1080 }} />
   }
   // stills: each holds its shot with a slow push, and dissolves into the next over 8 frames
   return (
