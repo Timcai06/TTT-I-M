@@ -23,6 +23,9 @@ const ProductionTelemetry = lazy(() => import('./components/ProductionTelemetry'
 const ChapterTransition = lazy(() => import('./components/ChapterTransition'))
 const ArchiveStage = lazy(() => import('./components/personal-archive/ArchiveStage'))
 const ArchiveReturnControl = lazy(() => import('./components/personal-archive/ArchiveReturnControl'))
+// Requested on first render so it can download while the loader runs; if it is not
+// ready at the loader's exit beat, the loader hands off to the page without it.
+const IntroFilm = lazy(() => import('./components/film/IntroFilm'))
 
 export default function App() {
   // Smooth scroll + scroll-driven side effects (incl. the disable-hover
@@ -98,6 +101,7 @@ export default function App() {
             experience starts, the way the reference does, instead of burying it in
             the nav where nobody finds it. */}
         <Loader />
+        <Suspense fallback={null}><IntroFilm /></Suspense>
         <RoomAmbience />
         <ChapterStateProvider>
           {/* Inside the provider: useChapterState throws without one, and mounting

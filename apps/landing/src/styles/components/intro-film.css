@@ -1,0 +1,64 @@
+/* The darkroom film, between the loader and the page (components/film/IntroFilm).
+   Above the loader (20000): the loader's panel finishes fading out underneath it. */
+
+.intro-film {
+  position: fixed;
+  inset: 0;
+  z-index: 20010;
+  /* the film's own first frames: the safelight is still off */
+  background: #0f0707;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity .32s ease-out, visibility 0s linear .32s;
+}
+
+.intro-film[data-phase='playing'] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity .32s ease-out, visibility 0s;
+}
+
+.intro-film[data-phase='leaving'] {
+  opacity: 0;
+  visibility: visible;
+  pointer-events: none;
+  transition: opacity .9s cubic-bezier(.4, 0, .2, 1), visibility 0s linear .9s;
+}
+
+.intro-film__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.intro-film__skip {
+  position: absolute;
+  right: clamp(18px, 3vw, 40px);
+  bottom: clamp(18px, 3vh, 34px);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(234, 231, 223, 0.5);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  cursor: pointer;
+  opacity: 0;
+  animation: intro-film-skip-in .6s ease-out 1.2s forwards;
+}
+
+.intro-film__skip:hover,
+.intro-film__skip:focus-visible {
+  color: rgba(234, 231, 223, 0.9);
+}
+
+@keyframes intro-film-skip-in {
+  to { opacity: 1; }
+}

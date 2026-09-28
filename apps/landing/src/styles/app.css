@@ -1,4 +1,5 @@
 @import './components/intro.css' layer(chapters);
+@import './components/intro-film.css' layer(chapters);
 @import './components/cursor.css' layer(primitives);
 @import './components/glitch-text.css' layer(primitives);
 @import './components/gradual-blur.css' layer(effects);
