@@ -168,6 +168,7 @@ export type {
   Project,
   ProjectCaseStudy,
   ProjectDetailSection,
+  ProjectFilm,
   ProjectMetric,
   ProjectShot,
 } from './projects'

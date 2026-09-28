@@ -18,7 +18,7 @@
 @import './components/masked-heading.css' layer(primitives);
 @import './components/projects.css' layer(chapters);
 @import './components/scroll-expand.css' layer(effects);
-@import './components/sciscope-film.css' layer(chapters);
+@import './components/project-film.css' layer(chapters);
 @import './components/footer.css' layer(chapters);
 @import './components/scroll-indicator.css' layer(primitives);
 @import './components/drift-wall.css' layer(effects);

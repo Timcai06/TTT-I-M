@@ -94,7 +94,9 @@ const audioBytes = (() => {
   walk('dist/projects')
   return total
 })()
-const mediaBytes = statSync(join('dist/projects/sciscope', 'sciscope-concept-film.mp4')).size + audioBytes
+// Project films are fetched on demand (chapters/projects/ProjectFilm) and the intro film fetches
+// itself at low priority, so neither is prepared at boot; only the room audio is.
+const mediaBytes = audioBytes
 // The transcoder ships in two pieces now. The wasm is still a hashed asset, but
 // the JS lives inside dist/archive-basis/ktx2-worker.js, because a worker served
 // from a real path carries its own Content-Security-Policy and a blob: worker

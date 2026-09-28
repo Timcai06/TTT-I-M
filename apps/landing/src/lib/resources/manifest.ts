@@ -155,11 +155,13 @@ function collectImageUrls() {
   const projectUrls = projects.flatMap((project) =>
     project.media?.shots.flatMap((shot) => [shot.src]) ?? []
   )
+  // A film's poster is its expanding frame's first paint; the film itself is fetched on demand.
+  const filmPosters = projects.flatMap((project) => (project.film ? [project.film.poster] : []))
 
   return unique([
     '/design/approved-2d/paper-texture.webp',
     '/noise/grain-128.png',
-    '/projects/sciscope/sciscope-film-poster.jpg',
+    ...filmPosters,
     ...photos.map((photo) => photo.src),
     ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? archiveImages.map((image) => image.src) : []),
     ...projectUrls,
@@ -215,7 +217,7 @@ export function buildResourceManifest(): ResourceTask[] {
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareChapterPages } = await import('./prepareChapterPages'); await prepareChapterPages(signal) },
     }, {
-      id: 'media:site', optional: true, weight: 28, label: 'Preparing films and sound', tier: 'visual' as const, type: 'texture' as const,
+      id: 'media:site', optional: true, weight: 12, label: 'Preparing sound', tier: 'visual' as const, type: 'texture' as const,
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => { const { prepareSiteMedia } = await import('./mediaCache'); await prepareSiteMedia(signal) },
     }, {

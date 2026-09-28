@@ -1,7 +1,3 @@
-import { useSyncExternalStore } from 'react'
-
-export const FILM_URL = '/projects/sciscope/sciscope-concept-film.mp4'
-
 /**
  * The room's own sound, and the only audio the narrative plays.
  *
@@ -33,37 +29,8 @@ export const ROOM_AUDIO = {
 } as const
 export type RoomAudioName = keyof typeof ROOM_AUDIO
 
-const urls = new Map<string, string>(), listeners = new Set<() => void>()
 const roomAudio = new Map<RoomAudioName, AudioBuffer>()
-let warmVideo: HTMLVideoElement | null = null
 export const getPreparedRoomAudio = (name: RoomAudioName) => roomAudio.get(name) ?? null
-export const getPreparedMediaUrl = (source: string) => urls.get(source) ?? source
-export function usePreparedMediaUrl(source: string) {
-  return useSyncExternalStore(callback => { listeners.add(callback); return () => { listeners.delete(callback) } }, () => getPreparedMediaUrl(source), () => source)
-}
-
-async function prepareFilm(signal: AbortSignal) {
-  const response = await fetch(FILM_URL, { signal })
-  if (!response.ok) throw new Error('Site film download failed')
-  const video = await response.blob()
-  signal.throwIfAborted()
-  const objectUrl = URL.createObjectURL(video)
-  const element = document.createElement('video'); element.muted = true; element.preload = 'auto'; element.playsInline = true
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const clean = () => { signal.removeEventListener('abort', abort); element.onloadeddata = null; element.onerror = null }
-      const abort = () => { clean(); reject(signal.reason instanceof Error ? signal.reason : new Error('Media preparation aborted')) }
-      element.onloadeddata = () => { clean(); resolve() }
-      element.onerror = () => { clean(); reject(new Error('Site film first frame could not decode')) }
-      signal.addEventListener('abort', abort, { once: true }); element.src = objectUrl; element.load()
-    })
-    signal.throwIfAborted()
-    const previous = urls.get(FILM_URL); if (previous) URL.revokeObjectURL(previous)
-    warmVideo?.removeAttribute('src'); warmVideo?.load(); warmVideo = element
-    urls.set(FILM_URL, objectUrl)
-    listeners.forEach(listener => listener())
-  } catch (error) { element.removeAttribute('src'); element.load(); URL.revokeObjectURL(objectUrl); throw error }
-}
 
 /**
  * Decoded in an OfflineAudioContext so no user gesture is needed: the intro has to
@@ -84,19 +51,14 @@ async function prepareRoomAudio(signal: AbortSignal) {
 }
 
 /**
- * Film and room audio settle independently, deliberately. They shared one
- * `Promise.all` and one `try` gated on the video's `loadeddata`, so a film whose
- * first frame failed to decode discarded audio that had already decoded — the room
- * went silent because of a video it never plays. Only a total loss fails the task,
- * and the task itself is optional, so neither can hold the intro.
+ * The room's sound, prepared during the intro. Films are not: the intro film fetches itself
+ * (components/film/IntroFilm) and each project film loads when its play button is approached
+ * (chapters/projects/ProjectFilm). The task is optional, so it can never hold the intro.
  */
 export async function prepareSiteMedia(signal: AbortSignal) {
-  const [film, audio] = await Promise.allSettled([prepareFilm(signal), prepareRoomAudio(signal)])
-  signal.throwIfAborted()
-  if (film.status === 'rejected' && audio.status === 'rejected') throw film.reason
+  await prepareRoomAudio(signal)
 }
 
 if (import.meta.hot) import.meta.hot.dispose(() => {
-  warmVideo?.removeAttribute('src'); warmVideo?.load(); warmVideo = null
-  urls.forEach(url => URL.revokeObjectURL(url)); urls.clear(); roomAudio.clear()
+  roomAudio.clear()
 })

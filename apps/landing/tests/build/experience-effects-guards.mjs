@@ -12,7 +12,7 @@ const required = [
   'src/components/ParticlePortal.tsx',
   'src/components/MaskedHeading.tsx',
   'src/components/ScrollExpand.tsx',
-  'src/components/SciScopeFilm.tsx',
+  'src/chapters/projects/ProjectFilm.tsx',
   'src/lib/sound/SoundProvider.tsx',
   'src/lib/sound/SoundContext.ts',
   'src/lib/canvas-ui/particleScroll.ts',
@@ -40,8 +40,10 @@ const required = [
   'src/shaders/spark-badge/sparkBadgeSource.ts',
   'src/shaders/spark-badge/spark-badge.html',
   'src/shaders/spark-badge/spark-badge-portfolio.html',
-  'public/projects/sciscope/sciscope-concept-film.mp4',
-  'public/projects/sciscope/sciscope-film-poster.jpg',
+  'public/projects/sciscope/sciscope-film.mp4',
+  'public/projects/sciscope/sciscope-film-poster.webp',
+  'public/projects/educanvas/educanvas-film.mp4',
+  'public/projects/educanvas/educanvas-film-poster.webp',
   'public/projects/sciscope/sciscope-soundtrack.mp3',
   'public/projects/room/room-window.mp3',
   'public/projects/room/cue-entry.mp3',
@@ -130,8 +132,8 @@ const liquidMetalButton = [
   'src/shaders/liquid-metal-button/liquidMetalAdapter.ts',
 ].map(read).join('\n')
 const sparkBadgeSource = read('src/shaders/spark-badge/sparkBadgeSource.ts')
-const sciScopeFilm = read('src/components/SciScopeFilm.tsx')
-const sciScopeFilmStyle = read('src/styles/components/sciscope-film.css')
+const projectFilm = read('src/chapters/projects/ProjectFilm.tsx')
+const projectFilmStyle = read('src/styles/components/project-film.css')
 const soundProvider = read('src/lib/sound/SoundProvider.tsx')
 const globalStyle = read('src/styles/global.css')
 const nav = read('src/components/Nav.tsx')
@@ -250,8 +252,8 @@ if (/\.disable-hover\s*\{[^}]*pointer-events\s*:\s*none/s.test(globalStyle)) {
   throw new Error('Scroll performance markers must not disable Archive pointer hit-testing globally.')
 }
 
-if (!projects.includes("project.id === 'sciscope'") || !projects.includes('<SciScopeFilm />')) {
-  throw new Error('SciScopeFilm must remain directly after the normal SciScope project card.')
+if (!projects.includes('project.film ?') || !projects.includes('<ProjectFilm project={project} />')) {
+  throw new Error('A project film must sit directly after its own project card, driven by Project.film.')
 }
 for (const token of ['AboutDecryptReveal', 'about__dossier', 'approvedArtwork.about', 'about__grid--evidence']) {
   if (!about.includes(token)) throw new Error(`About Decrypt dossier is missing ${token}.`)
@@ -513,11 +515,11 @@ for (const token of ['data-archive-routing', 'data-archive-live-target', 'Mutati
 for (const token of ['normalizeLocalEffectState', 'generation', 'accept(token', 'deactivate()', 'options.destroy']) {
   if (!localEffectControl.includes(token)) throw new Error(`Local effect generation guard must retain ${token}.`)
 }
-for (const token of ['<ScrollExpand', 'useWindowScroll={!mobile}', 'enabled={!mobile && !reducedMotion}', 'sciscope-film-poster.jpg', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)']) {
-  if (!sciScopeFilm.includes(token)) throw new Error(`SciScopeFilm entrance is missing ${token}.`)
+for (const token of ['<ScrollExpand', 'useWindowScroll={!mobile}', 'enabled={!mobile && !reducedMotion}', 'src={film.poster}', 'preload="metadata"', 'controls', 'enterFilmMode', 'setEnabled(true)', '--film-accent']) {
+  if (!projectFilm.includes(token)) throw new Error(`ProjectFilm entrance is missing ${token}.`)
 }
-for (const retiredToken of ['ScrollTrigger', 'useGSAP', 'resolveSciScopePlayback', 'sciscope-film__evidence', 'sciscope-film__story', 'currentTime = target']) {
-  if (sciScopeFilm.includes(retiredToken)) throw new Error(`SciScopeFilm must not retain scroll-scrub storytelling: ${retiredToken}`)
+for (const retiredToken of ['ScrollTrigger', 'useGSAP', 'resolveSciScopePlayback', 'project-film__evidence', 'project-film__story', 'currentTime = target']) {
+  if (projectFilm.includes(retiredToken)) throw new Error(`ProjectFilm must not retain scroll-scrub storytelling: ${retiredToken}`)
 }
 for (const token of ['getBoundingClientRect().top', 'gsap.quickTo', 'ScrollTrigger.create', 'paused: true', 'readProgress']) {
   if (!scrollExpand.includes(token)) throw new Error(`ScrollExpand is missing its live-position GSAP driver: ${token}`)
@@ -528,11 +530,11 @@ if (scrollExpand.includes('trigger: trackNode') || scrollExpand.includes("start:
 if (!/\.scroll-expand__stage\s*\{[^}]*position:\s*sticky/s.test(scrollExpandStyle)) {
   throw new Error('ScrollExpand must keep its stage section-bound with native sticky positioning.')
 }
-if (!sciScopeFilmStyle.includes('aspect-ratio: 16 / 9') || sciScopeFilmStyle.includes('height: 760svh')) {
-  throw new Error('SciScopeFilm must keep the original film unscripted inside its sound-enabled dialog.')
+if (!projectFilmStyle.includes('aspect-ratio: 16 / 9') || projectFilmStyle.includes('height: 760svh')) {
+  throw new Error('ProjectFilm must keep each film unscripted inside its sound-enabled dialog.')
 }
-if (!sciScopeFilmStyle.includes('100dvh - 86px') || !sciScopeFilmStyle.includes('100dvh - 32px')) {
-  throw new Error('SciScopeFilm must reserve viewport height for both its title bar and safe-area margins.')
+if (!projectFilmStyle.includes('100dvh - 86px') || !projectFilmStyle.includes('100dvh - 32px')) {
+  throw new Error('ProjectFilm must reserve viewport height for both its title bar and safe-area margins.')
 }
 if (!app.includes('SoundProvider') || !nav.includes('aria-pressed={soundEnabled}')) {
   throw new Error('The global opt-in sound provider and accessible nav toggle must remain wired.')
@@ -542,13 +544,20 @@ for (const requiredSoundToken of ['MASTER_GAIN = 0.28', 'FADE_SECONDS = 0.18', '
 }
 // Nothing audible may sit on the critical path. The intro has to be able to finish
 // for a reader who never turns sound on, and the room audio is six more requests.
-if (/sciscope-concept-film|sciscope-soundtrack|projects\/room\//.test(loader)) {
+if (/-film\.mp4|sciscope-soundtrack|projects\/room\//.test(loader)) {
   throw new Error('Film and room audio must not enter the critical Loader manifest.')
 }
 
-const filmBytes = statSync('public/projects/sciscope/sciscope-concept-film.mp4').size
+// Project films play on demand, full quality first (tim, 2026-09-28): they are never preloaded,
+// so there is no small ceiling — only a sanity bound against an unencoded master, and a check
+// that the preload manifest never names one.
+const manifestSource = read('src/lib/resources/manifest.ts')
+if (/-film\.mp4/.test(manifestSource)) throw new Error('Project films must load on demand, never from the preload manifest.')
+for (const film of ['public/projects/sciscope/sciscope-film.mp4', 'public/projects/educanvas/educanvas-film.mp4']) {
+  const bytes = statSync(film).size
+  if (bytes > 60_000_000) throw new Error(`${film} exceeds 60 MB; it looks like an unencoded master: ${bytes}`)
+}
 const soundtrackBytes = statSync('public/projects/sciscope/sciscope-soundtrack.mp3').size
-if (filmBytes > 5_500_000) throw new Error(`SciScope film exceeds 5.5 MB: ${filmBytes}`)
 if (soundtrackBytes > 700_000) throw new Error(`SciScope soundtrack exceeds 700 KB: ${soundtrackBytes}`)
 // The bed loops for the whole visit and the cues fire on every chapter change, so
 // they are fetched by anyone who enables sound. The bed is 24 s of mono at 64 kbps;

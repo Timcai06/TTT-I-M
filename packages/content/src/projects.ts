@@ -60,6 +60,31 @@ interface ProjectCaseStudy {
 }
 
 /**
+ * 项目片：作品章节里随滚动展开、点击后有声播放的一支短片（tools/project_films 渲染）。
+ * 视频只在访客打开或悬停播放按钮时才下载，不进入开屏预加载；海报图随作品图片一起预备。
+ */
+interface ProjectFilm {
+  /** 视频，/projects/<id>/ 下（vercel.json 的长缓存规则覆盖这里）。 */
+  src: string
+  /** 海报图：展开区的底图，也是视频的首帧占位。 */
+  poster: string
+  /** 海报图的替代文本。 */
+  posterAlt: string
+  /** 播放器标题栏和按钮旁显示的时长，如 `00:24`。 */
+  duration: string
+  /** 展开前压在海报上的两行标题（`\n` 换行）。 */
+  teaser: string
+  /** 展开后的小标题，如 `EDUCANVAS / PROJECT FILM · 2026`。 */
+  label: string
+  /** 展开后的主标题（`\n` 换行）。 */
+  heading: string
+  /** 展开后的一段说明。 */
+  body: string
+  /** 片子经过的四个阶段，显示在按钮下方。 */
+  path: [string, string, string, string]
+}
+
+/**
  * 项目条目定义 —— Projects 组件的完整数据契约。
  * 每个项目在内容区展示为卡片：左侧文本信息 + 右侧媒体展示。
  * @dependencies Projects 组件直接消费此类型数组；`content/index.ts` 重导出供 UI 使用
@@ -96,6 +121,8 @@ interface Project {
   }
   /** 只收录现有材料中可核验的量化证据。 */
   metrics?: ProjectMetric[]
+  /** 可选项目片；存在时卡片下方出现展开区和播放器。 */
+  film?: ProjectFilm
   /** 可选长案例正文；缺失时由现有 description/highlights 组成详情。 */
   detail?: {
     lede?: string
@@ -341,6 +368,17 @@ const landingProjects: Project[] = [
         projectShot('/projects/sciscope/claim-grounding.webp', '论断核查与证据接地流程', 'SciScope 中文论断跨语言接地英文证据的流程', 1600, 1000),
       ],
     },
+    film: {
+      src: '/projects/sciscope/sciscope-film.mp4',
+      poster: '/projects/sciscope/sciscope-film-poster.webp',
+      posterAlt: 'A paper page with one sentence highlighted, linked by a thread to a Chinese claim and stamped SUPPORTED',
+      duration: '00:24',
+      teaser: 'One claim.\nFollowed to its source.',
+      label: 'SCISCOPE / PROJECT FILM · 2026',
+      heading: 'Research that can\nshow its work.',
+      body: 'A Chinese claim goes in; the agent searches 159,187 papers two ways, fuses the rankings, and follows one thread across languages to the sentence that supports it.',
+      path: ['CLAIM', 'RETRIEVE', 'EVIDENCE', 'CALIBRATE'],
+    },
     metrics: [
       {
         label: '论文资产',
@@ -375,6 +413,17 @@ const eduCanvasProject: Project = {
   year: '2026',
   github: 'https://github.com/Timcai06/EduCanvas',
   accent: '#8192d8',
+  film: {
+    src: '/projects/educanvas/educanvas-film.mp4',
+    poster: '/projects/educanvas/educanvas-film-poster.webp',
+    posterAlt: 'The Agent Loop as a ring of six stations, with education capabilities snapped onto it',
+    duration: '00:24',
+    teaser: 'One question.\nOne Agent Loop.',
+    label: 'EDUCANVAS / PROJECT FILM · 2026',
+    heading: 'Every kind of work,\none loop.',
+    body: 'A question typed into the real home screen travels one Agent Loop; education plugs in as Profile, Skills and Tools, and the answer arrives as structured learning.',
+    path: ['QUESTION', 'LOOP', 'ANSWER', 'FOCUS'],
+  },
   media: {
     kind: 'ui',
     shots: [
@@ -388,6 +437,7 @@ const eduCanvasProject: Project = {
 export type {
   MediaKind,
   Project,
+  ProjectFilm,
   ProjectCaseStudy,
   ProjectDetailSection,
   ProjectMetric,

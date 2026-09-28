@@ -121,7 +121,7 @@ const requiredManifestInputs = [
   'srcSet',
   'loadResponsiveImage',
   'grain-128.png',
-  'sciscope-film-poster.jpg',
+  'filmPosters',
   'chunks:pretext',
   'texture:hero',
   'shader:liquid-metal',

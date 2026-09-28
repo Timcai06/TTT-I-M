@@ -34,7 +34,7 @@ test('project case study traps focus, pauses Lenis, and restores the trigger', a
   await expect(page.locator('body')).not.toHaveAttribute('data-project-dialog-open', 'true')
 })
 
-test('project images open PhotoSwipe while SciScope film remains independent', async ({ page }) => {
+test('project images open PhotoSwipe while project films remain independent', async ({ page }) => {
   await waitForProjects(page)
   const mediaLink = page.locator('[data-project-id] .media-frame__open').first()
   await mediaLink.scrollIntoViewIfNeeded()
@@ -43,8 +43,8 @@ test('project images open PhotoSwipe while SciScope film remains independent', a
   await page.keyboard.press('Escape')
   await expect(page.locator('.pswp')).toHaveCount(0)
 
-  await expect(page.locator('.sciscope-film video')).not.toHaveClass(/pswp/)
-  await expect(page.locator('.sciscope-film .media-frame__open')).toHaveCount(0)
+  await expect(page.locator('.project-film video').first()).not.toHaveClass(/pswp/)
+  await expect(page.locator('.project-film .media-frame__open')).toHaveCount(0)
 })
 
 test('mobile Projects uses an Embla rail without claiming vertical touch gestures', async ({ page }) => {

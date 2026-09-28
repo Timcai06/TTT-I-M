@@ -23,7 +23,7 @@ test('core Landing narrative remains usable across browser engines', async ({ pa
   await page.goto('/#projects', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
   await expect(page.locator('#projects .border-glow-card')).toHaveCount(6)
-  await expect(page.locator('.sciscope-film')).toHaveAttribute('data-mode', 'scroll-expand')
+  await expect(page.locator('.project-film').first()).toHaveAttribute('data-mode', 'scroll-expand')
   expect(fatalErrors, fatalErrors.join('\n')).toEqual([])
 })
 

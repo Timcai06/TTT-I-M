@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { projects, type Project, type ProjectShot } from '../../content'
-import SciScopeFilm from '../../components/SciScopeFilm'
+import ProjectFilm from './ProjectFilm'
 import ProjectGlassSurface from '../../components/effects/ProjectGlassSurface'
 import { requestParticlePortal } from '../../lib/particlePortal'
 import { requestPointerHitTest } from '../../lib/pointerCoordinator'
@@ -194,7 +194,7 @@ export default function Projects() {
                 onOpenCaseStudy={openCaseStudy}
               />
             </ProjectGlassSurface>
-            {project.id === 'sciscope' ? <SciScopeFilm /> : null}
+            {project.film ? <ProjectFilm project={project} /> : null}
           </Fragment>
         ))}
       </div>

@@ -41,7 +41,7 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
   await expect(page.locator('.archive-editorial-copy')).toHaveCount(3)
   await expect(page.locator('.archive-theme-section__track')).toHaveCount(3)
   await expect(page.locator('.bento-glow')).toHaveCount(6)
-  await expect(page.locator('.sciscope-film')).toHaveCount(1)
+  await expect(page.locator('.project-film')).toHaveCount(2)
   await expect(page.locator('.nav__sound-button')).toHaveAttribute('aria-pressed', 'false')
 
   // Ownership, not a count.
@@ -145,16 +145,16 @@ test('Stack reading surface remains visible without the retired flow animation',
   await expect(skills.locator('.skills__flow-svg, .skills__flow-active')).toHaveCount(0)
 })
 
-test('SciScope opens as one uninterrupted film with its original sound', async ({ page }) => {
+test('the SciScope project film opens as one uninterrupted film with its sound', async ({ page }) => {
   await waitForLive(page)
   await page.setViewportSize({ width: 1440, height: 760 })
   await page.evaluate(() => window.history.replaceState(null, '', '#projects'))
 
-  const film = page.locator('.sciscope-film')
+  const film = page.locator('.project-film[data-film="sciscope"]')
   await film.scrollIntoViewIfNeeded()
   await expect(film).toHaveAttribute('data-mode', 'scroll-expand')
-  await expect(film.locator('.sciscope-film__expand')).toBeVisible()
-  await expect(film.locator('.sciscope-film__story, .sciscope-film__evidence, .sciscope-film__score')).toHaveCount(0)
+  await expect(film.locator('.project-film__expand')).toBeVisible()
+  await expect(film.locator('.project-film__story, .project-film__evidence, .project-film__score')).toHaveCount(0)
 
   const expandedScroll = await film.locator('.scroll-expand__track').evaluate((track) => {
     const top = track.getBoundingClientRect().top + window.scrollY
@@ -162,10 +162,10 @@ test('SciScope opens as one uninterrupted film with its original sound', async (
   })
   await page.evaluate((scrollTop) => window.scrollTo({ top: scrollTop, behavior: 'auto' }), expandedScroll)
   await expect(film.locator('.scroll-expand__overlay')).toHaveCSS('opacity', '1')
-  const playButton = film.frameLocator('.sciscope-film__liquid-play .liquid-metal-button__frame').locator('#btn')
-  await expect(playButton).toHaveAttribute('aria-label', 'PLAY ORIGINAL CUT')
+  const playButton = film.frameLocator('.project-film__liquid-play .liquid-metal-button__frame').locator('#btn')
+  await expect(playButton).toHaveAttribute('aria-label', 'PLAY FILM')
   await playButton.click()
-  const modal = page.locator('.sciscope-film__dialog')
+  const modal = film.locator('.project-film__dialog')
   const video = modal.locator('video')
   await expect(modal).toBeVisible()
   await expect(film).toHaveAttribute('data-state', 'playing')
@@ -175,7 +175,7 @@ test('SciScope opens as one uninterrupted film with its original sound', async (
   await expect(modal.locator('img')).toHaveCount(0)
 
   const filmBounds = await modal.evaluate((dialog) => {
-    const panel = dialog.querySelector<HTMLElement>('.sciscope-film__dialog-panel')
+    const panel = dialog.querySelector<HTMLElement>('.project-film__dialog-panel')
     const filmVideo = dialog.querySelector<HTMLVideoElement>('video')
     const dialogRect = dialog.getBoundingClientRect()
     const panelRect = panel!.getBoundingClientRect()
@@ -194,10 +194,10 @@ test('SciScope opens as one uninterrupted film with its original sound', async (
   expect(filmBounds.panelBottom).toBeLessThanOrEqual(filmBounds.viewportHeight - 12)
   expect(filmBounds.videoBottom).toBeLessThanOrEqual(filmBounds.viewportHeight - 13)
 
-  await modal.getByRole('button', { name: 'Close concept film' }).click()
+  await modal.getByRole('button', { name: 'Close the SciScope film' }).click()
   await expect(modal).not.toBeVisible()
   await expect(film).toHaveAttribute('data-state', 'ready')
-  await expect(film.locator('.sciscope-film__liquid-play .liquid-metal-button__frame')).toBeFocused()
+  await expect(film.locator('.project-film__liquid-play .liquid-metal-button__frame')).toBeFocused()
 })
 
 test('desktop life archive uses seven equal-width columns with varied photographs', async ({ page }) => {
