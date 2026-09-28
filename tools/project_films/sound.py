@@ -260,6 +260,76 @@ def sciscope():
     finish(m, s, 'sciscope')
 
 
+def educanvas_v3():
+    """v3: one lesson. A pixel breathes; the numbers wake; a face; features; the product; one full stop.
+    Cue frames mirror src/educanvas/v3/EduCanvasV3.tsx (780 frames, 26 s)."""
+    D = 26.0
+    m, s = buf(D), buf(D)
+    # P1 · 0–89 · one pixel breathes on the beat, a little brighter each time; the number resolves
+    pad(m, 0, 100, ['F2', 'C3'], level=0.06, cutoff=500, attack=2.2)
+    for i, f in enumerate((6, 26, 46, 66)):
+        S.place(s, S.stereo(glass(S.hz('F6'), 0.025 + 0.012 * i), 0.1), t(f))
+    piano(m, 80, 'C5', 1.5, 0.12, 0.5, 0.1)
+    # P2 · 90–269 · the field wakes under the camera: a granular patter that swells and thins
+    S.place(s, S.stereo(whoosh(1.2, 0.05), -0.2), t(84))
+    pad(m, 90, 280, ['F2', 'C3', 'A3', 'E4'], level=0.085, cutoff=1100, attack=1.4)
+    for f in range(100, 262):
+        dens = np.sin(np.pi * (f - 100) / 162) ** 1.5
+        if rng.random() < 0.25 + 1.2 * dens:
+            S.place(s, S.stereo(S.tick(0.006 + 0.012 * dens * rng.random()), rng.uniform(-0.8, 0.8)), t(f + rng.random()))
+    for i, note in enumerate(['C5', 'D5', 'F5', 'G5', 'A5', 'G5', 'C6']):          # 「在计算机眼里，」 glyph by glyph
+        piano(m, 160 + i * 2, note, 0.9, 0.1 + 0.01 * i, 0.55, -0.3 + 0.1 * i)
+    # P3 · 270–389 · the crane up: the harmony opens, a low swell under the reveal; the sentence lands
+    pad(m, 270, 392, ['Bb1', 'F2', 'D3', 'A3', 'C4', 'E4'], level=0.11, cutoff=1900, attack=0.8)
+    S.place(m, S.stereo(S.sine_swell(S.hz('F2'), 2.2, 0.06, trem=0.0), 0), t(262))
+    S.place(m, S.stereo(S.thump(0.28, 52), 0), t(290))
+    for k, note in enumerate(['Bb2', 'F3', 'D4', 'A4', 'C5']):
+        piano(m, 290 + k, note, 3.5, 0.2 - 0.02 * k, 0.55, -0.3 + 0.15 * k)
+    # P4 · 390–539 · the features rise: a glass note per cluster, climbing
+    S.place(s, S.stereo(whoosh(0.8, 0.05, rise=False), 0), t(384))
+    pad(m, 390, 545, ['D2', 'A2', 'F3', 'C4', 'E4'], level=0.1, cutoff=1500, attack=0.4)
+    notes = ['F5', 'G5', 'A5', 'C6', 'D6', 'F6', 'G6', 'A6']
+    for i in range(16):
+        S.place(s, S.stereo(glass(S.hz(notes[i % 8]) * (1 + (i // 8)), 0.035), -0.7 + 1.4 * (i % 8) / 7), t(392 + i * 3.6))
+    for i, note in enumerate(['A4', 'C5', 'D5']):                                    # 「AI 先找特征，再做判断。」
+        piano(m, 410 + i * 6, note, 1.2, 0.1, 0.5, 0.2)
+    # 540–629 · the product rises; the camera pushes in; the pen draws; correct
+    S.place(s, S.stereo(whoosh(1.0, 0.07, rise=False), 0), t(532))
+    S.place(m, S.stereo(S.thump(0.26, 56), 0), t(560))
+    pad(m, 545, 632, ['F2', 'C3', 'G3', 'A3', 'E4'], level=0.1, cutoff=1700, attack=0.3)
+    S.place(s, S.stereo(whoosh(0.9, 0.045), 0.1), t(568))                           # the push-in
+    S.place(s, S.stereo(glide_pen(0.47), 0.2), t(594))                              # the underline
+    S.place(s, S.stereo(layer(key_click(0.09), S.tick(0.05)), 0.3), t(606))         # 回答正确
+    S.place(s, S.stereo(glass(S.hz('E6'), 0.07), 0.3), t(607))
+    for i in range(10):                                                              # 掌握度 counts to 74%
+        S.place(s, S.stereo(S.tick(0.012), 0.35), t(610 + i * 1.6))
+    for i, note in enumerate(['C5', 'E5', 'G5']):                                    # 「学会了，系统也知道。」
+        piano(m, 574 + i * 6, note, 1.4, 0.11, 0.5, -0.1)
+    # P5 · 630–719 · the product falls away; the field goes dark; one pixel rises. Half a beat of silence.
+    S.place(s, S.stereo(whoosh(0.8, 0.05, rise=False), 0), t(628))
+    S.place(m, S.stereo(S.sine_swell(S.hz('C3'), 1.6, 0.04, trem=0.0), 0), t(636))
+    S.place(s, S.stereo(whoosh(1.1, 0.035), 0.2), t(650))
+    # 690–779 · the name lands letter by letter; the full stop hops once
+    for i in range(9):
+        S.place(s, S.stereo(key_click(0.03), -0.4 + 0.1 * i), t(690 + i * 2))
+    S.place(m, S.stereo(S.thump(0.4, 48), 0), t(690))
+    for k, note in enumerate(['F2', 'C4', 'F4', 'A4', 'G5']):
+        piano(m, 690 + k, note, 4.5, 0.27 - 0.03 * k, 0.58, -0.3 + 0.15 * k)
+    S.place(s, S.stereo(glass(S.hz('C7'), 0.1), 0.3), t(706))
+    S.place(s, S.stereo(glass(S.hz('C7'), 0.035), 0.3), t(716))
+    pad(m, 700, 780, ['F2', 'C3', 'E3', 'A3', 'G4'], level=0.075, cutoff=1000, attack=0.6, release=2.5)
+    finish(m, s, 'educanvas-v3', dur=D)
+
+
+def glide_pen(dur, level=0.05):
+    """The pen's stroke: a short bright band of noise that moves left to right."""
+    n = int(dur * SR)
+    tt = np.arange(n) / SR
+    env = np.sin(np.pi * tt / dur) ** 1.5
+    noise = S.bandpass(rng.normal(0, 1, n), 4200, 1.4) * env
+    return level * noise
+
+
 # ───────────────────────── the competition film (src/pitch/Pitch.tsx) ─────────────────────────
 CUES = json.loads((HERE / 'src/pitch/cues.json').read_text())
 VOICE = OUT / 'voice'

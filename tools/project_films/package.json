@@ -10,7 +10,8 @@
     "render:sciscope": "./render.sh SciScope sciscope",
     "capture:loop": "node capture/take-loop.mjs",
     "capture:cut": "node capture/cut.mjs",
-    "render:pitch": "./render.sh Pitch pitch"
+    "render:pitch": "./render.sh Pitch pitch",
+    "render:educanvas-v3": "./render.sh EduCanvas-v3 educanvas-v3"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
