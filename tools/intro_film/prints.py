@@ -34,7 +34,7 @@ def load_gray(name, crop=None):
     return g
 
 
-def print_sheet(gray, p, sheet=(2030, 2540), border=0.06, align=0.5):
+def print_sheet(gray, p, sheet=(2030, 2540), border=0.06, align=0.5, lift=1.0):
     """gray: 0..1 luminance. Returns an RGB print on a portrait sheet."""
     H, W = sheet[1], sheet[0]
     b = int(W * border)
@@ -48,7 +48,7 @@ def print_sheet(gray, p, sheet=(2030, 2540), border=0.06, align=0.5):
     img = img.crop((left, top, left + iw, top + ih))
     g = np.asarray(img, dtype=np.float32) / 255.0
     # print contrast: grade 3-ish curve
-    g = np.clip((g - 0.04) / 0.9, 0, 1) ** 1.15
+    g = np.clip((g - 0.04) / 0.9, 0, 1) ** (1.15 * lift)
     density = 1.0 - g                       # 1 = full black
     # development: each density arrives at its own time; darker first.
     arrive = 0.15 + 0.7 * (1.0 - density)   # shadows arrive ~0.15, highlights ~0.85
@@ -81,5 +81,7 @@ if __name__ == '__main__':
     }
     for key, (name, p, crop) in jobs.items():
         sheet = (2540, 2030) if name in ('football-action', 'shanghai-skyline', 'tui-product') else (2030, 2540)
-        print_sheet(load_gray(name, crop), p, sheet=sheet, align=1.0 if name == 'tim' else 0.5).save(OUT / f'{key}.png')
+        # the three that develop in the tray are printed lighter, so their midtones read under red
+        lift = 0.62 if name in ('football-action', 'tui-product', 'shanghai-skyline') else 1.0
+        print_sheet(load_gray(name, crop), p, sheet=sheet, align=1.0 if name == 'tim' else 0.5, lift=lift).save(OUT / f'{key}.png')
         print(key)

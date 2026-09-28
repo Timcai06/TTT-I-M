@@ -1,0 +1,473 @@
+{
+  "blender_version": "5.2.1 LTS",
+  "units": "metres",
+  "asset_scene": "DR_Assets",
+  "asset_scene_has_lights_cameras_world": false,
+  "families": {
+    "DR_Tray": {
+      "pivot": "centre of underside of floor; interior floor at z=0.0035 m",
+      "close": [
+        0.147,
+        -0.19,
+        0.061
+      ],
+      "direction": [
+        1.15,
+        -1.4,
+        1.5
+      ],
+      "macro_direction": [
+        0.6,
+        -1.0,
+        1.15
+      ],
+      "macro_distance": 0.31,
+      "bounds": [
+        [
+          -0.15700000524520874,
+          -0.20620021224021912,
+          0.0
+        ],
+        [
+          0.1662002056837082,
+          0.19699999690055847,
+          0.06199999898672104
+        ]
+      ],
+      "root": "DR_Tray_Root",
+      "objects": 12,
+      "base_mesh_vertices": 1512,
+      "dimensions_m": [
+        0.3232002258300781,
+        0.4032002091407776,
+        0.06199999898672104
+      ]
+    },
+    "DR_Tongs": {
+      "pivot": "each variant root is the midpoint between the two tip ends",
+      "close": [
+        0.047,
+        0.018,
+        0.006
+      ],
+      "direction": [
+        0.7,
+        -1.2,
+        1.65
+      ],
+      "macro_direction": [
+        0.55,
+        -0.6,
+        1
+      ],
+      "macro_distance": 0.24,
+      "bounds": [
+        [
+          -0.06687082350254059,
+          0.0,
+          0.000324076070683077
+        ],
+        [
+          0.06687082350254059,
+          0.2029999941587448,
+          0.012905354611575603
+        ]
+      ],
+      "root": "DR_Tongs_Root",
+      "objects": 45,
+      "base_mesh_vertices": 10480,
+      "dimensions_m": [
+        0.13374164700508118,
+        0.2029999941587448,
+        0.012581278569996357
+      ]
+    },
+    "DR_Paper": {
+      "pivot": "each sheet origin is the centre of its physical top edge",
+      "close": [
+        -0.23,
+        0,
+        0.085
+      ],
+      "direction": [
+        0.6,
+        -1.8,
+        0.55
+      ],
+      "macro_direction": [
+        0.7,
+        -1,
+        0.2
+      ],
+      "macro_distance": 0.27,
+      "bounds": [
+        [
+          -0.24650001525878906,
+          -0.00015000003622844815,
+          -2.9802322387695312e-08
+        ],
+        [
+          0.2720000147819519,
+          0.00015000003622844815,
+          0.2540000081062317
+        ]
+      ],
+      "root": "DR_Paper_Root",
+      "objects": 3,
+      "base_mesh_vertices": 26058,
+      "dimensions_m": [
+        0.518500030040741,
+        0.0003000000724568963,
+        0.2540000379085541
+      ]
+    },
+    "DR_Clothespin": {
+      "pivot": "steel spring axis; local Y is the opening hinge axis",
+      "close": [
+        0.002,
+        -0.001,
+        0.016
+      ],
+      "direction": [
+        0.75,
+        -1.1,
+        1.0
+      ],
+      "macro_direction": [
+        0.6,
+        -1,
+        0.7
+      ],
+      "macro_distance": 0.24,
+      "macro_lens": 100,
+      "bounds": [
+        [
+          -0.03700000047683716,
+          -0.0067126075737178326,
+          0.0
+        ],
+        [
+          0.03686666861176491,
+          0.00671861506998539,
+          0.026000000536441803
+        ]
+      ],
+      "root": "DR_Clothespin_Root",
+      "objects": 6,
+      "base_mesh_vertices": 64,
+      "dimensions_m": [
+        0.07386666536331177,
+        0.01343122310936451,
+        0.026000000536441803
+      ]
+    },
+    "DR_Line": {
+      "pivot": "left endpoint of the 2 m line; rest sag is 85 mm below endpoints",
+      "close": [
+        1,
+        0,
+        -0.085
+      ],
+      "direction": [
+        0.25,
+        -1.7,
+        0.8
+      ],
+      "macro_direction": [
+        0.1,
+        -1,
+        0.75
+      ],
+      "macro_distance": 0.22,
+      "macro_lens": 100,
+      "bounds": [
+        [
+          -0.0001648085453780368,
+          -0.0018081653397530317,
+          -0.08632761240005493
+        ],
+        [
+          2.00018048286438,
+          0.0018081635935232043,
+          0.0012202775105834007
+        ]
+      ],
+      "root": "DR_Line_Root",
+      "objects": 269,
+      "base_mesh_vertices": 0,
+      "dimensions_m": [
+        2.000345230102539,
+        0.0036163288168609142,
+        0.08754789084196091
+      ]
+    },
+    "DR_Sink": {
+      "pivot": "base centre; basin outer floor at Z=0",
+      "close": [
+        0.49,
+        0.04,
+        0.01
+      ],
+      "direction": [
+        1.1,
+        -1.8,
+        1.3
+      ],
+      "macro_direction": [
+        0.4,
+        -1,
+        1.1
+      ],
+      "macro_distance": 0.35,
+      "macro_lens": 85,
+      "bounds": [
+        [
+          -0.900887668132782,
+          -0.35500001907348633,
+          0.0
+        ],
+        [
+          0.900887668132782,
+          0.35100001096725464,
+          0.4012000560760498
+        ]
+      ],
+      "root": "DR_Sink_Root",
+      "objects": 38,
+      "base_mesh_vertices": 31648,
+      "dimensions_m": [
+        1.801775336265564,
+        0.706000030040741,
+        0.4012000560760498
+      ]
+    },
+    "DR_Timer": {
+      "pivot": "base centre; hands have independent dial-centre origins",
+      "close": [
+        0.007,
+        -0.064,
+        0.177
+      ],
+      "direction": [
+        0.72,
+        -1.8,
+        0.7
+      ],
+      "macro_direction": [
+        0.35,
+        -1,
+        0.15
+      ],
+      "macro_distance": 0.3,
+      "bounds": [
+        [
+          -0.10899999737739563,
+          -0.08150000125169754,
+          0.0
+        ],
+        [
+          0.10899999737739563,
+          0.05999999865889549,
+          0.24149999022483826
+        ]
+      ],
+      "root": "DR_Timer_Root",
+      "objects": 96,
+      "base_mesh_vertices": 6500,
+      "dimensions_m": [
+        0.21799999475479126,
+        0.14149999618530273,
+        0.24149999022483826
+      ]
+    },
+    "DR_Safelight": {
+      "pivot": "centre of wall mounting plate; lamp/bracket can extend below origin",
+      "close": [
+        0.056,
+        -0.161,
+        0.045
+      ],
+      "direction": [
+        0.9,
+        -1.7,
+        0.65
+      ],
+      "macro_direction": [
+        0.4,
+        -1,
+        0.3
+      ],
+      "macro_distance": 0.3,
+      "bounds": [
+        [
+          -0.09600000083446503,
+          -0.1667499989271164,
+          -0.09600000083446503
+        ],
+        [
+          0.09600000083446503,
+          0.003000000026077032,
+          0.09600000083446503
+        ]
+      ],
+      "root": "DR_Safelight_Root",
+      "objects": 46,
+      "base_mesh_vertices": 10234,
+      "dimensions_m": [
+        0.19200000166893005,
+        0.16975000500679016,
+        0.19200000166893005
+      ]
+    },
+    "DR_Bottles": {
+      "pivot": "each bottle base centre; caps are separate objects",
+      "close": [
+        -0.167,
+        -0.018,
+        0.192
+      ],
+      "direction": [
+        0.65,
+        -1.9,
+        0.65
+      ],
+      "macro_direction": [
+        0.5,
+        -1,
+        0.4
+      ],
+      "macro_distance": 0.31,
+      "bounds": [
+        [
+          -0.21130891144275665,
+          -0.04456891492009163,
+          0.0
+        ],
+        [
+          0.17970319092273712,
+          0.06042233109474182,
+          0.28186044096946716
+        ]
+      ],
+      "root": "DR_Bottles_Root",
+      "objects": 21,
+      "base_mesh_vertices": 20206,
+      "dimensions_m": [
+        0.3910121023654938,
+        0.10499124228954315,
+        0.28186044096946716
+      ]
+    },
+    "DR_Enlarger": {
+      "pivot": "baseboard centre, bottom at Z=0",
+      "close": [
+        0,
+        -0.107,
+        0.465
+      ],
+      "direction": [
+        0.95,
+        -1.7,
+        0.9
+      ],
+      "macro_direction": [
+        0.65,
+        -1,
+        0.25
+      ],
+      "macro_distance": 0.39,
+      "macro_lens": 70,
+      "bounds": [
+        [
+          -0.2549999952316284,
+          -0.2720000147819519,
+          0.0
+        ],
+        [
+          0.2549999952316284,
+          0.2150000035762787,
+          0.9264999628067017
+        ]
+      ],
+      "root": "DR_Enlarger_Root",
+      "objects": 59,
+      "base_mesh_vertices": 3060,
+      "dimensions_m": [
+        0.5099999904632568,
+        0.4870000183582306,
+        0.9264999628067017
+      ]
+    },
+    "DR_Shelf": {
+      "pivot": "base of wall brackets; all dressing belongs to the collection",
+      "close": [
+        -0.31,
+        -0.01,
+        0.362
+      ],
+      "direction": [
+        0.6,
+        -1.8,
+        0.9
+      ],
+      "macro_direction": [
+        0.5,
+        -1,
+        0.4
+      ],
+      "macro_distance": 0.38,
+      "macro_lens": 70,
+      "bounds": [
+        [
+          -0.550000011920929,
+          -0.12250000238418579,
+          0.0
+        ],
+        [
+          0.550000011920929,
+          0.12250000238418579,
+          0.40300002694129944
+        ]
+      ],
+      "root": "DR_Shelf_Root",
+      "objects": 34,
+      "base_mesh_vertices": 5504,
+      "dimensions_m": [
+        1.100000023841858,
+        0.24500000476837158,
+        0.40300002694129944
+      ]
+    }
+  },
+  "checks": {
+    "all_names_prefixed": true,
+    "materials_principled_only": true,
+    "images_self_contained": true,
+    "paper_grids": "100 x 128 quads each",
+    "paper_uv": "full 0..1; portrait axis convention",
+    "paper_thickness_m": 0.0003,
+    "liquid_bounds_manifold": true,
+    "liquid_volume_litres": 3.7106665102662544,
+    "liquid_surface_z_m": 0.0385,
+    "liquid_depth_above_floor_m": 0.035,
+    "timer_text_exception": "0..55 numerals only; user approved"
+  },
+  "preview_spec": {
+    "width": 1600,
+    "height": 1000,
+    "left": "1000px three-quarter view",
+    "right": "600px macro view",
+    "engine": "CYCLES",
+    "samples": 96,
+    "device": "GPU",
+    "macro_lens_mm": [
+      70,
+      100
+    ],
+    "macro_distance_m": [
+      0.2,
+      0.4
+    ]
+  },
+  "art_direction": "Form/material target: three supplied keyframes. Lighting and print animation are outside asset scope."
+}

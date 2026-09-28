@@ -1,4 +1,9 @@
 # Large or derived material stays on this machine; see README.
-/assets/
+# The asset builder is tracked: it regenerates darkroom_assets.blend exactly.
+/assets/*
+!/assets/build_assets.py
+!/assets/verify_assets.py
+!/assets/README.md
+!/assets/asset_manifest.json
 /work/
 /references/**/*.png
