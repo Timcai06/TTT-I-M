@@ -66,6 +66,5 @@ CSS imports are assigned to the fixed cascade order `reset → tokens → base �
 - `scripts/` (in landing): asset generation (`setup-assets.mjs`, runs on predev/prebuild).
 - `art/<project>/`: source material for rendered or modelled assets. The README, `.gitignore` and briefs are tracked; the `.blend` files, textures and renders are local-only (`art/personal-archive` for the room, `art/intro-film` for the intro film).
 - `tools/<project>/`: the tracked production scripts that build and render those assets (`tools/personal_space`, `tools/intro_film`).
-- `art/project-films/`: source briefs and local production material for future project films.
-- `tools/project_films/`: future independent Remotion production pipeline for project films; it is separate from the Landing build and playback runtime.
+- `tools/project_films/`: the independent Remotion project that renders the Work chapter's project films (EduCanvas, SciScope). Not a workspace and not part of the Landing build; its renders go to the ignored `out/`, and the finished films are copied into `apps/landing/public/projects/<id>/`. Source screenshots come straight from `apps/landing/public/`, so it has no `art/` folder of its own.
 - `tests/`: Playwright e2e + per-workspace build guards (`apps/landing/tests/build/*`) + root `tests/build/platform-guards.mjs`.

@@ -38,3 +38,10 @@ No archive action is proposed for `art/intro-film/` or the current material/prin
 | `output/logs/` (prior 9 / .26 MiB) and exact duplicate transient files elsewhere | No verified producer for all logs. Only exact redundant or safely reproducible content qualifies, after recording hash/producer and excluding diagnostic evidence. |
 
 Next decision requires a file-level inventory **in an authorized checkout**: path, hash, producer, consumer, source/derived status, reproducibility cost, uniqueness and intended destination. This report makes no current-count claim and authorizes no deletion or move.
+
+## Added after the structure round
+
+| Path | Kind | Decision |
+| --- | --- | --- |
+| `tools/project_films/out/` | Remotion renders, sub-frame masters, score WAVs | Regenerable (`npm run sound`, `render.sh`); keep while the films are in review, clean freely afterwards |
+| `tools/project_films/node_modules/` | npm install of the standalone Remotion project | Regenerable with `npm install` |
