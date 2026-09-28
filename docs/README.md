@@ -24,3 +24,7 @@ Start with the five current system guides below, then follow the area-specific s
 The npm workspaces are `apps/landing`, `apps/studio`, `packages/tokens`, and `packages/content`. Landing owns the visual runtime; Studio owns content routes and does not import Landing's animation or WebGL stack. The root [README](../README.md) lists development commands.
 
 Older `docs/01-architecture/` and `docs/02-components/` links refer to directories folded into the current flat 01–05 guides. Use this index when an old deep link no longer resolves.
+
+## Maintenance records
+
+- [Repository structure cleanup](maintenance/repository-structure/README.md) — batch scope, moves, local-artifact decisions, checks, and integration notes.
