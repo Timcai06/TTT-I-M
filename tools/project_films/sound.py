@@ -166,51 +166,91 @@ def educanvas():
     finish(m, s, 'educanvas')
 
 
+def glide(f0, f1, dur, level=0.05):
+    """A sine that slides from f0 to f1: the thread crossing languages."""
+    n = int(dur * SR)
+    tt = np.arange(n) / SR
+    f = f0 * (f1 / f0) ** (tt / dur)
+    env = np.sin(np.pi * np.clip(tt / dur, 0, 1)) ** 1.2
+    return level * env * np.sin(2 * np.pi * np.cumsum(f) / SR)
+
+
 def sciscope():
+    """v2: the evidence thread. D minor that resolves to D major on the SUPPORTED stamp."""
     m, s = buf(), buf()
-    # A: the question, typed, over a low D
-    for i in range(len('这个结论，有证据吗？')):
-        S.place(s, S.stereo(key_click(0.04), 0.0), t(8 + i * 4))
+    # A · the question lands; the question mark's dot lets go
+    for i in range(10):
+        piano(m, 8 + i * 4, ['D5', 'E5', 'F5', 'A5', 'G5', 'F5', 'E5', 'D5', 'A4', 'D5'][i], 0.7, 0.13, 0.6, -0.4 + 0.08 * i)
+    S.place(s, S.stereo(glass(S.hz('A6'), 0.08), 0.3), t(52))
     pad(m, 0, 200, ['D2', 'A2', 'D3'], level=0.08, cutoff=800, attack=1.8)
-    piano(m, 52, 'A4', 1.0, 0.16, 0.5, 0.2)
-    piano(m, 64, 'F4', 1.5, 0.14, 0.5, 0.1)
-    # B: the TUI — /verify, the claim, enter, the first streamed lines
-    for i in range(len('/verify ') + len('得舒饮食能降低血压吗？')):
-        S.place(s, S.stereo(key_click(0.045 + 0.01 * rng.random()), -0.2), t(80 + 24 + i * (2 if i < 8 else 4)))
-    S.place(s, S.stereo(key_click(0.09), -0.1), t(168))
+    # B · the terminal arrives; /verify and the claim; enter; the plan streams; the claim lifts off
+    S.place(s, S.stereo(whoosh(1.0, 0.07, rise=False), 0.0), t(84))
+    S.place(m, S.stereo(S.thump(0.22, 60), 0), t(112))
+    for i in range(8):
+        S.place(s, S.stereo(key_click(0.045), -0.2), t(108 + i * 2))
+    for i in range(len(CLAIM_ZH)):
+        S.place(s, S.stereo(key_click(0.045 + 0.01 * rng.random()), -0.2), t(120 + i * 4))
+    S.place(s, S.stereo(key_click(0.1), -0.1), t(170))
+    S.place(m, S.stereo(S.thump(0.3, 58), 0), t(170))
     for i in range(2):
-        S.place(s, S.stereo(glass(S.hz('A6'), 0.05), 0.2), t(172 + i * 7))
-    # C: the library counts up, two retrievals stream in, fuse
-    pad(m, 200, 380, ['D2', 'A2', 'E3', 'C4'], level=0.1, cutoff=1300, attack=0.4)
-    for i in range(24):                      # counting: ticks that speed up and settle
-        f = 204 + 40 * (1 - (1 - i / 24) ** 2)
-        S.place(s, S.stereo(S.tick(0.035), (i % 2) * 0.4 - 0.2), t(f))
-    for i in range(12):
-        S.place(s, S.stereo(key_click(0.03), -0.5 if i % 2 == 0 else 0.5), t(262 + i * 4))
-    S.place(s, S.stereo(whoosh(1.3, 0.07, rise=False), 0), t(300))
-    S.place(m, S.stereo(S.thump(0.32), 0), t(340))
-    S.place(s, S.stereo(glass(S.hz('D6'), 0.08), -0.1), t(342))
-    arp = ['D4', 'E4', 'A4', 'C5']
-    for i, f in enumerate(range(200, 380, 10)):
-        piano(m, f, arp[i % 4], 0.45, 0.07 + 0.05 * (f - 200) / 180, 0.4, -0.35 + 0.7 * ((i % 4) / 3))
-    # D: the trace, one tick per phase; the evidence connects; supported
-    pad(m, 380, 560, ['Bb1', 'F2', 'D3', 'A3'], level=0.1, cutoff=1600, attack=0.5)
+        S.place(s, S.stereo(glass(S.hz(['D6', 'F6'][i]), 0.05), 0.2), t(174 + i * 6))
+    S.place(s, S.stereo(whoosh(0.9, 0.06), 0.0), t(184))
+    # C · the field of papers; two beams sweep it in opposite directions; hits; fusion
+    pad(m, 200, 300, ['D2', 'A2', 'F3', 'C4'], level=0.1, cutoff=1300, attack=0.4)
+    pad(m, 300, 384, ['Bb1', 'F2', 'D3', 'A3'], level=0.11, cutoff=1700, attack=0.2)
+    for i in range(30):                          # the field fades in: a fine granular shimmer
+        S.place(s, S.stereo(glass(S.hz('A5') * (1 + 1.5 * rng.random()), 0.012), rng.uniform(-0.9, 0.9)), t(214 + i + rng.random()))
+    for i in range(22):                          # counting
+        S.place(s, S.stereo(S.tick(0.03), (i % 2) * 0.4 - 0.2), t(212 + 44 * (1 - (1 - i / 22) ** 2)))
+    for k in range(6):                           # the FTS beam, left to right
+        S.place(s, S.stereo(whoosh(0.25, 0.022), -0.9 + 0.36 * k), t(250 + k * 7))
+    for k in range(6):                           # the vector beam, right to left
+        S.place(s, S.stereo(whoosh(0.25, 0.02), 0.9 - 0.36 * k), t(256 + k * 7))
+    for i, f in enumerate((262, 268, 275, 281, 288, 294)):
+        S.place(s, S.stereo(glass(S.hz(['D6', 'E6', 'A6', 'C7', 'D7', 'F6'][i]), 0.05), -0.6 + 0.24 * i), t(f))
+    for f in range(220, 300, 20):
+        S.place(m, S.stereo(S.thump(0.15, 62), 0), t(f))
+    for f in range(300, 340, 10):
+        S.place(m, S.stereo(S.thump(0.19, 62), 0), t(f))
+    S.place(s, S.stereo(whoosh(1.2, 0.07, rise=False), 0), t(300))
+    for i in range(5):
+        S.place(s, S.stereo(key_click(0.05), -0.1), t(325 + i * 3))
+    S.place(s, S.stereo(glass(S.hz('D7'), 0.08), -0.1), t(344))
+    # D · the paper opens; the phases tick; the thread crosses; SUPPORTED
+    S.place(s, S.stereo(whoosh(0.9, 0.06, rise=False), 0.2), t(380))
+    S.place(m, S.stereo(S.thump(0.3, 55), 0), t(380))
+    pad(m, 380, 506, ['G2', 'D3', 'Bb3', 'E4'], level=0.1, cutoff=1500, attack=0.5)
     for i in range(7):
-        S.place(s, S.stereo(S.tick(0.06), -0.4), t(380 + 20 + i * 12))
-        S.place(s, S.stereo(glass(S.hz(['D5', 'E5', 'F5', 'A5', 'C6', 'D6', 'E6'][i]), 0.04), -0.4), t(380 + 20 + i * 12))
-    S.place(s, S.stereo(whoosh(0.9, 0.05), 0.2), t(498))
-    S.place(m, S.stereo(S.thump(0.36, 55), 0), t(526))
+        S.place(s, S.stereo(S.tick(0.055), -0.6), t(402 + i * 11))
+        S.place(s, S.stereo(glass(S.hz(['D5', 'E5', 'F5', 'G5', 'A5', 'C6', 'D6'][i]), 0.035), -0.6), t(402 + i * 11))
+    S.place(s, S.stereo(glide(S.hz('A5'), S.hz('E6'), 1.1, 0.045), 0.3), t(454))
+    S.place(s, S.stereo(whoosh(0.5, 0.04), 0.3), t(484))
+    S.place(m, S.stereo(S.thump(0.5, 50), 0), t(506))
+    S.place(s, S.stereo(layer(key_click(0.16), S.tick(0.1)), 0.35), t(506))
+    pad(m, 506, 572, ['D2', 'A2', 'F#3', 'C#4', 'E4'], level=0.12, cutoff=2200, attack=0.08, release=1.6)
     for k, note in enumerate(['D3', 'A3', 'F#4', 'C#5']):
-        piano(m, 528 + k, note, 3.0, 0.22 - 0.02 * k, 0.55, -0.2 + 0.15 * k)
-    # E: the workflow — the dot crosses four stations to the output
-    pad(m, 560, 720, ['D2', 'A2', 'F#3', 'E4'], level=0.09, cutoff=1400, attack=0.8, release=2.0)
-    for i, f in enumerate((572, 584, 596, 608, 626)):
-        S.place(s, S.stereo(glass(S.hz(['A5', 'D6', 'E6', 'F#6', 'A6'][i]), 0.06), -0.5 + 0.25 * i), t(f))
-    # F: end card
+        piano(m, 507 + k, note, 3.0, 0.24 - 0.02 * k, 0.6, -0.2 + 0.15 * k)
+    # E · the workflow track: the token changes at every station
+    pad(m, 560, 720, ['D2', 'A2', 'F#3', 'E4'], level=0.085, cutoff=1400, attack=0.8, release=2.0)
+    for i in range(16):
+        S.place(s, S.stereo(key_click(0.02), -0.3 + 0.04 * i), t(562 + i * 1.2))
+    prev = None
+    for f in range(572, 646):
+        st = min(4, int(max(0.0, min(1.0, (f - 572) / 68)) ** 1 * 4 + 0.5))
+        if st != prev:
+            S.place(s, S.stereo(glass(S.hz(['A5', 'D6', 'E6', 'F#6', 'A6'][st]), 0.06), -0.6 + 0.3 * st), t(f))
+            prev = st
+    # F · the name; the thread's head lands as its full stop
+    for i in range(8):
+        S.place(s, S.stereo(key_click(0.03), -0.4 + 0.1 * i), t(662 + i * 2))
     for k, note in enumerate(['D2', 'A3', 'D4', 'F#4', 'E5']):
-        piano(m, 660 + k, note, 3.0, 0.26 - 0.03 * k, 0.55, -0.3 + 0.15 * k)
-    S.place(s, S.stereo(glass(S.hz('A6'), 0.1), 0.1), t(686))
+        piano(m, 664 + k, note, 3.0, 0.27 - 0.03 * k, 0.58, -0.3 + 0.15 * k)
+    S.place(s, S.stereo(glass(S.hz('A6'), 0.11), 0.2), t(682))
+    S.place(s, S.stereo(glass(S.hz('A6'), 0.04), 0.2), t(690))
     finish(m, s, 'sciscope')
+
+
+CLAIM_ZH = '得舒饮食能降低血压吗？'
 
 
 if __name__ == '__main__':
