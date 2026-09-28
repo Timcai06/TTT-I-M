@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-// plan/02-system-boundaries.md: UI components depend on the src/content/ boundary,
+// docs/roadmap/builder-graph/02-system-boundaries.md: UI components depend on the src/content/ boundary,
 // never on src/data/* directly, so the data source is an adapter swap rather than
 // a component rewrite. This guard locks that in.
 

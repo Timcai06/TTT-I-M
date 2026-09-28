@@ -6,9 +6,9 @@ Tim Cai's portfolio platform is an npm-workspace monorepo. The cinematic Landing
 
 - [Documentation index](docs/README.md) — current architecture, runtime, asset, and verification guides.
 - [Personal Archive asset tools](tools/personal_space/README.md) — source model and reproducible website-material pipeline.
-- [Builder Graph OS roadmap](plan/README.md) — a separate future product direction, not the current implementation queue.
+- [Builder Graph OS roadmap](docs/roadmap/builder-graph/README.md) — a separate future product direction, not the current implementation queue.
 
-Older PM task cards and delivery reports remain under `docs/pm/` and `docs/landing/delivery/` as historical records. Check current source and runtime behavior before treating their status or acceptance statements as current.
+Older PM task cards and delivery reports remain under `docs/archive/personal-archive-pm/` and `docs/landing/delivery/` as historical records. Check current source and runtime behavior before treating their status or acceptance statements as current.
 
 ## Workspaces and boundaries
 
@@ -17,7 +17,7 @@ Older PM task cards and delivery reports remain under `docs/pm/` and `docs/landi
 - `packages/tokens` — shared color/type/motion tokens consumed by both apps.
 - `packages/content` — shared content schema and repository contracts.
 
-Studio serves content through its repository interface and must not import the Landing runtime stack (GSAP, Lenis, Three, R3F, or Landing preload). Landing remains the client-side visual entry. The [architecture guide](docs/01-architecture.md) covers the chapter and cross-app boundaries.
+Studio serves content through its repository interface and must not import the Landing runtime stack (GSAP, Lenis, Three, R3F, or Landing preload). Landing remains the client-side visual entry. The [architecture guide](docs/architecture/01-architecture.md) covers the chapter and cross-app boundaries.
 
 ## Commands
 
@@ -53,4 +53,4 @@ Canvas UI's HTML capture effects require Chromium's experimental `CanvasDrawElem
 - Studio brand link: set `NEXT_PUBLIC_LANDING_URL` to the deployed Landing origin so `Tim Cai Studio` returns to the cinematic landing.
 - Local defaults already point `landing:5173 → studio:5174/blog` and `studio:5174 → landing:5173`; run `npm run dev:landing` and `npm run dev:studio` in two terminals for local cross-app navigation. The landing dev server uses a strict `5173` port so Studio's return link cannot drift to the wrong app.
 
-For command scope and limits, see [tests and guards](docs/05-tests-and-guards.md). `test:smoke` checks deployed cross-zone routes only after both apps expose the expected commit.
+For command scope and limits, see [tests and guards](docs/architecture/05-tests-and-guards.md). `test:smoke` checks deployed cross-zone routes only after both apps expose the expected commit.
