@@ -103,7 +103,7 @@ function Home({ frame }: { frame: number }) {
       <Plane rx={mix(16, 0, arrive) + fall * 62 + Math.sin(frame / 40) * 1.2 * (1 - fall)} ry={mix(-8, 0, arrive) + Math.sin(frame / 55) * 1.5}
         z={mix(-700, 0, arrive) - fall * 300} y={fall * 260} origin="50% 100%">
         <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 1080, transformOrigin: '0 0', transform: zoomTo(fx, fy, s) }}>
-          <Img src={staticFile('projects/educanvas/home.webp')} style={{ position: 'absolute', left: 0, top: OY, width: 1920 }} />
+          <Img src={staticFile('site/projects/educanvas/home.webp')} style={{ position: 'absolute', left: 0, top: OY, width: 1920 }} />
           {/* the placeholder, covered; the question, typed; the caret is the dot */}
           <div style={{ position: 'absolute', left: HOME.textX - 8, top: HOME.textY - 22, width: 660, height: 44, background: '#1f1c1b', opacity: p(frame, typedStart - 8, typedStart - 4) }} />
           <div style={{ position: 'absolute', left: HOME.textX, top: HOME.textY - 14, fontFamily: SANS, fontSize: 21, lineHeight: '28px', color: PAPER, opacity: 1 - p(frame, enter + 2, enter + 10), whiteSpace: 'pre' }}>
@@ -268,7 +268,7 @@ function Answer({ frame }: { frame: number }) {
       <AbsoluteFill style={{ opacity: 1 - planeOut }}>
         <Plane rx={mix(12, 0, settle)} z={mix(-240, 0, settle)}>
           <div style={{ position: 'absolute', left: 0, top: 0, width: 1920, height: 1080, transformOrigin: '0 0', transform: zoomTo(fx, fy, s) }}>
-            <Img src={staticFile('projects/educanvas/learning-response.webp')} style={{ position: 'absolute', left: 0, top: OY, width: 1920 }} />
+            <Img src={staticFile('site/projects/educanvas/learning-response.webp')} style={{ position: 'absolute', left: 0, top: OY, width: 1920 }} />
             {CODE.lines.map((y, i) => (
               <div key={y} style={{ position: 'absolute', left: CODE.left - 6, top: y - 12, width: [118, 118, 162][i], height: 24, borderRadius: 4, background: ACCENT, opacity: glow * 0.35, boxShadow: `0 0 20px ${ACCENT}` }} />
             ))}
@@ -320,7 +320,7 @@ function Relief({ frame }: { frame: number }) {
           <div key={i} style={{ position: 'absolute', left: (i % 64) * 30, top: Math.floor(i / 64) * 30, width: 30.5, height: 30.5, background: `rgb(${r},${g},${b})` }} />
         ))}
       </div>
-      <Img src={staticFile(pixels.src)} style={{
+      <Img src={staticFile(`site/${pixels.src}`)} style={{
         position: 'absolute', left: 0, width: 1920, top: -(pixels.crop[1] / pixels.crop[2]) * 1920, opacity: photo,
         transform: `scale(${1 + p(frame, 536, 640, (t) => t) * 0.05})`, transformOrigin: '50% 40%',
       }} />
@@ -348,7 +348,7 @@ function Focus({ frame }: { frame: number }) {
           position: 'absolute', left: 150, top: 90, width: 1620, height: 882, borderRadius: 22, overflow: 'hidden',
           border: `1px solid ${HAIR}`, boxShadow: '0 60px 140px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.4)',
         }}>
-          <Img src={staticFile('projects/educanvas/focus-mode.webp')} style={{ position: 'absolute', left: 0, top: 0, width: 1620, filter: `blur(${(1 - inK) * 6}px)` }} />
+          <Img src={staticFile('site/projects/educanvas/focus-mode.webp')} style={{ position: 'absolute', left: 0, top: 0, width: 1620, filter: `blur(${(1 - inK) * 6}px)` }} />
         </div>
       </Plane>
       <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(17,18,16,0.72) 0%, transparent 46%)' }} />

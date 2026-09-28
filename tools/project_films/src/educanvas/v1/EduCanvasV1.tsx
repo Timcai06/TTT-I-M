@@ -195,7 +195,7 @@ function Answer() {
             }} />
           ))}
         </div>
-        <Img src={staticFile(pixels.src)} style={{
+        <Img src={staticFile(`site/${pixels.src}`)} style={{
           position: 'absolute', left: 0, width: 1920, top: -(pixels.crop[1] / pixels.crop[2]) * 1920, opacity: photo,
           transform: `scale(${1 + photo * 0.03})`, transformOrigin: '50% 40%',
         }} />

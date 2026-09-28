@@ -47,7 +47,7 @@ export function Stage({ children, accent }: { children: ReactNode; accent: strin
       />
       <AbsoluteFill
         style={{
-          backgroundImage: `url(${staticFile('noise/grain-128.png')})`,
+          backgroundImage: `url(${staticFile('site/noise/grain-128.png')})`,
           backgroundSize: '128px 128px',
           backgroundPosition: `${ox}px ${oy}px`,
           mixBlendMode: 'screen',
@@ -147,7 +147,7 @@ export function Node({ x, y, w = 230, h = 92, en, cn, lit, accent, appear }: {
 
 /** A screenshot placed by its own pixel coordinates inside a 1920-wide frame. */
 export function Shot({ src, style }: { src: string; style?: CSSProperties }) {
-  return <Img src={staticFile(src)} style={{ position: 'absolute', left: 0, top: 0, width: 1920, ...style }} />
+  return <Img src={staticFile(`site/${src}`)} style={{ position: 'absolute', left: 0, top: 0, width: 1920, ...style }} />
 }
 
 /** Polyline path drawn up to `k` (0-1) of its length. */

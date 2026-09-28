@@ -62,7 +62,7 @@ function Terminal({ frame }: { frame: number }) {
     <AbsoluteFill style={{ perspective: 1700, opacity: arrive * (1 - leave) }}>
       <Plane rx={mix(-14, 0, arrive) + leave * 30 + Math.sin(frame / 45) * 1} ry={mix(10, 0, arrive) + Math.sin(frame / 60) * 1.4} z={mix(-800, 0, arrive) - leave * 500}>
         <div style={{ position: 'absolute', inset: 0, transformOrigin: `80px ${TUI_Y}px`, transform: `scale(${s})` }}>
-          <Img src={staticFile('projects/sciscope/tui-product.webp')} style={{ position: 'absolute', left: 0, top: -60, width: 1920 }} />
+          <Img src={staticFile('site/projects/sciscope/tui-product.webp')} style={{ position: 'absolute', left: 0, top: -60, width: 1920 }} />
           <div style={{ position: 'absolute', left: 64, top: TUI_Y - 26, width: 960, height: 52, background: '#222222', opacity: p(frame, 104, 108) }} />
           <div style={{ position: 'absolute', left: 100, top: TUI_Y - 18, fontFamily: MONO, fontSize: 26, color: PAPER, whiteSpace: 'pre', opacity: 1 - p(frame, enter + 16, enter + 22) }}>
             <span style={{ color: ACCENT }}>{'/verify '.slice(0, Math.max(0, Math.min(8, Math.floor((frame - 108) / 2) + 1)))}</span>

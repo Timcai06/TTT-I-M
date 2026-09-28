@@ -1,0 +1,98 @@
+{
+  "setup": {
+    "take": "loop",
+    "from": 3.644,
+    "to": 29.885,
+    "speed": 1.46,
+    "seconds": 18,
+    "marks": {
+      "setup": 0.206,
+      "grade-picked": 2.293,
+      "goal-typed": 4.671,
+      "diagnostic": 7.508,
+      "workspace": 17.588
+    }
+  },
+  "ask": {
+    "take": "loop",
+    "from": 29.885,
+    "to": 42.941,
+    "speed": 1.87,
+    "seconds": 7,
+    "marks": {
+      "ask": 6.786
+    }
+  },
+  "answer": {
+    "take": "loop",
+    "from": 42.941,
+    "to": 106.495,
+    "speed": 7.94,
+    "seconds": 8,
+    "marks": {
+      "answered": 7.849
+    }
+  },
+  "read": {
+    "take": "loop",
+    "from": 106.495,
+    "to": 111.244,
+    "speed": 1.58,
+    "seconds": 3,
+    "marks": {
+      "read": 2.747
+    }
+  },
+  "canvas": {
+    "take": "loop",
+    "from": 111.244,
+    "to": 121.104,
+    "speed": 1.64,
+    "seconds": 6,
+    "marks": {
+      "studio": 2.517,
+      "canvas": 5.27
+    }
+  },
+  "quiz": {
+    "take": "loop",
+    "from": 121.104,
+    "to": 126.758,
+    "speed": 1.13,
+    "seconds": 5,
+    "marks": {
+      "graded-1": 4.823
+    }
+  },
+  "graded": {
+    "take": "loop",
+    "from": 126.758,
+    "to": 135.259,
+    "speed": 1.42,
+    "seconds": 6,
+    "marks": {
+      "graded-2": 4.73
+    }
+  },
+  "progress": {
+    "take": "loop",
+    "from": 135.259,
+    "to": 143.636,
+    "speed": 1.4,
+    "seconds": 6,
+    "marks": {
+      "progress": 4.138
+    }
+  },
+  "reload": {
+    "take": "loop",
+    "from": 144.251,
+    "to": 155.911,
+    "speed": 1.94,
+    "seconds": 6,
+    "marks": {
+      "reload": 0.103,
+      "progress-after-reload": 4.868
+    }
+  }
+}
