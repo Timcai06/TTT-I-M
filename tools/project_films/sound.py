@@ -330,6 +330,78 @@ def glide_pen(dur, level=0.05):
     return level * noise
 
 
+def rustle(dur=0.35, level=0.04):
+    """Paper moving: brown-ish noise, band-limited, with an uneven envelope."""
+    n = int(dur * SR)
+    tt = np.arange(n) / SR
+    env = np.sin(np.pi * tt / dur) ** 1.2 * (0.6 + 0.4 * np.abs(np.sin(2 * np.pi * rng.uniform(9, 16) * tt)))
+    return level * S.bandpass(rng.normal(0, 1, n), 2400, 0.9) * env
+
+
+def educanvas_v32():
+    """v3.2: cold numbers, then warm paper. Cues mirror src/educanvas/v32/EduCanvasV32.tsx (960 frames, 32 s).
+    Paper events inside the plates (flip, thread, tick) are placed on the text beats until the motion test
+    gives their exact frames."""
+    D = 32.0
+    m, s = buf(D), buf(D)
+    # 问 · 0–89 · a key for each glyph; the break is a fall of fine grains; the point gathers them
+    for i, ch in enumerate('AI 是怎么认出一张照片的？'):
+        if ch != ' ':
+            S.place(s, S.stereo(key_click(0.03 + 0.008 * rng.random()), -0.4 + 0.05 * i), t(6 + i * 3))
+    pad(m, 0, 92, ['F2', 'C3'], level=0.05, cutoff=600, attack=1.5)
+    for f in range(58, 76):
+        for _ in range(3):
+            S.place(s, S.stereo(S.tick(0.006 + 0.008 * rng.random()), rng.uniform(-0.7, 0.7)), t(f + rng.random()))
+    S.place(s, S.stereo(whoosh(0.5, 0.03), 0.3), t(74))
+    S.place(s, S.stereo(glass(S.hz('F6'), 0.06), 0.3), t(89))
+    # P1–P3 · 90–389 · the numbers: breath, wake, reveal (as v3, compressed)
+    for i, f in enumerate((90, 110, 130)):
+        S.place(s, S.stereo(glass(S.hz('F6'), 0.03 + 0.01 * i), 0.3), t(f))
+    piano(m, 140, 'C5', 1.5, 0.12, 0.5, 0.1)
+    pad(m, 150, 275, ['F2', 'C3', 'A3', 'E4'], level=0.085, cutoff=1100, attack=1.2)
+    for f in range(156, 262):
+        dens = np.sin(np.pi * (f - 156) / 106) ** 1.5
+        if rng.random() < 0.25 + 1.2 * dens:
+            S.place(s, S.stereo(S.tick(0.006 + 0.012 * dens * rng.random()), rng.uniform(-0.8, 0.8)), t(f + rng.random()))
+    for i, note in enumerate(['C5', 'D5', 'F5', 'G5', 'A5', 'G5', 'C6']):          # 「在计算机眼里，」
+        piano(m, 200 + i * 2, note, 0.9, 0.1 + 0.01 * i, 0.55, -0.3 + 0.1 * i)
+    pad(m, 270, 395, ['Bb1', 'F2', 'D3', 'A3', 'C4', 'E4'], level=0.11, cutoff=1900, attack=0.8)
+    S.place(m, S.stereo(S.sine_swell(S.hz('F2'), 2.0, 0.06, trem=0.0), 0), t(264))
+    S.place(m, S.stereo(S.thump(0.28, 52), 0), t(296))
+    for k, note in enumerate(['Bb2', 'F3', 'D4', 'A4', 'C5']):
+        piano(m, 296 + k, note, 3.5, 0.2 - 0.02 * k, 0.55, -0.3 + 0.15 * k)
+    # T1 · 390–449 · the dark lifts: a high shimmer rises and opens into F major; paper settles
+    S.place(m, S.stereo(S.sine_swell(S.hz('C6'), 2.0, 0.035, trem=0.0), 0.2), t(390))
+    S.place(m, S.stereo(S.sine_swell(S.hz('A5'), 2.0, 0.03, trem=0.0), -0.2), t(396))
+    S.place(s, S.stereo(whoosh(1.6, 0.05), 0), t(392))
+    S.place(s, S.stereo(rustle(0.5, 0.05), -0.2), t(440))
+    # P10–P13 · 450–869 · paper: warm felt piano, a brighter pad, small paper sounds
+    pad(m, 445, 600, ['F2', 'C3', 'A3', 'C4', 'G4'], level=0.09, cutoff=2200, attack=0.6)
+    for i, note in enumerate(['F4', 'A4', 'C5', 'E5', 'G5', 'E5', 'C5', 'A4']):     # a walking figure under 做
+        piano(m, 456 + i * 10, note, 1.0, 0.1, 0.6, -0.4 + 0.1 * i)
+    for f in (470, 500, 540, 580):
+        S.place(s, S.stereo(rustle(0.3, 0.035), rng.uniform(-0.5, 0.5)), t(f))
+    pad(m, 600, 692, ['D2', 'A2', 'F3', 'C4', 'E4'], level=0.09, cutoff=2000, attack=0.4)
+    S.place(s, S.stereo(glide_pen(0.45, 0.06), 0.2), t(622))                        # 答对了: the pen
+    S.place(s, S.stereo(glass(S.hz('E6'), 0.06), 0.2), t(636))
+    pad(m, 690, 812, ['Bb1', 'F2', 'D3', 'A3', 'C4', 'G4'], level=0.1, cutoff=2200, attack=0.5)
+    for i in range(6):                                                               # each card's state lands
+        S.place(s, S.stereo(glass(S.hz(['C6', 'D6', 'F6', 'G6', 'A6', 'C7'][i]), 0.035), -0.6 + 0.24 * i), t(716 + i * 5))
+    pad(m, 810, 868, ['F2', 'C3', 'G3', 'A3', 'D4'], level=0.08, cutoff=1400, attack=0.4)
+    for i, note in enumerate(['C6', 'D6', 'F6', 'G6', 'A6']):                        # the point walks the thread
+        S.place(s, S.stereo(glass(S.hz(note), 0.03), -0.5 + 0.25 * i), t(816 + i * 8))
+    # 名 · 870–959 · half a beat of quiet, then the name and its full stop
+    for i in range(9):
+        S.place(s, S.stereo(key_click(0.03), -0.4 + 0.1 * i), t(876 + i * 2))
+    S.place(m, S.stereo(S.thump(0.36, 50), 0), t(876))
+    for k, note in enumerate(['F2', 'C4', 'F4', 'A4', 'G5']):
+        piano(m, 876 + k, note, 4.5, 0.27 - 0.03 * k, 0.6, -0.3 + 0.15 * k)
+    S.place(s, S.stereo(glass(S.hz('C7'), 0.1), 0.3), t(892))
+    S.place(s, S.stereo(glass(S.hz('C7'), 0.035), 0.3), t(902))
+    pad(m, 880, 960, ['F2', 'C3', 'E3', 'A3', 'G4'], level=0.075, cutoff=1300, attack=0.6, release=2.5)
+    finish(m, s, 'educanvas-v32', dur=D)
+
+
 # ───────────────────────── the competition film (src/pitch/Pitch.tsx) ─────────────────────────
 CUES = json.loads((HERE / 'src/pitch/cues.json').read_text())
 VOICE = OUT / 'voice'
