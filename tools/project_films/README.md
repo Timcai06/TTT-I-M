@@ -35,6 +35,5 @@ sub-frames per frame, and lets ffmpeg average them into real motion blur. Remoti
 `CameraMotionBlur` stacks layers with `plus-lighter` and shifted this film towards red, which is
 why it is not used.
 
-`src/educanvas/v1/` keeps the first EduCanvas cut (`EduCanvas-v1`) for comparison.
 
 Remotion is free for individuals and companies of up to three people (see its license).

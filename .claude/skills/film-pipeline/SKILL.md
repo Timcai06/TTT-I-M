@@ -40,7 +40,7 @@ description: "Make a short cinematic film for the portfolio the way the accepted
 
 ### 2 · 视觉目标：关键帧
 
-1. 先用 Blender 占位道具出三张风格帧，快速定光和构图（暗房的 `tools/intro_film/scene.py`）。
+1. 先用 Blender 占位道具出三张风格帧，快速定光和构图（暗房第一轮的 `tools/intro_film/scene.py`，已从工作区移除，在提交 `0657901` 里）。
 2. 细节不够时（暗房就是这样：Blender 风格帧的细节不如生成图），写 ChatGPT 生图提示词，让 tim 去生成关键帧。写法：
    - 一段**共用风格块**：镜头、景深、颗粒、光晕、色彩禁区（「暗部是暖牛血色，绝不是死黑」）、禁止出现的东西（文字、logo、CG 感）。
    - 三张关键帧：开场、中段、交接帧。交接帧要对准接下来的画面（暗房接首屏的粒子肖像）。

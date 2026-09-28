@@ -13,7 +13,6 @@ Requires Blender 5.2 (Cycles on Metal), Python 3 with numpy + Pillow, and ffmpeg
 | `sound.py` | Synthesises the score (felt piano and pad, D minor into D major) and the sound design (room tone, timer, liquid, bell, switch, tube light). No samples, no licensed music. |
 | `post.py` | Film finish: bloom and halation, grade (safelight → lights on), lateral chromatic aberration, vignette, grain. |
 | `finish.py` | Grades every frame and encodes H.264 + AAC with the mix to `apps/landing/public/projects/film/darkroom.mp4`. |
-| `scene.py` | The first round of style frames, with placeholder props. Kept for reference. |
 
 ## Making the film
 
