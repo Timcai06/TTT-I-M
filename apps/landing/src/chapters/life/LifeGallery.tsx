@@ -1,9 +1,9 @@
 import { useRef, type MouseEvent } from 'react'
-import { photos } from '../content'
-import { useMobileExperience } from '../lib/device'
-import { gsap, useGSAP } from '../lib/gsap'
-import DriftWall from './DriftWall'
-import { openImageLightbox } from '../shared/media/openImageLightbox'
+import { photos } from '../../content'
+import { useMobileExperience } from '../../lib/device'
+import { gsap, useGSAP } from '../../lib/gsap'
+import DriftWall from '../../components/DriftWall'
+import { openImageLightbox } from '../../shared/media/openImageLightbox'
 
 /** Shared first-screen copy used by the live Life chapter and its spatial handoff. */
 export function LifeIntro() {

@@ -9,7 +9,7 @@
 | 1A | [PASS](../../../output/repository-structure-round1/1A-typecheck.log) | [PASS](../../../output/repository-structure-round1/1A-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/1A-test-unit.log) | [PASS](../../../output/repository-structure-round1/1A-test-build.log) |
 | 1B | [PASS](../../../output/repository-structure-round1/1B-typecheck.log) | [PASS](../../../output/repository-structure-round1/1B-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/1B-test-unit.log) | [PASS](../../../output/repository-structure-round1/1B-test-build.log) |
 | 1C | [PASS](../../../output/repository-structure-round1/1C-typecheck.log) | [PASS](../../../output/repository-structure-round1/1C-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/1C-test-unit.log) | [PASS](../../../output/repository-structure-round1/1C-test-build.log) |
-| 2A | 待执行 | 待执行 | 待执行 | 待执行 |
+| 2A | [PASS](../../../output/repository-structure-round1/2A-typecheck.log) | [PASS](../../../output/repository-structure-round1/2A-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/2A-test-unit.log) | [PASS](../../../output/repository-structure-round1/2A-test-build.log) |
 | 2B | 待执行 | 待执行 | 待执行 | 待执行 |
 | 3 | 待执行 | 待执行 | 待执行 | 待执行 |
 

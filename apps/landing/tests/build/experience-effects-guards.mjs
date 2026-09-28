@@ -6,10 +6,10 @@ const required = [
   'src/components/BorderGlow.tsx',
   'src/components/ASCIIText.tsx',
   'src/components/DriftWall.tsx',
-  'src/components/WorkTransition.tsx',
-  'src/components/frame/FrameParticleHandoff.tsx',
-  'src/components/frame/FrameTitleParticles.tsx',
-  'src/components/frame/frameTitleCapture.ts',
+  'src/chapters/work-transition/WorkTransition.tsx',
+  'src/chapters/frame/FrameParticleHandoff.tsx',
+  'src/chapters/frame/FrameTitleParticles.tsx',
+  'src/chapters/frame/frameTitleCapture.ts',
   'src/components/ParticlePortal.tsx',
   'src/components/MaskedHeading.tsx',
   'src/components/ScrollExpand.tsx',
@@ -58,14 +58,14 @@ for (const path of required) {
 const app = read('src/App.tsx')
 const cursor = read('src/components/Cursor.tsx')
 const pointerCoordinator = read('src/lib/pointerCoordinator.ts')
-const life = read('src/components/LifeGallery.tsx')
+const life = read('src/chapters/life/LifeGallery.tsx')
 const driftWall = read('src/components/DriftWall.tsx')
-const frame = read('src/components/Frame.tsx')
-const archiveThemeScroll = read('src/components/frame/useArchiveThemeScroll.ts')
-const frameParticles = read('src/components/frame/FrameParticleHandoff.tsx')
-const frameTextPanel = read('src/components/frame/ArchiveTextPanel.tsx')
-const frameTitleParticles = read('src/components/frame/FrameTitleParticles.tsx')
-const frameTitleCapture = read('src/components/frame/frameTitleCapture.ts')
+const frame = read('src/chapters/frame/Frame.tsx')
+const archiveThemeScroll = read('src/chapters/frame/useArchiveThemeScroll.ts')
+const frameParticles = read('src/chapters/frame/FrameParticleHandoff.tsx')
+const frameTextPanel = read('src/chapters/frame/ArchiveTextPanel.tsx')
+const frameTitleParticles = read('src/chapters/frame/FrameTitleParticles.tsx')
+const frameTitleCapture = read('src/chapters/frame/frameTitleCapture.ts')
 const frameParticleRuntime = [
   'src/lib/canvas-ui/particleScroll.ts',
   'src/lib/canvas-ui/particleScrollConfig.ts',
@@ -74,7 +74,7 @@ const frameParticleVendor = read('src/lib/canvas-ui/vendor/ParticleScroll/Partic
 const captureReadiness = read('src/lib/canvas-ui/captureReadiness.ts')
 const particlePortal = read('src/components/ParticlePortal.tsx')
 const particlePortalRuntime = read('src/lib/canvas-ui/particlePortal.ts')
-const frameStyle = read('src/styles/components/frame.css')
+const frameStyle = read('src/chapters/frame/styles/frame.css')
 const projects = [
   'src/chapters/projects/Projects.tsx',
   'src/chapters/projects/ProjectsIntro.tsx',
@@ -99,9 +99,9 @@ const laserRuntime = read('src/lib/canvas-ui/laser.ts')
 const laserCapture = read('src/lib/canvas-ui/laserCapture.ts')
 const laserConfig = read('src/lib/canvas-ui/laserConfig.ts')
 const laserVendor = read('src/lib/canvas-ui/vendor/Laser/LaserVanilla.ts')
-const about = read('src/components/About.tsx') + read('src/components/AboutDossier.tsx')
-if (!read('src/components/About.tsx').includes('<AboutDossier />')) throw new Error('About must render its shared dossier.')
-const aboutStyle = read('src/styles/components/about.css')
+const about = read('src/chapters/about/About.tsx') + read('src/components/AboutDossier.tsx')
+if (!read('src/chapters/about/About.tsx').includes('<AboutDossier />')) throw new Error('About must render its shared dossier.')
+const aboutStyle = read('src/chapters/about/styles/about.css')
 const canvasHtmlSurface = read('src/components/effects/CanvasUiHtmlSurface.tsx')
 const canvasHtmlStyle = read('src/styles/components/canvas-ui-surfaces.css')
 const decryptSurface = read('src/components/effects/AboutDecryptReveal.tsx')
@@ -124,8 +124,8 @@ const footer = [
 const footerLiquid = read('src/components/FooterLiquidCursor.tsx')
 const liquidRuntime = read('src/lib/canvas-ui/liquidField.ts')
 const liquidVendor = read('src/lib/canvas-ui/vendor/Liquid/LiquidVanilla.ts')
-const workTransition = read('src/components/WorkTransition.tsx')
-const workTransitionStyle = read('src/styles/components/work-transition.css')
+const workTransition = read('src/chapters/work-transition/WorkTransition.tsx')
+const workTransitionStyle = read('src/chapters/work-transition/styles/work-transition.css')
 const liquidMetalButton = [
   'src/shaders/liquid-metal-button/LiquidMetalButton.tsx',
   'src/shaders/liquid-metal-button/liquidMetalAdapter.ts',

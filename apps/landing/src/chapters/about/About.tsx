@@ -1,10 +1,10 @@
 import { useRef } from 'react'
-import { gsap, useGSAP } from '../lib/gsap'
-import { revealWords } from '../lib/wordReveal'
-import { facts } from '../content'
-import AboutDecryptReveal from './effects/AboutDecryptReveal'
-import CountUp from './CountUp'
-import AboutDossier from './AboutDossier'
+import { gsap, useGSAP } from '../../lib/gsap'
+import { revealWords } from '../../lib/wordReveal'
+import { facts } from '../../content'
+import AboutDecryptReveal from '../../components/effects/AboutDecryptReveal'
+import CountUp from '../../components/CountUp'
+import AboutDossier from '../../components/AboutDossier'
 
 /** Split a fact value like `'10+'` into its leading number and trailing suffix. */
 function parseFact(value: string): { to: number; suffix: string } {

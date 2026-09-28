@@ -8,13 +8,14 @@
 | --- | --- | --- |
 | 1A | 根、文档与 Personal Archive 工具的当前入口 | `3900ff4`；四类检查通过 |
 | 1B | 路线图、架构文档、历史 PM 文档搬迁与反向链接 | `3514f6a`；四类检查通过 |
-| 1C | 本地产物保留、归档建议、可清理候选 | 四类检查通过；仅清单，不删除、不移动 |
-| 2A | Hero、Life、Skills、Frame、About、Work transition 章节归位 | 待执行 |
+| 1C | 本地产物保留、归档建议、可清理候选 | `47ee2e5`；四类检查通过，仅清单 |
+| 2A | Hero、Life、Skills、Frame、About、Work transition 章节归位 | 36 项迁移完成；四类检查通过 |
 | 2B | `features/personal-archive` 目录方案 | 仅评估，待记录 |
 | 3 | 17 个静态分析候选逐项审计 | 待执行；vendor 来源与许可证单独保留 |
 
 - [文档搬迁与链接验证](document-migration.md)、[149 项路径与 SHA-256 对照](document-moves.tsv)。
 - [1C 三份产物清单](local-artifacts.md)：逐项注明引用、唯一性与再生成条件。
+- [章节迁移说明](chapter-migration.md)、[36 项章节路径与哈希](chapter-moves.tsv)。
 - [逐批检查记录](verification.md)。
 
 1C 的数量和容量来自此前审阅快照，不是本轮扫描结果。脚本引用在新 worktree 核对；原工作区中新增或持续写入的文件按 tim 提供的边界保留。所有源模型、基线、唯一或尚未确认是否唯一的证据均优先保留。
@@ -26,6 +27,15 @@
 | `plan/` | `docs/roadmap/builder-graph/` |
 | `docs/pm/` | `docs/archive/personal-archive-pm/` |
 | `docs/01–05-*.md` | `docs/architecture/01–05-*.md` |
+| `components/Hero.tsx`、`ParticlePortrait.tsx` 与肖像 shaders | `chapters/hero/` |
+| `components/LifeGallery.tsx` | `chapters/life/LifeGallery.tsx` |
+| `components/Skills.tsx`、`components/skills/*` | `chapters/skills/` |
+| `components/Frame.tsx`、`components/frame/*` | `chapters/frame/` |
+| `components/About.tsx` | `chapters/about/About.tsx` |
+| `components/WorkTransition.tsx` | `chapters/work-transition/WorkTransition.tsx` |
+| 上述章节专属 `styles/components/*.css` 与 Frame CSS 子目录 | 对应 `chapters/<chapter>/styles/` |
+
+表中章节路径相对 `apps/landing/src/`。完整逐文件映射以 TSV 为准。
 
 `apps/landing`、`apps/studio`、`packages/content`、`packages/tokens` 边界保持不变。未来项目片的独立 Remotion 工程预留为 `tools/project_films/`，源素材与简报为 `art/project-films/`；本轮仅记录目录约定，不创建工程、不加入 Landing 打包。
 

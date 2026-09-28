@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import About from '../About'
+import About from '../../chapters/about/About'
 import { useMobileExperience } from '../../lib/device'
 import { useReducedMotion } from '../../lib/motion'
 import PersonalArchiveBridge from './PersonalArchiveBridge'

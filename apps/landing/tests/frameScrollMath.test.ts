@@ -3,7 +3,7 @@ import test from 'node:test'
 import {
   computeFrameScrollDuration,
   FRAME_SCROLL_TIMING,
-} from '../src/components/frame/frameScrollMath.ts'
+} from '../src/chapters/frame/frameScrollMath.ts'
 
 void test('Frame themes cap their vertical pin duration instead of feeling scroll-locked', () => {
   const viewportHeight = 900

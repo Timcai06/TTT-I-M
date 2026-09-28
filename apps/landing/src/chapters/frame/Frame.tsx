@@ -1,10 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { archiveIntro, archiveThemes } from '../content'
-import ArchiveTextPanel from './frame/ArchiveTextPanel'
-import ArchiveThemeSection from './frame/ArchiveThemeSection'
-import AccordionGallery from './AccordionGallery'
+import { archiveIntro, archiveThemes } from '../../content'
+import ArchiveTextPanel from './ArchiveTextPanel'
+import ArchiveThemeSection from './ArchiveThemeSection'
+import AccordionGallery from '../../components/AccordionGallery'
 
-const loadFrameParticleHandoff = () => import('./frame/FrameParticleHandoff')
+const loadFrameParticleHandoff = () => import('./FrameParticleHandoff')
 const FrameParticleHandoff = lazy(loadFrameParticleHandoff)
 
 // Frame itself is already a deferred chapter. Start fetching the heavier

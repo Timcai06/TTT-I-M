@@ -25,7 +25,7 @@ import {
   canPrepareLocalEffect,
   canRunLocalEffect,
   observeLocalEffectEligibility,
-} from '../effects/localEffectEligibility'
+} from '../../components/effects/localEffectEligibility'
 import {
   canPromoteFrameTitleCapture,
   cloneStaticFrameTitleCapture,

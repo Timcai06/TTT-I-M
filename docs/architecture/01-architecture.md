@@ -3,7 +3,7 @@
 ## Chapter Routing System
 This portfolio does not use a traditional router (like `react-router`). Instead, it relies on a bespoke "Chapter" mechanism for section mounting, lazy rendering, and sequential transitions.
 - Chapters are lazily loaded to prioritize the initial Hero paint.
-- Every registry entry resolves through `src/chapters/<chapter>/index.ts`. Projects and Contact are full vertical slices; the remaining entries are migration-safe boundaries around their existing implementations.
+- Every registry entry resolves through `src/chapters/<chapter>/index.ts`. Hero, About, Life, Frame, Skills, Work transition, Projects, and Contact keep their chapter bodies under `src/chapters/`; the About, Frame, and Work transition entries still compose the shared personal-archive bridges.
 - `src/lib/chaptersReady.ts` coordinates when a chapter is fully mounted and ready for GSAP ScrollTrigger calculation.
 
 ## Module Responsibilities

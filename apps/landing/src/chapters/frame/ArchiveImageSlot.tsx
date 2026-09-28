@@ -5,7 +5,7 @@ import {
   type ImageLightboxItem,
 } from '../../shared/media/openImageLightbox'
 import { openSafeAsset } from '../../shared/media/openSafeAsset.ts'
-import SignatureMark from '../SignatureMark'
+import SignatureMark from '../../components/SignatureMark'
 
 interface ArchiveSlotStyle extends CSSProperties {
   /** 图片原始宽高比，CSS 用它保留摄影构图比例，避免移动端和桌面端被硬裁切 */

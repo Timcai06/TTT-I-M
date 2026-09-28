@@ -1,10 +1,10 @@
-import { skillRows as rows } from '../content'
-import { approvedArtwork } from '../content/approvedArtwork'
-import ChapterAtmosphere from './ChapterAtmosphere'
-import SkillRowItem from './skills/SkillRowItem'
-import LogoLoop from './LogoLoop'
-import type { LogoItem } from './LogoLoop'
-import { resolveFinalHorizonImage } from '../content/narrativeObjects'
+import { skillRows as rows } from '../../content'
+import { approvedArtwork } from '../../content/approvedArtwork'
+import ChapterAtmosphere from '../../components/ChapterAtmosphere'
+import SkillRowItem from './SkillRowItem'
+import LogoLoop from '../../components/LogoLoop'
+import type { LogoItem } from '../../components/LogoLoop'
+import { resolveFinalHorizonImage } from '../../content/narrativeObjects'
 
 const workingSet = [
   ['01', 'React', 'Interface'],

@@ -14,7 +14,7 @@ import {
 } from '../../lib/webgl/contextRegistry'
 import { useGLSurface } from '../../lib/webgl/useGLSurface'
 import { markDrawableSubtree } from '../../lib/canvas-ui/runtime'
-import ArchiveChapterBridge from '../personal-archive/ArchiveChapterBridge'
+import ArchiveChapterBridge from '../../components/personal-archive/ArchiveChapterBridge'
 import { resolveFinalHorizonImage } from '../../content/narrativeObjects'
 
 type ArchiveImage = (typeof archiveThemes)[number]['clusters'][number]['slots'][number]['image']

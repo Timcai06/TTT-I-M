@@ -27,12 +27,12 @@ function walk(dir) {
 const componentFiles = [...walk('src/components'), ...walk('src/chapters')]
   .filter((file) => /\.(ts|tsx)$/.test(file))
 const dataImport = /from\s+['"][./]*data\//
-const lifeGallerySource = readFileSync('src/components/LifeGallery.tsx', 'utf8')
+const lifeGallerySource = readFileSync('src/chapters/life/LifeGallery.tsx', 'utf8')
 const gradualBlurSource = readFileSync('src/components/GradualBlur.tsx', 'utf8')
 const driftWallSource = readFileSync('src/components/DriftWall.tsx', 'utf8')
 const borderGlowSource = readFileSync('src/components/BorderGlow.tsx', 'utf8')
 const asciiTextSource = readFileSync('src/components/ASCIIText.tsx', 'utf8')
-const frameSource = readFileSync('src/components/Frame.tsx', 'utf8')
+const frameSource = readFileSync('src/chapters/frame/Frame.tsx', 'utf8')
 const projectsSource = [
   'src/chapters/projects/ProjectsIntro.tsx',
   'src/chapters/projects/ProjectsBento.tsx',

@@ -1,14 +1,14 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { gsap } from '../lib/gsap'
-import { createHeroParallax } from '../lib/timelines/heroParallax'
-import { onIntroExit } from '../lib/intro'
-import { usePretextTextInteraction } from '../lib/pretextIntroText'
-import { onChapterArrived } from '../lib/chapterTransition'
+import { gsap } from '../../lib/gsap'
+import { createHeroParallax } from '../../lib/timelines/heroParallax'
+import { onIntroExit } from '../../lib/intro'
+import { usePretextTextInteraction } from '../../lib/pretextIntroText'
+import { onChapterArrived } from '../../lib/chapterTransition'
 import ParticlePortrait from './ParticlePortrait'
-import SignatureMark from './SignatureMark'
-import { useMobileExperience } from '../lib/device'
-import { useReducedMotion } from '../lib/motion'
-const ArchiveIndexSurface = lazy(() => import('./personal-archive/ArchiveIndexSurface'))
+import SignatureMark from '../../components/SignatureMark'
+import { useMobileExperience } from '../../lib/device'
+import { useReducedMotion } from '../../lib/motion'
+const ArchiveIndexSurface = lazy(() => import('../../components/personal-archive/ArchiveIndexSurface'))
 
 /**
  * @description Hero 章节 —— 首页视口顶部的身份视觉锚点。同时处理两大动画轨道：

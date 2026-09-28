@@ -359,7 +359,7 @@ void test('the Index page box is shaped like the monitor it is projected onto',(
   const world=execution.sample(execution.begin('sample','foreground',1,1),storyFrame('index',0))
   const [tl,tr,,bl]=world.anchors.StackReading.map(point=>new Vector3().fromArray(point))
   const measured=new Vector3().subVectors(tr,tl).length()/new Vector3().subVectors(tl,bl).length()
-  const css=readFileSync(new URL('../src/styles/components/hero.css',import.meta.url),'utf8')
+  const css=readFileSync(new URL('../src/chapters/hero/styles/hero.css',import.meta.url),'utf8')
   const declared=Number(/--index-quad-aspect:\s*([\d.]+)/.exec(css)?.[1])
   assert.ok(Number.isFinite(declared),'hero.css declares no --index-quad-aspect')
   assert.ok(Math.abs(declared-measured)<.002,`hero.css says --index-quad-aspect: ${declared}, the real StackReading quad is ${measured}`)

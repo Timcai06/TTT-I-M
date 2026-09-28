@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 
 const appSource = readFileSync('src/App.tsx', 'utf8')
 const archiveRouteSource = readFileSync('src/lib/archiveRoute.ts', 'utf8')
-const heroSource = readFileSync('src/components/Hero.tsx', 'utf8')
+const heroSource = readFileSync('src/chapters/hero/Hero.tsx', 'utf8')
 const providerSource = readFileSync('src/components/ChapterStateProvider.tsx', 'utf8')
 const navSource = readFileSync('src/components/Nav.tsx', 'utf8')
 const navStyleSource = readFileSync('src/styles/components/nav.css', 'utf8')
@@ -10,7 +10,7 @@ const glitchTextStyleSource = readFileSync('src/styles/components/glitch-text.cs
 const scrollIndicatorStyleSource = readFileSync('src/styles/components/scroll-indicator.css', 'utf8')
 const scrollIndicatorSource = readFileSync('src/components/ScrollIndicator.tsx', 'utf8')
 const themeDriverSource = readFileSync('src/components/ChapterThemeDriver.tsx', 'utf8')
-const skillsSource = readFileSync('src/components/Skills.tsx', 'utf8')
+const skillsSource = readFileSync('src/chapters/skills/Skills.tsx', 'utf8')
 const projectsSource = [
   'src/chapters/projects/Projects.tsx',
   'src/chapters/projects/useProjectsNarrative.ts',
@@ -374,7 +374,7 @@ console.log('[chapter-state-guards] navigation uses one shared chapter state pro
   const sheets = [
     'src/components/personal-archive/personal-archive.css',
     'src/components/personal-archive/natural-room.css',
-    'src/styles/components/hero.css',
+    'src/chapters/hero/styles/hero.css',
   ]
   for (const sheet of sheets) {
     const css = readFileSync(new URL(`../../${sheet}`, import.meta.url), 'utf8')
