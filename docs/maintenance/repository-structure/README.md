@@ -9,13 +9,14 @@
 | 1A | 根、文档与 Personal Archive 工具的当前入口 | `3900ff4`；四类检查通过 |
 | 1B | 路线图、架构文档、历史 PM 文档搬迁与反向链接 | `3514f6a`；四类检查通过 |
 | 1C | 本地产物保留、归档建议、可清理候选 | `47ee2e5`；四类检查通过，仅清单 |
-| 2A | Hero、Life、Skills、Frame、About、Work transition 章节归位 | 36 项迁移完成；四类检查通过 |
-| 2B | `features/personal-archive` 目录方案 | 仅评估，待记录 |
+| 2A | Hero、Life、Skills、Frame、About、Work transition 章节归位 | `8de990b`；36 项迁移，四类检查通过 |
+| 2B | `features/personal-archive` 目录方案 | 方案已记录；四类检查通过，不迁移 |
 | 3 | 17 个静态分析候选逐项审计 | 待执行；vendor 来源与许可证单独保留 |
 
 - [文档搬迁与链接验证](document-migration.md)、[149 项路径与 SHA-256 对照](document-moves.tsv)。
 - [1C 三份产物清单](local-artifacts.md)：逐项注明引用、唯一性与再生成条件。
 - [章节迁移说明](chapter-migration.md)、[36 项章节路径与哈希](chapter-moves.tsv)。
+- [2B 房间系统目录评估](personal-archive-plan.md)。
 - [逐批检查记录](verification.md)。
 
 1C 的数量和容量来自此前审阅快照，不是本轮扫描结果。脚本引用在新 worktree 核对；原工作区中新增或持续写入的文件按 tim 提供的边界保留。所有源模型、基线、唯一或尚未确认是否唯一的证据均优先保留。
