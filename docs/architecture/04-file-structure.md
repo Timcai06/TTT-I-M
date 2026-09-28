@@ -22,7 +22,7 @@ Root `package.json` orchestrates via workspace scripts (`build`, `build:studio`,
 - `shared/media/`: deferred media controllers such as the PhotoSwipe adapter shared by Work and Frame.
 - `lab/`: development-only visual inventory available at `/lab`; it must never enter production assets.
 - `lib/`: core infra — `stage.ts` (runtime SSOT), `scroll/` (refresh coordinator), `webgl/` (named leases/useGLSurface/textureCache/quality), `canvas-ui/` (source-pinned vendor engines, integrity manifest, configs and adapters), `resources/` (manifest/loaders/preloadController/taskDeadline/imageDecodeQueue/sharedResource), `mediaQueryStore.ts` (shared motion/device capability subscriptions), `timelines/` (GSAP factories), `chapterScrollMetrics.ts`, `lenis.ts`, `pretextIntroText.ts`, etc.
-- `content/`: content boundary — `schema.ts` / `repositories.ts` / `adapters/` / `index.ts`. **Components import data from here, never from `data/` directly** (guard-enforced).
+- `content/`: content boundary — `schema.ts` re-exports shared metadata from `@timcai/content`, `adapters/static.ts` re-exports its keyed static repository factory, and `index.ts` exposes the landing collections. The `KeyedCollectionRepository` contract and behavior live in `packages/content/src/index.ts` and its package tests. **Components import data from the landing content boundary, never from `data/` directly** (guard-enforced).
 - `data/`: raw static content (consumed only by `content/adapters/static` and the preload manifest infra).
 - `styles/`: global CSS and an ordered chapter/effect/primitive CSS aggregator; chapter-owned CSS lives beside its chapter.
 

@@ -10,40 +10,6 @@ async function waitForLive(page: Page) {
   await expect(page.locator('.intro')).toHaveCount(0, { timeout: INTRO_TIMEOUT_MS })
 }
 
-async function alignSectionTop(
-  section: Locator,
-  viewportRatio: number,
-) {
-  await expect.poll(async () => section.evaluate((node, ratio) => {
-    const delta = node.getBoundingClientRect().top - window.innerHeight * ratio
-    if (Math.abs(delta) > 1) {
-      window.scrollTo({ top: window.scrollY + delta, behavior: 'auto' })
-    }
-    return Math.abs(delta)
-  }, viewportRatio)).toBeLessThan(2)
-}
-
-/**
- * Put the viewport centre at `fraction` of the section's own height.
- *
- * The flow line draws from `innerHeight / 2 - rootRect.top`, so what matters is
- * where the viewport centre sits *inside* the section, not where the section top
- * sits in the viewport. Expressed in viewport heights, the old -0.4 put the
- * centre 0.9 viewports into a section several viewports tall - still in the
- * heading, before the path's first sample, where lengthAtY correctly returns
- * about zero.
- */
-async function centreInSection(section: Locator, fraction: number) {
-  await expect.poll(async () => section.evaluate((node, ratio) => {
-    const rect = node.getBoundingClientRect()
-    const target = rect.height * ratio
-    const centre = window.innerHeight / 2 - rect.top
-    const delta = centre - target
-    if (Math.abs(delta) > 1) window.scrollTo({ top: window.scrollY - delta, behavior: 'auto' })
-    return Math.abs(delta)
-  }, fraction)).toBeLessThan(2)
-}
-
 async function alignSectionProgress(
   page: Page,
   section: Locator,
@@ -80,12 +46,9 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
 
   // Ownership, not a count.
   //
-  // The budget of 2 was written when the page held the room canvas plus at most
-  // one chapter effect. The archive Index panel is position: fixed, so the hero
-  // particle portrait never leaves the viewport and useGLSurface never unmounts
-  // it - the baseline is already two, and any chapter effect makes three. The
-  // sample that failed was `2, 2, 2, 2, 3`, and the third at Contact is the
-  // footer's ascii-filter, which belongs there.
+  // The archive Index panel is fixed, so the hero portrait can remain mounted
+  // while another chapter is active. Check canvas ownership instead of a fixed
+  // count; Contact uses static artwork and should not add an ASCII canvas.
   //
   // A number also could not say which canvas was the surprise. This still fails
   // on a leaked or duplicated surface, which is what the test is for, while
@@ -108,10 +71,8 @@ test('chapter-scoped effects replace the global continuum without leaking canvas
     hero: [], life: [], frame: [], projects: [], contact: [],
   })
   await expect(page.locator('#work-transition .liquid-metal-button')).toHaveCount(0)
-  await expect(page.locator('.footer__ascii [data-ascii-state="live"]')).toHaveCount(1)
-  await expect(page.locator('.footer__ascii .ascii-filter')).toHaveCount(1)
-  await expect(page.locator('.footer__ascii .ascii-filter .ascii-text__glyphs')).toHaveCount(1)
-  await expect(page.locator('.footer__ascii .ascii-text__fallback')).toHaveCount(1)
+  await expect(page.locator('#contact .footer__art')).toHaveCount(1)
+  await expect(page.locator('#contact .footer__ascii')).toHaveCount(0)
 })
 
 test('project bento keeps its outer glow and restores blurred-to-clear focus', async ({ page }) => {
@@ -169,62 +130,19 @@ test('Frame final exposure enters the screen and releases the original Stack rea
   await expect(handoff).toHaveAttribute('data-phase', 'released')
   await expect(handoff.locator('canvas')).toHaveCount(0)
   await expect(page.locator('#skills')).toBeInViewport()
-  await expect(page.locator('#skills .skills__flow-svg')).toHaveCSS('opacity', '1')
+  await expect(page.locator('#skills .skills__body')).toBeVisible()
+  await expect(page.locator('#skills .section__title')).toContainText('The stack')
   await expect(page.locator('#skills .skill-row').first()).toHaveCSS('opacity', '1')
 })
 
-test('Stack flow enters continuously from outside the viewport', async ({ page }) => {
+test('Stack reading surface remains visible without the retired flow animation', async ({ page }) => {
   await waitForLive(page)
-
   const skills = page.locator('#skills')
-  const readSample = () => skills.evaluate((section) => {
-    const active = section.querySelector<SVGPathElement>('.skills__flow-active')
-    const svg = section.querySelector<SVGSVGElement>('.skills__flow-svg')
-    if (!active || !svg) throw new Error('Stack flow path is missing')
-    const dash = getComputedStyle(active).strokeDasharray
-    return {
-      drawn: Number.parseFloat(dash.split(/[ ,]+/)[0] ?? '0'),
-      total: active.getTotalLength(),
-      opacity: Number.parseFloat(getComputedStyle(svg).opacity),
-    }
-  })
-
-  // Read once per position instead of polling a comparison.
-  //
-  // syncLineToViewportCenter draws from `innerHeight / 2 - rootRect.top`, so the
-  // sample is only meaningful at the scroll position alignSectionTop just
-  // reached. The polls held that comparison open for the full expect timeout, and
-  // the archive re-anchors scroll on every ScrollTrigger refresh
-  // (getRetainedSamplePosition -> scrollAtPosition), so the section drifted back
-  // below the viewport centre mid-assertion and the line correctly read 0. A
-  // trace frame caught it there: Stack's heading was still entering from the
-  // bottom while the test was asserting the line had grown.
-  //
-  // The invariant this test exists for is the three samples at the end, which is
-  // unchanged.
-  const settle = async () => { await page.waitForTimeout(120) }
-
-  await alignSectionTop(skills, 1)
-  await settle()
-  const beforeEntry = await readSample()
-
-  await centreInSection(skills, .35)
-  await settle()
-  const atEntry = await readSample()
-
-  await centreInSection(skills, .7)
-  await settle()
-  const inside = await readSample()
-
-  const samples = [beforeEntry, atEntry, inside]
-
-  expect(samples.every(({ opacity }) => opacity === 1)).toBe(true)
-  expect(samples[0]?.drawn).toBeLessThanOrEqual(1)
-  expect(samples[1]?.drawn).toBeGreaterThanOrEqual(samples[0]?.drawn ?? 0)
-  expect(samples[2]?.drawn).toBeGreaterThan(samples[1]?.drawn ?? 0)
-  expect(samples[1]?.drawn).toBeLessThan((samples[1]?.total ?? 0) * 0.7)
-  expect(samples[2]?.drawn).toBeLessThan((samples[2]?.total ?? 0) * 0.75)
-  await expect(page.locator('#skills')).not.toHaveClass(/is-flow-active/)
+  await skills.scrollIntoViewIfNeeded()
+  await expect(skills.locator('.skills__body')).toBeVisible()
+  await expect(skills.locator('.section__title')).toContainText('The stack')
+  await expect(skills.locator('.skill-row').first()).toHaveCSS('opacity', '1')
+  await expect(skills.locator('.skills__flow-svg, .skills__flow-active')).toHaveCount(0)
 })
 
 test('SciScope opens as one uninterrupted film with its original sound', async ({ page }) => {

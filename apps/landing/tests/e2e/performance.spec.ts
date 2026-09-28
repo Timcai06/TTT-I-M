@@ -303,7 +303,7 @@ test('chapter-scoped React Bits effects keep p95 frame time within budget', asyn
     { id: 'life', label: 'Life/DriftWall' },
     { id: 'frame', label: 'Frame/Archive rails' },
     { id: 'projects', label: 'Work/BorderGlow focus cards' },
-    { id: 'contact', label: 'Contact/ASCIIText' },
+    { id: 'contact', label: 'Contact/static artwork' },
   ]
 
   for (const section of sections) {

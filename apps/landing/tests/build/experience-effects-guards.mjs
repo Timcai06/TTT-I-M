@@ -4,7 +4,6 @@ import { createHash } from 'node:crypto'
 import { read } from './lib/source.mjs'
 const required = [
   'src/components/BorderGlow.tsx',
-  'src/components/ASCIIText.tsx',
   'src/components/DriftWall.tsx',
   'src/chapters/work-transition/WorkTransition.tsx',
   'src/chapters/frame/FrameParticleHandoff.tsx',

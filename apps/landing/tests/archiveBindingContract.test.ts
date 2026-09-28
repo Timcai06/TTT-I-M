@@ -1,12 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { AnimationClip, BooleanKeyframeTrack, Object3D, QuaternionKeyframeTrack, VectorKeyframeTrack } from 'three'
 
 import {
   inspectSceneBindings,
+  describeArchiveScene,
   PERSONAL_ARCHIVE_REQUIRED_OBJECTS,
   PERSONAL_ARCHIVE_SCENE_BINDINGS,
 } from '../src/components/personal-archive/sceneBindings.ts'
+import { PERSONAL_ARCHIVE_SAMPLE_STORY } from '../src/core/narrative/index.ts'
 import type {
   SceneBindingDefinition,
   StaticSceneDescription,
@@ -72,6 +75,51 @@ function replaceBinding(
 ): SceneBindingDefinition[] {
   return PERSONAL_ARCHIVE_SCENE_BINDINGS.map(item => item.id === id ? update(item) : item)
 }
+
+function descriptionFixture() {
+  const scene = new Object3D()
+  scene.name = 'ArchiveRoot'
+  for (const required of PERSONAL_ARCHIVE_REQUIRED_OBJECTS) {
+    const node = new Object3D()
+    node.name = required.name
+    scene.add(node)
+  }
+  return {
+    scene,
+    animations: [
+      new AnimationClip('NotebookOpen', 1, [new QuaternionKeyframeTrack('NotebookHinge.quaternion', [0, 1], [0, 0, 0, 1, 0, 0, 0, 1])]),
+      new AnimationClip('LifeEnvelopeOpen', 1, [new QuaternionKeyframeTrack('LifeEnvelopeHinge.quaternion', [0, 1], [0, 0, 0, 1, 0, 0, 0, 1])]),
+      new AnimationClip('LifePhotoExtract', 1, [new VectorKeyframeTrack('LifeMemoryPhoto.position', [0, 1], [0, 0, 0, 1, 0, 0])]),
+    ],
+  }
+}
+
+void test('description maps existing animation track properties without inventing channels', () => {
+  const model = descriptionFixture()
+  const description = describeArchiveScene(model)
+  assert.deepEqual(description.animations[0]?.channels, [{ node: 'NotebookHinge', property: 'rotation' }])
+  assert.deepEqual(description.animations[2]?.channels, [{ node: 'LifeMemoryPhoto', property: 'translation' }])
+  assert.equal(description.animations.some(animation => animation.channels.some(channel => channel.property === 'weights')), false)
+  assert.equal(PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, 'personal-archive-story-v1')
+})
+
+void test('description preserves an unsupported selected-clip track and makes B reject it', () => {
+  const model = descriptionFixture()
+  const notebookClip = model.animations[0]
+  assert.ok(notebookClip)
+  notebookClip.tracks.push(new BooleanKeyframeTrack('NotebookHinge.visible', [0, 1], [true, false]))
+  const description = describeArchiveScene(model)
+  const notebook = description.animations.find(animation => animation.name === 'NotebookOpen')
+  assert.ok(notebook?.channels.some(channel => (
+    channel.node === 'NotebookHinge' && channel.property === 'unsupported:NotebookHinge.visible'
+  )))
+  const inspection = inspectSceneBindings(description)
+  assert.equal(inspection.status, 'invalid')
+  assert.ok(inspection.issues.some(issue => (
+    issue.code === 'undeclared-clip-channel'
+    && issue.detail.includes('NotebookHinge.visible')
+  )))
+})
 
 void test('the real GLB covers all eleven semantic channels and required sample objects', () => {
   const { scene, firstKeyByAnimation } = readGlbScene()

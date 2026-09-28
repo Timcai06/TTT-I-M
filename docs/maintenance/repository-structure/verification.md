@@ -11,7 +11,7 @@
 | 1C | [PASS](../../../output/repository-structure-round1/1C-typecheck.log) | [PASS](../../../output/repository-structure-round1/1C-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/1C-test-unit.log) | [PASS](../../../output/repository-structure-round1/1C-test-build.log) |
 | 2A | [PASS](../../../output/repository-structure-round1/2A-typecheck.log) | [PASS](../../../output/repository-structure-round1/2A-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/2A-test-unit.log) | [PASS](../../../output/repository-structure-round1/2A-test-build.log) |
 | 2B | [PASS](../../../output/repository-structure-round1/2B-typecheck.log) | [PASS](../../../output/repository-structure-round1/2B-lint.log) | [PASS (30 + 5 + 220)](../../../output/repository-structure-round1/2B-test-unit.log) | [PASS](../../../output/repository-structure-round1/2B-test-build.log) |
-| 3 | 待执行 | 待执行 | 待执行 | 待执行 |
+| 3 | [PASS](../../../output/repository-structure-round1/3-typecheck.log) | [PASS](../../../output/repository-structure-round1/3-lint.log) | [PASS (30 + 5 + 209)](../../../output/repository-structure-round1/3-test-unit.log) | [PASS](../../../output/repository-structure-round1/3-test-build.log) |
 
 Unit 数量依次为 content、Studio、Landing。原始日志位于这个 worktree 的 `output/repository-structure-round1/`，被 Git 忽略但保留用于交付；以上链接在该 worktree 可打开，不是新环境自动具备的文件。
 

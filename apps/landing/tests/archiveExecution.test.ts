@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { AnimationClip, Object3D, Mesh, MeshBasicMaterial, PlaneGeometry, Float32BufferAttribute, Texture, QuaternionKeyframeTrack, VectorKeyframeTrack } from 'three'
 import { createArchiveExecution } from '../src/components/personal-archive/archiveExecution.ts'
 import { createArchiveAnimationRig } from '../src/components/personal-archive/archiveAnimationRig.ts'
@@ -97,4 +98,17 @@ void test('applies the full Work and Contact world without history floors', () =
   assert.equal(contact.anchors.ContactReading?.length, 4)
   assert.equal(contact.nodes.find(node => node.name === 'MonitorState_photo')?.visible, true)
   execution.dispose(); rig.dispose()
+})
+
+void test('runtime publishes bounded post-render diagnostics without a legacy shadow writer', () => {
+  const source = readFileSync(new URL('../src/components/personal-archive/archiveRuntime.ts', import.meta.url), 'utf8')
+  assert.doesNotMatch(source, /initializeArchiveStoryShadow|storyShadow\.observe|archiveSampleMode|execution\.legacy/)
+  const draw = source.slice(source.indexOf('function drawSample('), source.indexOf('function drawActive('))
+  const renderIndex = draw.indexOf('composer.render()')
+  const shaderIndex = draw.indexOf('if (shaderFailure) throw shaderFailure')
+  const publishIndex = draw.indexOf("kind: 'sample-committed'")
+  assert.ok(renderIndex >= 0 && renderIndex < shaderIndex && shaderIndex < publishIndex)
+  assert.match(source, /records\.length > 32/)
+  assert.match(source, /catch \{ \/\* diagnostics cannot affect execution \*\//)
+  assert.match(source, /\['contact-reading', 1\]/)
 })

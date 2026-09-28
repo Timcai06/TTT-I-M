@@ -10,13 +10,14 @@
 | 1B | 路线图、架构文档、历史 PM 文档搬迁与反向链接 | `3514f6a`；四类检查通过 |
 | 1C | 本地产物保留、归档建议、可清理候选 | `47ee2e5`；四类检查通过，仅清单 |
 | 2A | Hero、Life、Skills、Frame、About、Work transition 章节归位 | `8de990b`；36 项迁移，四类检查通过 |
-| 2B | `features/personal-archive` 目录方案 | 方案已记录；四类检查通过，不迁移 |
-| 3 | 17 个静态分析候选逐项审计 | 待执行；vendor 来源与许可证单独保留 |
+| 2B | `features/personal-archive` 目录方案 | `277a826`；四类检查通过，仅评估 |
+| 3 | 17 个静态分析候选逐项审计 | 14 项删除、3 项保留；四类检查通过 |
 
 - [文档搬迁与链接验证](document-migration.md)、[149 项路径与 SHA-256 对照](document-moves.tsv)。
 - [1C 三份产物清单](local-artifacts.md)：逐项注明引用、唯一性与再生成条件。
 - [章节迁移说明](chapter-migration.md)、[36 项章节路径与哈希](chapter-moves.tsv)。
 - [2B 房间系统目录评估](personal-archive-plan.md)。
+- [17 项旧模块结论](legacy-modules.md)、[按批次列出的全部改动文件](changed-files.tsv)。
 - [逐批检查记录](verification.md)。
 
 1C 的数量和容量来自此前审阅快照，不是本轮扫描结果。脚本引用在新 worktree 核对；原工作区中新增或持续写入的文件按 tim 提供的边界保留。所有源模型、基线、唯一或尚未确认是否唯一的证据均优先保留。
@@ -50,4 +51,14 @@
 - `apps/landing/src/App.tsx` 在本分支不改，预计不会因本次整理产生该文件的直接内容冲突；它仍是集成后验证开场挂载与章节入口的位置。
 - `chapters/projects/Projects.tsx`、`components/SciScopeFilm.tsx`、`lib/resources/mediaCache.ts` 均保留原位。项目片数据驱动化、懒加载与挂载调整应由主线另行排序；不要与结构整理同时改动这三个文件。
 
+批次 3 还移除了已停用 ASCII 样式的导入；合并 `app.css` 时保留这一删除与其他导入的相对顺序。
+
 以上冲突预测依据共同基点和 tim 描述的未提交改动，不是对原工作区现状的重新扫描。技术检查、文件哈希和路径对照不替代浏览器/GPU 检查或 tim 的视觉验收。
+
+## 范围保持与未验收边界
+
+基点中 264 个保护文件在每次核对均保持相同 SHA-256。没有执行历史建模或模型导出，没有改写模型、节点名、素材 URL、章节 ID 或导航。原工作区未提交的视频文件不在本 worktree 中，未扫描或复制；本轮也未操作 Blender 进程。
+
+批次 3 同步删除仅供旧 ASCII canvas 的 CSS 与两个过时测试文件，保留并迁移三个仍覆盖当前运行时的测试。E2E 中 Contact/Skills 的旧断言随现有产品行为更新；浏览器运行与视觉验收另列，不以静态检查替代。`.skills__flow-svg` 在受保护 `global.css` 的遗留选择器保持原样。
+
+全部六批均完成四类检查，没有因检查失败而回退的批次。1A–2B 每批 255 项 unit tests，批次 3 为 244 项（有依据地退役 11 项旧功能测试，保留当前契约覆盖）。149 项文档与 36 项章节映射的 SHA-256 已再次对照各自批次提交核验，零不一致。最终提交哈希可由 `git log --oneline 4155975..chore/repo-structure` 查阅；此记录不包含自身提交哈希。
