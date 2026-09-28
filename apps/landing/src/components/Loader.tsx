@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { gsap } from '../lib/gsap'
 import { dispatchIntroExit } from '../lib/intro'
+import { requestIntroFilm } from '../lib/introFilm'
 import { setStage } from '../lib/stage'
 import { useIntroPretextInteraction } from '../lib/pretextIntroText'
 import { useWholeSitePreload } from '../lib/resources/preloadController'
@@ -248,6 +249,10 @@ const countRef = useRef<HTMLSpanElement>(null)
       const dot = textRef.current?.querySelector<HTMLElement>('.intro__dot')
 
       const tl = gsap.timeline()
+      // Whether the intro film took the dot. When it did, it owns the viewport and
+      // the stage from here and moves to `live` itself; the rest of this timeline
+      // plays out underneath it unseen.
+      let filmTookOver = false
 
       /* ── hold a beat ── */
       tl.to({}, { duration: 0.35 })
@@ -281,6 +286,12 @@ const countRef = useRef<HTMLSpanElement>(null)
           ease: 'power2.in',
         }, '<0.18')
 
+        /* ── the dot, now red, is offered to the intro film ── */
+        tl.call(() => {
+          const glyph = dot.querySelector<HTMLElement>('.intro__char-glyph') ?? dot
+          filmTookOver = requestIntroFilm({ glyph })
+        })
+
         tl.to(dot, {
           opacity: 0,
           duration: 0.24,
@@ -289,7 +300,9 @@ const countRef = useRef<HTMLSpanElement>(null)
       }
 
       /* ── hand off to hero just before the panel clears ── */
-      tl.call(dispatchIntroExit, [], '>-0.15')
+      tl.call(() => {
+        if (!filmTookOver) dispatchIntroExit()
+      }, [], '>-0.15')
 
       /* ── reveal the already-composed Index without translating the whole viewport ── */
       tl.to(panelRef.current, {

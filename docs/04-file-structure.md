@@ -61,4 +61,6 @@ CSS imports are assigned to the fixed cascade order `reset → tokens → base �
 
 ## Root Directories
 - `scripts/` (in landing): asset generation (`setup-assets.mjs`, runs on predev/prebuild).
+- `art/<project>/`: source material for rendered or modelled assets. The README, `.gitignore` and briefs are tracked; the `.blend` files, textures and renders are local-only (`art/personal-archive` for the room, `art/intro-film` for the intro film).
+- `tools/<project>/`: the tracked scripts that build and render those assets (`tools/personal_space`, `tools/intro_film`).
 - `tests/`: Playwright e2e + per-workspace build guards (`apps/landing/tests/build/*`) + root `tests/build/platform-guards.mjs`.

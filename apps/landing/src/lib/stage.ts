@@ -9,7 +9,9 @@ import { useSyncExternalStore } from 'react'
  * and the loose `INTRO_EXIT_EVENT` window event with one observable machine:
  *
  *   booting ──(loader title landed)──▶ intro
- *   intro ──(loader hands off / 2.2s fallback)──▶ live
+ *   intro ──(loader hands its dot to the intro film)──▶ film
+ *   film ──(the film's last frame matches the hero / skip / watchdog)──▶ live
+ *   intro ──(no film: loader hands off / 2.2s fallback)──▶ live
  *   live ──(chapter jump request)──▶ transitioning
  *   transitioning ──(transition timeline ends)──▶ live
  *
@@ -17,7 +19,7 @@ import { useSyncExternalStore } from 'react'
  * now reads from here, and heavy WebGL surfaces subscribe so they can self-pause
  * during a transition (the GPU-heaviest moment).
  */
-export type Stage = 'booting' | 'intro' | 'live' | 'transitioning'
+export type Stage = 'booting' | 'intro' | 'film' | 'live' | 'transitioning'
 
 let current: Stage = 'booting'
 const listeners = new Set<(stage: Stage) => void>()

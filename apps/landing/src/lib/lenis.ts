@@ -90,11 +90,13 @@ export function useLenis() {
     ScrollTrigger.addEventListener('refresh', syncLenisDimensions)
 
     // A chapter-jump transition owns the viewport: freeze smooth scrolling while
-    // the overlay plays and resume when we land. This lives here (the single
-    // Lenis owner) as a stage side-effect instead of being driven imperatively
-    // from inside ChapterTransition. stop()/start() are idempotent.
+    // the overlay plays and resume when we land. The intro film owns it the same
+    // way — the page must still be at the Index when the film lands on it. This
+    // lives here (the single Lenis owner) as a stage side-effect instead of being
+    // driven imperatively from inside ChapterTransition. stop()/start() are
+    // idempotent.
     const unsubStage = subscribeStage((stage) => {
-      stagePaused=stage==='transitioning';syncPause()
+      stagePaused=stage==='transitioning'||stage==='film';syncPause()
     })
 
     // Refresh ScrollTrigger after a tick to make sure the DOM heights have settled

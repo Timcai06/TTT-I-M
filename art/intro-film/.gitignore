@@ -1,0 +1,4 @@
+# Large or derived material stays on this machine; see README.
+/assets/
+/work/
+/references/**/*.png

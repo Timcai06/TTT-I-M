@@ -1,4 +1,4 @@
-import { isLive, setStage, subscribeStage } from './stage'
+import { getStage, isLive, setStage, subscribeStage } from './stage'
 
 // The intro lifecycle is now backed by the runtime stage machine (lib/stage.ts).
 // This module keeps the small, ergonomic surface its callers already use
@@ -52,7 +52,12 @@ export function onIntroExit(callback: () => void) {
   unsub = subscribeStage((stage) => {
     if (stage === 'live' || stage === 'transitioning') runOnce()
   })
-  timer = window.setTimeout(runOnce, INTRO_FALLBACK_MS)
+  // The intro film is a supervised phase with its own watchdog (lib/introFilm),
+  // not a missed hand-off: a reveal that fired during it would play behind the
+  // film and be spent by the time the film opens onto the page.
+  timer = window.setTimeout(() => {
+    if (getStage() !== 'film') runOnce()
+  }, INTRO_FALLBACK_MS)
 
   return cleanup
 }

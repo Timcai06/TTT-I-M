@@ -283,6 +283,9 @@
    complete engine whose only consumers were that toggle and the film player, so a
    visitor who never opened the nav never had any way to reach it. */
 .intro__sound {
+  /* .intro is pointer-events: none so the page can take the cursor the moment it
+     is revealed; the sound choice is the one control that must stay clickable. */
+  pointer-events: auto;
   position: absolute;
   bottom: clamp(18px, 3vh, 34px);
   left: 50%;
