@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   displayedProgressValue,
+  displayedProgressText,
   introCharGroup,
   introRiseStagger,
   progressDampFactor,
@@ -57,6 +58,18 @@ void test('display value reaches exactly 100 once the render-ready gate opens', 
   assert.equal(displayedProgressValue(1, true), 100)
   // ceil, so a freshly-ready low value still rounds up rather than stalling
   assert.equal(displayedProgressValue(0.001, true), 1)
+})
+
+void test('measured tenths keep the counter monotonic without showing 100 before readiness', () => {
+  const values = [0, .0401, .0409, .041, .9999, 1].map(value => displayedProgressText(value, false))
+  assert.deepEqual(values, ['00.0', '04.0', '04.0', '04.1', '99.9', '99.9'])
+  assert.equal(displayedProgressText(.999, true), '100')
+  let previous = 0
+  for (let i = 0; i <= 1000; i++) {
+    const next = Number(displayedProgressText(i / 1000, false))
+    assert.ok(next >= previous)
+    previous = next
+  }
 })
 
 void test('failed resources leave a real gap in the progress bar', () => {

@@ -6,7 +6,7 @@ import { setStage } from '../lib/stage'
 import { useIntroPretextInteraction } from '../lib/pretextIntroText'
 import { useWholeSitePreload } from '../lib/resources/preloadController'
 import {
-  displayedProgressValue,
+  displayedProgressText,
   introCharGroup,
   introRiseStagger,
   stepDisplayedProgress,
@@ -210,9 +210,9 @@ const countRef = useRef<HTMLSpanElement>(null)
 
       displayedProgress = stepDisplayedProgress(displayedProgress, target, currentHandoffReady)
 
-      const displayValue = displayedProgressValue(displayedProgress, currentHandoffReady)
+      const displayValue = displayedProgressText(displayedProgress, currentHandoffReady)
 
-      if (countRef.current) countRef.current.textContent = String(displayValue).padStart(2, '0')
+      if (countRef.current) countRef.current.textContent = displayValue
       if (barRef.current) barRef.current.style.transform = `scaleX(${displayedProgress.toFixed(4)})`
 
       if (!currentHandoffReady || displayedProgress < 0.999) {
@@ -365,7 +365,7 @@ const countRef = useRef<HTMLSpanElement>(null)
         <span>{preload.criticalReady ? 'Device assets' : 'Runtime core'}</span>
       </div>
       <div className="intro__counter">
-        <span ref={countRef}>00</span>
+        <span ref={countRef}>00.0</span>
         <span className="intro__counter-sep">/ 100</span>
         <span className="intro__spinner" aria-hidden="true">{spinnerGlyph}</span>
         <span className="intro__stage">{stageText}</span>

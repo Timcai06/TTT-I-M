@@ -30,6 +30,8 @@ interface PreloadTaskDebugEntry {
   startedAt: number
   /** 当前任务状态；rejected 在本预加载器中表示“准备失败，等待重试”。 */
   status: PreloadTaskDebugStatus
+  /** Real subtask fraction when the loader can measure it. */
+  progress?: number
 }
 
 /**
@@ -124,9 +126,11 @@ function createPreloadDebug(tasks: ResourceTask[]): PreloadDebugHandle | undefin
   }))
 
   const publicEntries = (status?: PreloadTaskDebugStatus) => Object.freeze(
-    entries
-      .filter((entry) => status === undefined || entry.status === status)
-      .map((entry) => Object.freeze({ ...entry })),
+    entries.flatMap((entry, index) => {
+      if (status !== undefined && entry.status !== status) return []
+      const progress = entry.status === 'pending' ? tasks[index]?.progress?.() : undefined
+      return [Object.freeze({ ...entry, ...(progress === undefined ? {} : { progress }) })]
+    }),
   )
   const snapshot = () => Object.freeze({
     failed: publicEntries('rejected'),

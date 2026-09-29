@@ -47,6 +47,13 @@ export function displayedProgressValue(displayed: number, renderReady: boolean):
     : Math.min(99, Math.floor(displayed * 100))
 }
 
+/** Show measured tenths while resources arrive; never count an unfinished gate as 100. */
+export function displayedProgressText(displayed: number, renderReady: boolean): string {
+  if (renderReady) return String(displayedProgressValue(displayed, true)).padStart(2, '0')
+  const tenths = Math.min(999, Math.max(0, Math.floor(displayed * 1000)))
+  return (tenths / 10).toFixed(1).padStart(4, '0')
+}
+
 /**
  * Progress represents resources that are actually usable, not merely settled.
  * A rejected task still finishes its promise, but must leave a visible gap so
