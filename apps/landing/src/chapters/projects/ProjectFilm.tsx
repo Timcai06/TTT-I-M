@@ -20,6 +20,7 @@ export default function ProjectFilm({ project }: { project: Project }) {
   const playButton = useRef<HTMLDivElement>(null)
   const warmTimer = useRef<number | undefined>(undefined)
   const pointerOnButton = useRef(false)
+  const hoverStartedAt = useRef(-Infinity)
   const lastScrollAt = useRef(-Infinity)
   const [filmOpen, setFilmOpen] = useState(false)
   const { enterFilmMode, exitFilmMode, setEnabled, stopActive } = useSound()
@@ -33,15 +34,22 @@ export default function ProjectFilm({ project }: { project: Project }) {
     video.load()
   }, [])
 
-  const beginHoverWarmup = useCallback(() => {
-    if (pointerOnButton.current) return
-    pointerOnButton.current = true
+  const scheduleWarmup = useCallback(() => {
     window.clearTimeout(warmTimer.current)
+    if (!pointerOnButton.current) return
+    const readyAt = Math.max(hoverStartedAt.current, lastScrollAt.current) + 150
     warmTimer.current = window.setTimeout(() => {
       warmTimer.current = undefined
       if (pointerOnButton.current && performance.now() - lastScrollAt.current >= 150) warmFilm()
-    }, 150)
+    }, Math.max(0, readyAt - performance.now()))
   }, [warmFilm])
+
+  const beginHoverWarmup = useCallback(() => {
+    if (pointerOnButton.current) return
+    pointerOnButton.current = true
+    hoverStartedAt.current = performance.now()
+    scheduleWarmup()
+  }, [scheduleWarmup])
 
   const endHoverWarmup = useCallback(() => {
     pointerOnButton.current = false
@@ -62,8 +70,9 @@ export default function ProjectFilm({ project }: { project: Project }) {
     }
     const onScroll = () => {
       lastScrollAt.current = performance.now()
-      pointerOnButton.current = false
-      cancelWarmup()
+      // Keep a stationary hover eligible once scrolling has settled. A final
+      // Lenis scroll event can otherwise cancel the only pointer-enter timer.
+      scheduleWarmup()
     }
     const onPageHide = () => {
       cancelWarmup()
@@ -99,7 +108,7 @@ export default function ProjectFilm({ project }: { project: Project }) {
       window.removeEventListener('pageshow', onPageShow)
       window.removeEventListener('portfolio:iframe-pointer', onIframePointer)
     }
-  }, [beginHoverWarmup, endHoverWarmup, film])
+  }, [beginHoverWarmup, endHoverWarmup, film, scheduleWarmup])
 
   if (!film) return null
 
