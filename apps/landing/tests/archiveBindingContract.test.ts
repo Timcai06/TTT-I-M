@@ -157,15 +157,15 @@ void test('the real GLB covers all eleven semantic channels and required sample 
   })
 
   const notebook = inspection.coverage.find(item => item.bindingId === 'notebook-open')
-  assert.equal(firstKeyByAnimation.get('NotebookOpen'), 1 / 30)
+  assert.ok(Math.abs((firstKeyByAnimation.get('NotebookOpen') ?? NaN) - 1 / 30) < 1e-7)
   assert.equal(notebook?.sampleStart, 0)
-  assert.equal(notebook?.sampleEnd, 25 / 30)
+  assert.ok(Math.abs((notebook?.sampleEnd ?? NaN) - 25 / 30) < 1e-7)
   const drawer = inspection.coverage.find(item => item.bindingId === 'work-drawer-open')
   assert.equal(drawer?.sampleStart, 1)
-  assert.equal(drawer?.sampleEnd, 2.4)
+  assert.ok(Math.abs((drawer?.sampleEnd ?? NaN) - 2.4) < 1e-7)
   const folder = inspection.coverage.find(item => item.bindingId === 'work-folder-lift')
-  assert.equal(folder?.sampleStart, 74 / 30)
-  assert.equal(folder?.sampleEnd, 110 / 30)
+  assert.ok(Math.abs((folder?.sampleStart ?? NaN) - 74 / 30) < 1e-7)
+  assert.ok(Math.abs((folder?.sampleEnd ?? NaN) - 110 / 30) < 1e-7)
 })
 
 void test('detects missing, renamed, target, property, and unknown binding failures', () => {

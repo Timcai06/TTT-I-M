@@ -11,6 +11,9 @@ assert.equal(bytes.toString('utf8', 0, 4), 'glTF')
 assert.equal(bytes.readUInt32LE(4), 2)
 assert.equal(bytes.readUInt32LE(8), bytes.length)
 const model = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString())
+assert.ok(model.extensionsRequired?.includes('EXT_meshopt_compression'), 'Delivery geometry must use Meshopt')
+assert.ok(model.extensionsRequired?.includes('KHR_texture_basisu'), 'Delivery textures must use KTX2')
+assert.ok(model.images.every(image => image.mimeType === 'image/ktx2'), 'Delivery must not retain JPEG, WebP or PNG images')
 const textureImage = index => { const t = model.textures[index]; return model.images[t.extensions?.KHR_texture_basisu?.source ?? t.extensions?.EXT_texture_webp?.source ?? t.source] }
 const hinge = model.nodes.findIndex((node) => node.name === 'NotebookHinge')
 const cover = model.nodes.findIndex((node) => node.name === 'NotebookCover')
@@ -47,8 +50,13 @@ for (const [name, resolution] of materialResolutions) {
   const image = textureImage(material.pbrMetallicRoughness.baseColorTexture.index)
   const view = model.bufferViews[image.bufferView]
   const offset = 28 + bytes.readUInt32LE(12) + (view.byteOffset ?? 0)
-  const metadata = await sharp(bytes.subarray(offset, offset + view.byteLength)).metadata()
-  assert.equal(metadata.width, resolution, `${name}: texture resolution regressed`)
+  // Delivery now stores colour maps in KTX2 as well as irradiance. Sharp does
+  // not decode KTX2 metadata; its header records the same pixel dimensions at
+  // offsets 20/24. Keep the original resolution assertion for both formats.
+  const width = image.mimeType === 'image/ktx2'
+    ? bytes.readUInt32LE(offset + 20)
+    : (await sharp(bytes.subarray(offset, offset + view.byteLength)).metadata()).width
+  assert.equal(width, resolution, `${name}: texture resolution regressed`)
 }
 const room = model.meshes[model.nodes.find(node => node.name === 'ArchiveArchitecture')?.mesh]
 assert.ok(room, 'Baked room geometry missing')
@@ -58,6 +66,7 @@ for (const primitive of room.primitives) {
   if (!material.extras?.archive_lightmap) continue
   const modern = material.extras.archive_lightmap_version === 2
   const slot = modern ? material.extras.archiveLightTexture : material.occlusionTexture
+  assert.ok(Number.isInteger(slot?.index) && model.textures[slot.index], `${material.name}: archive lightmap texture reference missing`)
   assert.ok(primitive.attributes[`TEXCOORD_${slot.texCoord ?? 0}`] !== undefined, 'Lightmap atlas coordinates missing')
   const image = textureImage(slot.index)
   const packed = material.pbrMetallicRoughness?.metallicRoughnessTexture

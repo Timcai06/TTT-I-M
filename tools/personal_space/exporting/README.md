@@ -16,7 +16,7 @@ rtk proxy node tools/personal_space/exporting/rebuild_sunrise.mjs
 
 现有法线和粗糙度使用原 UV/原分辨率。ORM 的 R/G/B 分别为 AO/粗糙度/金属度；AO 可以通过 glTF 的独立 `texCoord` 读取同一纹理的另一个 UV。RGB 间接色通过 `extras.archiveLightTexture` 单独传输，不占用 AO 槽。`RoomBake_` 名称保留，新增槽在 `archive_bake_slot` 中记录。
 
-编码采用 UASTC quality 4、关闭 RDO、Zstandard 18、完整 mipmap。WebP/JPEG 基础色保留。tim 已明确放宽原 50 MiB 目标，以材质质量优先；构建继续报告真实总量，并计入 KTX2 解码器。
+材质烘焙阶段采用 UASTC quality 4、关闭 RDO、Zstandard 18、完整 mipmap，原始 WebP/JPEG 基础色在这一阶段保留。最终交付阶段由 `optimize_delivery.mjs` 将剩余基础色转为 KTX2 ETC1S（quality 255、compression level 5），再通过 glTF Transform 的 medium Meshopt 对几何做 16/12/16 位 position/normal/UV 量化与压缩。这个后处理也可独立作用于现有 GLB，命令和版本见[上级 README](../README.md)。tim 已明确放宽原 50 MiB 目标，以材质质量优先；构建继续报告真实总量，并计入 KTX2 与 Meshopt 解码器。
 
 环境输入保存于 `art/personal-archive/textures/sunrise-bake/environment.json`，来自项目实际 RoomEnvironment PMREM；重建流程不启动浏览器，也不做前端视觉验证。中间结果及原文件备份位于 `output/material-optimization/`，仍需保留供回退和核对。
 

@@ -13,6 +13,7 @@ import { solveArchiveCamera } from '../src/components/personal-archive/archiveCa
 import { projectArchiveQuad } from '../src/components/personal-archive/archiveReadingSurface.ts'
 import { addContactReadingPlane } from '../src/components/personal-archive/readingFrame.ts'
 import type { SampleSegment } from '../src/core/narrative/types.ts'
+import { glbAccessor } from './glbAccessor.ts'
 
 type Accessor = { bufferView:number; byteOffset?:number; componentType:number; count:number; type:string }
 type RawNode = { name:string; mesh?:number; children?:number[]; translation?:number[]; rotation?:number[]; scale?:number[]; matrix?:number[] }
@@ -22,15 +23,7 @@ const bytes=readFileSync(process.env.ARCHIVE_MODEL_PATH ?? new URL('../src/asset
 const jsonLength=bytes.readUInt32LE(12), raw=JSON.parse(bytes.subarray(20,20+jsonLength).toString()) as Raw
 const isWalnutMaterial=(name:string|undefined)=>name==='RoomBake_Walnut_oiled'||name==='Walnut_oiled'||name==='WebRefine / furniture-wood'
 function accessor(index:number) {
-  const a=raw.accessors[index], view=raw.bufferViews[a.bufferView]
-  const width=({SCALAR:1,VEC2:2,VEC3:3,VEC4:4} as Record<string,number>)[a.type]
-  const size=a.componentType===5123 ? 2 : 4
-  const values=[]
-  for(let i=0;i<a.count;i++) for(let k=0;k<width;k++) {
-    const offset=jsonLength+28+(view.byteOffset??0)+(a.byteOffset??0)+i*(view.byteStride??width*size)+k*size
-    values.push(a.componentType===5126?bytes.readFloatLE(offset):size===2?bytes.readUInt16LE(offset):bytes.readUInt32LE(offset))
-  }
-  return values
+  return glbAccessor(bytes,raw,index)
 }
 function model(includeWalnutPrimitive=false) {
   const texture=new Texture({width:1280,height:960})
@@ -75,20 +68,23 @@ function storyFrame(segment:SampleSegment,progress:number) { return sampleStory(
 function frame(progress:number) { return storyFrame('life-frame',progress) }
 const close=(a:number[],b:number[],tolerance=1e-5)=>{assert.equal(a.length,b.length);a.forEach((v,i)=>assert.ok(Math.abs(v-b[i])<=tolerance,`${i}: ${v} != ${b[i]}`))}
 
-void test('real source and wall use the exact football image bytes and the authored full UV domain',()=>{
+void test('real source and wall share one KTX2 football image and the authored full UV domain',()=>{
   const hashes=[]
   for(const name of ['LifeMemoryPhoto','ArchivePhoto_04']) {
     const n=raw.nodes.find(n=>n.name===name)!, p=raw.meshes[n.mesh!].primitives[0]
     const texture=raw.materials[p.material].pbrMetallicRoughness!.baseColorTexture!.index
     assert.ok(Number.isInteger(texture) && texture >= 0)
-    const entry=raw.textures[texture] as {source?:number;extensions?:{EXT_texture_webp:{source:number}}}
-    const image=raw.images[entry.source??entry.extensions!.EXT_texture_webp.source],view=raw.bufferViews[image.bufferView],start=jsonLength+28+(view.byteOffset??0)
-    hashes.push(createHash('sha256').update(bytes.subarray(start,start+view.byteLength)).digest('hex'))
+    const entry=raw.textures[texture] as {source?:number;extensions?:{KHR_texture_basisu?:{source:number}}}
+    const image=raw.images[entry.extensions?.KHR_texture_basisu?.source??entry.source!],view=raw.bufferViews[image.bufferView],start=jsonLength+28+(view.byteOffset??0)
+    const data=bytes.subarray(start,start+view.byteLength)
+    assert.deepEqual(data.subarray(0,12),Buffer.from('ab4b5458203230bb0d0a1a0a','hex'))
+    assert.equal(data.readUInt32LE(20),1280)
+    assert.equal(data.readUInt32LE(24),960)
+    hashes.push(createHash('sha256').update(data).digest('hex'))
     const uv=accessor(p.attributes.TEXCOORD_0)
     assert.equal(Math.min(...uv),0);assert.equal(Math.max(...uv),1)
   }
-  const original=readFileSync(new URL('../public/life/football-action.webp',import.meta.url))
-  assert.deepEqual(hashes,[0,1].map(()=>createHash('sha256').update(original).digest('hex')))
+  assert.equal(hashes[0],hashes[1])
 })
 
 void test('all nine UV probes and every target paper vertex fit real nonuniform source and curved target endpoints',()=>{

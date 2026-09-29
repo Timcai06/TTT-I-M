@@ -17,6 +17,7 @@ import {
 } from '../src/components/personal-archive/archiveAnimationRig.ts'
 import { PERSONAL_ARCHIVE_SCENE_BINDINGS } from '../src/components/personal-archive/sceneBindings.ts'
 import type { SemanticWorld } from '../src/core/narrative/types.ts'
+import { glbAccessor } from './glbAccessor.ts'
 
 interface GltfAccessor {
   bufferView: number
@@ -67,7 +68,6 @@ const binaryLength = glbBytes.readUInt32LE(binaryHeader)
 const binaryOffset = binaryHeader + 8
 assert.ok(binaryOffset + binaryLength <= glbBytes.length)
 
-const components = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 } as const
 const selectedClips = new Set(PERSONAL_ARCHIVE_SCENE_BINDINGS.map(binding => binding.clip))
 
 function accessorFloats(index: number) {
@@ -75,20 +75,7 @@ function accessorFloats(index: number) {
   assert.ok(accessor)
   assert.equal(accessor.componentType, 5126, `accessor ${index} must preserve FLOAT animation data`)
   assert.equal(accessor.sparse, undefined, `accessor ${index} sparse data is unsupported by this bounded loader`)
-  const view = gltf.bufferViews[accessor.bufferView]
-  assert.ok(view)
-  assert.equal(view.buffer, 0)
-  const width = components[accessor.type]
-  const stride = view.byteStride ?? width * 4
-  const start = binaryOffset + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0)
-  const values = new Float32Array(accessor.count * width)
-  const data = new DataView(glbBytes.buffer, glbBytes.byteOffset, glbBytes.byteLength)
-  for (let item = 0; item < accessor.count; item++) {
-    for (let component = 0; component < width; component++) {
-      values[item * width + component] = data.getFloat32(start + item * stride + component * 4, true)
-    }
-  }
-  return values
+  return new Float32Array(glbAccessor(glbBytes, gltf, index))
 }
 
 function loadActualAnimationModel() {

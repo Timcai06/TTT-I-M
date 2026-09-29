@@ -1,6 +1,7 @@
 import { FileLoader, LinearSRGBColorSpace, LoadingManager, type WebGLRenderer } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import basisWasmUrl from 'three/examples/jsm/libs/basis/basis_transcoder.wasm?url'
 
 /**
@@ -61,7 +62,7 @@ class ScopedWorkerKTX2Loader extends KTX2Loader {
 export function createArchiveModelLoader(renderer: WebGLRenderer) {
   const manager = new LoadingManager()
   const ktx = new ScopedWorkerKTX2Loader(manager).setWorkerLimit(2).detectSupport(renderer)
-  const loader = new GLTFLoader(manager).setKTX2Loader(ktx)
+  const loader = new GLTFLoader(manager).setKTX2Loader(ktx).setMeshoptDecoder(MeshoptDecoder)
   loader.register(parser => ({
     name: 'ARCHIVE_material_irradiance',
     extendMaterialParams(index, params) {

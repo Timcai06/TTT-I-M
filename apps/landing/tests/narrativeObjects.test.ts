@@ -31,7 +31,7 @@ const [{ resolveNarrativePhoto }, { photos, archiveThemes }] = await Promise.all
 
 interface GltfTexture {
   source?: number
-  extensions?: { EXT_texture_webp?: { source: number } }
+  extensions?: { KHR_texture_basisu?: { source: number } }
 }
 
 void test('resolves football content to the unique current content entry without array-position fallback', () => {
@@ -89,7 +89,7 @@ void test('reports missing, duplicate, and unrelated content identities explicit
   })
 })
 
-void test('matches both GLB football carriers to the public WebP through EXT_texture_webp', () => {
+void test('both GLB football carriers share the delivered KTX2 image', () => {
   const glb = readFileSync(new URL('../src/assets/personal-archive/personal-space.glb', import.meta.url))
   const publicWebp = readFileSync(new URL('../public/life/football-action.webp', import.meta.url))
   const jsonLength = glb.readUInt32LE(12)
@@ -112,12 +112,12 @@ void test('matches both GLB football carriers to the public WebP through EXT_tex
     assert.ok(typeof textureIndex === 'number', `${name}: base color texture missing`)
     const texture = model.textures[textureIndex]
     assert.ok(texture, `${name}: texture missing`)
-    const extensionSource = texture.extensions?.EXT_texture_webp?.source
-    assert.ok(typeof extensionSource === 'number', `${name}: EXT_texture_webp source missing`)
+    const extensionSource = texture.extensions?.KHR_texture_basisu?.source
+    assert.ok(typeof extensionSource === 'number', `${name}: KHR_texture_basisu source missing`)
     assert.equal(texture.source, undefined)
     const image = model.images[extensionSource]
     assert.ok(image, `${name}: image missing`)
-    assert.equal(image.mimeType, 'image/webp')
+    assert.equal(image.mimeType, 'image/ktx2')
     const view = model.bufferViews[image.bufferView]
     assert.ok(view, `${name}: image buffer view missing`)
     const offset = 28 + jsonLength + (view.byteOffset ?? 0)
@@ -128,16 +128,15 @@ void test('matches both GLB football carriers to the public WebP through EXT_tex
     }
   })
 
-  // Both carriers must resolve to one texture, not to index 33. The absolute index
-  // was pinned here and broke the moment the room was re-exported with ORM and KTX2
-  // bakes — 46 images became 104 and everything after them shifted. What matters is
-  // unchanged and still checked below: one shared source, reached through
-  // EXT_texture_webp rather than KTX2, whose bytes are the public file exactly. The
-  // football photo has to stay uncompressed WebP because the 3D->2D handoff shows
-  // the same bytes as a DOM image, and a transcoded copy would not match.
+  // The 3D carrier is transcoded for GPU delivery while the DOM still uses WebP.
+  // Preserve the shared image and source dimensions; Tim reviews the handoff.
   assert.equal(sources[0].textureIndex, sources[1].textureIndex)
   assert.equal(sources[0].source, sources[1].source)
-  for (const source of sources) assert.deepEqual(source.bytes, publicWebp)
+  for (const source of sources) {
+    assert.deepEqual(source.bytes.subarray(0, 12), Buffer.from('ab4b5458203230bb0d0a1a0a', 'hex'))
+    assert.equal(source.bytes.readUInt32LE(20), 1280)
+    assert.equal(source.bytes.readUInt32LE(24), 960)
+  }
   assert.equal(
     createHash('sha256').update(publicWebp).digest('hex'),
     'c455f28157c4a10a3b5fe2f809ef7087e940f76884fbc7cb05d165a7de6ee313',

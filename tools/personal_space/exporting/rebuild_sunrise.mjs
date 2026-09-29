@@ -44,6 +44,7 @@ run(process.execPath, ['tools/personal_space/checks/verify-material-optimization
 bake(`${scripts}/update_source_prop_materials.py`)
 bake('tools/personal_space/checks/verify-source-materials.py')
 node(`${scripts}/finalize_material_delivery.mjs`)
+node(`${scripts}/optimize_delivery.mjs`)
 run(process.execPath, ['--test', 'apps/landing/tests/archiveBindingContract.test.ts', 'apps/landing/tests/archiveAnimationRig.test.ts', 'apps/landing/tests/archivePhotoTransfer.test.ts'])
 run('npm', ['run', 'build:landing'])
 run(process.execPath, ['tools/personal_space/checks/verify-model.mjs', '--production'])

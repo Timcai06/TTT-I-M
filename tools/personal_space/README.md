@@ -21,3 +21,15 @@ This is a production asset operation, not a read-only check. Its intermediate fi
 | `legacy/` | Older build and upgrade scripts plus [historical operating notes](legacy/README-history.md). |
 
 The dated [model](../../docs/landing/delivery/model-review.md), [lake-window](../../docs/landing/delivery/lake-window-model.md), [warm-room](../../docs/landing/delivery/warm-archive.md), and [natural-room](../../docs/landing/delivery/natural-room-implementation.md) reports preserve the outcomes of those stages. Their former “current” and “latest” script labels describe the period when each report was written. The older `bake_web_materials.py` → `export_web_scene.py` → `optimize_web_scene.mjs` chain is superseded by the sunrise pipeline for website material delivery.
+
+## Final delivery compression
+
+`rebuild_sunrise.mjs` runs `exporting/optimize_delivery.mjs` after material finalization. The latter can also be run on an existing GLB without rerunning Blender or writing to `output/`:
+
+```sh
+rtk proxy env TOKTX=/absolute/path/to/KTX-Software-4.4.2/toktx node tools/personal_space/exporting/optimize_delivery.mjs input.glb output.glb
+```
+
+Install dependencies with the repository lockfile (`npm ci`); glTF Transform Core, Extensions, Functions, and meshoptimizer are pinned in `package.json`. Use Khronos KTX-Software 4.4.2 for `TOKTX`. The pass converts remaining JPEG, WebP, and PNG colour images to KTX2 ETC1S at quality 255 / compression level 5, with generated mipmaps and sRGB transfer. Existing KTX2 images are retained. glTF Transform then applies medium-level Meshopt compression with 16-bit positions, 12-bit normals, and 16-bit UVs across the scene bounds. The 455k-vertex static `ArchiveArchitecture` mesh keeps that quantization. Interactive meshes retain their original vertex order, float32 positions, and node transforms because the photo transfer and animated handoffs address exact named geometry; Meshopt still compresses their buffers. Intermediates are created under the system temporary directory and removed when the command ends. The destination is replaced only after extension, image, mesh, and animation count checks succeed.
+
+Run `node tools/personal_space/checks/verify-model.mjs` and the Landing build guards on the resulting website asset. Compare index, entry, and about-life views against the input before accepting geometry and texture precision; these automated checks establish contracts, not the final visual verdict. The compression commit is independent so the model and decoder can be reverted together if tim rejects those views.
