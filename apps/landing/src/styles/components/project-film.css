@@ -202,9 +202,15 @@
   background: #000;
 }
 
+.project-film__dialog video.project-film__video--awaiting-frame {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .project-film__loading {
   position: absolute;
   inset: 0;
+  z-index: 1;
   overflow: hidden;
   background: #050505;
   pointer-events: none;

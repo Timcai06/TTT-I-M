@@ -116,6 +116,27 @@ export default function ProjectFilm({ project }: { project: Project }) {
 
   if (!film) return null
 
+  const revealAfterPresentedFrame = () => {
+    const video = filmVideo.current
+    if (!video || !dialog.current?.open || frameRequest.current !== null) return
+    if (!video.requestVideoFrameCallback) {
+      setFilmFrameReady(true)
+      return
+    }
+    frameRequest.current = video.requestVideoFrameCallback(() => {
+      frameRequest.current = null
+      // A single presented frame can be followed immediately by native buffering
+      // UI on a slow connection. Keep the poster until one second is buffered.
+      const buffered = video.buffered
+      const ahead = buffered.length ? buffered.end(buffered.length - 1) - video.currentTime : 0
+      // On a connection slower than the film bitrate, playback can consume the
+      // buffer as it arrives. Reveal once it has visibly advanced even if the
+      // one-second reserve never accumulates; `waiting` restores the poster.
+      if (video.readyState >= video.HAVE_FUTURE_DATA && (ahead >= 1 || video.currentTime >= 1) && !video.seeking) setFilmFrameReady(true)
+      else revealAfterPresentedFrame()
+    })
+  }
+
   const openFilm = () => {
     const modal = dialog.current
     const video = filmVideo.current
@@ -125,10 +146,7 @@ export default function ProjectFilm({ project }: { project: Project }) {
     setFilmOpen(true)
     setFilmFrameReady(false)
     if (frameRequest.current !== null) video.cancelVideoFrameCallback?.(frameRequest.current)
-    frameRequest.current = video.requestVideoFrameCallback?.(() => {
-      frameRequest.current = null
-      setFilmFrameReady(true)
-    }) ?? null
+    frameRequest.current = null
     video.currentTime = 0
     if (!modal.open) modal.showModal()
     void enterFilmMode(video)
@@ -232,14 +250,15 @@ export default function ProjectFilm({ project }: { project: Project }) {
           <div className="project-film__video-frame">
             <video
               ref={filmVideo}
+              className={filmFrameReady ? undefined : 'project-film__video--awaiting-frame'}
               src={film.src}
               poster={film.poster}
               preload="metadata"
               controls
               playsInline
-              onLoadedData={() => {
-                if (!filmVideo.current?.requestVideoFrameCallback) setFilmFrameReady(true)
-              }}
+              onPlaying={revealAfterPresentedFrame}
+              onWaiting={() => setFilmFrameReady(false)}
+              onStalled={() => setFilmFrameReady(false)}
             />
             {!filmFrameReady && <div className="project-film__loading" role="status" aria-live="polite">
               <img src={film.poster} alt="" aria-hidden="true" />
