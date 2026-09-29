@@ -1,5 +1,16 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { read, withoutComments } from './lib/source.mjs'
+
+// A misplaced Vite `define` entry passed typecheck, lint, unit tests, and the
+// build while leaving this identifier unresolved in production JS. The room
+// then failed only under the real CSP mirror. Assert the shipped code, not just
+// the config source, so this regression stops before a local commit.
+{
+  const scripts = readdirSync('dist/assets').filter(name => name.endsWith('.js'))
+  if (scripts.some(name => readFileSync(`dist/assets/${name}`, 'utf8').includes('__ARCHIVE_GLB_BYTES__'))) {
+    throw new Error('Archive GLB byte count was not injected into the production bundle.')
+  }
+}
 
 /**
  * How the room is lit and how its textures are decoded.

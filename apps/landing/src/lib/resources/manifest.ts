@@ -1,6 +1,7 @@
 import { archiveImages, photos, projects } from '../../content'
 import { approvedArtwork } from '../../content/approvedArtwork'
 import { archiveDownloadFraction } from './downloadProgress'
+import { fontLoadFraction } from './fontProgress'
 import {
   loadFonts,
   loadHeroTexture,
@@ -102,6 +103,12 @@ export type ResourceTier = 'critical' | 'visual'
 /** 资源成本分类，用于调试 preload 进度和定位卡顿来源。 */
 export type ResourceType = 'image' | 'font' | 'texture' | 'chunk' | 'particles'
 
+// Manifest weights use one average preloaded image as a unit. Keep the room's
+// weight tied to the actual built GLB: the old 98-unit estimate described a
+// 22.9 MiB model and made each integer tick take over five seconds on slow links.
+const AVERAGE_IMAGE_BYTES = 0.23 * 1024 * 1024
+const ARCHIVE_MODEL_WEIGHT = Math.round(__ARCHIVE_GLB_BYTES__ / AVERAGE_IMAGE_BYTES)
+
 /**
  * @description landing preloadController 可执行的资源任务，区分开屏 gate 和后台预热两类加载
  */
@@ -180,10 +187,16 @@ function collectImageUrls() {
  * Playback still requires a visitor gesture.
  */
 export function buildResourceManifest(): ResourceTask[] {
+  let lastFontFraction = 0
+  const documentFontProgress = () => {
+    if (typeof document === 'undefined' || !document.fonts) return 0
+    lastFontFraction = fontLoadFraction([...document.fonts].map(face => face.status), lastFontFraction)
+    return lastFontFraction
+  }
   const critical: ResourceTask[] = [
     { id: 'chunks:pretext', weight: 3, label: 'Pretext', tier: 'critical', type: 'chunk', timeoutMs: CODE_DEADLINE_MS, load: loadPretext },
     { id: 'texture:hero', weight: 4, label: 'hero texture', tier: 'critical', type: 'texture', timeoutMs: CODE_DEADLINE_MS, load: loadHeroTexture },
-    { id: 'fonts:document', weight: 6, label: 'fonts', tier: 'critical', type: 'font', timeoutMs: CODE_DEADLINE_MS, load: loadFonts },
+    { id: 'fonts:document', weight: 6, progress: documentFontProgress, label: 'fonts', tier: 'critical', type: 'font', timeoutMs: CODE_DEADLINE_MS, load: loadFonts },
     { id: 'chunks:chapters', weight: 8, label: 'chapters', tier: 'critical', type: 'chunk', timeoutMs: CODE_DEADLINE_MS, load: preloadLazyChapters },
   ]
 
@@ -202,7 +215,7 @@ export function buildResourceManifest(): ResourceTask[] {
 
   const interactiveVisuals: ResourceTask[] = [
     ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? [{
-      id: 'renderer:personal-archive', optional: true, weight: 98, progress: archiveDownloadFraction, label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
+      id: 'renderer:personal-archive', optional: true, weight: ARCHIVE_MODEL_WEIGHT, progress: archiveDownloadFraction, label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => {
         const { prepareArchiveRuntime } = await import('../../components/personal-archive/archiveRuntime')

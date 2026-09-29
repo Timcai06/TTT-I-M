@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __ARCHIVE_GLB_BYTES__: number
+
 interface ImportMetaEnv {
   readonly VITE_STUDIO_URL?: string
 }

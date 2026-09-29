@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
+import { statSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import glsl from 'vite-plugin-glsl'
@@ -31,6 +32,9 @@ export default defineConfig(({ mode }) => {
     ?? fileEnv[HTML_IN_CANVAS_ORIGIN_TRIAL_ENV]
 
   return {
+    define: {
+      __ARCHIVE_GLB_BYTES__: JSON.stringify(statSync(new URL('./src/assets/personal-archive/personal-space.glb', import.meta.url)).size),
+    },
     plugins: [
       deploymentMetadata(),
       htmlInCanvasOriginTrial(originTrialToken, {
