@@ -29,6 +29,7 @@ import { readArchiveModel } from '../../lib/resources/readArchiveModel'
 import { prepareChapterPages } from '../../lib/resources/prepareChapterPages'
 import { addContactReadingPlane } from './readingFrame'
 import { calibrateRoomPaper } from './roomPalette'
+import { installArchiveGpuDiagnostics } from './archiveGpuDiagnostics'
 import { phase } from './chapterTracks'
 import { createArchiveAnimationRig } from './archiveAnimationRig'
 import { createArchiveExecution } from './archiveExecution'
@@ -119,7 +120,10 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
   const cleanup: (() => void)[] = [resetListenerPosition]
   try {
     signal.throwIfAborted(); lease = acquireRetainedContext('personal-archive-shared')
-    renderer = new WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
+    // The room is rendered into the composer's MSAA target (or FXAA on the
+    // fallback tier). The default canvas only receives a full-screen quad, so
+    // allocating a second multisampled default framebuffer cannot smooth an edge.
+    renderer = new WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' })
     const modelLoader = createArchiveModelLoader(renderer)
     const model = await modelLoader.loader.parseAsync(bytes, '').finally(modelLoader.dispose)
     // Parsing now includes transcoding 83 KTX2 textures, the longest stretch of
@@ -196,6 +200,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       throw new Error(`Archive render targets lost the WebGL context at ${innerWidth}x${innerHeight} (dpr ${gl.getPixelRatio()}, ${samples > 0 ? `msaa ${samples}x` : 'fxaa'})`)
     }
     cleanup.push(() => { finite.dispose(); focus.dispose(); bloom.dispose(); output.dispose(); fxaa?.dispose(); composer.dispose(); renderTarget.dispose() })
+    cleanup.push(installArchiveGpuDiagnostics(gl, scene, composer, focus, bloom, signalPicture.textures))
     let width = innerWidth, height = innerHeight, frame = 0, disposed = false
     let state: 'ready' | 'recovering' | 'failed' = 'ready', recovery = 0, recoveryTimer = 0
     let mountedHost: HTMLElement | null = null
