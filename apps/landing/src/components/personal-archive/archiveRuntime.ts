@@ -61,6 +61,26 @@ export interface ArchiveRuntime {
 }
 let current: ArchiveRuntime | null = null
 
+async function uploadArchiveTextures(gl: WebGLRenderer, textures: Texture[], signal: AbortSignal, maxAnisotropy: number) {
+  let index = 0
+  while (index < textures.length) {
+    // Give layout and the rising title a paint between batches. The timer also
+    // lets a background tab finish preparation when rAF is suspended.
+    await new Promise<void>(resolve => {
+      const frame = requestAnimationFrame(() => { clearTimeout(timer); resolve() })
+      const timer = window.setTimeout(() => { cancelAnimationFrame(frame); resolve() }, 50)
+    })
+    signal.throwIfAborted()
+    const start = performance.now()
+    do {
+      const texture = textures[index++]!
+      if (texture.anisotropy < maxAnisotropy) texture.anisotropy = maxAnisotropy
+      texture.needsUpdate = true
+      gl.initTexture(texture)
+    } while (index < textures.length && performance.now() - start < 8)
+  }
+}
+
 function disposeModel(model: GLTF) {
   const materials = new Set<Material>(), textures = new Set<Texture>()
   model.scene.traverse(object => {
@@ -144,10 +164,9 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     // the hardware offers. The desk, floor and rug are seen at a steep slant from
     // every reading pose, which is exactly where the difference shows.
     const maxAnisotropy = gl.capabilities.getMaxAnisotropy()
-    for (const texture of [...textures, ...signalPicture.textures]) {
-      if (texture.anisotropy < maxAnisotropy) texture.anisotropy = maxAnisotropy
-      texture.needsUpdate = true; gl.initTexture(texture)
-    }
+    performance.mark('archive:upload:start')
+    await uploadArchiveTextures(gl, [...textures, ...signalPicture.textures], signal, maxAnisotropy)
+    performance.mark('archive:upload:end')
     const context = gl.getContext()
     const webgl2 = context as WebGL2RenderingContext
     const halfFloatSamples = gl.capabilities.isWebGL2 && context.getExtension('EXT_color_buffer_float')
@@ -491,7 +510,9 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
       const sampled = sampleStory({ position, storyVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.storyVersion, contentVersion: PERSONAL_ARCHIVE_SAMPLE_STORY.contentVersion })
       const world = execution.sample(permit, sampled)
       applyArchiveCamera(camera, solveArchiveCamera(sampled, world.anchors, { width, height }))
+      performance.mark(`archive:compile:${position.segment}:start`)
       await gl.compileAsync(scene, camera)
+      performance.mark(`archive:compile:${position.segment}:end`)
       signal.throwIfAborted(); execution.validate(permit)
       record(() => ({ kind: 'preparation', position, permit, trace: ['sample-world', 'sample-camera', 'compile'] }))
       return permit
@@ -505,7 +526,9 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
     }
     const calibration = await preparePosition({ segment:'entry', progress:.94 })
     focus.enabled = false
-    calibrateRoomPaper(gl, composer, model.scene, camera)
+    performance.mark('archive:paper:start')
+    await calibrateRoomPaper(gl, composer, model.scene, camera)
+    performance.mark('archive:paper:end')
     execution.validate(calibration)
     record(() => ({ kind: 'preparation', position:{ segment:'entry', progress:.94 }, permit:calibration, trace: ['sample-world', 'sample-camera', 'paper-calibration'] }))
     await preparePosition({ segment:'index', progress:0 })
@@ -528,7 +551,7 @@ async function createRuntime(signal: AbortSignal): Promise<ArchiveRuntime> {
         shaderFailure = null
         // Render-target contents are lost too: rebuild the environment reflection.
         lighting.restore(); resize()
-        for (const texture of [...textures, ...signalPicture.textures]) { texture.needsUpdate = true; gl.initTexture(texture) }
+        await uploadArchiveTextures(gl, [...textures, ...signalPicture.textures], signal, maxAnisotropy)
         for (const [segment, progress] of [
           ['index', 0], ['entry', .62], ['about-life', .48], ['life-frame', .48],
           ['frame-stack', .44], ['stack-work', .68], ['work-contact', .82], ['contact-reading', 1],
