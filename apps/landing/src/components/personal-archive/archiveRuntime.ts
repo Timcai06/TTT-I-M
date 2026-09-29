@@ -60,7 +60,6 @@ export interface ArchiveRuntime {
   dispose(): void
 }
 let current: ArchiveRuntime | null = null
-export const archiveEnabled = () => !matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches
 
 function disposeModel(model: GLTF) {
   const materials = new Set<Material>(), textures = new Set<Texture>()

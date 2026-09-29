@@ -7,6 +7,7 @@ import { setStage } from './stage'
 import { readingSnapshot } from '../components/personal-archive/readingSnapshot'
 import type { SampleSegment, StoryChapter, StoryPosition } from '../core/narrative/types'
 import { rememberChapterPosition } from './archiveReadingMemory'
+import { canShowArchive } from './archiveEligibility'
 
 const transitionChapter: Partial<Record<string, StoryChapter>>={about:'about',life:'life',frame:'frame',skills:'stack',projects:'work',contact:'contact'}
 const openingSegment: Partial<Record<string, 'entry' | 'about-life' | 'life-frame' | 'frame-stack' | 'stack-work' | 'work-contact'>> = {
@@ -84,7 +85,7 @@ let requestPending = false
 export function currentArchiveRequest() { return { requestId, pending: requestPending } }
 export function registerArchiveScroll() { if (!requestPending) requestId++; return requestId }
 export function usesSampleRoute(target: string, source = '') {
-  if (matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches) return false
+  if (!canShowArchive()) return false
   const layout = getSampleLayout()
   return isSampleChapter(target) || isSampleChapter(source) || Boolean(layout && positionAtScroll(layout, scrollY)) || Boolean(document.documentElement.dataset.archiveSampleOwner)
 }
@@ -169,7 +170,7 @@ export async function seekArchiveChapter(id: string, options: ChapterScrollOptio
 }
 
 function archiveEnabledForMotion() {
-  return !matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches
+  return canShowArchive()
 }
 
 export function cancelArchiveRouting() {

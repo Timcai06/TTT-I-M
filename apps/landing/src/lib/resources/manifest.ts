@@ -2,6 +2,7 @@ import { archiveImages, photos, projects } from '../../content'
 import { approvedArtwork } from '../../content/approvedArtwork'
 import { archiveDownloadFraction } from './downloadProgress'
 import { fontLoadFraction } from './fontProgress'
+import { canShowArchive } from '../archiveEligibility'
 import {
   loadFonts,
   loadHeroTexture,
@@ -170,7 +171,7 @@ function collectImageUrls() {
     '/noise/grain-128.png',
     ...filmPosters,
     ...photos.map((photo) => photo.src),
-    ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? archiveImages.map((image) => image.src) : []),
+    ...(canShowArchive() ? archiveImages.map((image) => image.src) : []),
     ...projectUrls,
   ])
 }
@@ -214,7 +215,7 @@ export function buildResourceManifest(): ResourceTask[] {
   }))
 
   const interactiveVisuals: ResourceTask[] = [
-    ...(!matchMedia('(max-width: 768px), (prefers-reduced-motion: reduce)').matches ? [{
+    ...(canShowArchive() ? [{
       id: 'renderer:personal-archive', optional: true, weight: ARCHIVE_MODEL_WEIGHT, progress: archiveDownloadFraction, label: 'Preparing your room', tier: 'visual' as const, type: 'texture' as const,
       timeoutMs: PREWARM_DEADLINE_MS,
       load: async (signal: AbortSignal) => {

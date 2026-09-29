@@ -17,6 +17,7 @@ import { chapters } from './chapters/registry'
 import './styles/app.css'
 import ChapterSoundCues from './components/ChapterSoundCues'
 import RoomAmbience from './components/RoomAmbience'
+import { useArchiveVisible } from './lib/archiveEligibility'
 
 const ParticlePortal = lazy(() => import('./components/ParticlePortal'))
 const ProductionTelemetry = lazy(() => import('./components/ProductionTelemetry'))
@@ -28,6 +29,7 @@ const ArchiveReturnControl = lazy(() => import('./components/personal-archive/Ar
 const IntroFilm = lazy(() => import('./components/film/IntroFilm'))
 
 export default function App() {
+  const archiveVisible = useArchiveVisible()
   // Smooth scroll + scroll-driven side effects (incl. the disable-hover
   // throttle) are owned by useLenis, so there's a single scroll subscription.
   useLenis()
@@ -107,7 +109,7 @@ export default function App() {
           {/* Inside the provider: useChapterState throws without one, and mounting
               this outside it crashed the whole tree to a black screen. */}
           <ChapterSoundCues />
-          <Suspense fallback={null}><ArchiveStage /></Suspense>
+          {archiveVisible && <Suspense fallback={null}><ArchiveStage /></Suspense>}
           <ScrollIndicator />
           <Nav />
           <ChapterThemeDriver />
