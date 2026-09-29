@@ -129,13 +129,18 @@ void test('both GLB football carriers share the delivered KTX2 image', () => {
   })
 
   // The 3D carrier is transcoded for GPU delivery while the DOM still uses WebP.
-  // Preserve the shared image and source dimensions; Tim reviews the handoff.
+  // Pin both delivered payloads so a replacement cannot pass on dimensions alone.
+  // Tim reviews whether their decoded appearances match at the handoff.
   assert.equal(sources[0].textureIndex, sources[1].textureIndex)
   assert.equal(sources[0].source, sources[1].source)
   for (const source of sources) {
     assert.deepEqual(source.bytes.subarray(0, 12), Buffer.from('ab4b5458203230bb0d0a1a0a', 'hex'))
     assert.equal(source.bytes.readUInt32LE(20), 1280)
     assert.equal(source.bytes.readUInt32LE(24), 960)
+    assert.equal(
+      createHash('sha256').update(source.bytes).digest('hex'),
+      '7b71777f3e7338e947a95578e5080cab2ca7cc46fe64ae81c765b93d59f46815',
+    )
   }
   assert.equal(
     createHash('sha256').update(publicWebp).digest('hex'),
