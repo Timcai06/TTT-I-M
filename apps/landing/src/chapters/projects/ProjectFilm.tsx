@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { Project } from '../../content'
 import ScrollExpand from '../../components/ScrollExpand'
 import { useMobileExperience } from '../../lib/device'
@@ -10,32 +10,98 @@ import { LiquidMetalButton } from '../../shaders/liquid-metal-button/LiquidMetal
  * A project's film (tools/project_films), under its card: a poster that expands with the scroll,
  * and a player that opens with sound.
  *
- * The video is never part of the loader's preload. It starts downloading when the visitor hovers
- * or focuses the play button, and plays from the network if they click before that finishes.
+ * The video is never part of the loader's preload. An intentional hover or focus
+ * warms it; a click plays from the network if warming has not finished.
  */
 export default function ProjectFilm({ project }: { project: Project }) {
   const film = project.film
   const dialog = useRef<HTMLDialogElement>(null)
   const filmVideo = useRef<HTMLVideoElement>(null)
   const playButton = useRef<HTMLDivElement>(null)
+  const warmTimer = useRef<number | undefined>(undefined)
+  const pointerOnButton = useRef(false)
+  const lastScrollAt = useRef(-Infinity)
   const [filmOpen, setFilmOpen] = useState(false)
   const { enterFilmMode, exitFilmMode, setEnabled, stopActive } = useSound()
   const mobile = useMobileExperience()
   const reducedMotion = useReducedMotion()
+
+  const warmFilm = useCallback(() => {
+    const video = filmVideo.current
+    if (!video || video.preload === 'auto') return
+    video.preload = 'auto'
+    video.load()
+  }, [])
+
+  const beginHoverWarmup = useCallback(() => {
+    if (pointerOnButton.current) return
+    pointerOnButton.current = true
+    window.clearTimeout(warmTimer.current)
+    warmTimer.current = window.setTimeout(() => {
+      warmTimer.current = undefined
+      if (pointerOnButton.current && performance.now() - lastScrollAt.current >= 150) warmFilm()
+    }, 150)
+  }, [warmFilm])
+
+  const endHoverWarmup = useCallback(() => {
+    pointerOnButton.current = false
+    window.clearTimeout(warmTimer.current)
+    warmTimer.current = undefined
+  }, [])
 
   useEffect(() => () => {
     exitFilmMode(filmVideo.current)
     stopActive()
   }, [exitFilmMode, stopActive])
 
-  if (!film) return null
+  useEffect(() => {
+    if (!film) return
+    const cancelWarmup = () => {
+      window.clearTimeout(warmTimer.current)
+      warmTimer.current = undefined
+    }
+    const onScroll = () => {
+      lastScrollAt.current = performance.now()
+      pointerOnButton.current = false
+      cancelWarmup()
+    }
+    const onPageHide = () => {
+      cancelWarmup()
+      const video = filmVideo.current
+      if (!video) return
+      // A 37 MB project film can otherwise keep downloading after navigation
+      // and exceed Chrome's bfcache network buffer while this page is frozen.
+      video.removeAttribute('src')
+      video.load()
+    }
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return
+      const video = filmVideo.current
+      if (!video) return
+      video.preload = 'metadata'
+      video.src = film.src
+      video.load()
+    }
+    const onIframePointer = (event: Event) => {
+      const detail = (event as CustomEvent<{ phase?: string; target?: EventTarget }>).detail
+      if (!(detail?.target instanceof Node) || !playButton.current?.contains(detail.target)) return
+      if (detail.phase === 'leave') endHoverWarmup()
+      else beginHoverWarmup()
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('pagehide', onPageHide)
+    window.addEventListener('pageshow', onPageShow)
+    window.addEventListener('portfolio:iframe-pointer', onIframePointer)
+    return () => {
+      cancelWarmup()
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('pagehide', onPageHide)
+      window.removeEventListener('pageshow', onPageShow)
+      window.removeEventListener('portfolio:iframe-pointer', onIframePointer)
+    }
+  }, [beginHoverWarmup, endHoverWarmup, film])
 
-  const warmFilm = () => {
-    const video = filmVideo.current
-    if (!video || video.preload === 'auto') return
-    video.preload = 'auto'
-    video.load()
-  }
+  if (!film) return null
 
   const openFilm = () => {
     const modal = dialog.current
@@ -102,7 +168,8 @@ export default function ProjectFilm({ project }: { project: Project }) {
             ref={playButton}
             className="project-film__play-shell"
             data-cursor="default"
-            onPointerEnter={warmFilm}
+            onPointerEnter={beginHoverWarmup}
+            onPointerLeave={endHoverWarmup}
             onFocusCapture={warmFilm}
           >
             <LiquidMetalButton
