@@ -157,6 +157,7 @@ export default function useArchiveThemeScroll({
             scrollTrigger: {
               trigger: sectionEl,
               pin: true,
+              pinType: 'transform',
               scrub: true,
               start: 'top top',
               end: () => `+=${scrollEndDistance()}`,

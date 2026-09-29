@@ -165,7 +165,10 @@ export function presentSampleFrame(frame: StoryFrame, targetPage: HTMLElement | 
     const left = center.x - halfWidth
     const top = center.y - halfHeight
     Object.assign(hit.style, {
-      left: `${left}px`, top: `${top}px`, width: `${halfWidth * 2}px`, height: `${halfHeight * 2}px`,
+      // Translation is compositor-owned. The hit polygon still occupies the
+      // exact projected screen coordinates, while its layout origin stays put.
+      left: '0px', top: '0px', transform: `translate3d(${left}px,${top}px,0)`,
+      width: `${halfWidth * 2}px`, height: `${halfHeight * 2}px`,
       pointerEvents: 'auto', visibility: 'visible',
       clipPath: `polygon(${hitProjection.corners.map(point => `${point.x - left}px ${point.y - top}px`).join(',')})`,
     })
