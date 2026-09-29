@@ -13,6 +13,7 @@ import basisWasmUrl from 'three/examples/jsm/libs/basis/basis_transcoder.wasm?ur
  * writes the file into public/ before every build.
  */
 const KTX2_WORKER_URL = '/archive-basis/ktx2-worker.js'
+const configureMeshoptWorkers = MeshoptDecoder.useWorkers.bind(MeshoptDecoder)
 
 interface ArchiveMaterialExtras {
   archive_lightmap_version?: number
@@ -62,6 +63,11 @@ class ScopedWorkerKTX2Loader extends KTX2Loader {
 export function createArchiveModelLoader(renderer: WebGLRenderer) {
   const manager = new LoadingManager()
   const ktx = new ScopedWorkerKTX2Loader(manager).setWorkerLimit(2).detectSupport(renderer)
+  // Meshopt's default async API decodes on the main thread when its pool is
+  // empty. The room's compressed geometry otherwise occupies one long
+  // microtask as the download resolves, under CPU throttling. This pool is
+  // released with the loader before the intro hands off.
+  configureMeshoptWorkers(2)
   const loader = new GLTFLoader(manager).setKTX2Loader(ktx).setMeshoptDecoder(MeshoptDecoder)
   loader.register(parser => ({
     name: 'ARCHIVE_material_irradiance',
@@ -75,5 +81,5 @@ export function createArchiveModelLoader(renderer: WebGLRenderer) {
       return parser.assignTexture(params, 'lightMap', extras.archiveLightTexture, LinearSRGBColorSpace)
     },
   }))
-  return { loader, dispose: () => ktx.dispose() }
+  return { loader, dispose: () => { ktx.dispose(); configureMeshoptWorkers(0) } }
 }
