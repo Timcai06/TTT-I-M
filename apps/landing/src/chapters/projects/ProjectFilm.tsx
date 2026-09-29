@@ -23,6 +23,8 @@ export default function ProjectFilm({ project }: { project: Project }) {
   const hoverStartedAt = useRef(-Infinity)
   const lastScrollAt = useRef(-Infinity)
   const [filmOpen, setFilmOpen] = useState(false)
+  const [filmFrameReady, setFilmFrameReady] = useState(false)
+  const frameRequest = useRef<number | null>(null)
   const { enterFilmMode, exitFilmMode, setEnabled, stopActive } = useSound()
   const mobile = useMobileExperience()
   const reducedMotion = useReducedMotion()
@@ -58,6 +60,7 @@ export default function ProjectFilm({ project }: { project: Project }) {
   }, [])
 
   useEffect(() => () => {
+    if (frameRequest.current !== null) filmVideo.current?.cancelVideoFrameCallback?.(frameRequest.current)
     exitFilmMode(filmVideo.current)
     stopActive()
   }, [exitFilmMode, stopActive])
@@ -119,6 +122,12 @@ export default function ProjectFilm({ project }: { project: Project }) {
     setEnabled(true)
     stopActive()
     setFilmOpen(true)
+    setFilmFrameReady(false)
+    if (frameRequest.current !== null) video.cancelVideoFrameCallback?.(frameRequest.current)
+    frameRequest.current = video.requestVideoFrameCallback?.(() => {
+      frameRequest.current = null
+      setFilmFrameReady(true)
+    }) ?? null
     video.currentTime = 0
     if (!modal.open) modal.showModal()
     void enterFilmMode(video)
@@ -129,8 +138,11 @@ export default function ProjectFilm({ project }: { project: Project }) {
   }
 
   const handleDialogClose = () => {
+    if (frameRequest.current !== null) filmVideo.current?.cancelVideoFrameCallback?.(frameRequest.current)
+    frameRequest.current = null
     exitFilmMode(filmVideo.current)
     setFilmOpen(false)
+    setFilmFrameReady(false)
     playButton.current?.querySelector<HTMLIFrameElement>('.liquid-metal-button__frame')?.focus()
   }
 
@@ -216,14 +228,23 @@ export default function ProjectFilm({ project }: { project: Project }) {
             <span id={dialogTitleId}>{project.name.toUpperCase()} · PROJECT FILM / {film.duration}</span>
             <button type="button" onClick={closeFilm} aria-label={`Close the ${project.name} film`}>Close</button>
           </div>
-          <video
-            ref={filmVideo}
-            src={film.src}
-            poster={film.poster}
-            preload="metadata"
-            controls
-            playsInline
-          />
+          <div className="project-film__video-frame">
+            <video
+              ref={filmVideo}
+              src={film.src}
+              poster={film.poster}
+              preload="metadata"
+              controls
+              playsInline
+              onLoadedData={() => {
+                if (!filmVideo.current?.requestVideoFrameCallback) setFilmFrameReady(true)
+              }}
+            />
+            {!filmFrameReady && <div className="project-film__loading" role="status" aria-live="polite">
+              <img src={film.poster} alt="" aria-hidden="true" />
+              <span>Loading film…</span>
+            </div>}
+          </div>
         </div>
       </dialog>
     </section>

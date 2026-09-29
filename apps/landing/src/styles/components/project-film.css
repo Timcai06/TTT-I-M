@@ -190,11 +190,43 @@
   text-transform: uppercase;
 }
 
+.project-film__video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+}
+
 .project-film__dialog video {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   background: #000;
+}
+
+.project-film__loading {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #050505;
+  pointer-events: none;
+}
+
+.project-film__loading img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-film__loading span {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 768px) {
