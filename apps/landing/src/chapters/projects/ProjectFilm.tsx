@@ -46,18 +46,26 @@ export default function ProjectFilm({ project }: { project: Project }) {
     }, Math.max(0, readyAt - performance.now()))
   }, [warmFilm])
 
+  const onScroll = useCallback(() => {
+    lastScrollAt.current = performance.now()
+    // A stationary hover remains eligible after the last scroll event.
+    scheduleWarmup()
+  }, [scheduleWarmup])
+
   const beginHoverWarmup = useCallback(() => {
     if (pointerOnButton.current) return
     pointerOnButton.current = true
     hoverStartedAt.current = performance.now()
+    window.addEventListener('scroll', onScroll, { passive: true })
     scheduleWarmup()
-  }, [scheduleWarmup])
+  }, [onScroll, scheduleWarmup])
 
   const endHoverWarmup = useCallback(() => {
     pointerOnButton.current = false
+    window.removeEventListener('scroll', onScroll)
     window.clearTimeout(warmTimer.current)
     warmTimer.current = undefined
-  }, [])
+  }, [onScroll])
 
   useEffect(() => () => {
     if (frameRequest.current !== null) filmVideo.current?.cancelVideoFrameCallback?.(frameRequest.current)
@@ -70,12 +78,6 @@ export default function ProjectFilm({ project }: { project: Project }) {
     const cancelWarmup = () => {
       window.clearTimeout(warmTimer.current)
       warmTimer.current = undefined
-    }
-    const onScroll = () => {
-      lastScrollAt.current = performance.now()
-      // Keep a stationary hover eligible once scrolling has settled. A final
-      // Lenis scroll event can otherwise cancel the only pointer-enter timer.
-      scheduleWarmup()
     }
     const onPageHide = () => {
       cancelWarmup()
@@ -100,7 +102,6 @@ export default function ProjectFilm({ project }: { project: Project }) {
       if (detail.phase === 'leave') endHoverWarmup()
       else beginHoverWarmup()
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('pagehide', onPageHide)
     window.addEventListener('pageshow', onPageShow)
     window.addEventListener('portfolio:iframe-pointer', onIframePointer)
@@ -111,7 +112,7 @@ export default function ProjectFilm({ project }: { project: Project }) {
       window.removeEventListener('pageshow', onPageShow)
       window.removeEventListener('portfolio:iframe-pointer', onIframePointer)
     }
-  }, [beginHoverWarmup, endHoverWarmup, film, scheduleWarmup])
+  }, [beginHoverWarmup, endHoverWarmup, film, onScroll])
 
   if (!film) return null
 
