@@ -25,11 +25,29 @@ const SKIP_WHEEL = 160
 
 type Phase = 'idle' | 'playing' | 'leaving' | 'done'
 
+/** The Studio side of the domain, proxied in by vercel.json. */
+const STUDIO_PATH = /^\/(blog|work|graph|dashboard)(\/|$)/
+
+/**
+ * A visitor coming back from the blog or the work archive is returning, not
+ * arriving: the film has already been seen or deliberately skipped. Same-origin
+ * navigations carry the full referrer under strict-origin-when-cross-origin.
+ */
+function returningFromStudio() {
+  try {
+    const referrer = new URL(document.referrer)
+    return referrer.origin === window.location.origin && STUDIO_PATH.test(referrer.pathname)
+  } catch {
+    return false
+  }
+}
+
 function filmWanted() {
   if (typeof window === 'undefined') return false
   const param = new URLSearchParams(window.location.search).get('film')
   if (param === 'off') return false
   if (param === 'on') return true
+  if (returningFromStudio()) return false
   // Automation measures the page, not the film.
   if (navigator.webdriver) return false
   // A deep link came for one chapter.
