@@ -38,10 +38,21 @@ export function useProjectsNarrative(
     const syncLaserEligibility = () => {
       setLaserActive(!reducedMotion && inRange && canPrepareLocalEffect(section, 'projects'))
     }
+    // Where the intro's range stood when the laser took the frame. On desktop the
+    // chapter sits invisible behind the room's projection until the page has
+    // expanded, and by then the intro is already about half way through its range:
+    // fed raw, the beam appeared mid-sweep and the upper half of the title
+    // vanished in one frame. The sweep starts from its top edge when it arrives.
+    let laserAnchor: number | null = null
     const updateLaser = (progress: number) => {
       const scrollY = window.scrollY
+      if (!laserHandle.current) laserAnchor = null
+      else laserAnchor ??= progress
+      const sweep = laserAnchor === null
+        ? 0
+        : (progress - laserAnchor) / Math.max(1 - laserAnchor, 1e-3)
       const next = normalizeLocalEffectState({
-        progress,
+        progress: sweep,
         delta: scrollY - lastScrollY,
       })
       lastScrollY = scrollY
