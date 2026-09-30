@@ -167,7 +167,6 @@ export default function ProjectFilm({ project }: { project: Project }) {
 
   const titleId = `${project.id}-film-title`
   const dialogTitleId = `${project.id}-film-dialog-title`
-  const [headLine, ...restLines] = film.heading.split('\n')
 
   return (
     <section
@@ -182,8 +181,6 @@ export default function ProjectFilm({ project }: { project: Project }) {
         className="project-film__expand"
         src={film.poster}
         alt={film.posterAlt}
-        title={film.teaser}
-        scrollHint="Scroll to enter"
         startWidth={62}
         startHeight={66}
         startRadius={18}
@@ -192,18 +189,16 @@ export default function ProjectFilm({ project }: { project: Project }) {
         scrollDistance={0.85}
         holdDistance={0.18}
         smoothing={0.45}
-        overlayScrim={0.56}
+        overlayScrim={0.2}
         useWindowScroll={!mobile}
         enabled={!mobile && !reducedMotion}
         style={mobile ? { height: 'min(78svh, 680px)' } : undefined}
       >
+        {/* The poster is a frame of the film and already carries its own type; copy
+            laid over it collided with that type. Only the play control sits on it,
+            and the heading stays in the accessibility tree. */}
         <div className="project-film__expanded-copy">
-          <span className="project-film__index">{film.label}</span>
-          <h3 id={titleId}>
-            {headLine}
-            {restLines.map((line) => <span key={line}><br />{line}</span>)}
-          </h3>
-          <p>{film.body}</p>
+          <h3 id={titleId} className="project-film__title">{film.heading.replace(/\n/g, ' ')}</h3>
           <div
             ref={playButton}
             className="project-film__play-shell"
@@ -220,15 +215,6 @@ export default function ProjectFilm({ project }: { project: Project }) {
               embedded
               onClick={openFilm}
             />
-            <span className="project-film__play-meta">{film.duration} · SOUND ON</span>
-          </div>
-          <div className="project-film__path" aria-hidden="true">
-            {film.path.map((step, i) => (
-              <span key={step} style={{ display: 'contents' }}>
-                {i > 0 ? <i /> : null}
-                <span>{step}</span>
-              </span>
-            ))}
           </div>
         </div>
       </ScrollExpand>
