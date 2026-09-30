@@ -170,23 +170,32 @@ export function LiquidMetalButton({
   useEffect(() => {
     if (!mounted || ready || !source || failed || !gpuGranted) return;
 
+    // The renderer reports ready from its first animation frame, and a hidden
+    // cross-origin frame is given none. The Work films mount this button inside
+    // an overlay that stays visibility:hidden until the poster has expanded, so
+    // a deadline that ran while hidden failed every one of them for good. Only
+    // continuous time on screen counts toward the three seconds.
+    let visibleSince: number | null = null;
     const syncPendingFrame = () => {
       syncButtonConfig();
       syncPlayConfig();
+      const host = hostRef.current;
+      const visible = !host?.checkVisibility
+        || host.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+      if (!visible) {
+        visibleSince = null;
+        return;
+      }
+      const now = performance.now();
+      visibleSince ??= now;
+      const frame = frameRef.current;
+      if (now - visibleSince >= 3_000 && frame?.contentWindow) {
+        setRendererState({ frame, key: sourceKey, status: "failed" });
+      }
     };
     syncPendingFrame();
     const retry = window.setInterval(syncPendingFrame, 90);
-    const deadline = window.setTimeout(() => {
-      const frameWindow = frameRef.current?.contentWindow;
-      const frame = frameRef.current;
-      if (frameWindow && frame) {
-        setRendererState({ frame, key: sourceKey, status: "failed" });
-      }
-    }, 3_000);
-    return () => {
-      window.clearInterval(retry);
-      window.clearTimeout(deadline);
-    };
+    return () => window.clearInterval(retry);
   }, [failed, gpuGranted, mounted, ready, source, sourceKey, syncButtonConfig, syncPlayConfig]);
 
   useEffect(() => {
