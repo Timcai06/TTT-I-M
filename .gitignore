@@ -24,6 +24,7 @@ tmp
 
 # Local source/archive material that should not be shipped by Vite publicDir
 sources/archive/
+sources/audio/
 apps/landing/public/img*.jpg
 apps/landing/public/profile.jpg
 apps/landing/public/server.glb

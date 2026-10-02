@@ -1,5 +1,6 @@
 /**
- * The room's own sound, and the only audio the narrative plays.
+ * The room's environmental sounds. The long music track is streamed separately
+ * by SoundProvider after sound is enabled and the landing becomes live.
  *
  * The cues used to be four byte offsets into sciscope-soundtrack.mp3 — the score of
  * a product film — so arriving at a chapter started that film's music at an
