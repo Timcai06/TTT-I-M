@@ -2,6 +2,22 @@
 
 Tim Cai's portfolio platform is an npm-workspace monorepo. The cinematic Landing and content-focused Studio share design tokens and content contracts while keeping their runtimes separate.
 
+## How the two surfaces fit together
+
+The platform separates two reading experiences: Landing handles the cinematic, scroll-driven introduction; Studio handles articles, project detail and publishing routes. Both consume shared tokens and content contracts, so a visual change does not require importing the Landing animation runtime into Studio.
+
+![Two apps sharing contracts while keeping independent runtimes](assets/readme-diagrams/system.png)
+
+图中把共享契约画成基础板、把两种阅读体验画成独立表面，这是空间隐喻，不是页面截图。
+
+| Design choice | What it enables | Code entry |
+| --- | --- | --- |
+| Chapter composition with local error and loading boundaries | A deferred or failed chapter does not blank the already mounted page | [`App.tsx`](apps/landing/src/App.tsx) |
+| Shared tokens and repository contracts | Consistent presentation and content identity across two apps | [`packages/tokens`](packages/tokens/) · [`packages/content`](packages/content/) |
+| Studio runtime isolation | Content routes remain independent of GSAP, Lenis and WebGL rendering | [Architecture guide](docs/architecture/01-architecture.md) |
+
+Optional visual effects enhance a semantic DOM surface. Unsupported or failed capture paths retain that DOM; reduced motion uses a separate native-scroll path. Builder Graph OS remains a future direction, as described in the existing roadmap.
+
 ## Start here
 
 - [Documentation index](docs/README.md) — current architecture, runtime, asset, and verification guides.
