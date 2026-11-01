@@ -79,7 +79,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: browsers
         with:
           path: ~/.cache/ms-playwright
@@ -94,7 +94,7 @@ jobs:
         working-directory: apps/landing
       - run: npm run test:e2e:extended
         working-directory: apps/landing
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-extended-${{ github.run_id }}-${{ github.run_attempt }}
@@ -147,7 +147,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: browsers
         with:
           path: ~/.cache/ms-playwright
@@ -169,7 +169,7 @@ jobs:
       # tests/e2eShards.test.ts asserts the shards partition the lane exactly.
       - run: npm run test:e2e:gates:${{ matrix.shard }}
         working-directory: apps/landing
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-gates-${{ github.run_id }}-${{ github.run_attempt }}-shard${{ matrix.shard }}
@@ -197,7 +197,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: browsers
         with:
           path: ~/.cache/ms-playwright
@@ -210,7 +210,7 @@ jobs:
         working-directory: apps/landing
       - run: npm run test:e2e:canvas-experimental
         working-directory: apps/landing
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-canvas-experimental-${{ github.run_id }}-${{ github.run_attempt }}
